@@ -5798,10 +5798,10 @@ node-html-parser@1.4.9:
   dependencies:
     he "1.2.0"
 
-node-html-parser@^3.0.4:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/node-html-parser/-/node-html-parser-3.1.1.tgz#7bcd5bbb93b01de8ea627ccbac51bef07c4e3b2d"
-  integrity sha512-V+9bmEAO3qYk1/C+JtLLR2WBG0BiLpyTtxKqomo1ug/IZqT2eNOef0kTePtWIjvbfUKseExL0K9g9bD5dh+SdA==
+node-html-parser@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/node-html-parser/-/node-html-parser-3.1.2.tgz#b7a3e3ca9708624e50e0dd84ec988885b2aa6c90"
+  integrity sha512-t1FyoT8/3GTs1kgP70SsXAdQzxA0etXsBc8fPQYRwETucmgkD9f+1A7jVhSngUavEueR3fF8BkfDv3dRGWOOWQ==
   dependencies:
     css-select "^3.1.2"
     he "1.2.0"

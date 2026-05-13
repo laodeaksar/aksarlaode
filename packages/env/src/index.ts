@@ -1,52 +1,20 @@
-import { z } from "zod/v4"
+/**
+ * @repo/env — environment variable validation
+ *
+ * Import the scoped env for your service instead of this barrel:
+ *
+ *   auth-service   →  import { env } from "@repo/env/auth"
+ *   @repo/database →  import { env } from "@repo/env/database"
+ *   api-gateway    →  import { env } from "@repo/env/gateway"
+ *
+ * The scoped imports only validate the variables your service actually needs,
+ * so a missing Midtrans key will not crash the auth-service at startup.
+ */
 
-const schema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+export { env as authEnv }    from "./auth"
+export { env as dbEnv }      from "./database"
+export { env as gatewayEnv } from "./gateway"
 
-  // PostgreSQL
-  DATABASE_URL: z.url(),
-
-  // MongoDB
-  MONGODB_URL: z.url(),
-
-  // Redis
-  REDIS_HOST:     z.string(),
-  REDIS_PORT:     z.coerce.number().default(6379),
-  REDIS_PASSWORD: z.string(),
-
-  // Auth
-  JWT_SECRET:             z.string().min(32),
-  INTERNAL_SERVICE_TOKEN: z.string().min(32),
-
-  // Service URLs
-  AUTH_SERVICE_URL:    z.url(),
-  PRODUCT_SERVICE_URL: z.url(),
-  ORDER_SERVICE_URL:   z.url(),
-  PAYMENT_SERVICE_URL: z.url(),
-
-  // Public URLs
-  PUBLIC_API_URL: z.url(),
-  WEB_URL:        z.url(),
-  ADMIN_URL:      z.url(),
-
-  // Midtrans
-  MIDTRANS_SERVER_KEY:       z.string(),
-  MIDTRANS_IS_PRODUCTION:    z.coerce.boolean().default(false),
-  PUBLIC_MIDTRANS_CLIENT_KEY: z.string(),
-
-  // Mail
-  MAIL_FROM_ADDRESS: z.email(),
-  MAIL_FROM_NAME:    z.string(),
-})
-
-// Parse on import — crashes with clear message if misconfigured
-const _env = schema.safeParse(process.env)
-
-if (!_env.success) {
-  console.error("❌ Invalid environment variables:")
-  console.error(_env.error.flatten().fieldErrors)
-  process.exit(1)
-}
-
-export const env = _env.data
-export type Env  = typeof _env.data
+export type { AuthEnv }    from "./auth"
+export type { DatabaseEnv } from "./database"
+export type { GatewayEnv } from "./gateway"

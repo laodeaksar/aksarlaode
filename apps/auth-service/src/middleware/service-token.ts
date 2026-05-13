@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono"
-import { env }                    from "@repo/env"
+import { env }                    from "@repo/env/auth"
 
 export const serviceTokenMiddleware: MiddlewareHandler = async (c, next) => {
   const token = c.req.header("x-service-token")

@@ -1,5 +1,5 @@
 import { Effect, Data } from "effect"
-import { env }          from "@repo/env"
+import { env }          from "@repo/env/auth"
 
 class TokenError extends Data.TaggedError("TokenError")<{ reason: string }> {}
 

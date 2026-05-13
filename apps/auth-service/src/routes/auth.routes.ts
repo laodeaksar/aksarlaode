@@ -1,17 +1,19 @@
-import { Hono }           from "hono"
-import { loginHandler }   from "@/handlers/login"
+import { Hono }            from "hono"
+import { loginHandler }    from "@/handlers/login"
 import { registerHandler } from "@/handlers/register"
-import { logoutHandler }  from "@/handlers/logout"
-import { meHandler }      from "@/handlers/me"
-import { refreshHandler } from "@/handlers/refresh"
-import type { AppEnv }    from "@./types"
+import { logoutHandler }   from "@/handlers/logout"
+import { meHandler }       from "@/handlers/me"
+import { refreshHandler }  from "@/handlers/refresh"
+import { serviceTokenMiddleware }            from "@/middleware/service-token"
+import { loginRateLimiter, registerRateLimiter } from "@/middleware/rate-limit"
+import type { AppEnv }     from "@/types"
 
 const router = new Hono<AppEnv>()
 
-router.post("/login",    loginHandler)
-router.post("/register", registerHandler)
+router.post("/login",    loginRateLimiter,    loginHandler)
+router.post("/register", registerRateLimiter, registerHandler)
 router.post("/logout",   logoutHandler)
-router.get("/me",        meHandler)
+router.get("/me",        serviceTokenMiddleware, meHandler)
 router.post("/refresh",  refreshHandler)
 
 export default router

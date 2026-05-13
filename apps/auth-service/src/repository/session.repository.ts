@@ -1,6 +1,6 @@
 import { Effect, Data } from "effect"
 import { db, schema }   from "@repo/database"
-import { eq }           from "drizzle-orm"
+import { eq, and }      from "drizzle-orm"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -35,4 +35,36 @@ const deleteAllByUserId = (userId: string) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
-export const sessionRepository = { create, findByToken, deleteByToken, deleteAllByUserId }
+const findAllByUserId = (userId: string) =>
+  Effect.tryPromise({
+    try:   () => db.select().from(schema.sessions)
+                   .where(eq(schema.sessions.userId, userId))
+                   .orderBy(schema.sessions.createdAt),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+const findByIdAndUserId = (id: string, userId: string) =>
+  Effect.tryPromise({
+    try:   () => db.select().from(schema.sessions)
+                   .where(and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId)))
+                   .limit(1)
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+const deleteByIdAndUserId = (id: string, userId: string) =>
+  Effect.tryPromise({
+    try:   () => db.delete(schema.sessions)
+                   .where(and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId))),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+export const sessionRepository = {
+  create,
+  findByToken,
+  findAllByUserId,
+  findByIdAndUserId,
+  deleteByToken,
+  deleteByIdAndUserId,
+  deleteAllByUserId,
+}

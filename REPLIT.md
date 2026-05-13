@@ -48,13 +48,30 @@ pnpm infra:down     # stop containers
 pnpm infra:reset    # wipe volumes and restart
 ```
 
-### Database Migrations
+### Database Migrations & Seed
 
 ```bash
 pnpm db:generate    # generate migration files from schema changes
-pnpm db:migrate     # apply pending migrations
+pnpm db:migrate     # apply pending migrations to the database
+pnpm db:seed        # seed default admin user + sample categories
 pnpm db:studio      # open Drizzle Studio (visual DB browser)
 ```
+
+**First-time setup order:**
+```bash
+pnpm infra:up       # 1. start PostgreSQL + MongoDB
+pnpm db:migrate     # 2. apply all migrations
+pnpm db:seed        # 3. insert default data
+pnpm dev            # 4. start all services
+```
+
+**Seed environment variables (optional — defaults shown):**
+```
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_NAME=Super Admin
+SEED_ADMIN_PASSWORD=Admin1234!
+```
+> Change the admin password immediately after first login.
 
 ### Development
 

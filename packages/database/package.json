@@ -7,6 +7,12 @@
     ".":         "./src/index.ts",
     "./mongodb": "./src/mongodb/index.ts"
   },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate":  "node --import tsx/esm src/postgres/migrate.ts",
+    "db:seed":     "node --import tsx/esm src/postgres/seed.ts",
+    "db:studio":   "drizzle-kit studio"
+  },
   "dependencies": {
     "drizzle-orm": "^0.41.0",
     "mongoose":    "^8.13.0",
@@ -14,9 +20,10 @@
     "@repo/env":   "workspace:*"
   },
   "devDependencies": {
-    "@types/pg":             "^8.11.0",
-    "drizzle-kit":           "^0.31.0",
+    "@types/pg":               "^8.11.0",
+    "drizzle-kit":             "^0.31.0",
+    "tsx":                     "^4.19.0",
     "@repo/typescript-config": "workspace:*",
-    "typescript":            "^5.4.0"
+    "typescript":              "^5.4.0"
   }
 }

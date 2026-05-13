@@ -1,0 +1,83 @@
+---
+import { AppRuntime }   from "../../lib/effect/runtime"
+import { productsApi }  from "../../lib/api/products"
+import { AddToCartButton } from "../../components/islands/product/AddToCartButton"
+import Layout from "../../layouts/Layout.astro"
+
+const { slug } = Astro.params
+const cookie   = Astro.request.headers.get("cookie") ?? ""
+
+const exit = await AppRuntime.runPromiseExit(
+  productsApi.getBySlug(slug!, cookie)
+)
+
+if (exit._tag === "Failure") {
+  return Astro.redirect("/404")
+}
+
+const product = exit.value
+---
+
+<Layout title={product.name}>
+  <div class="max-w-5xl mx-auto px-4 py-10 grid gap-10 lg:grid-cols-2">
+
+    <!-- Image gallery -->
+    <div class="space-y-3">
+      <div class="aspect-square overflow-hidden rounded-xl bg-gray-100">
+        <img
+          src={product.imageUrls?.[0] ?? "/placeholder.png"}
+          alt={product.name}
+          class="h-full w-full object-cover"
+        />
+      </div>
+      {product.imageUrls && product.imageUrls.length > 1 && (
+        <div class="grid grid-cols-4 gap-2">
+          {product.imageUrls.slice(1).map(url => (
+            <img src={url} class="aspect-square rounded object-cover cursor-pointer border-2 border-transparent hover:border-blue-500" />
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- Product info -->
+    <div class="space-y-6">
+      <div>
+        <h1 class="text-2xl font-bold">{product.name}</h1>
+        <p class="text-sm text-gray-400 mt-1">SKU: {product.sku}</p>
+      </div>
+
+      <div class="flex items-baseline gap-3">
+        <span class="text-3xl font-bold text-blue-600">
+          Rp {product.price.toLocaleString("id-ID")}
+        </span>
+        {product.comparePrice && (
+          <span class="text-lg text-gray-400 line-through">
+            Rp {product.comparePrice.toLocaleString("id-ID")}
+          </span>
+        )}
+      </div>
+
+      <p class="text-sm text-gray-600 leading-relaxed">{product.description}</p>
+
+      <div class="text-sm">
+        {product.stock > 0
+          ? <span class="text-green-600 font-medium">✓ In Stock ({product.stock} available)</span>
+          : <span class="text-red-500 font-medium">Out of Stock</span>
+        }
+      </div>
+
+      <!-- React island: handles quantity + cart state -->
+      <AddToCartButton
+        client:load
+        product={{
+          id:       product.id,
+          name:     product.name,
+          price:    product.price,
+          sku:      product.sku,
+          stock:    product.stock,
+          imageUrl: product.imageUrls?.[0],
+        }}
+      />
+    </div>
+  </div>
+</Layout>

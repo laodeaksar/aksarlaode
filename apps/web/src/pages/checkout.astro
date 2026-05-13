@@ -1,0 +1,37 @@
+---
+import { AppRuntime } from "../lib/effect/runtime"
+import { authApi }    from "../lib/api/auth"
+import { CheckoutForm } from "../components/islands/checkout/CheckoutForm"
+import Layout from "../layouts/Layout.astro"
+
+const cookie = Astro.request.headers.get("cookie") ?? ""
+
+// Guard: must be logged in
+const exit = await AppRuntime.runPromiseExit(authApi.me(cookie))
+if (exit._tag === "Failure") {
+  return Astro.redirect("/account/login?redirect=/checkout")
+}
+
+const user = exit.value
+---
+
+<Layout title="Checkout">
+  <!-- Midtrans Snap script -->
+  <script
+    is:inline
+    src="https://app.sandbox.midtrans.com/snap/snap.js"
+    data-client-key={import.meta.env.PUBLIC_MIDTRANS_CLIENT_KEY}
+  ></script>
+
+  <div class="max-w-2xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold mb-8">Checkout</h1>
+
+    <!-- Pass userId + hidden user email for Midtrans -->
+    <span data-user-email={user.email} class="hidden" />
+
+    <CheckoutForm
+      client:load
+      userId={user.id}
+    />
+  </div>
+</Layout>

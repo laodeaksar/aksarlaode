@@ -1,0 +1,77 @@
+name: my-ecommerce-prod
+
+services:
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/services/api-gateway.Dockerfile
+    container_name: ec_api_gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file: ../.env.production
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+      - payment-service
+    healthcheck:
+      test:     ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout:  5s
+      retries:  3
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: docker/services/auth.Dockerfile
+    container_name: ec_auth
+    restart: always
+    env_file: ../.env.production
+    expose:
+      - "3001"
+
+  product-service:
+    build:
+      context: ..
+      dockerfile: docker/services/product.Dockerfile
+    container_name: ec_product
+    restart: always
+    env_file: ../.env.production
+    expose:
+      - "3002"
+
+  order-service:
+    build:
+      context: ..
+      dockerfile: docker/services/order.Dockerfile
+    container_name: ec_order
+    restart: always
+    env_file: ../.env.production
+    expose:
+      - "3003"
+
+  payment-service:
+    build:
+      context: ..
+      dockerfile: docker/services/payment.Dockerfile
+    container_name: ec_payment
+    restart: always
+    env_file: ../.env.production
+    expose:
+      - "3004"
+
+  email-worker:
+    build:
+      context: ..
+      dockerfile: docker/services/email-worker.Dockerfile
+    container_name: ec_email_worker
+    restart: always
+    env_file: ../.env.production
+    deploy:
+      replicas: 2     # run 2 worker instances
+
+networks:
+  default:
+    name: ec_internal

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": [".next/**", "dist/**", ".astro/**", ".wrangler/**"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL", "MONGODB_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
+        "JWT_SECRET", "INTERNAL_SERVICE_TOKEN",
+        "AUTH_SERVICE_URL", "PRODUCT_SERVICE_URL", "ORDER_SERVICE_URL", "PAYMENT_SERVICE_URL",
+        "PUBLIC_API_URL", "WEB_URL", "ADMIN_URL",
+        "MIDTRANS_SERVER_KEY", "MIDTRANS_IS_PRODUCTION", "PUBLIC_MIDTRANS_CLIENT_KEY",
+        "MAIL_FROM_ADDRESS", "MAIL_FROM_NAME"
+      ]
+    },
+
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true,
+      "cache": false
+    },
+
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["src/**", "tsconfig.json"],
+      "outputs": []
+    },
+
+    "lint": {
+      "inputs": ["src/**", ".eslintrc*", "eslint.config.*"],
+      "outputs": []
+    },
+
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "test/**", "*.test.ts"],
+      "outputs": ["coverage/**"],
+      "env": ["NODE_ENV", "DATABASE_URL", "MONGODB_URL"]
+    },
+
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+
+    "db:generate": {
+      "cache": false,
+      "inputs": ["src/postgres/schema/**"]
+    },
+
+    "db:migrate": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+
+    "clean": {
+      "cache": false
+    }
+  }
+}

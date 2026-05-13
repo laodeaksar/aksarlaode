@@ -1,5 +1,5 @@
 import { cors as honoCors } from "hono/cors"
-import { env } from "@my-ecommerce/env"
+import { env } from "@repo/env"
 
 export const cors = honoCors({
   origin: [env.WEB_URL, env.ADMIN_URL],

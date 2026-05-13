@@ -1,5 +1,19 @@
 import { z } from "zod/v4"
 
+export { type User, type Product, type NewProduct, type Payment } from "../types/index"
+export type CreateOrderInput = import("../types/index").CreateOrderSchema
+export type OrderDetail = {
+  orderId:         string
+  userId:          string
+  status:          string
+  totalAmount:     number
+  grandTotal:      number
+  items:           Array<{ productId: string; name: string; price: number; quantity: number; subtotal: number }>
+  shippingAddress: Record<string, string>
+  statusHistory:   Array<{ status: string; note?: string; timestamp: string }>
+  createdAt:       string
+}
+
 export const InitiatePaymentSchema = z.object({
   orderId:       z.string().uuid(),
   amount:        z.number().positive().int(),

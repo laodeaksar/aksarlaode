@@ -1,0 +1,22 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".":         "./src/index.ts",
+    "./mongodb": "./src/mongodb/index.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.41.0",
+    "mongoose":    "^8.13.0",
+    "pg":          "^8.14.0",
+    "@repo/env":   "*"
+  },
+  "devDependencies": {
+    "@types/pg":             "^8.11.0",
+    "drizzle-kit":           "^0.31.0",
+    "@repo/typescript-config": "workspace:*",
+    "typescript":            "^5.4.0"
+  }
+}

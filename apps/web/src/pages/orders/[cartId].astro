@@ -1,0 +1,54 @@
+---
+import Navbar from "../../components/ui/Navbar.astro"
+import Footer from "../../components/ui/Footer.astro"
+import { AppRuntime } from "../../lib/effect/runtime"
+import { ordersApi }  from "../../lib/api/orders"
+
+const { cartId } = Astro.params
+const cookie = Astro.request.headers.get("cookie") ?? ""
+const exit   = await AppRuntime.runPromiseExit(ordersApi.getOne(cartId!, cookie))
+
+if (exit._tag === "Failure") {
+  return Astro.redirect("/account/orders")
+}
+
+const order = exit.value
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order {order.orderId} - MyEcommerce</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <Navbar />
+    <main class="max-w-2xl mx-auto px-4 py-10">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Order Details</h1>
+      <p class="text-gray-500 mb-6 font-mono">{order.orderId}</p>
+      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-600">Status</span>
+          <span class="font-semibold text-gray-900">{order.status}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-600">Total</span>
+          <span class="font-semibold text-gray-900">Rp {order.totalAmount?.toLocaleString("id-ID")}</span>
+        </div>
+        <div>
+          <h3 class="font-medium text-gray-900 mb-2">Items</h3>
+          <div class="space-y-2">
+            {order.items?.map((item: any) => (
+              <div class="flex justify-between text-sm text-gray-600">
+                <span>{item.name} x{item.quantity}</span>
+                <span>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <a href="/account/orders" class="mt-6 inline-block text-sm text-blue-600 hover:underline">&larr; Back to Orders</a>
+    </main>
+    <Footer />
+  </body>
+</html>

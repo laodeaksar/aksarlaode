@@ -2,29 +2,33 @@
   "name": "my-ecommerce",
   "private": true,
   "packageManager": "pnpm@9.1.0",
-  "engines": { "node": ">=20", "pnpm": ">=9" },
-
-  "scripts": {
-    "build":        "turbo run build",
-    "dev":          "turbo run dev",
-    "typecheck":    "turbo run typecheck",
-    "lint":         "turbo run lint",
-    "test":         "turbo run test",
-    "clean":        "turbo run clean && rm -rf node_modules",
-    "db:generate":  "turbo run db:generate --filter=@my-ecommerce/database",
-    "db:migrate":   "turbo run db:migrate  --filter=@my-ecommerce/database",
-    "db:studio":    "turbo run db:studio   --filter=@my-ecommerce/database",
-    "infra:up":     "docker compose -f docker/docker-compose.yml up -d",
-    "infra:down":   "docker compose -f docker/docker-compose.yml down",
-    "infra:logs":   "docker compose -f docker/docker-compose.yml logs -f",
-    "infra:reset":  "docker compose -f docker/docker-compose.yml down -v && pnpm infra:up"
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
   },
-
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "turbo run db:generate --filter=@my-ecommerce/database",
+    "db:migrate": "turbo run db:migrate  --filter=@my-ecommerce/database",
+    "db:studio": "turbo run db:studio   --filter=@my-ecommerce/database",
+    "infra:up": "docker compose -f docker/docker-compose.yml up -d",
+    "infra:down": "docker compose -f docker/docker-compose.yml down",
+    "infra:logs": "docker compose -f docker/docker-compose.yml logs -f",
+    "infra:reset": "docker compose -f docker/docker-compose.yml down -v && pnpm infra:up"
+  },
   "devDependencies": {
-    "turbo":          "^2.0.0",
-    "typescript":     "^5.4.0",
-    "@types/node":    "^20.0.0",
-    "prettier":       "^3.0.0",
-    "vitest":         "^1.6.0"
+    "@types/node": "^20.0.0",
+    "prettier": "^3.0.0",
+    "turbo": "^2.9.12",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "pnpm": "^9.1.0"
   }
 }

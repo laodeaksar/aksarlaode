@@ -1,0 +1,21 @@
+---
+import Navbar from "../components/ui/Navbar.astro"
+import Footer from "../components/ui/Footer.astro"
+import { CartSummary } from "../components/islands/cart/CartSummary"
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cart - MyEcommerce</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <Navbar />
+    <main class="max-w-3xl mx-auto px-4 py-10">
+      <h1 class="text-2xl font-bold text-gray-900 mb-6">Shopping Cart</h1>
+      <CartSummary client:load />
+    </main>
+    <Footer />
+  </body>
+</html>

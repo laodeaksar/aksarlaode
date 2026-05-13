@@ -1,0 +1,46 @@
+---
+import Navbar from "../../components/ui/Navbar.astro"
+import Footer from "../../components/ui/Footer.astro"
+import ProductCard from "../../components/ui/ProductCard.astro"
+import { AppRuntime } from "../../lib/effect/runtime"
+import { productsApi } from "../../lib/api/products"
+
+const cookie = Astro.request.headers.get("cookie") ?? ""
+const params = Object.fromEntries(Astro.url.searchParams)
+const exit   = await AppRuntime.runPromiseExit(productsApi.list(params, cookie))
+const result = exit._tag === "Success" ? exit.value : { items: [], total: 0 }
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products - MyEcommerce</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <Navbar />
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Products</h1>
+        <span class="text-sm text-gray-500">{result.total} products</span>
+      </div>
+      {result.items.length > 0 ? (
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          {result.items.map(p => (
+            <ProductCard
+              id={p.id}
+              name={p.name}
+              slug={p.slug}
+              price={p.price}
+              imageUrl={p.imageUrls?.[0]}
+              inStock={(p.stock ?? 0) > 0}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500 text-center py-20">No products found.</p>
+      )}
+    </main>
+    <Footer />
+  </body>
+</html>

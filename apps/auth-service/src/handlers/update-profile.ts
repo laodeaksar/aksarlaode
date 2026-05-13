@@ -3,6 +3,7 @@ import type { Context }    from "hono"
 import { userRepository }  from "@/repository/user.repository"
 import { UpdateProfileSchema } from "@repo/common"
 import { AuthError, ValidationError, NotFoundError, toErrorResponse } from "@repo/common/errors"
+import { ok }              from "@repo/common/response"
 import type { AppEnv }    from "@/types"
 
 export const updateProfileHandler = async (c: Context<AppEnv>) => {
@@ -39,5 +40,5 @@ export const updateProfileHandler = async (c: Context<AppEnv>) => {
     return c.json(body, status as any)
   }
 
-  return c.json({ user: result.value })
+  return c.json(ok(result.value))
 }

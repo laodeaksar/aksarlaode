@@ -6,6 +6,7 @@ import { sessionRepository }    from "@/repository/session.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
 import { ResetPasswordSchema }  from "@repo/common"
 import { ValidationError, AuthError, GoneError, NotFoundError, toErrorResponse } from "@repo/common/errors"
+import { message }              from "@repo/common/response"
 import type { AppEnv }          from "@/types"
 
 export const resetPasswordHandler = async (c: Context<AppEnv>) => {
@@ -32,16 +33,10 @@ export const resetPasswordHandler = async (c: Context<AppEnv>) => {
     const user = yield* userRepository.findById(record.userId)
     if (!user) return yield* Effect.fail(new NotFoundError("User"))
 
-    // 5. Hash new password
+    // 5. Hash new password, persist, consume token, revoke all sessions
     const newHash = yield* hashPassword(input.newPassword)
-
-    // 6. Persist new password
     yield* userRepository.updatePasswordHash(user.id, newHash)
-
-    // 7. Consume the token (one-time use)
     yield* resetTokenRepository.deleteByToken(input.token)
-
-    // 8. Revoke ALL active sessions
     yield* sessionRepository.deleteAllByUserId(user.id)
   })
 
@@ -55,5 +50,5 @@ export const resetPasswordHandler = async (c: Context<AppEnv>) => {
   c.header("Set-Cookie",
     `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
   )
-  return c.json({ message: "Password reset successful. Please log in with your new password." })
+  return c.json(message("Password reset successful. Please log in with your new password."))
 }

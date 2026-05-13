@@ -5,6 +5,7 @@ import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
 import { ChangePasswordSchema } from "@repo/common"
 import { AuthError, NotFoundError, ValidationError, toErrorResponse } from "@repo/common/errors"
+import { message }           from "@repo/common/response"
 import type { AppEnv }       from "@/types"
 
 export const changePasswordHandler = async (c: Context<AppEnv>) => {
@@ -46,5 +47,5 @@ export const changePasswordHandler = async (c: Context<AppEnv>) => {
   c.header("Set-Cookie",
     `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
   )
-  return c.json({ message: "Password changed. Please log in again." })
+  return c.json(message("Password changed. Please log in again."))
 }

@@ -2,6 +2,7 @@ import { Effect }             from "effect"
 import type { Context }       from "hono"
 import { sessionRepository }  from "@/repository/session.repository"
 import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
+import { message }            from "@repo/common/response"
 import type { AppEnv }        from "@/types"
 
 export const revokeSessionHandler = async (c: Context<AppEnv>) => {
@@ -25,5 +26,5 @@ export const revokeSessionHandler = async (c: Context<AppEnv>) => {
     return c.json(body, status as any)
   }
 
-  return c.json({ message: "Session revoked" })
+  return c.json(message("Session revoked"))
 }

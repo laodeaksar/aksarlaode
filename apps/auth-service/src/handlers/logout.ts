@@ -1,6 +1,7 @@
 import { Effect }             from "effect"
 import type { Context }       from "hono"
 import { sessionRepository }  from "@/repository/session.repository"
+import { message }            from "@repo/common/response"
 import type { AppEnv }        from "@/types"
 
 export const logoutHandler = async (c: Context<AppEnv>) => {
@@ -9,7 +10,7 @@ export const logoutHandler = async (c: Context<AppEnv>) => {
   const refreshToken = match?.[1] ? decodeURIComponent(match[1]) : null
 
   if (refreshToken) {
-    // Best-effort: invalidate the session in DB, ignore DB errors
+    // Best-effort: invalidate session in DB, ignore errors
     await Effect.runPromise(
       sessionRepository.deleteByToken(refreshToken).pipe(Effect.orElse(() => Effect.void))
     )
@@ -18,5 +19,5 @@ export const logoutHandler = async (c: Context<AppEnv>) => {
   c.header("Set-Cookie",
     `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
   )
-  return c.json({ message: "Logged out" })
+  return c.json(message("Logged out"))
 }

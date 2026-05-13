@@ -7,27 +7,36 @@
     "pnpm": ">=9"
   },
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
+    "build":     "turbo run build",
+    "dev":       "turbo run dev",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "lint":      "turbo run lint",
+
+    "test":          "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "test:watch":    "turbo run test:watch",
+
+    "ci":        "turbo run typecheck test",
+    "ci:full":   "turbo run typecheck lint test:coverage",
+
+    "clean":       "turbo run clean && rm -rf node_modules",
+
     "db:generate": "turbo run db:generate --filter=@repo/database",
     "db:migrate":  "turbo run db:migrate  --filter=@repo/database",
     "db:seed":     "turbo run db:seed     --filter=@repo/database",
     "db:studio":   "turbo run db:studio   --filter=@repo/database",
-    "infra:up": "docker compose -f docker/docker-compose.yml up -d",
-    "infra:down": "docker compose -f docker/docker-compose.yml down",
-    "infra:logs": "docker compose -f docker/docker-compose.yml logs -f",
+
+    "infra:up":    "docker compose -f docker/docker-compose.yml up -d",
+    "infra:down":  "docker compose -f docker/docker-compose.yml down",
+    "infra:logs":  "docker compose -f docker/docker-compose.yml logs -f",
     "infra:reset": "docker compose -f docker/docker-compose.yml down -v && pnpm infra:up"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "prettier": "^3.0.0",
-    "turbo": "^2.9.12",
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "prettier":    "^3.0.0",
+    "turbo":       "^2.9.12",
+    "typescript":  "^5.4.0",
+    "vitest":      "^1.6.0"
   },
   "dependencies": {
     "pnpm": "^9.1.0"

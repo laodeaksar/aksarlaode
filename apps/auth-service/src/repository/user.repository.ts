@@ -27,6 +27,16 @@ const create = (data: {
     catch: (e) => new DbError({ cause: e }),
   })
 
+const updatePasswordHash = (id: string, passwordHash: string) =>
+  Effect.tryPromise({
+    try:   () => db.update(schema.users)
+                   .set({ passwordHash, updatedAt: new Date() })
+                   .where(eq(schema.users.id, id))
+                   .returning()
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
 const update = (
   id:   string,
   data: { name?: string; phone?: string; avatarUrl?: string }
@@ -40,4 +50,4 @@ const update = (
     catch: (e) => new DbError({ cause: e }),
   })
 
-export const userRepository = { findByEmail, findById, create, update }
+export const userRepository = { findByEmail, findById, create, update, updatePasswordHash }

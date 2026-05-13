@@ -29,4 +29,10 @@ const deleteByToken = (token: string) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
-export const sessionRepository = { create, findByToken, deleteByToken }
+const deleteAllByUserId = (userId: string) =>
+  Effect.tryPromise({
+    try:   () => db.delete(schema.sessions).where(eq(schema.sessions.userId, userId)),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+export const sessionRepository = { create, findByToken, deleteByToken, deleteAllByUserId }

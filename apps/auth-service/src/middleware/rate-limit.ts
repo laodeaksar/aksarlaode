@@ -39,5 +39,6 @@ function createRateLimiter(maxRequests: number, windowMs: number): MiddlewareHan
   }
 }
 
-export const loginRateLimiter    = createRateLimiter(10, 15 * 60 * 1000)
-export const registerRateLimiter = createRateLimiter(5,  60 * 60 * 1000)
+export const loginRateLimiter          = createRateLimiter(10, 15 * 60 * 1000)
+export const registerRateLimiter       = createRateLimiter(5,  60 * 60 * 1000)
+export const forgotPasswordRateLimiter = createRateLimiter(5,  60 * 60 * 1000)

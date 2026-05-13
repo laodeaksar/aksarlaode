@@ -1,13 +1,15 @@
-import { relations } from "drizzle-orm"
-import { users }     from "./users"
-import { sessions }  from "./sessions"
-import { products }  from "./products"
-import { categories } from "./categories"
-import { payments }  from "./payments"
+import { relations }            from "drizzle-orm"
+import { users }                from "./users"
+import { sessions }             from "./sessions"
+import { passwordResetTokens }  from "./password-reset-tokens"
+import { products }             from "./products"
+import { categories }           from "./categories"
+import { payments }             from "./payments"
 
 export const usersRelations = relations(users, ({ many }) => ({
-  sessions: many(sessions),
-  payments: many(payments),
+  sessions:            many(sessions),
+  payments:            many(payments),
+  passwordResetTokens: many(passwordResetTokens),
 }))
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

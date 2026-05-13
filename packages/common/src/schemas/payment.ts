@@ -38,6 +38,15 @@ export const LoginSchema = z.object({
   password: z.string().min(1),
 })
 
+export const UpdateProfileSchema = z.object({
+  name:      z.string().min(2).max(100).optional(),
+  phone:     z.string().min(7).max(20).optional(),
+  avatarUrl: z.string().url().max(500).optional(),
+}).refine(
+  (data) => Object.keys(data).some(k => data[k as keyof typeof data] !== undefined),
+  { message: "At least one field must be provided" }
+)
+
 export const ProductFiltersSchema = z.object({
   search:     z.string().optional(),
   categoryId: z.string().uuid().optional(),

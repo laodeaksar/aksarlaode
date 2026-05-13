@@ -27,4 +27,17 @@ const create = (data: {
     catch: (e) => new DbError({ cause: e }),
   })
 
-export const userRepository = { findByEmail, findById, create }
+const update = (
+  id:   string,
+  data: { name?: string; phone?: string; avatarUrl?: string }
+) =>
+  Effect.tryPromise({
+    try:   () => db.update(schema.users)
+                   .set({ ...data, updatedAt: new Date() })
+                   .where(eq(schema.users.id, id))
+                   .returning()
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+export const userRepository = { findByEmail, findById, create, update }

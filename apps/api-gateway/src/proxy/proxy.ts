@@ -1,54 +1,67 @@
-import { Effect } from "effect"
 import type { Context } from "hono"
+import { env }         from "@repo/env/gateway"
 import { SERVICE_REGISTRY } from "./service-registry"
-import { env } from "@repo/env"
-import type { AppEnv } from "@/types/context"
+import type { AppEnv }      from "@/types/context"
 
 export async function proxyTo(
   service: keyof typeof SERVICE_REGISTRY,
   c: Context<AppEnv>
-) {
-  const baseUrl = SERVICE_REGISTRY[service]
-  const url     = `${baseUrl}${c.req.path.replace(`/${service.toLowerCase()}`, "")}`
+): Promise<Response> {
+  const { url: baseUrl, prefix } = SERVICE_REGISTRY[service]
 
-  const upstreamRequest = new Request(url, {
+  // Strip the gateway-side prefix and preserve the rest of the path.
+  // e.g. GET /products/123?color=red  →  http://product-service:3002/123?color=red
+  const strippedPath = c.req.path.replace(prefix, "") || "/"
+  const requestUrl   = new URL(c.req.url)
+  const targetUrl    = new URL(strippedPath, baseUrl)
+  targetUrl.search   = requestUrl.search   // forward query params as-is
+
+  let body: ArrayBuffer | null = null
+  if (!["GET", "HEAD"].includes(c.req.method)) {
+    body = await c.req.arrayBuffer()
+  }
+
+  const upstreamRequest = new Request(targetUrl.toString(), {
     method:  c.req.method,
     headers: buildUpstreamHeaders(c),
-    body:    ["GET", "HEAD"].includes(c.req.method) ? null : await c.req.arrayBuffer(),
+    body,
   })
 
-  const program = Effect.tryPromise({
-    try:   () => fetch(upstreamRequest),
-    catch: (e) => ({ type: "UPSTREAM_ERROR" as const, cause: e }),
-  })
+  try {
+    return await fetch(upstreamRequest)
+  } catch (e) {
+    console.error(JSON.stringify({
+      event:     "upstream_error",
+      service,
+      target:    targetUrl.toString(),
+      requestId: c.var.requestId,
+      error:     String(e),
+    }))
 
-  const result = await Effect.runPromiseExit(program)
-
-  if (result._tag === "Failure") {
     return c.json(
       { error: "Service unavailable", code: "UPSTREAM_ERROR", requestId: c.var.requestId },
       502
-    )
+    ) as unknown as Response
   }
-
-  return result.value // pass upstream response directly
 }
 
+// ── Header construction ───────────────────────────────────────────────────────
 function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   const headers = new Headers(c.req.raw.headers)
 
-  // Strip external-facing headers
+  // Strip external-facing headers — never forward raw auth to internal services
   headers.delete("Authorization")
   headers.delete("Cookie")
 
-  // Inject internal context
+  // Inject validated user context — internal services trust these headers
   const user = c.var.user
   if (user) {
-    headers.set("x-user-id",      user.id)
-    headers.set("x-user-role",    user.role)
-    headers.set("x-session-id",   user.sessionId)
+    headers.set("x-user-id",    user.id)
+    headers.set("x-user-role",  user.role)
+    headers.set("x-session-id", user.sessionId)
   }
 
+  // Propagate request tracing and service authentication
   headers.set("x-request-id",    c.var.requestId)
   headers.set("x-service-token", env.INTERNAL_SERVICE_TOKEN)
 

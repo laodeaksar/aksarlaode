@@ -1,34 +1,63 @@
-// ── Public routes (no auth required) ─────────────────────
-export const PUBLIC_ROUTES = [
-  { path: "/auth/login",          method: "POST" },
-  { path: "/auth/register",       method: "POST" },
-  { path: "/auth/refresh",        method: "POST" },
-  { path: "/products",            method: "GET"  },
-  { path: "/products/:id",        method: "GET"  },
-  { path: "/health",              method: "GET"  },
-] as const
+// ── Public routes (no JWT required) ──────────────────────────────────────────
+// Method "*" means any HTTP method is public for that path.
+export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
+  // Health check
+  { path: "/health",                  method: "*"    },
 
-// ── Webhook routes (HMAC only, no JWT) ───────────────────
-export const WEBHOOK_ROUTES = ["/webhooks"] as const
+  // Auth — unauthenticated flows
+  { path: "/auth/login",              method: "POST" },
+  { path: "/auth/register",           method: "POST" },
+  { path: "/auth/refresh",            method: "POST" },
+  { path: "/auth/forgot-password",    method: "POST" },
+  { path: "/auth/reset-password",     method: "POST" },
 
-// ── RBAC: route prefix → minimum role ─────────────────────
+  // Product catalogue — read-only public
+  { path: "/products",                method: "GET"  },
+  { path: "/products/:id",            method: "GET"  },
+  { path: "/products/slug/:slug",     method: "GET"  },
+]
+
+// ── Webhook routes (HMAC-verified, no JWT) ────────────────────────────────────
+export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks"]
+
+// ── Role hierarchy (higher number = more privileged) ─────────────────────────
 export const ROLE_HIERARCHY = {
   CUSTOMER: 0,
   ADMIN:    1,
   SERVICE:  2,
 } as const
 
-export const ROUTE_PERMISSIONS: Array<{
+// ── RBAC rules — first matching rule wins ─────────────────────────────────────
+// pattern: regex tested against c.req.path
+// method:  HTTP verb or "*" for any
+// minRole: minimum role required
+export const ROUTE_PERMISSIONS: ReadonlyArray<{
   pattern: RegExp
   method:  string
   minRole: keyof typeof ROLE_HIERARCHY
 }> = [
-  { pattern: /^\\/admin/,            method: "*",    minRole: "ADMIN"    },
-  { pattern: /^\\/orders/,           method: "POST", minRole: "CUSTOMER" },
-  { pattern: /^\\/orders\\/.+/,       method: "GET",  minRole: "CUSTOMER" },
-  { pattern: /^\\/orders/,           method: "GET",  minRole: "ADMIN"    }, // list all
-  { pattern: /^\\/products/,         method: "POST", minRole: "ADMIN"    },
-  { pattern: /^\\/products\\/.+/,     method: "PUT",  minRole: "ADMIN"    },
-  { pattern: /^\\/products\\/.+/,     method: "DELETE", minRole: "ADMIN"  },
-  { pattern: /^\\/payments/,         method: "*",    minRole: "CUSTOMER" },
+  // Admin panel
+  { pattern: /^\/admin/,              method: "*",      minRole: "ADMIN"    },
+
+  // Products — writes are admin-only, reads are public (handled above)
+  { pattern: /^\/products/,           method: "POST",   minRole: "ADMIN"    },
+  { pattern: /^\/products\/.+/,       method: "PUT",    minRole: "ADMIN"    },
+  { pattern: /^\/products\/.+/,       method: "PATCH",  minRole: "ADMIN"    },
+  { pattern: /^\/products\/.+/,       method: "DELETE", minRole: "ADMIN"    },
+
+  // Orders — customers can only see their own (ownerOrAdmin middleware handles that)
+  { pattern: /^\/orders$/,            method: "POST",   minRole: "CUSTOMER" },
+  { pattern: /^\/orders\/.+/,         method: "GET",    minRole: "CUSTOMER" },
+  { pattern: /^\/orders\/.+\/cancel/, method: "POST",   minRole: "CUSTOMER" },
+  { pattern: /^\/orders$/,            method: "GET",    minRole: "ADMIN"    },
+  { pattern: /^\/orders\/.+\/status/, method: "PATCH",  minRole: "ADMIN"    },
+
+  // Payments — customer initiates, reads own
+  { pattern: /^\/payments/,           method: "*",      minRole: "CUSTOMER" },
+
+  // Auth — session management requires login
+  { pattern: /^\/auth\/sessions/,     method: "*",      minRole: "CUSTOMER" },
+  { pattern: /^\/auth\/me/,           method: "*",      minRole: "CUSTOMER" },
+  { pattern: /^\/auth\/logout/,       method: "POST",   minRole: "CUSTOMER" },
+  { pattern: /^\/auth\/change-password/, method: "POST", minRole: "CUSTOMER"},
 ]

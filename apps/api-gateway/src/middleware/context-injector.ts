@@ -1,12 +1,18 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv }           from "@/types/context"
+import type { AppEnv, User }     from "@/types/context"
 
+// Promotes the authPayload (set by authResolver) into a fully-typed User.
+//
+// authResolver sets authPayload to one of:
+//   null              — public route, no auth needed
+//   User              — valid JWT (verifyJwt already returns { id, role, sessionId })
+//   { type: "webhook" } — HMAC-verified Midtrans webhook
 export const contextInjector: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const payload = c.var.authPayload as any
+  const payload = c.var.authPayload as User | { type: "webhook" } | null
 
-  if (payload && payload.sub && payload.role) {
+  if (payload && "id" in payload && payload.id && payload.role) {
     c.set("user", {
-      id:        payload.sub,
+      id:        payload.id,
       role:      payload.role,
       sessionId: payload.sessionId ?? "",
     })

@@ -1,6 +1,6 @@
-import { Effect } from "effect"
+import { Effect }              from "effect"
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "@/types/context"
+import type { AppEnv }          from "@/types/context"
 import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions"
 import { verifyJwt }  from "@/lib/jwt"
 import { verifyHmac } from "@/lib/hmac"
@@ -9,13 +9,13 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const path   = c.req.path
   const method = c.req.method
 
-  // ── 1. Public routes — pass straight through ───────────
+  // ── 1. Public routes — pass straight through ──────────────────────────────
   if (isPublic(path, method)) {
     c.set("authPayload", null)
     return next()
   }
 
-  // ── 2. Webhook routes — HMAC signature only ────────────
+  // ── 2. Webhook routes — HMAC signature only ───────────────────────────────
   if (isWebhook(path)) {
     const body      = await c.req.text()
     const signature = c.req.header("x-midtrans-signature") ?? ""
@@ -33,13 +33,13 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     return next()
   }
 
-  // ── 3. Protected routes — JWT ──────────────────────────
+  // ── 3. Protected routes — Bearer JWT ─────────────────────────────────────
   const authHeader = c.req.header("Authorization")
-  const token      = authHeader?.replace("Bearer ", "")
+  const token      = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
 
   if (!token) {
     return c.json(
-      { error: "Missing token", code: "UNAUTHORIZED", requestId: c.var.requestId },
+      { error: "Missing or malformed Authorization header", code: "UNAUTHORIZED", requestId: c.var.requestId },
       401
     )
   }
@@ -47,21 +47,27 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const result = await Effect.runPromiseExit(verifyJwt(token))
 
   if (result._tag === "Failure") {
-    const code = result.cause.error === "TOKEN_EXPIRED" ? "TOKEN_EXPIRED" : "UNAUTHORIZED"
+    // Distinguish between expired (token was valid but stale) and invalid (bad sig / malformed)
+    const tag  = (result.cause.error as { _tag?: string })?._tag ?? ""
+    const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED"
     return c.json(
-      { error: "Invalid token", code, requestId: c.var.requestId },
+      { error: "Invalid or expired token", code, requestId: c.var.requestId },
       401
     )
   }
 
+  // result.value is already a typed User ({ id, role, sessionId })
   c.set("authPayload", result.value)
   await next()
 }
 
-function isPublic(path: string, method: string) {
-  return PUBLIC_ROUTES.some(r => r.path === path && (r.method === method || r.method === "*"))
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function isPublic(path: string, method: string): boolean {
+  return PUBLIC_ROUTES.some(
+    r => r.path === path && (r.method === method || r.method === "*")
+  )
 }
 
-function isWebhook(path: string) {
+function isWebhook(path: string): boolean {
   return WEBHOOK_ROUTES.some(r => path.startsWith(r))
 }

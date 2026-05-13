@@ -1,77 +1,170 @@
 name: my-ecommerce-prod
 
+# Production compose — application services only.
+# Databases (PostgreSQL, MongoDB, Redis) should be managed services in production
+# (e.g. AWS RDS, DocumentDB, ElastiCache). Configure their URLs in .env.production.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.prod.yml build
+#   docker compose -f docker/docker-compose.prod.yml up -d
+#
+# Tag overrides:
+#   TAG=v1.2.3 docker compose -f docker/docker-compose.prod.yml up -d
+
+x-defaults: &defaults
+  restart: always
+  networks:
+    - ec_net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file:  "5"
+
 services:
 
+  # ── API Gateway ──────────────────────────────────────────────────────────
   api-gateway:
+    <<: *defaults
     build:
-      context: ..
+      context:    ..
       dockerfile: docker/services/api-gateway.Dockerfile
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-api-gateway:${TAG:-latest}
     container_name: ec_api_gateway
-    restart: always
     ports:
       - "3000:3000"
     env_file: ../.env.production
     depends_on:
-      - auth-service
-      - product-service
-      - order-service
-      - payment-service
+      auth-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
     healthcheck:
-      test:     ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
-      timeout:  5s
-      retries:  3
+      test:         ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval:     10s
+      timeout:      5s
+      retries:      3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   "1.0"
+          memory: 512M
 
+  # ── Auth Service ─────────────────────────────────────────────────────────
   auth-service:
+    <<: *defaults
     build:
-      context: ..
+      context:    ..
       dockerfile: docker/services/auth.Dockerfile
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-auth:${TAG:-latest}
     container_name: ec_auth
-    restart: always
-    env_file: ../.env.production
     expose:
       - "3001"
-
-  product-service:
-    build:
-      context: ..
-      dockerfile: docker/services/product.Dockerfile
-    container_name: ec_product
-    restart: always
     env_file: ../.env.production
+    healthcheck:
+      test:         ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval:     10s
+      timeout:      5s
+      retries:      3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   "0.5"
+          memory: 256M
+
+  # ── Product Service ──────────────────────────────────────────────────────
+  product-service:
+    <<: *defaults
+    build:
+      context:    ..
+      dockerfile: docker/services/product.Dockerfile
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-product:${TAG:-latest}
+    container_name: ec_product
     expose:
       - "3002"
-
-  order-service:
-    build:
-      context: ..
-      dockerfile: docker/services/order.Dockerfile
-    container_name: ec_order
-    restart: always
     env_file: ../.env.production
+    healthcheck:
+      test:         ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval:     10s
+      timeout:      5s
+      retries:      3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   "0.5"
+          memory: 256M
+
+  # ── Order Service ────────────────────────────────────────────────────────
+  order-service:
+    <<: *defaults
+    build:
+      context:    ..
+      dockerfile: docker/services/order.Dockerfile
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-order:${TAG:-latest}
+    container_name: ec_order
     expose:
       - "3003"
-
-  payment-service:
-    build:
-      context: ..
-      dockerfile: docker/services/payment.Dockerfile
-    container_name: ec_payment
-    restart: always
     env_file: ../.env.production
+    healthcheck:
+      test:         ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval:     10s
+      timeout:      5s
+      retries:      3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   "0.5"
+          memory: 256M
+
+  # ── Payment Service ──────────────────────────────────────────────────────
+  payment-service:
+    <<: *defaults
+    build:
+      context:    ..
+      dockerfile: docker/services/payment.Dockerfile
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-payment:${TAG:-latest}
+    container_name: ec_payment
     expose:
       - "3004"
+    env_file: ../.env.production
+    healthcheck:
+      test:         ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval:     10s
+      timeout:      5s
+      retries:      3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   "0.5"
+          memory: 256M
 
+  # ── Email Worker ─────────────────────────────────────────────────────────
+  # Runs 2 replicas for high availability and throughput.
+  # Does not expose a port — internal worker only.
   email-worker:
+    <<: *defaults
     build:
-      context: ..
+      context:    ..
       dockerfile: docker/services/email-worker.Dockerfile
-    container_name: ec_email_worker
-    restart: always
+    image: ${REGISTRY:-ghcr.io/your-org}/ec-email-worker:${TAG:-latest}
     env_file: ../.env.production
     deploy:
-      replicas: 2     # run 2 worker instances
+      replicas: 2
+      resources:
+        limits:
+          cpus:   "0.25"
+          memory: 128M
 
 networks:
-  default:
-    name: ec_internal
+  ec_net:
+    name: ec_prod_internal
+    driver: bridge

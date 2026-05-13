@@ -16,10 +16,10 @@
     "test:coverage": "turbo run test:coverage",
     "test:watch":    "turbo run test:watch",
 
-    "ci":        "turbo run typecheck test",
-    "ci:full":   "turbo run typecheck lint test:coverage",
+    "ci":      "turbo run typecheck test",
+    "ci:full": "turbo run typecheck lint test:coverage",
 
-    "clean":       "turbo run clean && rm -rf node_modules",
+    "clean": "turbo run clean && rm -rf node_modules",
 
     "db:generate": "turbo run db:generate --filter=@repo/database",
     "db:migrate":  "turbo run db:migrate  --filter=@repo/database",
@@ -29,7 +29,16 @@
     "infra:up":    "docker compose -f docker/docker-compose.yml up -d",
     "infra:down":  "docker compose -f docker/docker-compose.yml down",
     "infra:logs":  "docker compose -f docker/docker-compose.yml logs -f",
-    "infra:reset": "docker compose -f docker/docker-compose.yml down -v && pnpm infra:up"
+    "infra:reset": "docker compose -f docker/docker-compose.yml down -v && pnpm infra:up",
+
+    "infra:tools": "docker compose -f docker/docker-compose.yml --profile tools up -d",
+    "infra:full":  "docker compose -f docker/docker-compose.yml --profile full --profile tools up -d",
+    "infra:ps":    "docker compose -f docker/docker-compose.yml ps",
+
+    "prod:up":    "docker compose -f docker/docker-compose.prod.yml up -d",
+    "prod:down":  "docker compose -f docker/docker-compose.prod.yml down",
+    "prod:build": "docker compose -f docker/docker-compose.prod.yml build",
+    "prod:logs":  "docker compose -f docker/docker-compose.prod.yml logs -f"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

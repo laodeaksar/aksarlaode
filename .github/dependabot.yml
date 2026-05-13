@@ -1,0 +1,48 @@
+version: 2
+
+updates:
+
+  # ── pnpm workspace dependencies ─────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory:  /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    groups:
+      # Group all patch/minor updates into one PR per ecosystem
+      production-deps:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      dev-deps:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Turborepo and TypeScript — update manually with care
+      - dependency-name: turbo
+        update-types: ["version-update:semver-major"]
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # Effect-TS — has frequent minor releases with breaking changes
+      - dependency-name: effect
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    open-pull-requests-limit: 5
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory:  /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: "Asia/Jakarta"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 3

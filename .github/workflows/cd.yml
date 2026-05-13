@@ -1,0 +1,189 @@
+name: CD
+
+# Builds and pushes all Docker images on every merge to main.
+# On a published release (vX.Y.Z tag), also tags images with the version number.
+#
+# Required repository secrets:
+#   (none mandatory — GITHUB_TOKEN is automatically available for GHCR)
+#
+# Optional secrets for Turborepo remote cache:
+#   TURBO_TOKEN
+#   TURBO_TEAM
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false   # never cancel a deploy mid-flight
+
+env:
+  REGISTRY: ghcr.io
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM:  ${{ secrets.TURBO_TEAM }}
+
+jobs:
+
+  # ── Quality gate (re-runs full CI so main is always provably green) ─────────
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  # ── Compute shared image metadata ────────────────────────────────────────────
+  meta:
+    name: Image metadata
+    runs-on: ubuntu-latest
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+      version:   ${{ steps.vars.outputs.version }}
+      tags_suffix: ${{ steps.vars.outputs.tags_suffix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute tags
+        id: vars
+        run: |
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
+
+          # Use semver tag on releases, sha on regular pushes
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="sha-${SHA_SHORT}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tags_suffix=${VERSION}" >> $GITHUB_OUTPUT
+
+  # ── Build & push Docker images (parallel matrix) ─────────────────────────────
+  build-push:
+    name: Build · ${{ matrix.service }}
+    needs: [ci, meta]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # required to push to GHCR
+
+    strategy:
+      fail-fast: false   # build all images even if one fails
+      matrix:
+        include:
+          - service:    api-gateway
+            dockerfile: docker/services/api-gateway.Dockerfile
+            image:      ec-api-gateway
+
+          - service:    auth-service
+            dockerfile: docker/services/auth.Dockerfile
+            image:      ec-auth
+
+          - service:    product-service
+            dockerfile: docker/services/product.Dockerfile
+            image:      ec-product
+
+          - service:    order-service
+            dockerfile: docker/services/order.Dockerfile
+            image:      ec-order
+
+          - service:    payment-service
+            dockerfile: docker/services/payment.Dockerfile
+            image:      ec-payment
+
+          - service:    email-worker
+            dockerfile: docker/services/email-worker.Dockerfile
+            image:      ec-email-worker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Docker setup ────────────────────────────────────────────────────────
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Compute full image tags ─────────────────────────────────────────────
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ needs.meta.outputs.version }}
+            type=sha,prefix=sha-,format=short
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+
+      # ── Build & push with GHA layer cache ───────────────────────────────────
+      # Layer cache is scoped per service so builds don't pollute each other's cache.
+      - uses: docker/build-push-action@v5
+        id: build
+        with:
+          context:    .
+          file:       ${{ matrix.dockerfile }}
+          push:       true
+          tags:       ${{ steps.meta.outputs.tags }}
+          labels:     ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to:   type=gha,scope=${{ matrix.service }},mode=max
+          provenance: false   # omit SLSA provenance for smaller manifests
+
+      - name: Image digest
+        run: echo "Pushed ${{ matrix.image }} → ${{ steps.build.outputs.digest }}"
+
+  # ── Post-build summary ───────────────────────────────────────────────────────
+  summary:
+    name: Summary
+    needs: [meta, build-push]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Write summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ needs.meta.outputs.sha_short }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version tag** | \`${{ needs.meta.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Registry** | \`${{ env.REGISTRY }}/${{ github.repository_owner }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images pushed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for img in ec-api-gateway ec-auth ec-product ec-order ec-payment ec-email-worker; do
+            echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${img}:${{ needs.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # ── Deploy (stub — wire up your deployment target here) ──────────────────────
+  # Common targets:
+  #   Railway:       railway up --service <name>
+  #   Fly.io:        flyctl deploy --app <name> --image <image>
+  #   DigitalOcean:  doctl apps update <app-id> --spec .do/app.yaml
+  #   Kubernetes:    kubectl set image deployment/<name> <container>=<image>
+  #   Self-hosted:   ssh into server and docker compose pull + up
+  deploy:
+    name: Deploy
+    needs: [meta, build-push]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "⚙️  Wire up your deployment provider here."
+          echo "   Images are available at:"
+          echo "   ${{ env.REGISTRY }}/${{ github.repository_owner }}/ec-api-gateway:${{ needs.meta.outputs.version }}"
+          echo ""
+          echo "   Suggested next steps:"
+          echo "   1. Add DEPLOY_SSH_KEY secret and ssh-deploy to your server"
+          echo "   2. Or add RAILWAY_TOKEN and deploy with Railway CLI"
+          echo "   3. Or add DO_API_TOKEN and deploy with DigitalOcean App Platform"

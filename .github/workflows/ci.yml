@@ -1,0 +1,209 @@
+name: CI
+
+# Runs on every PR and push to main/develop.
+# Also callable from the CD workflow via workflow_call so we never duplicate logic.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_call:
+    secrets:
+      TURBO_TOKEN:
+        required: false
+      TURBO_TEAM:
+        required: false
+
+# Cancel in-flight runs for the same branch on new pushes (except main)
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # Optional Turborepo remote cache — set these secrets to share cache across
+  # developers and CI machines. Omitting them falls back to local-only caching.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM:  ${{ secrets.TURBO_TEAM }}
+
+jobs:
+
+  # ── Install & cache dependencies ────────────────────────────────────────────
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      # Expose pnpm store path so downstream jobs can restore the same cache key
+      store: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Turbo needs at least 2 commits for affected detection
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Cache the full node_modules for downstream jobs in this workflow run
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node_modules-${{ runner.os }}-${{ github.run_id }}
+
+  # ── Typecheck ───────────────────────────────────────────────────────────────
+  typecheck:
+    name: Typecheck
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node_modules-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Typecheck all packages
+        run: pnpm typecheck
+
+  # ── Lint ────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node_modules-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Lint all packages
+        run: pnpm lint
+        # Lint is best-effort until ESLint configs are wired up in all packages
+        continue-on-error: true
+
+  # ── Test ────────────────────────────────────────────────────────────────────
+  test:
+    name: Test
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node_modules-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ github.sha }}
+          path: apps/*/coverage/
+          retention-days: 14
+
+  # ── Build ───────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node_modules-${{ runner.os }}-${{ github.run_id }}
+
+      - name: Build all packages
+        run: pnpm build
+
+  # ── Summary gate ────────────────────────────────────────────────────────────
+  # A single status check that branch protection rules can target instead of
+  # listing every individual job. Fails if any required job failed.
+  ci-gate:
+    name: CI Gate
+    if: always()
+    needs: [typecheck, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          results=("${{ needs.typecheck.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}")
+          for result in "${results[@]}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "❌ Required job failed: $result"
+              exit 1
+            fi
+          done
+          echo "✅ All required checks passed"

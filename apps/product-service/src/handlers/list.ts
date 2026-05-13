@@ -1,8 +1,8 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { productRepository }  from "../repository/product.repository"
+import { productRepository }  from "@/repository/product.repository"
 import { ProductFiltersSchema } from "@repo/common"
-import type { AppEnv } from "../types"
+import type { AppEnv } from "@/types"
 
 export const listHandler = async (c: Context<AppEnv>) => {
   const query = c.req.query()

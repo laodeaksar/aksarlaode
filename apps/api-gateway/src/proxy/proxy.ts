@@ -2,7 +2,7 @@ import { Effect } from "effect"
 import type { Context } from "hono"
 import { SERVICE_REGISTRY } from "./service-registry"
 import { env } from "@repo/env"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 export async function proxyTo(
   service: keyof typeof SERVICE_REGISTRY,

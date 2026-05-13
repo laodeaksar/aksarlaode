@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery }        from "@tanstack/react-query"
-import { customersApi }    from "../../lib/api"
+import { customersApi }    from "@/lib/api"
 
 export const Route = createFileRoute("/customers/$userId")({
   component: CustomerDetailPage,

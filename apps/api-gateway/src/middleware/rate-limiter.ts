@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 // sliding window counters stored in Redis (via Cloudflare KV or Upstash)
 const BURST_LIMIT     = 20   // per second

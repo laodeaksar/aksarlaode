@@ -1,5 +1,5 @@
 import { apiFetch } from "./client"
-import type { LoginInput, RegisterInput } from "../schemas/forms"
+import type { LoginInput, RegisterInput } from "@/schemas/forms"
 
 export type AuthResponse = {
   user:        { id: string; name: string; email: string; role: string }

@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { orderRepository } from "../repository/order.repository"
-import type { AppEnv } from "../types"
+import { orderRepository } from "@/repository/order.repository"
+import type { AppEnv } from "@/types"
 
 export const listHandler = async (c: Context<AppEnv>) => {
   const userId = c.req.header("x-user-id")!

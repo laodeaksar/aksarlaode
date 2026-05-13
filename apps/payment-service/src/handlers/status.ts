@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { paymentRepository } from "../repository/payment.repository"
-import type { AppEnv } from "../types"
+import { paymentRepository } from "@/repository/payment.repository"
+import type { AppEnv } from "@/types"
 
 export const statusHandler = async (c: Context<AppEnv>) => {
   const orderId = c.req.param("orderId")

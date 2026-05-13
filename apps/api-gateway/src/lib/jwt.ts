@@ -1,6 +1,6 @@
 import { Effect, Data } from "effect"
 import { env } from "@repo/env"
-import type { User } from "../types/context"
+import type { User } from "@/types/context"
 
 // ── Error types ────────────────────────────────────────────
 class TokenExpiredError extends Data.TaggedError("TokenExpiredError") {}

@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
   const { method, path } = c.req

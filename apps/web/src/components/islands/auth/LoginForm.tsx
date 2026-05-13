@@ -2,10 +2,10 @@ import { useForm }         from "react-hook-form"
 import { zodResolver }     from "@hookform/resolvers/zod"
 import { useState }        from "react"
 import { Effect }          from "effect"
-import { AppRuntime }      from "../../../lib/effect/runtime"
-import { authApi }         from "../../../lib/api/auth"
-import { loginSchema, type LoginInput } from "../../../lib/schemas/forms"
-import { AuthError }       from "../../../lib/effect/errors"
+import { AppRuntime }      from "@/lib/effect/runtime"
+import { authApi }         from "@/lib/api/auth"
+import { loginSchema, type LoginInput } from "@/lib/schemas/forms"
+import { AuthError }       from "@/lib/effect/errors"
 
 export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null)

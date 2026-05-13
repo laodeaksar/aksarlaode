@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 export const responseNormalizer: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next()

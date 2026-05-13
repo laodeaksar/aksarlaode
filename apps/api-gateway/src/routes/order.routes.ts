@@ -1,7 +1,7 @@
 import { Hono } from "hono"
-import { proxyTo } from "../proxy/proxy"
-import { ownerOrAdmin } from "../middleware/owner-or-admin"
-import type { AppEnv } from "../types/context"
+import { proxyTo } from "@/proxy/proxy"
+import { ownerOrAdmin } from "@/middleware/owner-or-admin"
+import type { AppEnv } from "@/types/context"
 
 const router = new Hono<AppEnv>()
 

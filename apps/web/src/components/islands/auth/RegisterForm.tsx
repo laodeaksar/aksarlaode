@@ -2,10 +2,10 @@ import { useForm }         from "react-hook-form"
 import { zodResolver }     from "@hookform/resolvers/zod"
 import { useState }        from "react"
 import { Effect }          from "effect"
-import { AppRuntime }      from "../../../lib/effect/runtime"
-import { authApi }         from "../../../lib/api/auth"
-import { HttpError }       from "../../../lib/effect/errors"
-import { registerSchema, type RegisterInput } from "../../../lib/schemas/forms"
+import { AppRuntime }      from "@/lib/effect/runtime"
+import { authApi }         from "@/lib/api/auth"
+import { HttpError }       from "@/lib/effect/errors"
+import { registerSchema, type RegisterInput } from "@/lib/schemas/forms"
 
 export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null)

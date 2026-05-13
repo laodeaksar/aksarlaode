@@ -1,10 +1,10 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { hashPassword }    from "../lib/password"
-import { issueTokenPair }  from "../lib/token"
-import { userRepository }  from "../repository/user.repository"
+import { hashPassword }    from "@/lib/password"
+import { issueTokenPair }  from "@/lib/token"
+import { userRepository }  from "@/repository/user.repository"
 import { RegisterSchema }  from "@repo/common"
-import type { AppEnv }     from "../types"
+import type { AppEnv }     from "@/types"
 
 export const registerHandler = async (c: Context<AppEnv>) => {
   const body = await c.req.json()

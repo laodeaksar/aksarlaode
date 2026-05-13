@@ -1,5 +1,5 @@
 import { Hono }       from "hono"
-import type { AppEnv } from "../types"
+import type { AppEnv } from "@/types"
 
 const router = new Hono<AppEnv>()
 

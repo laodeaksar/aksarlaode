@@ -1,10 +1,10 @@
 import { Hono }           from "hono"
-import { loginHandler }   from "../handlers/login"
-import { registerHandler } from "../handlers/register"
-import { logoutHandler }  from "../handlers/logout"
-import { meHandler }      from "../handlers/me"
-import { refreshHandler } from "../handlers/refresh"
-import type { AppEnv }    from "../types"
+import { loginHandler }   from "@/handlers/login"
+import { registerHandler } from "@/handlers/register"
+import { logoutHandler }  from "@/handlers/logout"
+import { meHandler }      from "@/handlers/me"
+import { refreshHandler } from "@/handlers/refresh"
+import type { AppEnv }    from "@./types"
 
 const router = new Hono<AppEnv>()
 

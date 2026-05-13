@@ -1,12 +1,12 @@
 import { Worker, type Job } from "bullmq"
 import { env }              from "@repo/env"
-import { MailChannelsProvider } from "../providers/mailchannels.provider"
-import { handleOrderConfirmation } from "../jobs/order-confirmation"
-import { handleOrderCancelled }    from "../jobs/order-cancelled"
-import { handleOrderCreated }      from "../jobs/order-created"
-import { handlePasswordReset }     from "../jobs/password-reset"
-import { handleShippingUpdate }    from "../jobs/shipping-update"
-import type { EmailJobType, EmailJobPayload } from "../queues/email.queue"
+import { MailChannelsProvider } from "@/providers/mailchannels.provider"
+import { handleOrderConfirmation } from "@/jobs/order-confirmation"
+import { handleOrderCancelled }    from "@/jobs/order-cancelled"
+import { handleOrderCreated }      from "@/jobs/order-created"
+import { handlePasswordReset }     from "@/jobs/password-reset"
+import { handleShippingUpdate }    from "@/jobs/shipping-update"
+import type { EmailJobType, EmailJobPayload } from "@/queues/email.queue"
 
 const provider = new MailChannelsProvider()
 

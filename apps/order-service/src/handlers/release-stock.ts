@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import type { AppEnv } from "../types"
+import type { AppEnv } from "@/types"
 
 export const releaseStockHandler = async (c: Context<AppEnv>) => {
   const orderId = c.req.param("orderId")

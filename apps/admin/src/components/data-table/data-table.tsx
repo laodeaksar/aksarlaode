@@ -2,7 +2,7 @@ import {
   flexRender, getCoreRowModel,
   useReactTable, type ColumnDef,
 } from "@tanstack/react-table"
-import { Button } from "@repo/ui"
+import { Button } from "@repo/ui/components/button"
 
 type Props<T> = {
   columns:      ColumnDef<T>[]

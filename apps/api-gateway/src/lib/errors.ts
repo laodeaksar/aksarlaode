@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 export function errorBoundary(err: Error, c: Context<AppEnv>) {
   console.error(JSON.stringify({

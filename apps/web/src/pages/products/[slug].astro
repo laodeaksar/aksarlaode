@@ -1,8 +1,8 @@
 ---
-import { AppRuntime }   from "../../lib/effect/runtime"
-import { productsApi }  from "../../lib/api/products"
-import { AddToCartButton } from "../../components/islands/product/AddToCartButton"
-import Layout from "../../layouts/Layout.astro"
+import { AppRuntime }   from "@/lib/effect/runtime"
+import { productsApi }  from "@/lib/api/products"
+import { AddToCartButton } from "@/components/islands/product/AddToCartButton"
+import Layout from "@/layouts/Layout.astro"
 
 const { slug } = Astro.params
 const cookie   = Astro.request.headers.get("cookie") ?? ""

@@ -1,9 +1,9 @@
 ---
-import Navbar from "../../components/ui/Navbar.astro"
-import Footer from "../../components/ui/Footer.astro"
-import ProductCard from "../../components/ui/ProductCard.astro"
-import { AppRuntime } from "../../lib/effect/runtime"
-import { productsApi } from "../../lib/api/products"
+import Navbar from "@/components/ui/Navbar.astro"
+import Footer from "@/components/ui/Footer.astro"
+import ProductCard from "@/components/ui/ProductCard.astro"
+import { AppRuntime } from "@/lib/effect/runtime"
+import { productsApi } from "@/lib/api/products"
 
 const cookie = Astro.request.headers.get("cookie") ?? ""
 const params = Object.fromEntries(Astro.url.searchParams)

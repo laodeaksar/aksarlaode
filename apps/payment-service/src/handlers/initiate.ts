@@ -1,9 +1,9 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { createSnapTransaction } from "../lib/midtrans"
-import { paymentRepository }     from "../repository/payment.repository"
+import { createSnapTransaction } from "@/lib/midtrans"
+import { paymentRepository }     from "@/repository/payment.repository"
 import { InitiatePaymentSchema } from "@repo/common"
-import type { AppEnv } from "../types"
+import type { AppEnv } from "@/types"
 
 export const initiateHandler = async (c: Context<AppEnv>) => {
   const userId = c.req.header("x-user-id")!

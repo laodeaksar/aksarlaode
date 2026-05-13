@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQueryClient }  from "@tanstack/react-query"
-import { ProductForm }                  from "../../components/forms/product-form"
-import { productsApi }                  from "../../lib/api"
+import { ProductForm }                  from "@/components/forms/product-form"
+import { productsApi }                  from "@/lib/api"
 
 export const Route = createFileRoute("/products/new")({
   component: NewProductPage,

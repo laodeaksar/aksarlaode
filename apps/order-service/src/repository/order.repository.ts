@@ -1,5 +1,5 @@
 import { Effect, Data }  from "effect"
-import { OrderModel, type OrderStatus, type OrderDocument } from "../models/order.model"
+import { OrderModel, type OrderStatus, type OrderDocument } from "@/models/order.model"
 
 class OrderNotFoundError  extends Data.TaggedError("OrderNotFoundError")<{ id: string }> {}
 class OrderConflictError  extends Data.TaggedError("OrderConflictError")<{ reason: string }> {}

@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
+import type { AppEnv } from "@/types/context"
 
 // Fetches orderId from path, verifies c.var.user.id matches
 // or passes through if role is ADMIN

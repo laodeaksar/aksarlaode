@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { cartStore }           from "../../../lib/store/cart"
+import { cartStore }           from "@/lib/store/cart"
 
 export function CartDrawer() {
   const [count, setCount] = useState(0)

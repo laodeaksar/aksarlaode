@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { apiFetch }   from "./client"
-import { NotFoundError } from "../effect/errors"
+import { NotFoundError } from "@/effect/errors"
 import type { Product } from "@repo/common"
 
 export type ProductListParams = {

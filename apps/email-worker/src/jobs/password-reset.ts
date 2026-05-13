@@ -1,7 +1,7 @@
-import { render }              from "../templates/engine"
-import { passwordResetTemplate } from "../templates/password-reset.html"
-import type { BaseProvider }   from "../providers/base.provider"
-import type { EmailJobPayload } from "../queues/email.queue"
+import { render }              from "@/templates/engine"
+import { passwordResetTemplate } from "@/templates/password-reset.html"
+import type { BaseProvider }   from "@/providers/base.provider"
+import type { EmailJobPayload } from "@/queues/email.queue"
 
 export async function handlePasswordReset(
   payload:  EmailJobPayload["password-reset"],

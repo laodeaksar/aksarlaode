@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet, redirect } from "@tanstack/react-router"
-import { Sidebar }  from "../components/layout/sidebar"
-import { Topbar }   from "../components/layout/topbar"
-import { getSession } from "../lib/auth"
+import { Sidebar }  from "@/components/layout/sidebar"
+import { Topbar }   from "@/components/layout/topbar"
+import { getSession } from "@/lib/auth"
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {

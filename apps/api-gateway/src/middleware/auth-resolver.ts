@@ -1,9 +1,9 @@
 import { Effect } from "effect"
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
-import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "../lib/route-permissions"
-import { verifyJwt }  from "../lib/jwt"
-import { verifyHmac } from "../lib/hmac"
+import type { AppEnv } from "@/types/context"
+import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions"
+import { verifyJwt }  from "@/lib/jwt"
+import { verifyHmac } from "@/lib/hmac"
 
 export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const path   = c.req.path

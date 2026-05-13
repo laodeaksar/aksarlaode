@@ -1,10 +1,10 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { paymentRepository } from "../repository/payment.repository"
-import { orderClient }       from "../lib/order-client"
-import { emailQueue }        from "../lib/email-queue"
-import type { MidtransNotification } from "../lib/midtrans"
-import type { AppEnv } from "../types"
+import { paymentRepository } from "@/repository/payment.repository"
+import { orderClient }       from "@/lib/order-client"
+import { emailQueue }        from "@/lib/email-queue"
+import type { MidtransNotification } from "@/lib/midtrans"
+import type { AppEnv } from "@/types"
 
 // Midtrans transaction_status → our PaymentStatus
 const STATUS_MAP: Record<string, string> = {

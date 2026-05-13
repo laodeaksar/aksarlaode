@@ -1,7 +1,7 @@
 import { Effect, Data } from "effect"
 import { db, schema }   from "@repo/database"
 import { eq, sql }      from "drizzle-orm"
-import { buildProductQuery, type ProductFilters } from "../lib/query-builder"
+import { buildProductQuery, type ProductFilters } from "@/lib/query-builder"
 
 class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{ id: string }> {}
 class DbError              extends Data.TaggedError("DbError")<{ cause: unknown }> {}

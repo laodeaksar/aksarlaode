@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { productRepository } from "../repository/product.repository"
-import type { AppEnv } from "../types"
+import { productRepository } from "@/repository/product.repository"
+import type { AppEnv } from "@/types"
 
 export const deleteHandler = async (c: Context<AppEnv>) => {
   const id = c.req.param("id")

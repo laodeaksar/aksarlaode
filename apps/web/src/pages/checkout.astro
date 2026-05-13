@@ -1,8 +1,8 @@
 ---
-import { AppRuntime } from "../lib/effect/runtime"
-import { authApi }    from "../lib/api/auth"
-import { CheckoutForm } from "../components/islands/checkout/CheckoutForm"
-import Layout from "../layouts/Layout.astro"
+import { AppRuntime } from "@/lib/effect/runtime"
+import { authApi }    from "@/lib/api/auth"
+import { CheckoutForm } from "@/components/islands/checkout/CheckoutForm"
+import Layout from "@/layouts/Layout.astro"
 
 const cookie = Astro.request.headers.get("cookie") ?? ""
 

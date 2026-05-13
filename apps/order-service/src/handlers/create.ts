@@ -1,11 +1,11 @@
 import { Effect }           from "effect"
 import type { Context }     from "hono"
-import { orderRepository }  from "../repository/order.repository"
-import { productClient }    from "../lib/product-client"
-import { emailQueue }       from "../lib/email-queue"
-import { generateOrderId }  from "../lib/order-id"
+import { orderRepository }  from "@/repository/order.repository"
+import { productClient }    from "@/lib/product-client"
+import { emailQueue }       from "@/lib/email-queue"
+import { generateOrderId }  from "@/lib/order-id"
 import { CreateOrderSchema } from "@repo/common"
-import type { AppEnv }      from "../types"
+import type { AppEnv }      from "@/types"
 
 export const createHandler = async (c: Context<AppEnv>) => {
   const userId = c.req.header("x-user-id")!

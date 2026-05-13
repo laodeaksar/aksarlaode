@@ -1,6 +1,6 @@
 import { createFileRoute }  from "@tanstack/react-router"
 import { useQuery }         from "@tanstack/react-query"
-import { dashboardApi }     from "../../lib/api"
+import { dashboardApi }     from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
 
 export const Route = createFileRoute("/dashboard/")({

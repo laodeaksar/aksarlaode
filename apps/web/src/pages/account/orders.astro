@@ -1,8 +1,8 @@
 ---
-import Navbar from "../../components/ui/Navbar.astro"
-import Footer from "../../components/ui/Footer.astro"
-import { AppRuntime } from "../../lib/effect/runtime"
-import { ordersApi }  from "../../lib/api/orders"
+import Navbar from "@/components/ui/Navbar.astro"
+import Footer from "@/components/ui/Footer.astro"
+import { AppRuntime } from "@/lib/effect/runtime"
+import { ordersApi }  from "@/lib/api/orders"
 
 const cookie = Astro.request.headers.get("cookie") ?? ""
 const exit   = await AppRuntime.runPromiseExit(ordersApi.list(cookie))

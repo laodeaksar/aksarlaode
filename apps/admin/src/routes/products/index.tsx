@@ -1,9 +1,10 @@
 import { createFileRoute, Link }  from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState }        from "react"
-import { productsApi }     from "../../lib/api"
-import { DataTable }       from "../../components/data-table/data-table"
-import { Button, Badge }   from "@repo/ui"
+import { productsApi }     from "@/lib/api"
+import { DataTable }       from "@/components/data-table/data-table"
+import { Button }   from "@repo/ui/components/button"
+import { Badge }   from "@repo/ui/components/badge"
 import type { ColumnDef }  from "@tanstack/react-table"
 import type { Product }    from "@repo/common"
 

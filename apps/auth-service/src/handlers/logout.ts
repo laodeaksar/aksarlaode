@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import type { AppEnv }  from "../types"
+import type { AppEnv }  from "@/types"
 
 export const logoutHandler = async (c: Context<AppEnv>) => {
   c.header("Set-Cookie",

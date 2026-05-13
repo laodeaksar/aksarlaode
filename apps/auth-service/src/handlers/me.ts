@@ -1,5 +1,5 @@
 import type { Context } from "hono"
-import type { AppEnv }  from "../types"
+import type { AppEnv }  from "@/types"
 
 export const meHandler = async (c: Context<AppEnv>) => {
   const userId = c.req.header("x-user-id")

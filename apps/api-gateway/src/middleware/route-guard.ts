@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv } from "../types/context"
-import { ROUTE_PERMISSIONS, ROLE_HIERARCHY } from "../lib/route-permissions"
+import type { AppEnv } from "@/types/context"
+import { ROUTE_PERMISSIONS, ROLE_HIERARCHY } from "@/lib/route-permissions"
 
 export const routeGuard: MiddlewareHandler<AppEnv> = async (c, next) => {
   const user = c.var.user

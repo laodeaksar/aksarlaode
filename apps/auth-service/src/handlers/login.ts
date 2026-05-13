@@ -1,10 +1,10 @@
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { verifyPassword }  from "../lib/password"
-import { issueTokenPair }  from "../lib/token"
-import { userRepository }  from "../repository/user.repository"
+import { verifyPassword }  from "@/lib/password"
+import { issueTokenPair }  from "@/lib/token"
+import { userRepository }  from "@/repository/user.repository"
 import { LoginSchema }     from "@repo/common"
-import type { AppEnv }     from "../types"
+import type { AppEnv }     from "@/types"
 
 export const loginHandler = async (c: Context<AppEnv>) => {
   const body = await c.req.json()

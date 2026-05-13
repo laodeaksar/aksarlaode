@@ -1,5 +1,5 @@
 import { useState }   from "react"
-import { cartStore }  from "../../../lib/store/cart"
+import { cartStore }  from "@/lib/store/cart"
 
 interface Props {
   productId: string

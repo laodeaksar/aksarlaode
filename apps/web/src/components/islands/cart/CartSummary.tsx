@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { cartStore, type CartItem } from "../../../lib/store/cart"
+import { cartStore, type CartItem } from "@/lib/store/cart"
 
 export function CartSummary() {
   const [items, setItems] = useState<CartItem[]>([])

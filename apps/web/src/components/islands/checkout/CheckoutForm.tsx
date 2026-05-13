@@ -2,12 +2,12 @@ import { useForm }           from "react-hook-form"
 import { zodResolver }       from "@hookform/resolvers/zod"
 import { useState }          from "react"
 import { Effect, pipe }      from "effect"
-import { AppRuntime }        from "../../../lib/effect/runtime"
-import { ordersApi }         from "../../../lib/api/orders"
-import { productsApi }       from "../../../lib/api/products"
-import { useCart }           from "../../../lib/store/cart"
-import { HttpError, NetworkError } from "../../../lib/effect/errors"
-import { checkoutSchema, type CheckoutInput } from "../../../lib/schemas/forms"
+import { AppRuntime }        from "@/lib/effect/runtime"
+import { ordersApi }         from "@/lib/api/orders"
+import { productsApi }       from "@/lib/api/products"
+import { useCart }           from "@/lib/store/cart"
+import { HttpError, NetworkError } from "@/lib/effect/errors"
+import { checkoutSchema, type CheckoutInput } from "@/lib/schemas/forms"
 
 type Props = {
   userId: string

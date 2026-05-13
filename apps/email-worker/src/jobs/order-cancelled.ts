@@ -1,4 +1,4 @@
-import type { MailChannelsProvider } from "../providers/mailchannels.provider"
+import type { MailChannelsProvider } from "@/providers/mailchannels.provider"
 
 export async function handleOrderCancelled(
   payload:  { orderId: string; userId: string },

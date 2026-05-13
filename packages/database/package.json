@@ -11,7 +11,7 @@
     "drizzle-orm": "^0.41.0",
     "mongoose":    "^8.13.0",
     "pg":          "^8.14.0",
-    "@repo/env":   "*"
+    "@repo/env":   "workspace:*"
   },
   "devDependencies": {
     "@types/pg":             "^8.11.0",

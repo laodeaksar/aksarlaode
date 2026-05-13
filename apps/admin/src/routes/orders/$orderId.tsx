@@ -1,7 +1,7 @@
 import { createFileRoute }  from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState }         from "react"
-import { ordersApi }        from "../../lib/api"
+import { ordersApi }        from "@/lib/api"
 import { Button, Badge, Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
 
 export const Route = createFileRoute("/orders/$orderId")({

@@ -1,5 +1,5 @@
 {
-  "name": "@my-ecommerce/admin",
+  "name": "admin",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -19,9 +19,9 @@
     "effect":                 "^3.15.0",
     "zod":                    "^3.24.0",
     "lucide-react":           "^0.513.0",
-    "@repo/env":              "*",
-    "@repo/common":           "*",
-    "@repo/ui":               "*"
+    "@repo/env":              "workspace:*",
+    "@repo/common":           "workspace:*",
+    "@repo/ui":               "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

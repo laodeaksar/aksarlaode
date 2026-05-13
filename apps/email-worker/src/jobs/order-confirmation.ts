@@ -1,7 +1,7 @@
-import { render }    from "../templates/engine"
-import { orderConfirmationTemplate } from "../templates/order-confirmation.html"
-import type { BaseProvider }         from "../providers/base.provider"
-import type { EmailJobPayload }      from "../queues/email.queue"
+import { render }    from "@/templates/engine"
+import { orderConfirmationTemplate } from "@/templates/order-confirmation.html"
+import type { BaseProvider }         from "@/providers/base.provider"
+import type { EmailJobPayload }      from "@/queues/email.queue"
 
 // Enrich payload from order-service / user-service before sending
 export async function handleOrderConfirmation(

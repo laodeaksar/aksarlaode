@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { ApiConfig }     from "../effect/layers"
-import { NetworkError, HttpError, ParseError } from "../effect/errors"
+import { ApiConfig }     from "@/effect/layers"
+import { NetworkError, HttpError, ParseError } from "@/effect/errors"
 
 export type FetchOptions = RequestInit & {
   cookie?: string     // SSR: forward browser cookie to api-gateway

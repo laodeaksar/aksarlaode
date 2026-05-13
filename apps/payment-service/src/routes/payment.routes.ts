@@ -1,7 +1,7 @@
 import { Hono }              from "hono"
-import { initiateHandler }   from "../handlers/initiate"
-import { statusHandler }     from "../handlers/status"
-import type { AppEnv }       from "../types"
+import { initiateHandler }   from "@/handlers/initiate"
+import { statusHandler }     from "@/handlers/status"
+import type { AppEnv }       from "@/types"
 
 const router = new Hono<AppEnv>()
 

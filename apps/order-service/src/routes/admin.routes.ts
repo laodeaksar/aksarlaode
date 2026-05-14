@@ -3,6 +3,7 @@ import { env }                        from "@repo/env/order"
 import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
 import { adminListOrdersHandler }     from "@/handlers/admin-orders"
 import { adminOrdersSummaryHandler }  from "@/handlers/admin-orders-summary"
+import { adminOrderTimelineHandler }  from "@/handlers/admin-order-timeline"
 
 const ErrorSchema = t.Object({
   error: t.String(),
@@ -140,6 +141,53 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
         "and a daily revenue trend chart (only populated when date range ≤ 90 days).",
         "paidRevenue includes orders in PAID, PROCESSING, SHIPPED, and DELIVERED states.",
         "cancellationRate is expressed as a percentage (0–100).",
+        "Requires ADMIN role.",
+      ].join(" "),
+    },
+  })
+
+  // ── GET /admin/orders/:orderId/timeline ──────────────────────────────────
+  .get("/orders/:orderId/timeline", adminOrderTimelineHandler, {
+    params: t.Object({
+      orderId: t.String({ description: "Order ID (e.g. ORD-20240513-A3F9B2C1)" }),
+    }),
+    response: {
+      200: t.Object({
+        orderId:       t.String(),
+        userId:        t.String(),
+        currentStatus: t.String(),
+        grandTotal:    t.Number(),
+        createdAt:     t.Union([t.String(), t.Null()]),
+        isTerminal:    t.Boolean(),
+        summary: t.Object({
+          eventCount:         t.Integer(),
+          totalDurationMs:    t.Number(),
+          totalDurationHuman: t.String(),
+          openedAt:           t.Union([t.String(), t.Null()]),
+          closedAt:           t.Union([t.String(), t.Null()]),
+        }),
+        timeline: t.Array(t.Object({
+          index:          t.Integer(),
+          status:         t.String(),
+          note:           t.Union([t.String(), t.Null()]),
+          changedBy:      t.String(),
+          timestamp:      t.String(),
+          durationSince:  t.Union([t.Number(), t.Null()]),
+          durationHuman:  t.Union([t.String(), t.Null()]),
+          isCurrentState: t.Boolean(),
+        })),
+      }),
+      403: ErrorSchema,
+      404: ErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary: "Order audit timeline (admin)",
+      description: [
+        "Returns the full status-change history for a single order, enriched with actor identity,",
+        "per-step elapsed time, and human-readable durations.",
+        "Non-terminal orders include a live 'ongoing' marker showing elapsed time since the last status change.",
+        "Terminal statuses: DELIVERED, CANCELLED, REFUNDED.",
         "Requires ADMIN role.",
       ].join(" "),
     },

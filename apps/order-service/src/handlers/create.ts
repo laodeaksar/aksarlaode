@@ -1,16 +1,37 @@
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
-import { env }             from "@repo/env/order"
-import { orderRepository } from "@/repository/order.repository"
-import { productClient }   from "@/lib/product-client"
-import { emailQueue }      from "@/lib/email-queue"
-import { generateOrderId } from "@/lib/order-id"
-import { idempotency }     from "@/lib/idempotency"
-import type { CreateOrderBody } from "@/types"
+import { Effect }                       from "effect"
+import type { Context }                 from "elysia"
+import { env }                          from "@repo/env/order"
+import { orderRepository }              from "@/repository/order.repository"
+import { productClient }                from "@/lib/product-client"
+import { emailQueue }                   from "@/lib/email-queue"
+import { generateOrderId }              from "@/lib/order-id"
+import { idempotency }                  from "@/lib/idempotency"
+import { checkOrderCreateRateLimit }    from "@/lib/rate-limiter"
+import type { CreateOrderBody }         from "@/types"
 
 export const createHandler = async ({ body, headers, set }: Context) => {
   const input  = body as CreateOrderBody
   const userId = headers["x-user-id"]!
+
+  // ── Rate limit — sliding window per userId ────────────────────────────────
+  // Checked before the idempotency lock so a rate-limited request does not
+  // consume an idempotency slot or touch downstream services.
+  const rl = await checkOrderCreateRateLimit(userId)
+
+  set.headers["X-RateLimit-Limit"]     = String(rl.limit)
+  set.headers["X-RateLimit-Remaining"] = String(rl.remaining)
+  set.headers["X-RateLimit-Reset"]     = String(Math.ceil(rl.resetMs / 1000)) // Unix seconds
+
+  if (!rl.allowed) {
+    const retryAfterSec = Math.ceil((rl.resetMs - Date.now()) / 1000)
+    set.headers["Retry-After"] = String(retryAfterSec)
+    set.status = 429
+    return {
+      error: "Too many order requests — please slow down",
+      code:  "RATE_LIMIT_EXCEEDED",
+      retryAfterSec,
+    }
+  }
 
   // ── Idempotency check — key scoped to userId to prevent cross-user collisions ─
   const rawKey         = headers["idempotency-key"] as string

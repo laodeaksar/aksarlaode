@@ -29,6 +29,10 @@ export const env = parseEnv(
     // How often (milliseconds) the reconciliation sweep runs
     RECONCILIATION_INTERVAL_MS: z.coerce.number().int().positive().default(300_000), // 5 min
 
+    // Sliding-window rate limit for POST /orders (per userId)
+    RATE_LIMIT_ORDER_CREATE_MAX:       z.coerce.number().int().positive().default(5),
+    RATE_LIMIT_ORDER_CREATE_WINDOW_MS: z.coerce.number().int().positive().default(60_000), // 1 min
+
     WEB_URL:   z.url("WEB_URL must be a valid URL"),
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },

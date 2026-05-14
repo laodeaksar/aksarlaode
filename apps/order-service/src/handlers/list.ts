@@ -1,20 +1,21 @@
-import { Effect } from "effect"
-import type { Context } from "hono"
+import { Effect }          from "effect"
+import type { Context }    from "elysia"
 import { orderRepository } from "@/repository/order.repository"
-import type { AppEnv } from "@/types"
 
-export const listHandler = async (c: Context<AppEnv>) => {
-  const userId = c.req.header("x-user-id")!
-  const page   = Number(c.req.query("page")  ?? 1)
-  const limit  = Number(c.req.query("limit") ?? 20)
+export const listHandler = async ({ query, headers, set }: Context) => {
+  const userId = headers["x-user-id"]!
+  const q      = query as { page?: string; limit?: string }
+  const page   = Number(q.page  ?? 1)
+  const limit  = Math.min(Number(q.limit ?? 20), 100)
 
   const result = await Effect.runPromiseExit(
     orderRepository.findByUser(userId, page, limit)
   )
 
   if (result._tag === "Failure") {
-    return c.json({ error: "Failed to fetch orders" }, 500)
+    set.status = 500
+    return { error: "Failed to fetch orders" }
   }
 
-  return c.json(result.value)
+  return result.value
 }

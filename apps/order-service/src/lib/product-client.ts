@@ -1,13 +1,9 @@
 import { Effect, Data } from "effect"
-import { env }          from "@repo/env"
+import { env }          from "@repo/env/order"
 
-class ProductClientError      extends Data.TaggedError("ProductClientError")<{ status: number }> {}
-class InsufficientStockError  extends Data.TaggedError("InsufficientStockError")<{
-  productId: string
-}> {}
-class ProductNotFoundError    extends Data.TaggedError("ProductNotFoundError")<{
-  productId: string
-}> {}
+class ProductClientError     extends Data.TaggedError("ProductClientError")<{ status: number }> {}
+class InsufficientStockError extends Data.TaggedError("InsufficientStockError")<{ productId: string }> {}
+class ProductNotFoundError   extends Data.TaggedError("ProductNotFoundError")<{ productId: string }> {}
 
 const headers = () => ({
   "Content-Type":    "application/json",
@@ -19,7 +15,7 @@ export const productClient = {
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
-          `${env.PRODUCT_SERVICE_URL}/products/${productId}/reserve`,
+          `${env.PRODUCT_SERVICE_URL}/products/${productId}/stock/reserve`,
           { method: "POST", headers: headers(), body: JSON.stringify({ quantity }) }
         )
         if (res.status === 404) throw { _tag: "ProductNotFoundError",    productId }
@@ -37,7 +33,7 @@ export const productClient = {
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
-          `${env.PRODUCT_SERVICE_URL}/products/${productId}/release`,
+          `${env.PRODUCT_SERVICE_URL}/products/${productId}/stock/release`,
           { method: "POST", headers: headers(), body: JSON.stringify({ quantity }) }
         )
         if (!res.ok) throw { status: res.status }

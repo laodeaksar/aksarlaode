@@ -59,4 +59,30 @@ export const ProductFiltersSchema = z.object({
   sortBy:     z.enum(["price_asc","price_desc","newest","popular"]).optional(),
   page:       z.number().int().positive().optional(),
   limit:      z.number().int().positive().max(100).optional(),
-}
+})
+
+// ── Create order ───────────────────────────────────────────────────────────
+export const CreateOrderSchema = z.object({
+  items: z.array(z.object({
+    productId:   z.string().uuid(),
+    productName: z.string().min(1),
+    sku:         z.string().min(1),
+    imageUrl:    z.string().url().optional(),
+    price:       z.number().positive(),
+    quantity:    z.number().int().positive(),
+  })).min(1),
+  shippingAddress: z.object({
+    recipientName: z.string().min(1),
+    phone:         z.string().min(1),
+    street:        z.string().min(1),
+    city:          z.string().min(1),
+    province:      z.string().min(1),
+    postalCode:    z.string().min(1),
+    country:       z.string().default("ID"),
+  }),
+  shippingFee:    z.number().min(0).optional(),
+  discountAmount: z.number().min(0).optional(),
+  notes:          z.string().optional(),
+})
+
+export type CreateOrderInput = z.infer<typeof CreateOrderSchema>

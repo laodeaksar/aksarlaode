@@ -1,5 +1,6 @@
 import Elysia        from "elysia"
 import { cors }       from "@elysiajs/cors"
+import { swagger }    from "@elysiajs/swagger"
 import { env }        from "@repo/env/product"
 import { productRoutes } from "./routes/product.routes"
 
@@ -15,6 +16,30 @@ const serviceToken = (app: Elysia) =>
   })
 
 const app = new Elysia()
+  .use(swagger({
+    documentation: {
+      info: {
+        title:       "Product Service API",
+        version:     "1.0.0",
+        description: "Internal API for managing products. All endpoints require the `x-service-token` header.",
+      },
+      tags: [
+        { name: "Products", description: "CRUD operations on products" },
+        { name: "Health",   description: "Service health check" },
+      ],
+      components: {
+        securitySchemes: {
+          serviceToken: {
+            type: "apiKey",
+            in:   "header",
+            name: "x-service-token",
+          },
+        },
+      },
+      security: [{ serviceToken: [] }],
+    },
+    path: "/docs",
+  }))
   .use(cors({
     origin:         [env.WEB_URL, env.ADMIN_URL],
     allowedHeaders: ["Content-Type", "x-service-token", "x-user-id", "x-user-role", "x-request-id"],
@@ -27,7 +52,9 @@ const app = new Elysia()
       path:   new URL(request.url).pathname,
     }))
   })
-  .get("/health", () => ({ status: "ok", service: "product-service" }))
+  .get("/health", () => ({ status: "ok", service: "product-service" }), {
+    detail: { tags: ["Health"], summary: "Health check" },
+  })
   .use(productRoutes)
   .onError(({ code, error, set }) => {
     console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
@@ -38,6 +65,7 @@ const app = new Elysia()
   .listen(PORT)
 
 console.info(`📦 product-service running on http://localhost:${PORT}`)
+console.info(`📄 API docs available at http://localhost:${PORT}/docs`)
 
 const shutdown = async (signal: string) => {
   console.info(`Received ${signal}, shutting down...`)

@@ -61,6 +61,12 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
 
   .post("/", createHandler, {
     body: CreateOrderBodySchema,
+    headers: t.Object({
+      "idempotency-key": t.Optional(t.String({
+        description: "Client-generated unique key (UUID v4 recommended). Supplying this header makes the endpoint idempotent: duplicate requests with the same key within 24 h return the original response without creating a second order. A 409 REQUEST_IN_FLIGHT is returned while the first request is still being processed.",
+        examples:    ["550e8400-e29b-41d4-a716-446655440000"],
+      })),
+    }, { additionalProperties: true }),
     response: {
       201: t.Object({ orderId: t.String(), grandTotal: t.Number(), status: t.String() }),
       404: ErrorSchema,
@@ -70,7 +76,7 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
     },
     detail: {
       summary:     "Create order",
-      description: "Validates items, reserves stock atomically with rollback compensation on partial failure, persists order, and queues confirmation email.",
+      description: "Validates items, reserves stock atomically with rollback compensation on partial failure, persists order, and queues confirmation email. Supports idempotency via the `Idempotency-Key` header.",
     },
   })
 

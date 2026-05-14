@@ -2,6 +2,7 @@ import Elysia, { t }                 from "elysia"
 import { env }                        from "@repo/env/order"
 import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
 import { adminListOrdersHandler }     from "@/handlers/admin-orders"
+import { adminOrdersSummaryHandler }  from "@/handlers/admin-orders-summary"
 
 const ErrorSchema = t.Object({
   error: t.String(),
@@ -80,6 +81,66 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
         "Results are sorted by createdAt descending (newest first).",
         "Use dateFrom/dateTo to scope investigations to a specific time window.",
         "Use status=PAID,PROCESSING to filter multiple statuses in one request.",
+      ].join(" "),
+    },
+  })
+
+  // ── GET /admin/orders/summary ─────────────────────────────────────────────
+  .get("/orders/summary", adminOrdersSummaryHandler, {
+    query: t.Object({
+      userId:   t.Optional(t.String({ description: "Scope to a single user" })),
+      dateFrom: t.Optional(t.String({
+        description: "ISO 8601 start date (inclusive)",
+        examples:    ["2024-01-01", "2024-05-01T00:00:00.000Z"],
+      })),
+      dateTo: t.Optional(t.String({
+        description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
+        examples:    ["2024-12-31", "2024-05-31T23:59:59.999Z"],
+      })),
+    }),
+    response: {
+      200: t.Object({
+        period: t.Object({
+          dateFrom: t.Union([t.String(), t.Null()]),
+          dateTo:   t.Union([t.String(), t.Null()]),
+          userId:   t.Union([t.String(), t.Null()]),
+        }),
+        overall: t.Object({
+          totalOrders:      t.Integer(),
+          totalRevenue:     t.Number(),
+          paidRevenue:      t.Number(),
+          avgOrderValue:    t.Number(),
+          cancelledCount:   t.Integer(),
+          cancellationRate: t.Number(),
+          refundedCount:    t.Integer(),
+          refundedRevenue:  t.Number(),
+        }),
+        byStatus: t.Array(t.Object({
+          status:        t.String(),
+          orderCount:    t.Integer(),
+          totalRevenue:  t.Number(),
+          avgOrderValue: t.Number(),
+          minOrderValue: t.Number(),
+          maxOrderValue: t.Number(),
+        })),
+        dailyTrend: t.Array(t.Object({
+          date:       t.String(),
+          orderCount: t.Integer(),
+          revenue:    t.Number(),
+        })),
+      }),
+      403: ErrorSchema,
+      422: ErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary: "Order summary & KPIs (admin)",
+      description: [
+        "Single-query MongoDB $facet aggregation returning per-status breakdown, overall KPIs,",
+        "and a daily revenue trend chart (only populated when date range ≤ 90 days).",
+        "paidRevenue includes orders in PAID, PROCESSING, SHIPPED, and DELIVERED states.",
+        "cancellationRate is expressed as a percentage (0–100).",
+        "Requires ADMIN role.",
       ].join(" "),
     },
   })

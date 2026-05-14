@@ -1,12 +1,10 @@
 import { Effect } from "effect"
-import type { Context } from "hono"
+import type { Context } from "elysia"
 import { productRepository }  from "@/repository/product.repository"
 import { ProductFiltersSchema } from "@repo/common"
 import type { AppEnv } from "@/types"
 
-export const listHandler = async (c: Context<AppEnv>) => {
-  const query = c.req.query()
-
+export const listHandler = async ({ query, set }: Context) => {
   const program = Effect.gen(function* () {
     const filters = yield* Effect.try({
       try:   () => ProductFiltersSchema.parse({
@@ -25,7 +23,10 @@ export const listHandler = async (c: Context<AppEnv>) => {
 
   const result = await Effect.runPromiseExit(program)
 
-  if (result._tag === "Failure") return c.json({ error: "Invalid filters" }, 422)
+  if (result._tag === "Failure") {
+    set.status = 422
+    return { error: "Failed to fetch products", code: "INTERNAL_ERROR" }
+  }
 
-  return c.json(result.value)
+  return result.value
 }

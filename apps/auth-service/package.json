@@ -5,18 +5,20 @@
   "scripts": {
     "dev":       "node --watch --import tsx/esm src/index.ts",
     "build":     "tsc",
+    "dev":       "tsx watch src/index.ts",
     "start":     "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "clean":     "rm -rf dist",
     "test":      "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "hono":               "^4.7.0",
+    "elysia":                 "^1.1.0",
+    "@elysiajs/cors":         "^1.1.0",
     "effect":             "^3.15.0",
     "better-auth":        "^1.2.7",
     "drizzle-orm":        "^0.41.0",
-    "@hono/node-server":  "^1.14.0",
     "@repo/env":          "workspace:*",
     "@repo/common":       "workspace:*",
     "@repo/database":     "workspace:*"

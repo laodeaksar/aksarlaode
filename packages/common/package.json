@@ -2,9 +2,10 @@
   "name": "@repo/common",
   "version": "0.0.0",
   "private": true,
-  "main": "./src/schemas/payment.ts",
+  "type": "module",
+  "main": "./src/index.ts,
   "exports": {
-    ".":          "./src/schemas/payment.ts",
+    "./schemas":          "./src/schemas/index.ts",
     "./errors":   "./src/errors/index.ts",
     "./response": "./src/response/index.ts"
   },

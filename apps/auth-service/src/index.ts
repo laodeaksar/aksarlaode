@@ -4,16 +4,76 @@ import authRoutes    from "./routes/auth.routes"
 import sessionRoutes from "./routes/session.routes"
 import type { AppEnv } from "./types"
 
-const app = new Hono<AppEnv>()
+const PORT = parseInt(process.env["PORT"] ?? "3001", 10)
 
-app.route("/auth",    authRoutes)
-app.route("/session", sessionRoutes)
+const app = new Elysia()
 
-app.get("/health", (c) => c.json({ status: "ok", service: "auth" }))
+  // ── Global middleware ─────────────────────────────────
+  .use(cors({
+    origin:          [env.WEB_URL, env.ADMIN_URL],
+    allowedHeaders:  ["Content-Type", "Authorization", "x-service-token", "x-user-id", "x-request-id"],
+    credentials:     true,
+  }))
 
-const PORT = Number(process.env.PORT) || 3001
-serve({ fetch: app.fetch, port: PORT, hostname: "localhost" }, () => {
-  console.info(`Auth service running on port ${PORT}`)
-})
+  // Request logger
+  .onRequest(({ request, store }) => {
+    const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID()
+    ;(store as Record<string, string>)["requestId"] = requestId
+    console.info(JSON.stringify({
+      event:     "request_in",
+      requestId,
+      method:    request.method,
+      path:      new URL(request.url).pathname,
+    }))
+  })
 
-export default app
+  // Service token guard — every route requires this
+  .onBeforeHandle(serviceTokenMiddleware)
+
+  // ── Health ─────────────────────────────────────────────
+  .get("/health", () => ({ status: "ok", service: "auth-service" }))
+
+  // ── Routes ─────────────────────────────────────────────
+
+.route("/auth",    authRoutes)
+.route("/session", sessionRoutes)
+
+
+ // .use(authRoutes)
+
+  // ── Error handler ──────────────────────────────────────
+  .onError(({ code, error, set }) => {
+    console.error(JSON.stringify({
+      event:   "unhandled_error",
+      code,
+      message: error.message,
+    }))
+
+    if (code === "VALIDATION") {
+      set.status = 422
+      return { error: "Validation failed", code: "VALIDATION_ERROR" }
+    }
+    if (code === "NOT_FOUND") {
+      set.status = 404
+      return { error: "Route not found", code: "NOT_FOUND" }
+    }
+
+    set.status = 500
+    return { error: "Internal server error", code: "INTERNAL_ERROR" }
+  })
+
+  .listen(PORT)
+
+console.info(`🔐 auth-service running on http://localhost:${PORT}`)
+
+// ── Graceful shutdown ──────────────────────────────────────
+const shutdown = async (signal: string) => {
+  console.info(`Received ${signal}, shutting down...`)
+  await app.stop()
+  process.exit(0)
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"))
+process.on("SIGINT",  () => shutdown("SIGINT"))
+
+export type App = typeof app

@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 import { env }         from "@repo/env/gateway"
 import { SERVICE_REGISTRY } from "./service-registry"
+import { getBreaker }       from "@/lib/circuit-breaker"
 import type { AppEnv }      from "@/types/context"
 
 export async function proxyTo(
@@ -9,12 +10,30 @@ export async function proxyTo(
 ): Promise<Response> {
   const { url: baseUrl, prefix } = SERVICE_REGISTRY[service]
 
-  // Strip the gateway-side prefix and preserve the rest of the path.
-  // e.g. GET /products/123?color=red  →  http://product-service:3002/123?color=red
+  const breaker = getBreaker(service)
+
+  // ── Circuit open — reject immediately, don't touch upstream ──────────────
+  if (!breaker.allow()) {
+    console.warn(JSON.stringify({
+      event:     "circuit_rejected",
+      service,
+      requestId: c.var.requestId,
+    }))
+    return c.json(
+      {
+        error:     "Service temporarily unavailable — please retry shortly",
+        code:      "CIRCUIT_OPEN",
+        requestId: c.var.requestId,
+      },
+      503
+    ) as unknown as Response
+  }
+
+  // ── Build upstream request ────────────────────────────────────────────────
   const strippedPath = c.req.path.replace(prefix, "") || "/"
   const requestUrl   = new URL(c.req.url)
   const targetUrl    = new URL(strippedPath, baseUrl)
-  targetUrl.search   = requestUrl.search   // forward query params as-is
+  targetUrl.search   = requestUrl.search
 
   let body: ArrayBuffer | null = null
   if (!["GET", "HEAD"].includes(c.req.method)) {
@@ -31,11 +50,24 @@ export async function proxyTo(
   // requestTimeout middleware fires — not just left open in the background.
   const signal = c.var.abortSignal
 
+  // ── Proxy call ────────────────────────────────────────────────────────────
   try {
-    return await fetch(upstreamRequest, { signal })
+    const response = await fetch(upstreamRequest, { signal })
+
+    // 5xx from upstream counts as a circuit failure.
+    // 4xx is the client's fault — don't penalise the service for it.
+    if (response.status >= 500) {
+      breaker.failure()
+    } else {
+      breaker.success()
+    }
+
+    return response
   } catch (e) {
-    // Re-throw AbortError so requestTimeout middleware can return 504.
-    // Any other error (ECONNREFUSED, DNS failure, etc.) becomes 502.
+    // Every thrown error (timeout or connection failure) is a circuit failure.
+    breaker.failure()
+
+    // Re-throw AbortError — requestTimeout middleware converts it to 504.
     if (e instanceof Error && e.name === "AbortError") throw e
 
     console.error(JSON.stringify({
@@ -57,11 +89,9 @@ export async function proxyTo(
 function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   const headers = new Headers(c.req.raw.headers)
 
-  // Strip external-facing headers — never forward raw auth to internal services
   headers.delete("Authorization")
   headers.delete("Cookie")
 
-  // Inject validated user context — internal services trust these headers
   const user = c.var.user
   if (user) {
     headers.set("x-user-id",    user.id)
@@ -69,7 +99,6 @@ function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
     headers.set("x-session-id", user.sessionId)
   }
 
-  // Propagate request tracing and service authentication
   headers.set("x-request-id",    c.var.requestId)
   headers.set("x-service-token", env.INTERNAL_SERVICE_TOKEN)
 

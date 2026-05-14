@@ -12,6 +12,7 @@ import { contextInjector }    from "./middleware/context-injector"
 import { routeGuard }         from "./middleware/route-guard"
 import { responseNormalizer } from "./middleware/response-normalizer"
 import { errorBoundary }      from "./lib/errors"
+import { getAllBreakerStatus } from "./lib/circuit-breaker"
 
 import authRoutes    from "./routes/auth.routes"
 import productRoutes from "./routes/product.routes"
@@ -24,9 +25,16 @@ import type { AppEnv } from "./types/context"
 const app = new Hono<AppEnv>()
 
 // ── Health check — before all middleware so it always responds ────────────────
-app.get("/health", (c) =>
-  c.json({ status: "ok", service: "api-gateway", ts: new Date().toISOString() })
-)
+app.get("/health", (c) => {
+  const circuits = getAllBreakerStatus()
+  const degraded = circuits.some(b => b.state !== "CLOSED")
+  return c.json({
+    status:   degraded ? "degraded" : "ok",
+    service:  "api-gateway",
+    ts:       new Date().toISOString(),
+    circuits,
+  }, degraded ? 207 : 200)
+})
 
 // ── Global middleware (order is strict) ───────────────────────────────────────
 app.use("*", cors)

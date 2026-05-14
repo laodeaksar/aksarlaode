@@ -1,8 +1,10 @@
 import { createHash }      from "crypto"
+import { Effect }          from "effect"
 import type { Context }    from "elysia"
 import { env }             from "@repo/env/order"
 import { redis }           from "@/lib/redis"
 import { orderRepository } from "@/repository/order.repository"
+import { productClient }   from "@/lib/product-client"
 
 // ── Midtrans notification body (partial — only fields we use) ───────────────
 type MidtransNotification = {
@@ -16,7 +18,7 @@ type MidtransNotification = {
 }
 
 // Midtrans transaction statuses that mean a successful payment
-const PAID_STATUSES = new Set(["capture", "settlement"])
+const PAID_STATUSES   = new Set(["capture", "settlement"])
 const FAILED_STATUSES = new Set(["cancel", "deny", "expire", "failure"])
 
 // ── Signature verification ──────────────────────────────────────────────────
@@ -31,6 +33,68 @@ function verifyMidtransSignature(notification: MidtransNotification): boolean {
     diff |= expected.charCodeAt(i) ^ notification.signature_key.charCodeAt(i)
   }
   return diff === 0
+}
+
+// ── Stock release helper ─────────────────────────────────────────────────────
+async function releaseOrderStock(orderId: string, transactionId: string): Promise<void> {
+  const orderResult = await Effect.runPromiseExit(
+    orderRepository.findByOrderId(orderId)
+  )
+
+  if (orderResult._tag === "Failure") {
+    console.error(JSON.stringify({
+      event:         "webhook_stock_release_order_missing",
+      orderId,
+      transactionId,
+    }))
+    return
+  }
+
+  const order = orderResult.value
+
+  // Only release stock if the order was in a reservable state.
+  // PAID orders have already been fulfilled — do not release.
+  // DELIVERED / SHIPPED orders must go through a formal refund flow.
+  const RELEASABLE_STATUSES = new Set(["CANCELLED", "PENDING_PAYMENT"])
+  if (!RELEASABLE_STATUSES.has(order.status)) {
+    console.warn(JSON.stringify({
+      event:         "webhook_stock_release_skipped",
+      reason:        `order already in status ${order.status}`,
+      orderId,
+      transactionId,
+    }))
+    return
+  }
+
+  const releaseResult = await Effect.runPromiseExit(
+    Effect.all(
+      order.items.map(item =>
+        productClient.releaseStock(item.productId, item.quantity)
+      ),
+      { concurrency: "unbounded" }
+    )
+  )
+
+  if (releaseResult._tag === "Failure") {
+    // Log the failure but do NOT re-throw — we must still return 200 to Midtrans
+    // so it does not keep retrying. A background reconciliation job should
+    // catch any lingering reservations via a separate sweep.
+    console.error(JSON.stringify({
+      event:         "webhook_stock_release_failed",
+      orderId,
+      transactionId,
+      itemCount:     order.items.length,
+    }))
+    return
+  }
+
+  console.info(JSON.stringify({
+    event:         "webhook_stock_released",
+    orderId,
+    transactionId,
+    itemCount:     order.items.length,
+    items:         order.items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+  }))
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -50,17 +114,18 @@ export const paymentWebhookHandler = async ({ body, set }: Context) => {
   const { order_id: orderId, transaction_id: transactionId, transaction_status, fraud_status } = notification
 
   // ── 2. Idempotency — reject already-processed events (replay attack guard) ─
-  const nonceKey = `webhook:processed:${transactionId}`
-  const alreadyProcessed = await redis.set(nonceKey, "1", "EX", 86_400, "NX")
-  if (!alreadyProcessed) {
-    // NX failed → key already existed → duplicate delivery
+  const nonceKey       = `webhook:processed:${transactionId}`
+  const lockAcquired   = await redis.set(nonceKey, "1", "EX", 86_400, "NX")
+  if (!lockAcquired) {
+    // NX failed → key already existed → duplicate delivery, safe to ack
     return { ok: true, note: "already_processed" }
   }
 
   // ── 3. Reject fraudulent transactions ────────────────────────────────────
   if (fraud_status === "deny") {
     console.warn(JSON.stringify({ event: "webhook_fraud_denied", orderId, transactionId }))
-    set.status = 200
+    // Treat as a failed payment — cancel order and release stock
+    await releaseOrderStock(orderId, transactionId)
     return { ok: true }
   }
 
@@ -79,7 +144,6 @@ export const paymentWebhookHandler = async ({ body, set }: Context) => {
   }
 
   // ── 5. Update order status ────────────────────────────────────────────────
-  const { Effect } = await import("effect")
   const result = await Effect.runPromiseExit(
     orderRepository.updateStatus(orderId, newStatus, `midtrans:${transaction_status}`, "service:midtrans")
   )
@@ -94,6 +158,14 @@ export const paymentWebhookHandler = async ({ body, set }: Context) => {
     console.error(JSON.stringify({ event: "webhook_update_failed", orderId, transactionId }))
     set.status = 500
     return { error: "Failed to update order" }
+  }
+
+  // ── 6. Auto-release reserved stock on payment failure ────────────────────
+  //    PAID orders: stock reservation is fulfilled — do not release.
+  //    CANCELLED orders: reserved stock must be returned to inventory so
+  //    other buyers can purchase the same items immediately.
+  if (newStatus === "CANCELLED") {
+    await releaseOrderStock(orderId, transactionId)
   }
 
   console.info(JSON.stringify({

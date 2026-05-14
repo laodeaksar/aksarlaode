@@ -10,6 +10,10 @@ router.get("/:id/stock",  (c) => proxyTo("PRODUCT", c))   // stock check (order-
 router.get("/:id",        (c) => proxyTo("PRODUCT", c))   // single product
 router.get("/slug/:slug", (c) => proxyTo("PRODUCT", c))
 
+// Internal service-to-service stock operations
+router.post("/:id/stock/reserve", (c) => proxyTo("PRODUCT", c))
+router.post("/:id/stock/release", (c) => proxyTo("PRODUCT", c))
+
 // Admin writes (routeGuard enforces ADMIN role)
 router.post("/",          (c) => proxyTo("PRODUCT", c))
 router.put("/:id",        (c) => proxyTo("PRODUCT", c))

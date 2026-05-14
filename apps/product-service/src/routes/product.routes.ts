@@ -1,10 +1,12 @@
 import Elysia, { t }   from "elysia"
-import { listHandler }     from "@/handlers/list"
-import { createHandler }   from "@/handlers/create"
-import { getOneHandler }   from "@/handlers/get-one"
-import { getStockHandler } from "@/handlers/get-stock"
-import { updateHandler }   from "@/handlers/update"
-import { deleteHandler }   from "@/handlers/delete"
+import { listHandler }          from "@/handlers/list"
+import { createHandler }        from "@/handlers/create"
+import { getOneHandler }        from "@/handlers/get-one"
+import { getStockHandler }      from "@/handlers/get-stock"
+import { reserveStockHandler }  from "@/handlers/reserve-stock"
+import { releaseStockHandler }  from "@/handlers/release-stock"
+import { updateHandler }        from "@/handlers/update"
+import { deleteHandler }        from "@/handlers/delete"
 import {
   ProductSchema,
   ProductListResponseSchema,
@@ -13,6 +15,10 @@ import {
   CreateProductBodySchema,
   UpdateProductBodySchema,
   StockResponseSchema,
+  StockOperationBodySchema,
+  StockReserveResponseSchema,
+  StockReleaseResponseSchema,
+  InsufficientStockErrorSchema,
   ErrorSchema,
   ValidationErrorSchema,
 } from "@/schemas"
@@ -57,6 +63,37 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     detail: {
       summary:     "Check product stock",
       description: "Returns only stock availability for a product by UUID. Intended for use by order-service before creating an order.",
+    },
+  })
+
+  .post("/:id/stock/reserve", reserveStockHandler, {
+    params: ProductIdParamSchema,
+    body:   StockOperationBodySchema,
+    response: {
+      200: StockReserveResponseSchema,
+      404: ErrorSchema,
+      409: InsufficientStockErrorSchema,
+      422: ValidationErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary:     "Reserve (decrement) product stock",
+      description: "Atomically decrements stock by `quantity`. Returns 409 if stock is insufficient. Intended for internal service-to-service calls from order-service.",
+    },
+  })
+
+  .post("/:id/stock/release", releaseStockHandler, {
+    params: ProductIdParamSchema,
+    body:   StockOperationBodySchema,
+    response: {
+      200: StockReleaseResponseSchema,
+      404: ErrorSchema,
+      422: ValidationErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary:     "Release (increment) product stock",
+      description: "Adds `quantity` back to stock. Called by order-service on order cancellation or payment failure.",
     },
   })
 

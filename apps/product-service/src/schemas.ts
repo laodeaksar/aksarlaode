@@ -85,6 +85,30 @@ export const StockResponseSchema = t.Object({
   inStock:   t.Boolean({ description: "True when stock > 0" }),
 })
 
+// ── Stock operation request body ───────────────────────────────────────────
+export const StockOperationBodySchema = t.Object({
+  quantity: t.Integer({ minimum: 1, description: "Number of units to reserve or release" }),
+})
+
+// ── Stock operation response ───────────────────────────────────────────────
+export const StockReserveResponseSchema = t.Object({
+  productId:      t.String({ format: "uuid" }),
+  reserved:       t.Integer(),
+  remainingStock: t.Union([t.Integer(), t.Null()]),
+})
+
+export const StockReleaseResponseSchema = t.Object({
+  productId:      t.String({ format: "uuid" }),
+  released:       t.Integer(),
+  remainingStock: t.Union([t.Integer(), t.Null()]),
+})
+
+// ── Insufficient stock error ───────────────────────────────────────────────
+export const InsufficientStockErrorSchema = t.Object({
+  error: t.String(),
+  code:  t.Optional(t.Literal("INSUFFICIENT_STOCK")),
+})
+
 // ── Generic error response ─────────────────────────────────────────────────
 export const ErrorSchema = t.Object({
   error: t.String(),

@@ -1,4 +1,4 @@
-import Elysia        from "elysia"
+import Elysia, { t } from "elysia"
 import { cors }      from "@elysiajs/cors"
 import { swagger }   from "@elysiajs/swagger"
 import { connectMongo } from "@repo/database"
@@ -7,6 +7,7 @@ import { orderRoutes }             from "./routes/order.routes"
 import { adminRoutes }             from "./routes/admin.routes"
 import { paymentWebhookHandler }   from "./handlers/payment-webhook"
 import { createReconciliationWorker, scheduleReconciliationJob } from "./workers/reconciliation.worker"
+import { healthHandler }             from "./handlers/health"
 
 const PORT = Number(process.env.PORT) || 3003
 
@@ -47,8 +48,39 @@ const app = new Elysia()
     }))
   })
 
-  .get("/health", () => ({ status: "ok", service: "order-service" }), {
-    detail: { tags: ["Health"], summary: "Health check" },
+  .get("/health", healthHandler, {
+    response: {
+      200: t.Object({
+        status:    t.Union([t.Literal("healthy"), t.Literal("degraded")]),
+        service:   t.String(),
+        uptimeSec: t.Number(),
+        checks: t.Object({
+          mongodb:        t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+          redis:          t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+          productService: t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+        }),
+      }),
+      503: t.Object({
+        status:    t.Literal("unhealthy"),
+        service:   t.String(),
+        uptimeSec: t.Number(),
+        checks: t.Object({
+          mongodb:        t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+          redis:          t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+          productService: t.Object({ status: t.String(), latencyMs: t.Number(), error: t.Optional(t.String()) }),
+        }),
+      }),
+    },
+    detail: {
+      tags:        ["Health"],
+      summary:     "Dependency health check",
+      description: [
+        "Probes MongoDB, Redis, and product-service in parallel (3 s timeout each).",
+        "Returns 200 for 'healthy' (all ok) or 'degraded' (partial failure).",
+        "Returns 503 for 'unhealthy' (all checks failed) — load balancers should pull the instance.",
+        "Each check reports its own latency and error message for rapid diagnosis.",
+      ].join(" "),
+    },
   })
 
   // ── Payment gateway webhook — public endpoint, guarded by Midtrans HMAC ──

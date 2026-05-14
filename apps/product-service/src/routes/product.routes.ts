@@ -1,4 +1,4 @@
-import Elysia          from "elysia"
+import Elysia, { t }   from "elysia"
 import { listHandler }   from "@/handlers/list"
 import { createHandler } from "@/handlers/create"
 import { getOneHandler } from "@/handlers/get-one"
@@ -12,6 +12,7 @@ import {
   CreateProductBodySchema,
   UpdateProductBodySchema,
   ErrorSchema,
+  ValidationErrorSchema,
 } from "@/schemas"
 
 export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"] })
@@ -20,7 +21,7 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     query: ProductListQuerySchema,
     response: {
       200: ProductListResponseSchema,
-      422: ErrorSchema,
+      422: ValidationErrorSchema,
     },
     detail: {
       summary:     "List products",
@@ -32,6 +33,7 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     body: CreateProductBodySchema,
     response: {
       201: ProductSchema,
+      422: ValidationErrorSchema,
       500: ErrorSchema,
     },
     detail: {
@@ -57,6 +59,7 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     body:   UpdateProductBodySchema,
     response: {
       200: ProductSchema,
+      422: ValidationErrorSchema,
       500: ErrorSchema,
     },
     detail: {
@@ -68,7 +71,7 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
   .delete("/:id", deleteHandler, {
     params: ProductIdParamSchema,
     response: {
-      200: { message: "Deleted" } as never,
+      200: t.Object({ message: t.Literal("Deleted") }),
       500: ErrorSchema,
     },
     detail: {

@@ -57,8 +57,45 @@ const app = new Elysia()
   })
   .use(productRoutes)
   .onError(({ code, error, set }) => {
+    // ── Validation errors (body / query / params schema mismatch) ──────────
+    if (code === "VALIDATION") {
+      set.status = 422
+
+      const err = error as any
+
+      // Collect per-field errors by iterating the TypeBox validator
+      const fields: Array<{ field: string; message: string }> = []
+      if (err?.validator?.Errors) {
+        for (const e of err.validator.Errors(err.value ?? {})) {
+          fields.push({
+            field:   String(e.path).replace(/^\//, "") || "root",
+            message: String(e.message),
+          })
+        }
+      }
+
+      console.warn(JSON.stringify({
+        event:  "validation_error",
+        source: err?.on ?? "request",
+        fields,
+      }))
+
+      return {
+        error:  "Validation failed",
+        code:   "VALIDATION_ERROR",
+        source: err?.on ?? "request",   // "body" | "query" | "params" | "headers"
+        fields,
+      }
+    }
+
+    // ── Route not found ────────────────────────────────────────────────────
+    if (code === "NOT_FOUND") {
+      set.status = 404
+      return { error: "Route not found", code: "NOT_FOUND" }
+    }
+
+    // ── Everything else ────────────────────────────────────────────────────
     console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
-    if (code === "NOT_FOUND") { set.status = 404; return { error: "Route not found", code: "NOT_FOUND" } }
     set.status = 500
     return { error: "Internal server error", code: "INTERNAL_ERROR" }
   })

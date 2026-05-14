@@ -78,8 +78,29 @@ export const CreateProductBodySchema = t.Object({
 // ── Update body (all fields optional) ─────────────────────────────────────
 export const UpdateProductBodySchema = t.Partial(CreateProductBodySchema)
 
-// ── Error response ─────────────────────────────────────────────────────────
+// ── Generic error response ─────────────────────────────────────────────────
 export const ErrorSchema = t.Object({
   error: t.String(),
   code:  t.Optional(t.String()),
+})
+
+// ── Validation error response (422) ───────────────────────────────────────
+// Matches the structured payload returned by the global onError handler.
+export const ValidationErrorSchema = t.Object({
+  error:  t.Literal("Validation failed"),
+  code:   t.Literal("VALIDATION_ERROR"),
+  source: t.Union([
+    t.Literal("body"),
+    t.Literal("query"),
+    t.Literal("params"),
+    t.Literal("headers"),
+    t.Literal("request"),
+  ], { description: "Which part of the request failed validation" }),
+  fields: t.Array(
+    t.Object({
+      field:   t.String({ description: "JSON path of the invalid field, e.g. 'price' or 'items/0/name'" }),
+      message: t.String({ description: "Human-readable reason the field failed" }),
+    }),
+    { description: "Per-field validation errors" }
+  ),
 })

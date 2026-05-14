@@ -5,6 +5,7 @@ import { cors }               from "./middleware/cors"
 import { requestId }          from "./middleware/request-id"
 import { logger }             from "./middleware/logger"
 import { rateLimiter }        from "./middleware/rate-limiter"
+import { bodySizeLimiter }    from "./middleware/body-size-limiter"
 import { authResolver }       from "./middleware/auth-resolver"
 import { contextInjector }    from "./middleware/context-injector"
 import { routeGuard }         from "./middleware/route-guard"
@@ -31,6 +32,7 @@ app.use("*", cors)
 app.use("*", requestId)
 app.use("*", logger)
 app.use("*", rateLimiter)
+app.use("*", bodySizeLimiter)
 app.use("*", authResolver)       // populates c.var.authPayload or short-circuits 401
 app.use("*", contextInjector)    // promotes authPayload → c.var.user (typed User | null)
 app.use("*", routeGuard)         // RBAC enforcement

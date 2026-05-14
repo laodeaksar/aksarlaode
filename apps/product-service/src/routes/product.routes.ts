@@ -15,6 +15,9 @@ import {
   ValidationErrorSchema,
 } from "@/schemas"
 
+const ForbiddenSchema  = ErrorSchema
+const AdminDescription = "Requires `x-user-role: ADMIN` header forwarded by the gateway."
+
 export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"] })
 
   .get("/", listHandler, {
@@ -33,12 +36,13 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     body: CreateProductBodySchema,
     response: {
       201: ProductSchema,
+      403: ForbiddenSchema,
       422: ValidationErrorSchema,
       500: ErrorSchema,
     },
     detail: {
       summary:     "Create product",
-      description: "Creates a new product. Requires internal service token.",
+      description: `Creates a new product. ${AdminDescription}`,
     },
   })
 
@@ -59,12 +63,13 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     body:   UpdateProductBodySchema,
     response: {
       200: ProductSchema,
+      403: ForbiddenSchema,
       422: ValidationErrorSchema,
       500: ErrorSchema,
     },
     detail: {
       summary:     "Update product",
-      description: "Partial update — only the provided fields are changed.",
+      description: `Partial update — only the provided fields are changed. ${AdminDescription}`,
     },
   })
 
@@ -72,10 +77,11 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     params: ProductIdParamSchema,
     response: {
       200: t.Object({ message: t.Literal("Deleted") }),
+      403: ForbiddenSchema,
       500: ErrorSchema,
     },
     detail: {
       summary:     "Delete product",
-      description: "Permanently deletes a product by ID.",
+      description: `Permanently deletes a product by ID. ${AdminDescription}`,
     },
   })

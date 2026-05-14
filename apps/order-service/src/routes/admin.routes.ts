@@ -4,6 +4,7 @@ import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
 import { adminListOrdersHandler }     from "@/handlers/admin-orders"
 import { adminOrdersSummaryHandler }  from "@/handlers/admin-orders-summary"
 import { adminOrderTimelineHandler }  from "@/handlers/admin-order-timeline"
+import { adminOrderNoteHandler }      from "@/handlers/admin-order-note"
 
 const ErrorSchema = t.Object({
   error: t.String(),
@@ -188,6 +189,45 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
         "per-step elapsed time, and human-readable durations.",
         "Non-terminal orders include a live 'ongoing' marker showing elapsed time since the last status change.",
         "Terminal statuses: DELIVERED, CANCELLED, REFUNDED.",
+        "Requires ADMIN role.",
+      ].join(" "),
+    },
+  })
+
+  // ── POST /admin/orders/:orderId/note ─────────────────────────────────────
+  .post("/orders/:orderId/note", adminOrderNoteHandler, {
+    params: t.Object({
+      orderId: t.String({ description: "Order ID (e.g. ORD-20240513-A3F9B2C1)" }),
+    }),
+    body: t.Object({
+      note: t.String({
+        minLength: 1,
+        maxLength: 1000,
+        description: "Internal note text visible only to admins (max 1000 chars)",
+      }),
+    }),
+    response: {
+      201: t.Object({
+        orderId: t.String(),
+        entry: t.Object({
+          status:    t.String(),
+          note:      t.String(),
+          changedBy: t.String(),
+          timestamp: t.String(),
+        }),
+      }),
+      403: ErrorSchema,
+      404: ErrorSchema,
+      422: ErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary: "Add internal note to order (admin)",
+      description: [
+        "Appends an internal note to the order's status history WITHOUT changing its status.",
+        "The entry is stored with a sentinel status of '__NOTE__' so timeline consumers can",
+        "distinguish notes from real status transitions and render them differently (e.g. a comment bubble).",
+        "Notes are admin-only and never exposed on the customer-facing order endpoints.",
         "Requires ADMIN role.",
       ].join(" "),
     },

@@ -350,7 +350,37 @@ const summarize = (filters: SummaryFilters = {}) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
+/**
+ * Appends an internal admin note to statusHistory WITHOUT changing the order
+ * status.  The entry re-uses the current status so timeline rendering stays
+ * consistent.  Returns the updated document.
+ */
+const addNote = (orderId: string, note: string, changedBy: string) =>
+  Effect.gen(function* () {
+    const doc = yield* Effect.tryPromise({
+      try: () =>
+        OrderModel.findOneAndUpdate(
+          { orderId },
+          {
+            $push: {
+              statusHistory: {
+                status:    "__NOTE__",   // sentinel — not an OrderStatus transition
+                note,
+                changedBy,
+                timestamp: new Date(),
+              },
+            },
+          },
+          { new: true }
+        ).lean(),
+      catch: (e) => new DbError({ cause: e }),
+    })
+
+    if (!doc) return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
+    return doc
+  })
+
 export const orderRepository = {
   create, findByOrderId, findByUser, findAll, summarize, updateStatus,
-  cancelIfPending, findExpiredPending, checkOwnership,
+  cancelIfPending, findExpiredPending, checkOwnership, addNote,
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER } from "../fixtures"
 
@@ -10,19 +10,18 @@ vi.mock("@/repository/reset-token.repository", () => ({
   resetTokenRepository: { deleteAllByUserId: vi.fn(), create: vi.fn() },
 }))
 
-import { userRepository }       from "@/repository/user.repository"
-import { resetTokenRepository } from "@/repository/reset-token.repository"
+import { userRepository }        from "@/repository/user.repository"
+import { resetTokenRepository }  from "@/repository/reset-token.repository"
 import { forgotPasswordHandler } from "@/handlers/forgot-password"
 
-const app = new Hono()
-app.post("/forgot-password", forgotPasswordHandler)
+const app = new Elysia().post("/forgot-password", forgotPasswordHandler)
 
 function post(body: unknown) {
-  return app.request("/forgot-password", {
+  return app.handle(new Request("http://localhost/forgot-password", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(body),
-  })
+  }))
 }
 
 describe("forgotPasswordHandler", () => {
@@ -39,14 +38,14 @@ describe("forgotPasswordHandler", () => {
     expect(res.status).toBe(200)
     expect(body.resetToken).not.toBeNull()
     expect(typeof body.resetToken).toBe("string")
-    expect(body.resetToken).toHaveLength(64)   // 32-byte hex = 64 chars
+    expect(body.resetToken).toHaveLength(64)
   })
 
   it("returns 200 with null resetToken when email is NOT found (anti-enumeration)", async () => {
     vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(null))
     const res  = await post({ email: "ghost@example.com" })
     const body = await res.json()
-    expect(res.status).toBe(200)             // still 200 — same status
+    expect(res.status).toBe(200)
     expect(body.resetToken).toBeNull()
   })
 

@@ -1,20 +1,18 @@
-import { Effect }             from "effect"
-import type { Context }       from "hono"
+import { Effect }            from "effect"
 import { verifyToken, issueTokenPair } from "@/lib/token"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
 import { AuthError, toErrorResponse } from "@repo/common/errors"
-import type { AppEnv }       from "@/types"
+import type { HandlerCtx }   from "@/types"
 
-export const refreshHandler = async (c: Context<AppEnv>) => {
-  const cookieHeader = c.req.header("cookie") ?? ""
+export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
+  const cookieHeader = headers["cookie"] ?? ""
   const match        = cookieHeader.match(/ec_refresh=([^;]+)/)
   const rawToken     = match?.[1] ? decodeURIComponent(match[1]) : null
 
   const program = Effect.gen(function* () {
     if (!rawToken) return yield* Effect.fail(new AuthError())
 
-    // 1. Verify JWT signature & expiry
     const payload = yield* verifyToken(rawToken).pipe(
       Effect.mapError(() => new AuthError())
     )
@@ -23,7 +21,6 @@ export const refreshHandler = async (c: Context<AppEnv>) => {
       return yield* Effect.fail(new AuthError())
     }
 
-    // 2. Verify session still exists in DB
     const session = yield* sessionRepository.findByToken(rawToken).pipe(
       Effect.mapError(() => new AuthError())
     )
@@ -31,13 +28,11 @@ export const refreshHandler = async (c: Context<AppEnv>) => {
       return yield* Effect.fail(new AuthError())
     }
 
-    // 3. Load user
     const user = yield* userRepository.findById(payload["sub"]).pipe(
       Effect.mapError(() => new AuthError())
     )
     if (!user) return yield* Effect.fail(new AuthError())
 
-    // 4. Rotate: delete old session, issue fresh pair, persist new session
     yield* sessionRepository.deleteByToken(rawToken).pipe(
       Effect.mapError(() => new AuthError())
     )
@@ -59,13 +54,14 @@ export const refreshHandler = async (c: Context<AppEnv>) => {
 
   if (result._tag === "Failure") {
     const { body, status } = toErrorResponse(result.cause.error)
-    return c.json(body, status as any)
+    set.status = status
+    return body
   }
 
   const tokens = result.value
 
-  c.header("Set-Cookie",
+  set.headers["Set-Cookie"] =
     `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=${60 * 60 * 24 * 7}`
-  )
-  return c.json({ accessToken: tokens.accessToken })
+
+  return { accessToken: tokens.accessToken }
 }

@@ -1,19 +1,26 @@
-import { Effect }             from "effect"
-import type { Context }       from "hono"
-import { sessionRepository }  from "@/repository/session.repository"
+import { Effect }            from "effect"
+import { sessionRepository } from "@/repository/session.repository"
 import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
-import { message }            from "@repo/common/response"
-import type { AppEnv }        from "@/types"
+import { message }           from "@repo/common/response"
+import type { HandlerCtx }   from "@/types"
 
-export const revokeSessionHandler = async (c: Context<AppEnv>) => {
-  const userId    = c.req.header("x-user-id")
-  const sessionId = c.req.param("id")
+export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx) => {
+  const userId    = headers["x-user-id"]
+  const sessionId = params["id"]
 
-  if (!userId)    return c.json(toErrorResponse(new AuthError()).body, 401 as any)
-  if (!sessionId) return c.json(toErrorResponse(new AuthError("Session ID required")).body, 400 as any)
+  if (!userId) {
+    const { body, status } = toErrorResponse(new AuthError())
+    set.status = status
+    return body
+  }
+
+  if (!sessionId) {
+    const { body, status } = toErrorResponse(new AuthError("Session ID required"))
+    set.status = status
+    return body
+  }
 
   const program = Effect.gen(function* () {
-    // Verify the session exists AND belongs to this user before deleting
     const session = yield* sessionRepository.findByIdAndUserId(sessionId, userId)
     if (!session) return yield* Effect.fail(new NotFoundError("Session"))
     yield* sessionRepository.deleteByIdAndUserId(sessionId, userId)
@@ -23,8 +30,9 @@ export const revokeSessionHandler = async (c: Context<AppEnv>) => {
 
   if (result._tag === "Failure") {
     const { body, status } = toErrorResponse(result.cause.error)
-    return c.json(body, status as any)
+    set.status = status
+    return body
   }
 
-  return c.json(message("Session revoked"))
+  return message("Session revoked")
 }

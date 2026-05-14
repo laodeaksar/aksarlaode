@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_SESSION } from "../fixtures"
 
@@ -13,14 +13,13 @@ vi.mock("@/repository/session.repository", () => ({
 import { sessionRepository }   from "@/repository/session.repository"
 import { revokeSessionHandler } from "@/handlers/revoke-session"
 
-const app = new Hono()
-app.delete("/sessions/:id", revokeSessionHandler)
+const app = new Elysia().delete("/sessions/:id", revokeSessionHandler)
 
 function del(sessionId: string, userId?: string) {
-  return app.request(`/sessions/${sessionId}`, {
+  return app.handle(new Request(`http://localhost/sessions/${sessionId}`, {
     method:  "DELETE",
     headers: userId ? { "x-user-id": userId } : {},
-  })
+  }))
 }
 
 describe("revokeSessionHandler", () => {

@@ -3,32 +3,31 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev":       "node --watch --import tsx/esm src/index.ts",
-    "build":     "tsc",
-    "dev":       "tsx watch src/index.ts",
-    "start":     "node dist/index.js",
-    "typecheck": "tsc --noEmit",
-    "clean":     "rm -rf dist",
-    "test":      "vitest run",
-    "test:watch": "vitest",
+    "dev":          "bun --watch src/index.ts",
+    "build":        "tsc",
+    "start":        "bun src/index.ts",
+    "typecheck":    "tsc --noEmit",
+    "clean":        "rm -rf dist",
+    "test":         "vitest run",
+    "test:watch":   "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "elysia":                 "^1.1.0",
-    "@elysiajs/cors":         "^1.1.0",
-    "effect":             "^3.15.0",
-    "better-auth":        "^1.2.7",
-    "drizzle-orm":        "^0.41.0",
-    "@repo/env":          "workspace:*",
-    "@repo/common":       "workspace:*",
-    "@repo/database":     "workspace:*"
+    "elysia":         "^1.1.0",
+    "@elysiajs/cors": "^1.1.0",
+    "effect":         "^3.15.0",
+    "better-auth":    "^1.2.7",
+    "drizzle-orm":    "^0.41.0",
+    "@repo/env":      "workspace:*",
+    "@repo/common":   "workspace:*",
+    "@repo/database": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/node":  "^20.0.0",
-    "@vitest/coverage-v8": "^1.6.0",
-    "tsx":          "^4.19.0",
-    "typescript":   "^5.4.0",
-    "vitest":       "^1.6.0"
+    "@types/bun":              "latest",
+    "@types/node":             "^20.0.0",
+    "@vitest/coverage-v8":     "^1.6.0",
+    "typescript":              "^5.4.0",
+    "vitest":                  "^1.6.0"
   }
 }

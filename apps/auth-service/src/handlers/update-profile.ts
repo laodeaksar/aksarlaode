@@ -1,25 +1,25 @@
-import { Effect }          from "effect"
-import type { Context }    from "hono"
+import { Effect }           from "effect"
 import { userRepository }  from "@/repository/user.repository"
 import { UpdateProfileSchema } from "@repo/common"
 import { AuthError, ValidationError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { ok }              from "@repo/common/response"
-import type { AppEnv }    from "@/types"
+import type { HandlerCtx } from "@/types"
 
-export const updateProfileHandler = async (c: Context<AppEnv>) => {
-  const userId = c.req.header("x-user-id")
-  if (!userId) return c.json(toErrorResponse(new AuthError()).body, 401 as any)
+export const updateProfileHandler = async ({ body, headers, set }: HandlerCtx) => {
+  const userId = headers["x-user-id"]
 
-  const body = await c.req.json()
+  if (!userId) {
+    const { body: errBody, status } = toErrorResponse(new AuthError())
+    set.status = status
+    return errBody
+  }
 
   const program = Effect.gen(function* () {
-    // 1. Validate & parse input (all fields optional, at least one required)
     const input = yield* Effect.try({
       try:   () => UpdateProfileSchema.parse(body),
       catch: () => new ValidationError(),
     })
 
-    // 2. Persist changes — only columns explicitly provided are updated
     const updated = yield* userRepository.update(userId, input)
     if (!updated) return yield* Effect.fail(new NotFoundError("User"))
 
@@ -36,9 +36,10 @@ export const updateProfileHandler = async (c: Context<AppEnv>) => {
   const result = await Effect.runPromiseExit(program)
 
   if (result._tag === "Failure") {
-    const { body, status } = toErrorResponse(result.cause.error)
-    return c.json(body, status as any)
+    const { body: errBody, status } = toErrorResponse(result.cause.error)
+    set.status = status
+    return errBody
   }
 
-  return c.json(ok(result.value))
+  return ok(result.value)
 }

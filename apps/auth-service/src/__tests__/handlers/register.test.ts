@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
 
@@ -22,15 +22,14 @@ import { hashPassword }      from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
 import { registerHandler }   from "@/handlers/register"
 
-const app = new Hono()
-app.post("/register", registerHandler)
+const app = new Elysia().post("/register", registerHandler)
 
 function post(body: unknown) {
-  return app.request("/register", {
+  return app.handle(new Request("http://localhost/register", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(body),
-  })
+  }))
 }
 
 describe("registerHandler", () => {

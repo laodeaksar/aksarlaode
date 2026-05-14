@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_SESSION, MOCK_TOKENS } from "../fixtures"
 
@@ -21,14 +21,13 @@ import { refreshHandler }    from "@/handlers/refresh"
 
 const REFRESH_COOKIE = `ec_refresh=${encodeURIComponent(MOCK_TOKENS.refreshToken)}`
 
-const app = new Hono()
-app.post("/refresh", refreshHandler)
+const app = new Elysia().post("/refresh", refreshHandler)
 
 function post(cookie?: string) {
-  return app.request("/refresh", {
+  return app.handle(new Request("http://localhost/refresh", {
     method:  "POST",
     headers: cookie ? { cookie } : {},
-  })
+  }))
 }
 
 describe("refreshHandler", () => {

@@ -1,17 +1,20 @@
-import { Effect }             from "effect"
-import type { Context }       from "hono"
-import { sessionRepository }  from "@/repository/session.repository"
+import { Effect }            from "effect"
+import { sessionRepository } from "@/repository/session.repository"
 import { AuthError, toErrorResponse } from "@repo/common/errors"
-import { paginated }          from "@repo/common/response"
-import type { AppEnv }        from "@/types"
+import { paginated }         from "@repo/common/response"
+import type { HandlerCtx }   from "@/types"
 
-export const listSessionsHandler = async (c: Context<AppEnv>) => {
-  const userId = c.req.header("x-user-id")
-  if (!userId) return c.json(toErrorResponse(new AuthError()).body, 401 as any)
+export const listSessionsHandler = async ({ headers, query, set }: HandlerCtx) => {
+  const userId = headers["x-user-id"]
 
-  // Optional pagination query params
-  const page  = Math.max(1, Number(c.req.query("page")  ?? 1))
-  const limit = Math.min(50, Math.max(1, Number(c.req.query("limit") ?? 20)))
+  if (!userId) {
+    const { body, status } = toErrorResponse(new AuthError())
+    set.status = status
+    return body
+  }
+
+  const page  = Math.max(1, Number(query["page"]  ?? 1))
+  const limit = Math.min(50, Math.max(1, Number(query["limit"] ?? 20)))
 
   const result = await Effect.runPromiseExit(
     sessionRepository.findAllByUserId(userId)
@@ -19,10 +22,10 @@ export const listSessionsHandler = async (c: Context<AppEnv>) => {
 
   if (result._tag === "Failure") {
     const { body, status } = toErrorResponse(result.cause.error)
-    return c.json(body, status as any)
+    set.status = status
+    return body
   }
 
-  // Strip raw refresh token — only expose safe metadata
   const all = result.value.map(s => ({
     id:        s.id,
     createdAt: s.createdAt,
@@ -32,5 +35,5 @@ export const listSessionsHandler = async (c: Context<AppEnv>) => {
   const total = all.length
   const slice = all.slice((page - 1) * limit, page * limit)
 
-  return c.json(paginated(slice, { page, limit, total }))
+  return paginated(slice, { page, limit, total })
 }

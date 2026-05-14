@@ -1,13 +1,16 @@
-import type { Context }   from "hono"
-import { ok }             from "@repo/common/response"
+import { ok }                from "@repo/common/response"
 import { toErrorResponse, AuthError } from "@repo/common/errors"
-import type { AppEnv }   from "@/types"
+import type { HandlerCtx }   from "@/types"
 
-export const meHandler = async (c: Context<AppEnv>) => {
-  const userId = c.req.header("x-user-id")
-  const role   = c.req.header("x-user-role")
+export const meHandler = async ({ headers, set }: HandlerCtx) => {
+  const userId = headers["x-user-id"]
+  const role   = headers["x-user-role"]
 
-  if (!userId) return c.json(toErrorResponse(new AuthError()).body, 401 as any)
+  if (!userId) {
+    const { body, status } = toErrorResponse(new AuthError())
+    set.status = status
+    return body
+  }
 
-  return c.json(ok({ id: userId, role: role ?? "CUSTOMER" }))
+  return ok({ id: userId, role: role ?? "CUSTOMER" })
 }

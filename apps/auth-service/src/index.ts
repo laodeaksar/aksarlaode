@@ -1,21 +1,20 @@
-import { serve }     from "@hono/node-server"
-import { Hono }      from "hono"
+import { Elysia }  from "elysia"
+import { cors }    from "@elysiajs/cors"
+import { env }     from "@repo/env/auth"
 import authRoutes    from "./routes/auth.routes"
 import sessionRoutes from "./routes/session.routes"
-import type { AppEnv } from "./types"
+import { serviceTokenMiddleware } from "./middleware/service-token"
 
 const PORT = parseInt(process.env["PORT"] ?? "3001", 10)
 
 const app = new Elysia()
 
-  // ── Global middleware ─────────────────────────────────
   .use(cors({
-    origin:          [env.WEB_URL, env.ADMIN_URL],
-    allowedHeaders:  ["Content-Type", "Authorization", "x-service-token", "x-user-id", "x-request-id"],
-    credentials:     true,
+    origin:         [env.WEB_URL, env.ADMIN_URL],
+    allowedHeaders: ["Content-Type", "Authorization", "x-service-token", "x-user-id", "x-request-id"],
+    credentials:    true,
   }))
 
-  // Request logger
   .onRequest(({ request, store }) => {
     const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID()
     ;(store as Record<string, string>)["requestId"] = requestId
@@ -27,21 +26,13 @@ const app = new Elysia()
     }))
   })
 
-  // Service token guard — every route requires this
   .onBeforeHandle(serviceTokenMiddleware)
 
-  // ── Health ─────────────────────────────────────────────
   .get("/health", () => ({ status: "ok", service: "auth-service" }))
 
-  // ── Routes ─────────────────────────────────────────────
+  .use(authRoutes)
+  .use(sessionRoutes)
 
-.route("/auth",    authRoutes)
-.route("/session", sessionRoutes)
-
-
- // .use(authRoutes)
-
-  // ── Error handler ──────────────────────────────────────
   .onError(({ code, error, set }) => {
     console.error(JSON.stringify({
       event:   "unhandled_error",
@@ -66,7 +57,6 @@ const app = new Elysia()
 
 console.info(`🔐 auth-service running on http://localhost:${PORT}`)
 
-// ── Graceful shutdown ──────────────────────────────────────
 const shutdown = async (signal: string) => {
   console.info(`Received ${signal}, shutting down...`)
   await app.stop()

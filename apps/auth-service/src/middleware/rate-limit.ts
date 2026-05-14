@@ -1,11 +1,9 @@
-import type { MiddlewareHandler } from "hono"
-
 interface Entry {
   count:   number
   resetAt: number
 }
 
-function createRateLimiter(maxRequests: number, windowMs: number): MiddlewareHandler {
+function createRateLimiter(maxRequests: number, windowMs: number) {
   const store = new Map<string, Entry>()
 
   setInterval(() => {
@@ -15,10 +13,16 @@ function createRateLimiter(maxRequests: number, windowMs: number): MiddlewareHan
     }
   }, 5 * 60 * 1000).unref()
 
-  return async (c, next) => {
+  return ({
+    request,
+    set,
+  }: {
+    request: Request
+    set:     { status?: number; headers: Record<string, string> }
+  }) => {
     const ip =
-      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-      c.req.header("x-real-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip") ??
       "unknown"
 
     const now   = Date.now()
@@ -26,16 +30,16 @@ function createRateLimiter(maxRequests: number, windowMs: number): MiddlewareHan
 
     if (!entry || entry.resetAt < now) {
       store.set(ip, { count: 1, resetAt: now + windowMs })
-      return next()
+      return
     }
 
     if (entry.count >= maxRequests) {
-      c.header("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)))
-      return c.json({ error: "Too many requests, please try again later" }, 429)
+      set.status                  = 429
+      set.headers["Retry-After"]  = String(Math.ceil((entry.resetAt - now) / 1000))
+      return { error: "Too many requests, please try again later" }
     }
 
     entry.count++
-    return next()
   }
 }
 

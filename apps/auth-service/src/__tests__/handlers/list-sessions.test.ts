@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_SESSION } from "../fixtures"
 
@@ -10,13 +10,12 @@ vi.mock("@/repository/session.repository", () => ({
 import { sessionRepository }  from "@/repository/session.repository"
 import { listSessionsHandler } from "@/handlers/list-sessions"
 
-const app = new Hono()
-app.get("/sessions", listSessionsHandler)
+const app = new Elysia().get("/sessions", listSessionsHandler)
 
 function get(userId?: string, query = "") {
-  return app.request(`/sessions${query}`, {
+  return app.handle(new Request(`http://localhost/sessions${query}`, {
     headers: userId ? { "x-user-id": userId } : {},
-  })
+  }))
 }
 
 describe("listSessionsHandler", () => {
@@ -48,7 +47,6 @@ describe("listSessionsHandler", () => {
   })
 
   it("supports pagination via query params", async () => {
-    // 25 sessions, page 2 with limit 10 → 5 items
     const sessions = Array.from({ length: 25 }, (_, i) => ({
       ...MOCK_SESSION,
       id: `session-${i}`,

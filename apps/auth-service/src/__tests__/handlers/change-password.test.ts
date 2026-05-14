@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER } from "../fixtures"
 
@@ -14,20 +14,19 @@ vi.mock("@/lib/password", () => ({
   hashPassword:   vi.fn(),
 }))
 
-import { userRepository }    from "@/repository/user.repository"
-import { sessionRepository } from "@/repository/session.repository"
+import { userRepository }           from "@/repository/user.repository"
+import { sessionRepository }        from "@/repository/session.repository"
 import { verifyPassword, hashPassword } from "@/lib/password"
-import { changePasswordHandler }        from "@/handlers/change-password"
+import { changePasswordHandler }    from "@/handlers/change-password"
 
-const app = new Hono()
-app.post("/change-password", changePasswordHandler)
+const app = new Elysia().post("/change-password", changePasswordHandler)
 
 function post(body: unknown, userId = MOCK_USER.id) {
-  return app.request("/change-password", {
+  return app.handle(new Request("http://localhost/change-password", {
     method:  "POST",
     headers: { "Content-Type": "application/json", "x-user-id": userId },
     body:    JSON.stringify(body),
-  })
+  }))
 }
 
 describe("changePasswordHandler", () => {
@@ -70,11 +69,11 @@ describe("changePasswordHandler", () => {
   })
 
   it("returns 401 when x-user-id header is missing", async () => {
-    const res = await app.request("/change-password", {
+    const res = await app.handle(new Request("http://localhost/change-password", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ currentPassword: "old", newPassword: "newPass1!" }),
-    })
+    }))
     expect(res.status).toBe(401)
   })
 })

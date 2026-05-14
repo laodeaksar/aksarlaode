@@ -1,8 +1,11 @@
 export type UserRole = "CUSTOMER" | "ADMIN"
 
-export type AppEnv = {
-  Variables: {
-    userId?: string
-    userRole?: UserRole
-  }
+export type HandlerCtx = {
+  body:    unknown
+  headers: Record<string, string | undefined>
+  set:     { status?: number; headers: Record<string, string> }
+  query:   Record<string, string | undefined>
+  params:  Record<string, string | undefined>
+  request: Request
+  store:   Record<string, unknown>
 }

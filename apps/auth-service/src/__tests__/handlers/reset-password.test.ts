@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Hono }   from "hono"
+import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_RESET_TOKEN } from "../fixtures"
 
@@ -16,21 +16,20 @@ vi.mock("@/lib/password", () => ({
   hashPassword: vi.fn(),
 }))
 
-import { userRepository }       from "@/repository/user.repository"
-import { sessionRepository }    from "@/repository/session.repository"
-import { resetTokenRepository } from "@/repository/reset-token.repository"
-import { hashPassword }         from "@/lib/password"
-import { resetPasswordHandler } from "@/handlers/reset-password"
+import { userRepository }        from "@/repository/user.repository"
+import { sessionRepository }     from "@/repository/session.repository"
+import { resetTokenRepository }  from "@/repository/reset-token.repository"
+import { hashPassword }          from "@/lib/password"
+import { resetPasswordHandler }  from "@/handlers/reset-password"
 
-const app = new Hono()
-app.post("/reset-password", resetPasswordHandler)
+const app = new Elysia().post("/reset-password", resetPasswordHandler)
 
 function post(body: unknown) {
-  return app.request("/reset-password", {
+  return app.handle(new Request("http://localhost/reset-password", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(body),
-  })
+  }))
 }
 
 const VALID_BODY = { token: MOCK_RESET_TOKEN.token, newPassword: "newSecret1!" }

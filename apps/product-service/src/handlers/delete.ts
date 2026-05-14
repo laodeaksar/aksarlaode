@@ -3,7 +3,7 @@ import type { Context } from "elysia"
 import { productRepository } from "@/repository/product.repository"
 import type { DerivedContext } from "@/types"
 
-export const deleteHandler = async ({ params, set, userRole }: Context & DerivedContext) => {
+export const deleteHandler = async ({ params, set, userRole, userId, requestId }: Context & DerivedContext) => {
   if (userRole !== "ADMIN") {
     set.status = 403
     return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" }
@@ -17,6 +17,13 @@ export const deleteHandler = async ({ params, set, userRole }: Context & Derived
     set.status = 500
     return { error: "Failed to delete product" }
   }
+
+  console.info(JSON.stringify({
+    event:      "product_deleted",
+    productId:  id,
+    userId,
+    requestId,
+  }))
 
   return { message: "Deleted" }
 }

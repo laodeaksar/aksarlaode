@@ -8,6 +8,7 @@ import { adminRoutes }             from "./routes/admin.routes"
 import { paymentWebhookHandler }   from "./handlers/payment-webhook"
 import { createReconciliationWorker, scheduleReconciliationJob } from "./workers/reconciliation.worker"
 import { healthHandler }             from "./handlers/health"
+import { requestLogger }             from "./lib/request-logger"
 
 const PORT = Number(process.env.PORT) || 3003
 
@@ -38,15 +39,8 @@ const app = new Elysia()
     credentials:    false,
   }))
 
-  .onRequest(({ request, headers }) => {
-    console.info(JSON.stringify({
-      event:     "request_in",
-      method:    request.method,
-      path:      new URL(request.url).pathname,
-      requestId: headers["x-request-id"] ?? null,
-      userId:    headers["x-user-id"]    ?? null,
-    }))
-  })
+  // ── Structured per-request logging — one JSON line emitted on completion ──
+  .use(requestLogger)
 
   .get("/health", healthHandler, {
     response: {
@@ -97,13 +91,20 @@ const app = new Elysia()
 
   .use(orderRoutes)
 
+  // ── Error response shaper — logging is handled by requestLogger plugin ────
   .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404
       return { error: "Route not found", code: "NOT_FOUND" }
     }
-    // Log message only — never expose stack trace or internal error details
-    console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
+    if (code === "VALIDATION") {
+      set.status = 422
+      return { error: "Validation failed", code: "VALIDATION", detail: error.message }
+    }
+    if (code === "PARSE") {
+      set.status = 400
+      return { error: "Invalid request body", code: "PARSE_ERROR" }
+    }
     set.status = 500
     return { error: "Internal server error", code: "INTERNAL_ERROR" }
   })

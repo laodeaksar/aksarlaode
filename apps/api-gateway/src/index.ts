@@ -10,6 +10,7 @@ import { requestTimeout }     from "./middleware/request-timeout"
 import { authResolver }       from "./middleware/auth-resolver"
 import { contextInjector }    from "./middleware/context-injector"
 import { routeGuard }         from "./middleware/route-guard"
+import { auditLog }           from "./middleware/audit-log"
 import { responseNormalizer } from "./middleware/response-normalizer"
 import { errorBoundary }      from "./lib/errors"
 import { getAllBreakerStatus } from "./lib/circuit-breaker"
@@ -45,6 +46,7 @@ app.use("*", bodySizeLimiter)
 app.use("*", requestTimeout)
 app.use("*", authResolver)       // populates c.var.authPayload or short-circuits 401
 app.use("*", contextInjector)    // promotes authPayload → c.var.user (typed User | null)
+app.use("*", auditLog)           // structured audit trail (after user is known, before RBAC)
 app.use("*", routeGuard)         // RBAC enforcement
 app.use("*", responseNormalizer) // sets x-request-id / x-response-time headers
 

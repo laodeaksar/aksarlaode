@@ -4,6 +4,7 @@ import { swagger }   from "@elysiajs/swagger"
 import { connectMongo } from "@repo/database"
 import { env }       from "@repo/env/order"
 import { orderRoutes }             from "./routes/order.routes"
+import { adminRoutes }             from "./routes/admin.routes"
 import { paymentWebhookHandler }   from "./handlers/payment-webhook"
 import { createReconciliationWorker, scheduleReconciliationJob } from "./workers/reconciliation.worker"
 
@@ -20,6 +21,7 @@ const app = new Elysia()
       },
       tags: [
         { name: "Orders",  description: "Order lifecycle management" },
+        { name: "Admin",   description: "Admin operations" },
         { name: "Webhook", description: "Payment gateway callbacks" },
         { name: "Health",  description: "Service health check" },
       ],
@@ -58,6 +60,8 @@ const app = new Elysia()
       description: "Receives Midtrans HTTP notification. Validates SHA-512 HMAC signature before processing. Idempotent — duplicate deliveries of the same transaction_id are safely ignored.",
     },
   })
+
+  .use(adminRoutes)
 
   .use(orderRoutes)
 

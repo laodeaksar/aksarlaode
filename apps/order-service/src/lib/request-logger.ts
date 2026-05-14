@@ -1,23 +1,27 @@
 import Elysia from "elysia"
 
 /**
- * Per-request structured logging plugin.
+ * Per-request structured logging + automatic x-request-id generation.
  *
- * Emits one JSON log line per request on *completion* instead of on arrival,
- * so every log entry contains the final HTTP status code and end-to-end
- * response latency.
+ * Behaviours:
+ *  1. If the incoming request carries an x-request-id header it is reused as-is.
+ *     This lets the API gateway inject a trace ID that flows end-to-end.
+ *  2. If no x-request-id is present a UUID v4 is generated for this request.
+ *     The generated ID is echoed back in the response x-request-id header so
+ *     clients can correlate logs without needing gateway support.
+ *  3. One JSON log line is emitted on *completion* (not on arrival) so every
+ *     entry contains the final HTTP status code and end-to-end latency.
  *
- * Fields emitted:
+ * Log fields:
  *   event      — "request_completed" | "request_error"
  *   method     — HTTP verb
- *   path       — pathname only (query string deliberately omitted to avoid
- *                accidentally logging sensitive filter params)
+ *   path       — pathname only (query string omitted — may contain sensitive params)
  *   status     — final HTTP status code
  *   latencyMs  — wall-clock ms from derive() to onAfterHandle / onError
- *   requestId  — x-request-id header (set by API gateway)
- *   userId     — x-user-id header (absent on public endpoints)
- *   userRole   — x-user-role header (absent on public endpoints)
- *   errorCode  — Elysia error code (only on request_error events)
+ *   requestId  — x-request-id (original or auto-generated)
+ *   userId     — x-user-id header  (null on public endpoints)
+ *   userRole   — x-user-role header (null on public endpoints)
+ *   errorCode  — Elysia error code  (only on request_error events)
  */
 
 function emit(
@@ -26,7 +30,9 @@ function emit(
   path:      string,
   status:    number,
   latencyMs: number,
-  headers:   Record<string, string | undefined>,
+  requestId: string,
+  userId:    string | null,
+  userRole:  string | null,
   extra?:    Record<string, unknown>,
 ) {
   console.info(JSON.stringify({
@@ -35,52 +41,69 @@ function emit(
     path,
     status,
     latencyMs,
-    requestId: headers["x-request-id"] ?? null,
-    userId:    headers["x-user-id"]    ?? null,
-    userRole:  headers["x-user-role"]  ?? null,
+    requestId,
+    userId,
+    userRole,
     ...extra,
   }))
 }
 
 export const requestLogger = new Elysia({ name: "request-logger" })
 
-  // Attach startTime to each request's context — runs once per request,
-  // before any handler or guard, so it captures the full processing time.
-  .derive({ as: "global" }, () => ({ _startTime: Date.now() }))
+  // ── Derive per-request context ─────────────────────────────────────────────
+  // Runs once per request, before any handler or guard.
+  // Generates a requestId if the caller did not supply one.
+  .derive({ as: "global" }, ({ headers }) => ({
+    _startTime: Date.now(),
+    requestId:  (headers["x-request-id"] as string | undefined)
+                  ?? crypto.randomUUID(),
+  }))
 
-  // ── Success path — fires after handler returns, before response is sent ────
-  .onAfterHandle({ as: "global" }, ({ request, headers, set, _startTime }) => {
-    const path = new URL(request.url).pathname
+  // ── Success path ───────────────────────────────────────────────────────────
+  // Fires after the handler returns, before the response is sent to the client.
+  .onAfterHandle({ as: "global" }, ({ request, headers, set, _startTime, requestId }) => {
+    // Echo the request ID back so clients can correlate without gateway support
+    set.headers["x-request-id"] = requestId
+
     emit(
       "request_completed",
       request.method,
-      path,
+      new URL(request.url).pathname,
       (set.status as number | undefined) ?? 200,
       Date.now() - _startTime,
-      headers as Record<string, string | undefined>,
+      requestId,
+      (headers["x-user-id"]   as string | undefined) ?? null,
+      (headers["x-user-role"] as string | undefined) ?? null,
     )
   })
 
-  // ── Error path — fires when a handler throws or Elysia raises a built-in error
-  // _startTime may be undefined if the error occurred before derive() ran
-  // (e.g. during body parsing). Fall back to 0 latency in that case.
-  .onError({ as: "global" }, ({ request, headers, set, code, _startTime }) => {
-    const path      = new URL(request.url).pathname
+  // ── Error path ─────────────────────────────────────────────────────────────
+  // _startTime / requestId may be undefined if the error occurred before
+  // derive() ran (e.g. body parse failure on a malformed Content-Type).
+  // Fall back gracefully so we never swallow a log line.
+  .onError({ as: "global" }, ({ request, headers, set, code, _startTime, requestId }) => {
+    const id        = (requestId as string  | undefined) ?? crypto.randomUUID()
     const startTime = (_startTime as number | undefined) ?? Date.now()
-    const status    = (set.status as number | undefined)
-      ?? (code === "NOT_FOUND"       ? 404
-        : code === "VALIDATION"      ? 422
-        : code === "PARSE"           ? 400
-        : code === "INVALID_COOKIE"  ? 400
+
+    // Echo request ID even on error responses
+    set.headers["x-request-id"] = id
+
+    const status = (set.status as number | undefined)
+      ?? (code === "NOT_FOUND"      ? 404
+        : code === "VALIDATION"     ? 422
+        : code === "PARSE"          ? 400
+        : code === "INVALID_COOKIE" ? 400
         : 500)
 
     emit(
       "request_error",
       request.method,
-      path,
+      new URL(request.url).pathname,
       status,
       Date.now() - startTime,
-      headers as Record<string, string | undefined>,
+      id,
+      (headers["x-user-id"]   as string | undefined) ?? null,
+      (headers["x-user-role"] as string | undefined) ?? null,
       { errorCode: code },
     )
   })

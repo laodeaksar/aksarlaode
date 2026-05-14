@@ -78,6 +78,13 @@ export const CreateProductBodySchema = t.Object({
 // ── Update body (all fields optional) ─────────────────────────────────────
 export const UpdateProductBodySchema = t.Partial(CreateProductBodySchema)
 
+// ── Stock check response ───────────────────────────────────────────────────
+export const StockResponseSchema = t.Object({
+  productId: t.String({ format: "uuid" }),
+  stock:     t.Integer({ description: "Current available stock" }),
+  inStock:   t.Boolean({ description: "True when stock > 0" }),
+})
+
 // ── Generic error response ─────────────────────────────────────────────────
 export const ErrorSchema = t.Object({
   error: t.String(),

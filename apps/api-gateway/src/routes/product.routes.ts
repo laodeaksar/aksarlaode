@@ -5,8 +5,9 @@ import type { AppEnv } from "@/types/context"
 const router = new Hono<AppEnv>()
 
 // Public reads
-router.get("/",        (c) => proxyTo("PRODUCT", c))   // list + filter + search
-router.get("/:id",     (c) => proxyTo("PRODUCT", c))   // single product
+router.get("/",           (c) => proxyTo("PRODUCT", c))   // list + filter + search
+router.get("/:id/stock",  (c) => proxyTo("PRODUCT", c))   // stock check (order-service friendly)
+router.get("/:id",        (c) => proxyTo("PRODUCT", c))   // single product
 router.get("/slug/:slug", (c) => proxyTo("PRODUCT", c))
 
 // Admin writes (routeGuard enforces ADMIN role)

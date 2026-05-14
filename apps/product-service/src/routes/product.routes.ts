@@ -1,9 +1,10 @@
 import Elysia, { t }   from "elysia"
-import { listHandler }   from "@/handlers/list"
-import { createHandler } from "@/handlers/create"
-import { getOneHandler } from "@/handlers/get-one"
-import { updateHandler } from "@/handlers/update"
-import { deleteHandler } from "@/handlers/delete"
+import { listHandler }     from "@/handlers/list"
+import { createHandler }   from "@/handlers/create"
+import { getOneHandler }   from "@/handlers/get-one"
+import { getStockHandler } from "@/handlers/get-stock"
+import { updateHandler }   from "@/handlers/update"
+import { deleteHandler }   from "@/handlers/delete"
 import {
   ProductSchema,
   ProductListResponseSchema,
@@ -11,6 +12,7 @@ import {
   ProductIdParamSchema,
   CreateProductBodySchema,
   UpdateProductBodySchema,
+  StockResponseSchema,
   ErrorSchema,
   ValidationErrorSchema,
 } from "@/schemas"
@@ -43,6 +45,18 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     detail: {
       summary:     "Create product",
       description: `Creates a new product. ${AdminDescription}`,
+    },
+  })
+
+  .get("/:id/stock", getStockHandler, {
+    params: ProductIdParamSchema,
+    response: {
+      200: StockResponseSchema,
+      404: ErrorSchema,
+    },
+    detail: {
+      summary:     "Check product stock",
+      description: "Returns only stock availability for a product by UUID. Intended for use by order-service before creating an order.",
     },
   })
 

@@ -26,12 +26,13 @@ const AddressSchema = new Schema({
 const StatusEventSchema = new Schema({
   status:    { type: String, required: true },
   note:      { type: String },
+  changedBy: { type: String, default: "system" },  // userId, "system", or "service:<name>"
   timestamp: { type: Date, default: Date.now },
 }, { _id: false })
 
 // ── Order root ────────────────────────────────────────────
 const OrderSchema = new Schema({
-  orderId:         { type: String, required: true, unique: true }, // "ORD-20240513-XXXX"
+  orderId:         { type: String, required: true, unique: true }, // "ORD-20240513-XXXXXXXX"
   userId:          { type: String, required: true, index: true },
   status:          {
     type:    String,
@@ -88,6 +89,6 @@ export type Address = {
   city: string; province: string; postalCode: string; country: string
 }
 
-export type StatusEvent = { status: string; note?: string; timestamp: Date }
+export type StatusEvent = { status: string; note?: string; changedBy: string; timestamp: Date }
 
 export const OrderModel = model<OrderDocument>("Order", OrderSchema)

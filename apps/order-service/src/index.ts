@@ -3,7 +3,8 @@ import { cors }      from "@elysiajs/cors"
 import { swagger }   from "@elysiajs/swagger"
 import { connectMongo } from "@repo/database"
 import { env }       from "@repo/env/order"
-import { orderRoutes } from "./routes/order.routes"
+import { orderRoutes }          from "./routes/order.routes"
+import { paymentWebhookHandler } from "./handlers/payment-webhook"
 
 const PORT = Number(process.env.PORT) || 3003
 
@@ -17,16 +18,20 @@ const app = new Elysia()
         description: "Internal API for managing the order lifecycle.",
       },
       tags: [
-        { name: "Orders", description: "Order lifecycle management" },
-        { name: "Health", description: "Service health check" },
+        { name: "Orders",  description: "Order lifecycle management" },
+        { name: "Webhook", description: "Payment gateway callbacks" },
+        { name: "Health",  description: "Service health check" },
       ],
     },
-    path: "/docs",
+    // Restrict docs to non-production environments
+    path: env.NODE_ENV === "production" ? "/_internal/docs" : "/docs",
   }))
 
   .use(cors({
     origin:         [env.WEB_URL, env.ADMIN_URL],
-    allowedHeaders: ["Content-Type", "x-service-token", "x-user-id", "x-user-role", "x-request-id"],
+    allowedHeaders: ["Content-Type", "x-service-token", "x-user-id", "x-user-role", "x-request-id", "idempotency-key"],
+    methods:        ["GET", "POST", "PATCH", "OPTIONS"],
+    credentials:    false,
   }))
 
   .onRequest(({ request, headers }) => {
@@ -43,6 +48,16 @@ const app = new Elysia()
     detail: { tags: ["Health"], summary: "Health check" },
   })
 
+  // ── Payment gateway webhook — public endpoint, guarded by Midtrans HMAC ──
+  //    Must be registered BEFORE orderRoutes (which applies the service token guard).
+  .post("/webhooks/payment", paymentWebhookHandler, {
+    detail: {
+      tags:    ["Webhook"],
+      summary: "Midtrans payment notification",
+      description: "Receives Midtrans HTTP notification. Validates SHA-512 HMAC signature before processing. Idempotent — duplicate deliveries of the same transaction_id are safely ignored.",
+    },
+  })
+
   .use(orderRoutes)
 
   .onError(({ code, error, set }) => {
@@ -50,6 +65,7 @@ const app = new Elysia()
       set.status = 404
       return { error: "Route not found", code: "NOT_FOUND" }
     }
+    // Log message only — never expose stack trace or internal error details
     console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
     set.status = 500
     return { error: "Internal server error", code: "INTERNAL_ERROR" }
@@ -59,7 +75,7 @@ async function main() {
   await connectMongo()
   app.listen(PORT)
   console.info(`📦 order-service running on port ${PORT}`)
-  console.info(`📄 API docs available at http://localhost:${PORT}/docs`)
+  console.info(`📄 API docs available at http://localhost:${PORT}${env.NODE_ENV === "production" ? "/_internal/docs" : "/docs"}`)
 }
 
 main().catch((err) => {

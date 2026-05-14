@@ -1,5 +1,6 @@
 import { Effect }          from "effect"
 import type { Context }    from "elysia"
+import { env }             from "@repo/env/order"
 import { orderRepository } from "@/repository/order.repository"
 import { productClient }   from "@/lib/product-client"
 import { emailQueue }      from "@/lib/email-queue"
@@ -11,39 +12,62 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   const input  = body as CreateOrderBody
   const userId = headers["x-user-id"]!
 
-  // ── Idempotency check ────────────────────────────────────────────────────
-  const idempotencyKey = headers["idempotency-key"] as string | undefined
+  // ── Idempotency check — key scoped to userId to prevent cross-user collisions ─
+  const rawKey         = headers["idempotency-key"] as string
+  const idempotencyKey = `${userId}:${rawKey}`
 
-  if (idempotencyKey) {
-    const check = await idempotency.getOrLock(idempotencyKey)
+  const check = await idempotency.getOrLock(idempotencyKey)
 
-    if (check.state === "hit") {
-      set.status = check.result.status
-      return check.result.body
-    }
-
-    if (check.state === "pending") {
-      set.status = 409
-      return {
-        error: "A request with this Idempotency-Key is already in progress",
-        code:  "REQUEST_IN_FLIGHT",
-      }
-    }
-    // state === "free" → lock acquired, continue to order creation
+  if (check.state === "hit") {
+    set.status = check.result.status
+    return check.result.body
   }
+
+  if (check.state === "pending") {
+    set.status = 409
+    return {
+      error: "A request with this Idempotency-Key is already in progress",
+      code:  "REQUEST_IN_FLIGHT",
+    }
+  }
+  // state === "free" → lock acquired, continue to order creation
 
   // ── Main order creation ──────────────────────────────────────────────────
   const program = Effect.gen(function* () {
-    // Reserve stock with rollback compensation on partial failure
-    const reserved: Array<{ productId: string; quantity: number }> = []
+    // ── 1. Fetch authoritative prices from product-service ──────────────────
+    //    Never trust client-supplied prices — always override with server data.
+    const verifiedItems: Array<{
+      productId: string; productName: string; sku: string
+      price: number; quantity: number; imageUrl?: string
+    }> = []
 
     for (const item of input.items) {
+      const productResult = yield* Effect.either(
+        productClient.getProduct(item.productId)
+      )
+      if (productResult._tag === "Left") {
+        return yield* Effect.fail(productResult.left)
+      }
+      const product = productResult.right
+      verifiedItems.push({
+        productId:   product.productId,
+        productName: product.productName,
+        sku:         product.sku,
+        price:       product.price,      // ← server price, not client price
+        quantity:    item.quantity,
+        imageUrl:    product.imageUrl,
+      })
+    }
+
+    // ── 2. Reserve stock with rollback compensation ─────────────────────────
+    const reserved: Array<{ productId: string; quantity: number }> = []
+
+    for (const item of verifiedItems) {
       const reserveResult = yield* Effect.either(
         productClient.reserveStock(item.productId, item.quantity)
       )
 
       if (reserveResult._tag === "Left") {
-        // Rollback all previously reserved stock before propagating failure
         yield* Effect.all(
           reserved.map(r => productClient.releaseStock(r.productId, r.quantity)),
           { concurrency: "unbounded" }
@@ -54,19 +78,24 @@ export const createHandler = async ({ body, headers, set }: Context) => {
       reserved.push({ productId: item.productId, quantity: item.quantity })
     }
 
-    const totalAmount = input.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    const grandTotal  = totalAmount + (input.shippingFee ?? 0) - (input.discountAmount ?? 0)
+    // ── 3. Compute totals — shippingFee from server config; discount rejected ─
+    //    discountAmount is NOT accepted from client body to prevent manipulation.
+    const totalAmount = verifiedItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
+    const grandTotal  = Math.max(
+      env.MINIMUM_ORDER_AMOUNT,
+      totalAmount + (input.shippingFee ?? 0)
+    )
 
     const order = yield* orderRepository.create({
       orderId:         generateOrderId(),
       userId,
       status:          "PENDING_PAYMENT",
-      items:           input.items.map(i => ({ ...i, subtotal: i.price * i.quantity })),
+      items:           verifiedItems.map(i => ({ ...i, subtotal: i.price * i.quantity })),
       shippingAddress: input.shippingAddress,
-      statusHistory:   [{ status: "PENDING_PAYMENT", timestamp: new Date() }],
+      statusHistory:   [{ status: "PENDING_PAYMENT", changedBy: userId, timestamp: new Date() }],
       totalAmount,
-      shippingFee:     input.shippingFee    ?? 0,
-      discountAmount:  input.discountAmount ?? 0,
+      shippingFee:     input.shippingFee ?? 0,
+      discountAmount:  0,
       grandTotal,
       notes:           input.notes,
     })
@@ -86,12 +115,13 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   // ── Failure path ─────────────────────────────────────────────────────────
   if (result._tag === "Failure") {
     // Release idempotency lock so the client can retry
-    if (idempotencyKey) await idempotency.fail(idempotencyKey)
+    await idempotency.fail(idempotencyKey)
 
     const err = result.cause.error as { _tag?: string }
-    if (err._tag === "InsufficientStockError") { set.status = 409; return { error: "Insufficient stock" } }
-    if (err._tag === "ProductNotFoundError")   { set.status = 404; return { error: "Product not found" } }
-    if (err._tag === "ProductClientError")     { set.status = 502; return { error: "Product service unavailable" } }
+    if (err._tag === "InsufficientStockError") { set.status = 409; return { error: "Insufficient stock",          code: "INSUFFICIENT_STOCK" } }
+    if (err._tag === "ProductNotFoundError")   { set.status = 404; return { error: "Product not found",           code: "PRODUCT_NOT_FOUND" } }
+    if (err._tag === "ProductClientError")     { set.status = 502; return { error: "Product service unavailable", code: "PRODUCT_SERVICE_UNAVAILABLE" } }
+    if (err._tag === "DuplicateOrderError")    { set.status = 409; return { error: "Duplicate order ID, please retry", code: "DUPLICATE_ORDER_ID" } }
     set.status = 500
     return { error: "Order creation failed" }
   }
@@ -100,9 +130,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   const responseBody = result.value
 
   // Cache result so identical retries return the same response without side effects
-  if (idempotencyKey) {
-    await idempotency.complete(idempotencyKey, { status: 201, body: responseBody })
-  }
+  await idempotency.complete(idempotencyKey, { status: 201, body: responseBody })
 
   set.status = 201
   return responseBody

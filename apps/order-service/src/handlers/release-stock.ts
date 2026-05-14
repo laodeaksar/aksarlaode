@@ -1,10 +1,18 @@
 import { Effect }          from "effect"
 import type { Context }    from "elysia"
+import { env }             from "@repo/env/order"
 import { orderRepository } from "@/repository/order.repository"
 import { productClient }   from "@/lib/product-client"
 
-export const releaseStockHandler = async ({ params, set }: Context) => {
+export const releaseStockHandler = async ({ params, headers, set }: Context) => {
   const { orderId } = params as { orderId: string }
+
+  // ── Authorization — internal service calls only ──────────────────────────
+  const serviceToken = headers["x-service-token"]
+  if (serviceToken !== env.INTERNAL_SERVICE_TOKEN) {
+    set.status = 403
+    return { error: "Forbidden", code: "FORBIDDEN" }
+  }
 
   // Fetch order to get line items
   const orderResult = await Effect.runPromiseExit(

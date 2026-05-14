@@ -4,12 +4,8 @@ export type { OrderStatus }
 
 export type CreateOrderBody = {
   items: Array<{
-    productId:   string
-    productName: string
-    sku:         string
-    imageUrl?:   string
-    price:       number
-    quantity:    number
+    productId: string
+    quantity:  number
   }>
   shippingAddress: {
     recipientName: string
@@ -20,9 +16,9 @@ export type CreateOrderBody = {
     postalCode:    string
     country?:      string
   }
-  shippingFee?:    number
-  discountAmount?: number
-  notes?:          string
+  shippingFee?: number
+  notes?:       string
+  // discountAmount intentionally omitted — must come from a server-validated voucher, not client body
 }
 
 export type UpdateStatusBody = {

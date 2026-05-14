@@ -19,6 +19,10 @@ export const env = parseEnv(
 
     PRODUCT_SERVICE_URL: z.url("PRODUCT_SERVICE_URL must be a valid URL"),
 
+    MIDTRANS_SERVER_KEY: z.string().min(1, "MIDTRANS_SERVER_KEY is required"),
+
+    MINIMUM_ORDER_AMOUNT: z.coerce.number().nonnegative().default(1000),
+
     WEB_URL:   z.url("WEB_URL must be a valid URL"),
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },

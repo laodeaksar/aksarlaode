@@ -4,11 +4,16 @@ import { OrderModel, type OrderStatus, type OrderDocument } from "@/models/order
 class OrderNotFoundError  extends Data.TaggedError("OrderNotFoundError")<{ id: string }> {}
 class OrderConflictError  extends Data.TaggedError("OrderConflictError")<{ reason: string }> {}
 class DbError             extends Data.TaggedError("DbError")<{ cause: unknown }> {}
+class DuplicateOrderError extends Data.TaggedError("DuplicateOrderError")<{ orderId: string }> {}
 
 const create = (data: Omit<OrderDocument, keyof Document>) =>
   Effect.tryPromise({
     try:   () => OrderModel.create(data),
-    catch: (e) => new DbError({ cause: e }),
+    catch: (e: any) => {
+      // MongoDB duplicate key — unique index on orderId
+      if (e?.code === 11000) return new DuplicateOrderError({ orderId: data.orderId as string })
+      return new DbError({ cause: e })
+    },
   })
 
 const findByOrderId = (orderId: string) =>
@@ -35,7 +40,7 @@ const findByUser = (userId: string, page = 1, limit = 20) =>
   })
 
 // Append to statusHistory + update top-level status field
-const updateStatus = (orderId: string, status: OrderStatus, note?: string) =>
+const updateStatus = (orderId: string, status: OrderStatus, note?: string, changedBy = "system") =>
   Effect.gen(function* () {
     const timestampField: Partial<Record<string, Date>> = {
       PAID:      new Date(),
@@ -50,7 +55,7 @@ const updateStatus = (orderId: string, status: OrderStatus, note?: string) =>
           { orderId },
           {
             $set:  { status, ...( timestampField[status] ? { [`${status.toLowerCase()}At`]: timestampField[status] } : {} ) },
-            $push: { statusHistory: { status, note, timestamp: new Date() } },
+            $push: { statusHistory: { status, note, changedBy, timestamp: new Date() } },
           },
           { new: true }
         ).lean(),

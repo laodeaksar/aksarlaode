@@ -1,6 +1,7 @@
-import Elysia, { t }               from "elysia"
-import { env }                      from "@repo/env/order"
+import Elysia, { t }                 from "elysia"
+import { env }                        from "@repo/env/order"
 import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
+import { adminListOrdersHandler }     from "@/handlers/admin-orders"
 
 const ErrorSchema = t.Object({
   error: t.String(),
@@ -32,6 +33,58 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
     }
   })
 
+  // ── GET /admin/orders ──────────────────────────────────────────────────────
+  .get("/orders", adminListOrdersHandler, {
+    query: t.Object({
+      page:     t.Optional(t.String({ description: "Page number (default: 1)" })),
+      limit:    t.Optional(t.String({ description: "Items per page, max 100 (default: 20)" })),
+      userId:   t.Optional(t.String({ description: "Filter by exact userId" })),
+      status:   t.Optional(t.String({
+        description: "Comma-separated status values. Valid: PENDING_PAYMENT, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED",
+        examples:    ["PAID,PROCESSING", "CANCELLED"],
+      })),
+      dateFrom: t.Optional(t.String({
+        description: "ISO 8601 start date (inclusive). Orders created on or after this date.",
+        examples:    ["2024-01-01", "2024-05-13T00:00:00.000Z"],
+      })),
+      dateTo:   t.Optional(t.String({
+        description: "ISO 8601 end date (inclusive, extended to end of day 23:59:59). Orders created on or before this date.",
+        examples:    ["2024-12-31", "2024-05-13T23:59:59.999Z"],
+      })),
+    }),
+    response: {
+      200: t.Object({
+        items:      t.Array(t.Any()),
+        total:      t.Integer(),
+        page:       t.Integer(),
+        limit:      t.Integer(),
+        totalPages: t.Integer(),
+        hasNext:    t.Boolean(),
+        hasPrev:    t.Boolean(),
+        filters:    t.Object({
+          userId:   t.Union([t.String(), t.Null()]),
+          status:   t.Union([t.Array(t.String()), t.Null()]),
+          dateFrom: t.Union([t.String(), t.Null()]),
+          dateTo:   t.Union([t.String(), t.Null()]),
+        }),
+      }),
+      403: ErrorSchema,
+      422: ErrorSchema,
+      500: ErrorSchema,
+    },
+    detail: {
+      summary: "List all orders (admin)",
+      description: [
+        "Paginated view of all orders across all users. All filters are optional and composable.",
+        "Requires ADMIN role (x-user-role: ADMIN) in addition to the service token.",
+        "Results are sorted by createdAt descending (newest first).",
+        "Use dateFrom/dateTo to scope investigations to a specific time window.",
+        "Use status=PAID,PROCESSING to filter multiple statuses in one request.",
+      ].join(" "),
+    },
+  })
+
+  // ── POST /admin/reconciliation/trigger ────────────────────────────────────
   .post("/reconciliation/trigger", adminReconciliationHandler, {
     response: {
       200: SweepResultSchema,
@@ -50,7 +103,8 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
     },
   })
 
-  .get("/reconciliation/status", async ({ set }) => {
+  // ── GET /admin/reconciliation/status ──────────────────────────────────────
+  .get("/reconciliation/status", async () => {
     const { redis } = await import("@/lib/redis")
     const lockHolder = await redis.get("reconciliation:sweep:lock")
     return {

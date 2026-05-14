@@ -3,8 +3,9 @@ import { cors }      from "@elysiajs/cors"
 import { swagger }   from "@elysiajs/swagger"
 import { connectMongo } from "@repo/database"
 import { env }       from "@repo/env/order"
-import { orderRoutes }          from "./routes/order.routes"
-import { paymentWebhookHandler } from "./handlers/payment-webhook"
+import { orderRoutes }             from "./routes/order.routes"
+import { paymentWebhookHandler }   from "./handlers/payment-webhook"
+import { createReconciliationWorker, scheduleReconciliationJob } from "./workers/reconciliation.worker"
 
 const PORT = Number(process.env.PORT) || 3003
 
@@ -49,7 +50,7 @@ const app = new Elysia()
   })
 
   // ── Payment gateway webhook — public endpoint, guarded by Midtrans HMAC ──
-  //    Must be registered BEFORE orderRoutes (which applies the service token guard).
+  //    Registered BEFORE orderRoutes so it bypasses the service-token guard.
   .post("/webhooks/payment", paymentWebhookHandler, {
     detail: {
       tags:    ["Webhook"],
@@ -73,20 +74,28 @@ const app = new Elysia()
 
 async function main() {
   await connectMongo()
+
+  // ── Start reconciliation worker + schedule repeatable sweep job ───────────
+  const reconciliationWorker = createReconciliationWorker()
+  await scheduleReconciliationJob()
+
   app.listen(PORT)
   console.info(`📦 order-service running on port ${PORT}`)
   console.info(`📄 API docs available at http://localhost:${PORT}${env.NODE_ENV === "production" ? "/_internal/docs" : "/docs"}`)
+
+  // ── Graceful shutdown ─────────────────────────────────────────────────────
+  const shutdown = async (signal: string) => {
+    console.info(`Received ${signal}, shutting down...`)
+    await reconciliationWorker.close()
+    await app.stop()
+    process.exit(0)
+  }
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"))
+  process.on("SIGINT",  () => shutdown("SIGINT"))
 }
 
 main().catch((err) => {
   console.error("Failed to start order-service:", err)
   process.exit(1)
 })
-
-const shutdown = async (signal: string) => {
-  console.info(`Received ${signal}, shutting down...`)
-  await app.stop()
-  process.exit(0)
-}
-process.on("SIGTERM", () => shutdown("SIGTERM"))
-process.on("SIGINT",  () => shutdown("SIGINT"))

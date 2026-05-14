@@ -66,6 +66,47 @@ const updateStatus = (orderId: string, status: OrderStatus, note?: string, chang
     return doc
   })
 
+/**
+ * Atomically transitions PENDING_PAYMENT → CANCELLED only if the order is
+ * still in PENDING_PAYMENT state. Returns the updated doc, or null if the
+ * order was already in a different state (race condition with webhook) or
+ * does not exist. Never throws — callers check for null.
+ */
+const cancelIfPending = (orderId: string, changedBy = "system:reconciliation") =>
+  Effect.tryPromise({
+    try: () =>
+      OrderModel.findOneAndUpdate(
+        { orderId, status: "PENDING_PAYMENT" },  // condition: only cancel if still pending
+        {
+          $set:  { status: "CANCELLED", cancelledAt: new Date() },
+          $push: { statusHistory: {
+            status:    "CANCELLED",
+            note:      "payment_expired",
+            changedBy,
+            timestamp: new Date(),
+          }},
+        },
+        { new: true }
+      ).lean(),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+/**
+ * Returns all PENDING_PAYMENT orders whose createdAt is older than
+ * `expiryMinutes` minutes. Used by the reconciliation sweep.
+ */
+const findExpiredPending = (expiryMinutes: number) =>
+  Effect.tryPromise({
+    try: () => {
+      const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000)
+      return OrderModel
+        .find({ status: "PENDING_PAYMENT", createdAt: { $lt: cutoff } })
+        .select("orderId items")   // only the fields the reconciler needs
+        .lean()
+    },
+    catch: (e) => new DbError({ cause: e }),
+  })
+
 const checkOwnership = (orderId: string, userId: string) =>
   Effect.gen(function* () {
     const order = yield* findByOrderId(orderId)
@@ -76,5 +117,6 @@ const checkOwnership = (orderId: string, userId: string) =>
   })
 
 export const orderRepository = {
-  create, findByOrderId, findByUser, updateStatus, checkOwnership
+  create, findByOrderId, findByUser, updateStatus,
+  cancelIfPending, findExpiredPending, checkOwnership,
 }

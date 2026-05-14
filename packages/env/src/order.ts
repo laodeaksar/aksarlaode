@@ -23,6 +23,12 @@ export const env = parseEnv(
 
     MINIMUM_ORDER_AMOUNT: z.coerce.number().nonnegative().default(1000),
 
+    // How long (minutes) a PENDING_PAYMENT order is valid before it expires
+    PAYMENT_EXPIRY_MINUTES: z.coerce.number().int().positive().default(60),
+
+    // How often (milliseconds) the reconciliation sweep runs
+    RECONCILIATION_INTERVAL_MS: z.coerce.number().int().positive().default(300_000), // 5 min
+
     WEB_URL:   z.url("WEB_URL must be a valid URL"),
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },

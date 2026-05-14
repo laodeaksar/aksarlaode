@@ -33,6 +33,10 @@ export const env = parseEnv(
     RATE_LIMIT_ORDER_CREATE_MAX:       z.coerce.number().int().positive().default(5),
     RATE_LIMIT_ORDER_CREATE_WINDOW_MS: z.coerce.number().int().positive().default(60_000), // 1 min
 
+    // Sliding-window rate limit for POST /webhooks/payment (per source IP)
+    RATE_LIMIT_WEBHOOK_MAX:       z.coerce.number().int().positive().default(60),
+    RATE_LIMIT_WEBHOOK_WINDOW_MS: z.coerce.number().int().positive().default(60_000), // 1 min
+
     WEB_URL:   z.url("WEB_URL must be a valid URL"),
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },

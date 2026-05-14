@@ -1,10 +1,11 @@
-import { createHash }      from "crypto"
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
-import { env }             from "@repo/env/order"
-import { redis }           from "@/lib/redis"
-import { orderRepository } from "@/repository/order.repository"
-import { productClient }   from "@/lib/product-client"
+import { createHash }            from "crypto"
+import { Effect }               from "effect"
+import type { Context }         from "elysia"
+import { env }                  from "@repo/env/order"
+import { redis }                from "@/lib/redis"
+import { orderRepository }      from "@/repository/order.repository"
+import { productClient }        from "@/lib/product-client"
+import { checkWebhookRateLimit } from "@/lib/rate-limiter"
 
 // ── Midtrans notification body (partial — only fields we use) ───────────────
 type MidtransNotification = {
@@ -97,9 +98,43 @@ async function releaseOrderStock(orderId: string, transactionId: string): Promis
   }))
 }
 
+// ── Source IP extraction — respects reverse-proxy forwarding headers ──────────
+function extractSourceIp(request: Request): string {
+  // x-forwarded-for may contain a chain: "client, proxy1, proxy2" — take leftmost
+  const xff = request.headers.get("x-forwarded-for")
+  if (xff) {
+    const first = xff.split(",")[0]?.trim()
+    if (first) return first
+  }
+  return request.headers.get("x-real-ip") ?? "unknown"
+}
+
 // ── Handler ─────────────────────────────────────────────────────────────────
-export const paymentWebhookHandler = async ({ body, set }: Context) => {
+export const paymentWebhookHandler = async ({ body, request, set }: Context) => {
   const notification = body as MidtransNotification
+
+  // ── 0. Rate limit — sliding window per source IP ──────────────────────────
+  // Checked first — before signature verification — as a cheap gate against
+  // flood attacks that would otherwise burn CPU on SHA-512 comparisons.
+  //
+  // On rejection we return 200 (not 429) so Midtrans does not interpret the
+  // response as a server error and keeps re-queuing legitimate retries.
+  // The flood is absorbed silently; a warning is logged for alerting.
+  const sourceIp = extractSourceIp(request)
+  const rl       = await checkWebhookRateLimit(sourceIp)
+
+  if (!rl.allowed) {
+    console.warn(JSON.stringify({
+      event:     "webhook_rate_limited",
+      sourceIp,
+      orderId:   notification?.order_id ?? "unknown",
+      limit:     rl.limit,
+      resetMs:   rl.resetMs,
+    }))
+    // 200 ACK — Midtrans will not retry; the real Midtrans server will
+    // naturally retry via its own schedule when the window resets.
+    return { ok: true, note: "rate_limited" }
+  }
 
   // ── 1. Validate Midtrans HMAC signature ──────────────────────────────────
   if (!verifyMidtransSignature(notification)) {

@@ -5,20 +5,19 @@ import { env }   from "@repo/env/order"
  * Sliding-window rate limiter backed by a Redis sorted set.
  *
  * Algorithm (all three ops are atomic via a single Lua script):
- *  1. Remove all entries older than `now - windowMs` (expired slice of the window)
+ *  1. Remove all entries older than `now - windowMs`  (expired slice of the window)
  *  2. Count remaining entries in the set
- *  3. If count >= limit → reject (return allowed = false)
- *  4. Otherwise → add a new unique entry scored by current timestamp, set key TTL
+ *  3. count >= limit  → reject, return allowed = false
+ *  4. count <  limit  → add a new unique entry scored by current timestamp, set TTL
  *
- * The score is the request timestamp in ms.  Each member is `<ts>:<random>`
- * so two requests at the exact same millisecond don't overwrite each other.
+ * Score  = request timestamp in ms.
+ * Member = `<ts>:<random>` so two requests in the same millisecond don't collide.
  *
  * Returns:
  *   allowed   — whether the request is permitted
  *   limit     — configured max per window
- *   remaining — how many more requests are allowed in this window after this one
- *   resetMs   — epoch-ms when the oldest entry in the window will expire
- *               (i.e. when at least one slot frees up)
+ *   remaining — how many more requests are allowed after this one
+ *   resetMs   — epoch-ms when the oldest current entry expires (first slot freed)
  */
 
 export type RateLimitResult = {
@@ -28,7 +27,7 @@ export type RateLimitResult = {
   resetMs:   number
 }
 
-// ── Lua script — evaluated atomically on the Redis server ─────────────────────
+// ── Lua script — all ops run atomically on the Redis server ───────────────────
 const SLIDING_WINDOW_SCRIPT = `
 local key     = KEYS[1]
 local now     = tonumber(ARGV[1])
@@ -56,18 +55,18 @@ local reset2  = oldest2[2] and math.floor(tonumber(oldest2[2]) + window) or math
 return {1, count, reset2}
 `
 
-const KEY_PREFIX = "ratelimit:order:create:"
-
-export async function checkOrderCreateRateLimit(userId: string): Promise<RateLimitResult> {
-  const now      = Date.now()
-  const windowMs = env.RATE_LIMIT_ORDER_CREATE_WINDOW_MS
-  const limit    = env.RATE_LIMIT_ORDER_CREATE_MAX
-  const key      = KEY_PREFIX + userId
+// ── Generic core — usable for any endpoint ────────────────────────────────────
+export async function slidingWindowRateLimit(
+  key:      string,
+  limit:    number,
+  windowMs: number,
+): Promise<RateLimitResult> {
+  const now = Date.now()
 
   const raw = await redis.eval(
     SLIDING_WINDOW_SCRIPT,
-    1,          // number of KEYS
-    key,        // KEYS[1]
+    1,
+    key,
     String(now),
     String(windowMs),
     String(limit),
@@ -81,4 +80,31 @@ export async function checkOrderCreateRateLimit(userId: string): Promise<RateLim
     remaining: Math.max(0, limit - count),
     resetMs,
   }
+}
+
+// ── Per-endpoint helpers ──────────────────────────────────────────────────────
+
+/** POST /orders — 5 requests per 60 s per userId (default, env-configurable) */
+export function checkOrderCreateRateLimit(userId: string): Promise<RateLimitResult> {
+  return slidingWindowRateLimit(
+    `ratelimit:order:create:${userId}`,
+    env.RATE_LIMIT_ORDER_CREATE_MAX,
+    env.RATE_LIMIT_ORDER_CREATE_WINDOW_MS,
+  )
+}
+
+/**
+ * POST /webhooks/payment — 60 requests per 60 s per source IP (default).
+ *
+ * Designed to absorb all legitimate Midtrans retry traffic (max ~8 retries
+ * per transaction, spread over 48 h) while blocking flood attacks.
+ * The caller decides what HTTP status to return on rejection — the webhook
+ * handler returns 200 on rate-limit so Midtrans does not keep re-queuing.
+ */
+export function checkWebhookRateLimit(sourceIp: string): Promise<RateLimitResult> {
+  return slidingWindowRateLimit(
+    `ratelimit:webhook:payment:${sourceIp}`,
+    env.RATE_LIMIT_WEBHOOK_MAX,
+    env.RATE_LIMIT_WEBHOOK_WINDOW_MS,
+  )
 }

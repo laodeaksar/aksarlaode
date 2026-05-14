@@ -27,9 +27,17 @@ export async function proxyTo(
     body,
   })
 
+  // Pass the timeout signal so the upstream TCP connection is torn down when
+  // requestTimeout middleware fires — not just left open in the background.
+  const signal = c.var.abortSignal
+
   try {
-    return await fetch(upstreamRequest)
+    return await fetch(upstreamRequest, { signal })
   } catch (e) {
+    // Re-throw AbortError so requestTimeout middleware can return 504.
+    // Any other error (ECONNREFUSED, DNS failure, etc.) becomes 502.
+    if (e instanceof Error && e.name === "AbortError") throw e
+
     console.error(JSON.stringify({
       event:     "upstream_error",
       service,

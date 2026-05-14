@@ -1,7 +1,7 @@
 import { Effect }          from "effect"
 import type { Context }    from "elysia"
-import { env }             from "@repo/env/order"
 import { orderRepository, type AdminOrderFilters } from "@/repository/order.repository"
+import { shapeOrder }      from "@/lib/shape-order"
 import type { OrderStatus } from "@/models/order.model"
 
 const VALID_STATUSES = new Set<OrderStatus>([
@@ -10,9 +10,8 @@ const VALID_STATUSES = new Set<OrderStatus>([
 ])
 
 export const adminListOrdersHandler = async ({ query, headers, set }: Context) => {
-  // ── Authorization — ADMIN role required (service token is already checked by plugin) ─
-  const role = headers["x-user-role"]
-  if (role !== "ADMIN") {
+  // ── Authorization — ADMIN role required (service token already checked by plugin) ─
+  if (headers["x-user-role"] !== "ADMIN") {
     set.status = 403
     return { error: "Forbidden — ADMIN role required", code: "FORBIDDEN" }
   }
@@ -65,7 +64,6 @@ export const adminListOrdersHandler = async ({ query, headers, set }: Context) =
       set.status = 422
       return { error: "Invalid dateTo — must be ISO 8601", code: "INVALID_DATE" }
     }
-    // Include all orders up to the end of the specified day
     dateTo.setHours(23, 59, 59, 999)
   }
 
@@ -95,8 +93,16 @@ export const adminListOrdersHandler = async ({ query, headers, set }: Context) =
     return { error: "Failed to fetch orders" }
   }
 
+  const { items, total, page: pg, limit: lim, totalPages, hasNext, hasPrev } = result.value
+
   return {
-    ...result.value,
+    items: items.map(doc => shapeOrder(doc as Record<string, any>)),
+    total,
+    page:       pg,
+    limit:      lim,
+    totalPages,
+    hasNext,
+    hasPrev,
     filters: {
       userId:   filters.userId   ?? null,
       status:   filters.status   ?? null,

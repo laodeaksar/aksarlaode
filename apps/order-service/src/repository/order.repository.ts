@@ -351,6 +351,39 @@ const summarize = (filters: SummaryFilters = {}) =>
   })
 
 /**
+ * Async generator that streams raw order documents for CSV export.
+ * Keeps memory flat regardless of result set size by reading one document
+ * at a time from a MongoDB cursor. Hard-capped at maxRows (default 50 000)
+ * to prevent runaway queries.
+ */
+export async function* exportOrders(
+  filters: Omit<AdminOrderFilters, "page" | "limit">,
+  maxRows = 50_000,
+) {
+  const { userId, status, dateFrom, dateTo } = filters
+  const query: Record<string, unknown> = {}
+  if (userId)         query.userId   = userId
+  if (status?.length) query.status   = { $in: status }
+  if (dateFrom || dateTo) {
+    const range: Record<string, Date> = {}
+    if (dateFrom) range.$gte = dateFrom
+    if (dateTo)   range.$lte = dateTo
+    query.createdAt = range
+  }
+
+  const cursor = OrderModel
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(maxRows)
+    .lean()
+    .cursor()
+
+  for await (const doc of cursor) {
+    yield doc
+  }
+}
+
+/**
  * Appends an internal admin note to statusHistory WITHOUT changing the order
  * status.  The entry re-uses the current status so timeline rendering stays
  * consistent.  Returns the updated document.

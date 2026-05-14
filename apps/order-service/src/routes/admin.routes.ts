@@ -5,6 +5,7 @@ import { adminListOrdersHandler }     from "@/handlers/admin-orders"
 import { adminOrdersSummaryHandler }  from "@/handlers/admin-orders-summary"
 import { adminOrderTimelineHandler }  from "@/handlers/admin-order-timeline"
 import { adminOrderNoteHandler }      from "@/handlers/admin-order-note"
+import { adminOrderExportHandler }    from "@/handlers/admin-order-export"
 
 const ErrorSchema = t.Object({
   error: t.String(),
@@ -83,6 +84,40 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
         "Results are sorted by createdAt descending (newest first).",
         "Use dateFrom/dateTo to scope investigations to a specific time window.",
         "Use status=PAID,PROCESSING to filter multiple statuses in one request.",
+      ].join(" "),
+    },
+  })
+
+  // ── GET /admin/orders/export ──────────────────────────────────────────────
+  .get("/orders/export", adminOrderExportHandler, {
+    query: t.Object({
+      userId:   t.Optional(t.String({ description: "Scope to a single user" })),
+      status:   t.Optional(t.String({
+        description: "Comma-separated status filter (e.g. PAID,DELIVERED)",
+        examples:    ["PAID,DELIVERED", "CANCELLED"],
+      })),
+      dateFrom: t.Optional(t.String({
+        description: "ISO 8601 start date (inclusive)",
+        examples:    ["2024-01-01"],
+      })),
+      dateTo: t.Optional(t.String({
+        description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
+        examples:    ["2024-12-31"],
+      })),
+      filename: t.Optional(t.String({
+        description: "Override the default filename (without .csv extension, max 80 chars)",
+        examples:    ["may_2024_orders"],
+      })),
+    }),
+    detail: {
+      summary: "Export orders to CSV (admin)",
+      description: [
+        "Streams a UTF-8 RFC 4180 CSV file of orders matching the supplied filters.",
+        "Supports the same userId / status / dateFrom / dateTo filters as GET /admin/orders.",
+        "Hard-capped at 50 000 rows per request — use date range filters to export in slices for larger datasets.",
+        "Memory-efficient: documents are streamed one-by-one from a MongoDB cursor, not buffered in memory.",
+        "Responds with Content-Disposition: attachment so browsers and HTTP clients trigger a file download.",
+        "Requires ADMIN role.",
       ].join(" "),
     },
   })

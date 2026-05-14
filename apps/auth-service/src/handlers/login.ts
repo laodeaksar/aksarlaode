@@ -3,22 +3,21 @@ import { verifyPassword }    from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
-import { LoginSchema }       from "@repo/common"
-import { AuthError, ValidationError, toErrorResponse } from "@repo/common/errors"
-import type { HandlerCtx }   from "@/types"
+import { AuthError, toErrorResponse } from "@repo/common/errors"
 
-export const loginHandler = async ({ body, set }: HandlerCtx) => {
+export const loginHandler = async ({
+  body,
+  set,
+}: {
+  body: { email: string; password: string }
+  set:  any
+}) => {
   const program = Effect.gen(function* () {
-    const input = yield* Effect.try({
-      try:   () => LoginSchema.parse(body),
-      catch: () => new ValidationError(),
-    })
-
-    const user = yield* userRepository.findByEmail(input.email)
+    const user = yield* userRepository.findByEmail(body.email)
 
     if (!user) return yield* Effect.fail(new AuthError("Invalid credentials"))
 
-    const valid = yield* verifyPassword(input.password, user.passwordHash)
+    const valid = yield* verifyPassword(body.password, user.passwordHash)
     if (!valid) return yield* Effect.fail(new AuthError("Invalid credentials"))
 
     const sessionId = crypto.randomUUID()

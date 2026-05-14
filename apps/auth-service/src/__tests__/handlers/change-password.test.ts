@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER } from "../fixtures"
+import { ChangePasswordBody } from "@/schemas"
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: { findById: vi.fn(), updatePasswordHash: vi.fn() },
@@ -19,7 +20,7 @@ import { sessionRepository }        from "@/repository/session.repository"
 import { verifyPassword, hashPassword } from "@/lib/password"
 import { changePasswordHandler }    from "@/handlers/change-password"
 
-const app = new Elysia().post("/change-password", changePasswordHandler)
+const app = new Elysia().post("/change-password", changePasswordHandler, { body: ChangePasswordBody })
 
 function post(body: unknown, userId = MOCK_USER.id) {
   return app.handle(new Request("http://localhost/change-password", {

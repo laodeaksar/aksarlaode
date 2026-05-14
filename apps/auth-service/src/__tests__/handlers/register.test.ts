@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
+import { RegisterBody } from "@/schemas"
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: { findByEmail: vi.fn(), create: vi.fn() },
@@ -22,7 +23,7 @@ import { hashPassword }      from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
 import { registerHandler }   from "@/handlers/register"
 
-const app = new Elysia().post("/register", registerHandler)
+const app = new Elysia().post("/register", registerHandler, { body: RegisterBody })
 
 function post(body: unknown) {
   return app.handle(new Request("http://localhost/register", {

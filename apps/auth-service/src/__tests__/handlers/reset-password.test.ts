@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_RESET_TOKEN } from "../fixtures"
+import { ResetPasswordBody } from "@/schemas"
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: { findById: vi.fn(), updatePasswordHash: vi.fn() },
@@ -22,7 +23,7 @@ import { resetTokenRepository }  from "@/repository/reset-token.repository"
 import { hashPassword }          from "@/lib/password"
 import { resetPasswordHandler }  from "@/handlers/reset-password"
 
-const app = new Elysia().post("/reset-password", resetPasswordHandler)
+const app = new Elysia().post("/reset-password", resetPasswordHandler, { body: ResetPasswordBody })
 
 function post(body: unknown) {
   return app.handle(new Request("http://localhost/reset-password", {

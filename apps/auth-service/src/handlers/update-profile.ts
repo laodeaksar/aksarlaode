@@ -1,11 +1,17 @@
 import { Effect }           from "effect"
 import { userRepository }  from "@/repository/user.repository"
-import { UpdateProfileSchema } from "@repo/common"
 import { AuthError, ValidationError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { ok }              from "@repo/common/response"
-import type { HandlerCtx } from "@/types"
 
-export const updateProfileHandler = async ({ body, headers, set }: HandlerCtx) => {
+export const updateProfileHandler = async ({
+  body,
+  headers,
+  set,
+}: {
+  body:    { name?: string; phone?: string; avatarUrl?: string }
+  headers: Record<string, string | undefined>
+  set:     any
+}) => {
   const userId = headers["x-user-id"]
 
   if (!userId) {
@@ -14,13 +20,14 @@ export const updateProfileHandler = async ({ body, headers, set }: HandlerCtx) =
     return errBody
   }
 
-  const program = Effect.gen(function* () {
-    const input = yield* Effect.try({
-      try:   () => UpdateProfileSchema.parse(body),
-      catch: () => new ValidationError(),
-    })
+  if (!body.name && !body.phone && !body.avatarUrl) {
+    const { body: errBody, status } = toErrorResponse(new ValidationError("At least one field must be provided"))
+    set.status = status
+    return errBody
+  }
 
-    const updated = yield* userRepository.update(userId, input)
+  const program = Effect.gen(function* () {
+    const updated = yield* userRepository.update(userId, body)
     if (!updated) return yield* Effect.fail(new NotFoundError("User"))
 
     return {

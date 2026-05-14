@@ -2,9 +2,16 @@ import { Effect }            from "effect"
 import { sessionRepository } from "@/repository/session.repository"
 import { AuthError, toErrorResponse } from "@repo/common/errors"
 import { paginated }         from "@repo/common/response"
-import type { HandlerCtx }   from "@/types"
 
-export const listSessionsHandler = async ({ headers, query, set }: HandlerCtx) => {
+export const listSessionsHandler = async ({
+  headers,
+  query,
+  set,
+}: {
+  headers: Record<string, string | undefined>
+  query:   { page?: number; limit?: number }
+  set:     any
+}) => {
   const userId = headers["x-user-id"]
 
   if (!userId) {
@@ -13,8 +20,8 @@ export const listSessionsHandler = async ({ headers, query, set }: HandlerCtx) =
     return body
   }
 
-  const page  = Math.max(1, Number(query["page"]  ?? 1))
-  const limit = Math.min(50, Math.max(1, Number(query["limit"] ?? 20)))
+  const page  = Math.max(1, query.page  ?? 1)
+  const limit = Math.min(50, Math.max(1, query.limit ?? 20))
 
   const result = await Effect.runPromiseExit(
     sessionRepository.findAllByUserId(userId)

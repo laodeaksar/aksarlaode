@@ -3,24 +3,23 @@ import { hashPassword }      from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
-import { RegisterSchema }    from "@repo/common"
-import { ValidationError, ConflictError, toErrorResponse } from "@repo/common/errors"
-import type { HandlerCtx }   from "@/types"
+import { ConflictError, toErrorResponse } from "@repo/common/errors"
 
-export const registerHandler = async ({ body, set }: HandlerCtx) => {
+export const registerHandler = async ({
+  body,
+  set,
+}: {
+  body: { email: string; name: string; password: string }
+  set:  any
+}) => {
   const program = Effect.gen(function* () {
-    const input = yield* Effect.try({
-      try:   () => RegisterSchema.parse(body),
-      catch: () => new ValidationError(),
-    })
-
-    const existing = yield* userRepository.findByEmail(input.email)
+    const existing = yield* userRepository.findByEmail(body.email)
     if (existing) return yield* Effect.fail(new ConflictError("email"))
 
-    const passwordHash = yield* hashPassword(input.password)
+    const passwordHash = yield* hashPassword(body.password)
 
     const user = yield* userRepository.create({
-      email: input.email, name: input.name, passwordHash, role: "CUSTOMER",
+      email: body.email, name: body.name, passwordHash, role: "CUSTOMER",
     })
 
     const sessionId = crypto.randomUUID()

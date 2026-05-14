@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 import { Effect } from "effect"
 import { MOCK_USER, MOCK_SESSION } from "../fixtures"
+import { SessionQuery } from "@/schemas"
 
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: { findAllByUserId: vi.fn() },
@@ -10,7 +11,7 @@ vi.mock("@/repository/session.repository", () => ({
 import { sessionRepository }  from "@/repository/session.repository"
 import { listSessionsHandler } from "@/handlers/list-sessions"
 
-const app = new Elysia().get("/sessions", listSessionsHandler)
+const app = new Elysia().get("/sessions", listSessionsHandler, { query: SessionQuery })
 
 function get(userId?: string, query = "") {
   return app.handle(new Request(`http://localhost/sessions${query}`, {

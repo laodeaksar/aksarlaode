@@ -3,32 +3,31 @@ import { hashPassword }         from "@/lib/password"
 import { userRepository }       from "@/repository/user.repository"
 import { sessionRepository }    from "@/repository/session.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
-import { ResetPasswordSchema }  from "@repo/common"
-import { ValidationError, AuthError, GoneError, NotFoundError, toErrorResponse } from "@repo/common/errors"
+import { AuthError, GoneError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { message }              from "@repo/common/response"
-import type { HandlerCtx }      from "@/types"
 
-export const resetPasswordHandler = async ({ body, set }: HandlerCtx) => {
+export const resetPasswordHandler = async ({
+  body,
+  set,
+}: {
+  body: { token: string; newPassword: string }
+  set:  any
+}) => {
   const program = Effect.gen(function* () {
-    const input = yield* Effect.try({
-      try:   () => ResetPasswordSchema.parse(body),
-      catch: () => new ValidationError(),
-    })
-
-    const record = yield* resetTokenRepository.findByToken(input.token)
+    const record = yield* resetTokenRepository.findByToken(body.token)
     if (!record) return yield* Effect.fail(new AuthError("Invalid reset token"))
 
     if (record.expiresAt < new Date()) {
-      yield* resetTokenRepository.deleteByToken(input.token).pipe(Effect.orElse(() => Effect.void))
+      yield* resetTokenRepository.deleteByToken(body.token).pipe(Effect.orElse(() => Effect.void))
       return yield* Effect.fail(new GoneError("Reset token has expired"))
     }
 
     const user = yield* userRepository.findById(record.userId)
     if (!user) return yield* Effect.fail(new NotFoundError("User"))
 
-    const newHash = yield* hashPassword(input.newPassword)
+    const newHash = yield* hashPassword(body.newPassword)
     yield* userRepository.updatePasswordHash(user.id, newHash)
-    yield* resetTokenRepository.deleteByToken(input.token)
+    yield* resetTokenRepository.deleteByToken(body.token)
     yield* sessionRepository.deleteAllByUserId(user.id)
   })
 

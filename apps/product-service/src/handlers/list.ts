@@ -2,7 +2,6 @@ import { Effect } from "effect"
 import type { Context } from "elysia"
 import { productRepository }  from "@/repository/product.repository"
 import { ProductFiltersSchema } from "@repo/common"
-import type { AppEnv } from "@/types"
 
 export const listHandler = async ({ query, set }: Context) => {
   const program = Effect.gen(function* () {

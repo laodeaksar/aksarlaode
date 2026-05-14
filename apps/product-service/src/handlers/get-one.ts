@@ -1,16 +1,16 @@
 import { Effect } from "effect"
-import type { Context } from "hono"
+import type { Context } from "elysia"
 import { productRepository } from "@/repository/product.repository"
-import type { AppEnv } from "@/types"
 
-export const getOneHandler = async (c: Context<AppEnv>) => {
-  const idOrSlug = c.req.param("id")
+export const getOneHandler = async ({ params, set }: Context) => {
+  const idOrSlug = params.id
 
   const result = await Effect.runPromiseExit(productRepository.findByIdOrSlug(idOrSlug))
 
   if (result._tag === "Failure") {
-    return c.json({ error: "Product not found" }, 404)
+    set.status = 404
+    return { error: "Product not found" }
   }
 
-  return c.json(result.value)
+  return result.value
 }

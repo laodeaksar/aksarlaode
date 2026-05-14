@@ -1,16 +1,15 @@
 import { Effect } from "effect"
-import type { Context } from "hono"
+import type { Context } from "elysia"
 import { productRepository } from "@/repository/product.repository"
-import type { AppEnv } from "@/types"
 
-export const createHandler = async (c: Context<AppEnv>) => {
-  const body = await c.req.json()
-
+export const createHandler = async ({ body, set }: Context) => {
   const result = await Effect.runPromiseExit(productRepository.create(body))
 
   if (result._tag === "Failure") {
-    return c.json({ error: "Failed to create product" }, 500)
+    set.status = 500
+    return { error: "Failed to create product" }
   }
 
-  return c.json(result.value, 201)
+  set.status = 201
+  return result.value
 }

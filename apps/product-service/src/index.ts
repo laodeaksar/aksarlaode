@@ -1,7 +1,7 @@
-import Elysia   from "elysia"
-import { cors } from "@elysiajs/cors"
-import productRoutes     from "./routes/product.routes"
-import type { AppEnv }  from "./types"
+import Elysia        from "elysia"
+import { cors }       from "@elysiajs/cors"
+import { env }        from "@repo/env/product"
+import { productRoutes } from "./routes/product.routes"
 
 const PORT = parseInt(process.env["PORT"] ?? "3002", 10)
 
@@ -15,13 +15,11 @@ const serviceToken = (app: Elysia) =>
   })
 
 const app = new Elysia()
-.use(cors({
+  .use(cors({
     origin:         [env.WEB_URL, env.ADMIN_URL],
     allowedHeaders: ["Content-Type", "x-service-token", "x-user-id", "x-user-role", "x-request-id"],
   }))
-
   .use(serviceToken)
-  // Logger
   .onRequest(({ request }) => {
     console.info(JSON.stringify({
       event:  "request_in",
@@ -29,18 +27,14 @@ const app = new Elysia()
       path:   new URL(request.url).pathname,
     }))
   })
-
-  // health
-.get("/health", () => ({ status: "ok", service: "product-service" }))
-
-  .route("/products", productRoutes)
-.onError(({ code, error, set }) => {
+  .get("/health", () => ({ status: "ok", service: "product-service" }))
+  .use(productRoutes)
+  .onError(({ code, error, set }) => {
     console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
     if (code === "NOT_FOUND") { set.status = 404; return { error: "Route not found", code: "NOT_FOUND" } }
     set.status = 500
     return { error: "Internal server error", code: "INTERNAL_ERROR" }
   })
-
   .listen(PORT)
 
 console.info(`📦 product-service running on http://localhost:${PORT}`)

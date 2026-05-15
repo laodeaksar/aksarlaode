@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, pgEnum } from "drizzle-orm/pg-core"
 
-export const userRoleEnum = pgEnum("user_role", ["CUSTOMER", "ADMIN"])
+export const userRoleEnum = pgEnum("user_role", ["CUSTOMER", "ADMIN", "OWNER"])
 
 export const users = pgTable("users", {
   id:           text("id").primaryKey(),

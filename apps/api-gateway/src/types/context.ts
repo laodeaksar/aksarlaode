@@ -1,6 +1,6 @@
 export type User = {
   id:        string
-  role:      "CUSTOMER" | "ADMIN" | "SERVICE"
+  role:      "CUSTOMER" | "ADMIN" | "OWNER" | "SERVICE"
   sessionId: string
 }
 

@@ -1,4 +1,4 @@
-export type UserRole = "CUSTOMER" | "ADMIN"
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER"
 
 export type HandlerCtx = {
   body:    unknown

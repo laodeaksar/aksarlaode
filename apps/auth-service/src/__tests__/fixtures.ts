@@ -21,6 +21,13 @@ export const MOCK_ADMIN = {
   role:  "ADMIN" as UserRole,
 }
 
+export const MOCK_OWNER = {
+  ...MOCK_USER,
+  id:    "owner-uuid-9999",
+  email: "owner@example.com",
+  role:  "OWNER" as UserRole,
+}
+
 export const MOCK_SESSION = {
   id:        "session-uuid-abcd",
   userId:    MOCK_USER.id,

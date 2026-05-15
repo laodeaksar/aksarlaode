@@ -8,6 +8,7 @@ import { updateProfileHandler }      from "@/handlers/update-profile"
 import { changePasswordHandler }     from "@/handlers/change-password"
 import { forgotPasswordHandler }     from "@/handlers/forgot-password"
 import { resetPasswordHandler }      from "@/handlers/reset-password"
+import { transferOwnershipHandler }  from "@/handlers/transfer-ownership"
 import { loginRateLimiter, registerRateLimiter, forgotPasswordRateLimiter } from "@/middleware/rate-limit"
 import {
   LoginBody,
@@ -16,6 +17,7 @@ import {
   ChangePasswordBody,
   ForgotPasswordBody,
   ResetPasswordBody,
+  TransferOwnershipBody,
 } from "@/schemas"
 
 const authRoutes = new Elysia({ prefix: "/auth" })
@@ -28,5 +30,9 @@ const authRoutes = new Elysia({ prefix: "/auth" })
   .post("/forgot-password", forgotPasswordHandler,  { beforeHandle: forgotPasswordRateLimiter, body: ForgotPasswordBody })
   .post("/reset-password",  resetPasswordHandler,                                            { body: ResetPasswordBody })
   .post("/refresh",         refreshHandler)
+
+  // ── OWNER-only routes ───────────────────────────────────────────────────
+  // Gateway enforces minRole: "OWNER" for /auth/owner/* via ROUTE_PERMISSIONS
+  .post("/owner/transfer",  transferOwnershipHandler,                                        { body: TransferOwnershipBody })
 
 export default authRoutes

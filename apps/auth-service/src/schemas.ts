@@ -35,3 +35,8 @@ export const SessionQuery = t.Object({
   page:  t.Optional(t.Numeric()),
   limit: t.Optional(t.Numeric()),
 })
+
+export const TransferOwnershipBody = t.Object({
+  targetUserId:    t.String({ minLength: 1, description: "ID of the user who will become the new OWNER" }),
+  currentPassword: t.String({ minLength: 1, description: "OWNER's current password — re-auth guard" }),
+})

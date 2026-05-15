@@ -2,6 +2,7 @@ import { Effect }             from "effect"
 import { verifyPassword, hashPassword } from "@/lib/password"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
+import { writeAuditLog }     from "@/lib/audit-log"
 import { AuthError, NotFoundError, ValidationError, toErrorResponse } from "@repo/common/errors"
 import { message }           from "@repo/common/response"
 
@@ -51,8 +52,14 @@ export const changePasswordHandler = async ({
     return errBody
   }
 
+  writeAuditLog({
+    event:    "PASSWORD_CHANGED",
+    actorId:  userId,
+    targetId: userId,
+  })
+
   set.headers["Set-Cookie"] =
-    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
+    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
 
   return message("Password changed. Please log in again.")
 }

@@ -16,11 +16,15 @@ vi.mock("@/repository/reset-token.repository", () => ({
 vi.mock("@/lib/password", () => ({
   hashPassword: vi.fn(),
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
 import { userRepository }        from "@/repository/user.repository"
 import { sessionRepository }     from "@/repository/session.repository"
 import { resetTokenRepository }  from "@/repository/reset-token.repository"
 import { hashPassword }          from "@/lib/password"
+import { writeAuditLog }         from "@/lib/audit-log"
 import { resetPasswordHandler }  from "@/handlers/reset-password"
 
 const app = new Elysia().post("/reset-password", resetPasswordHandler, { body: ResetPasswordBody })
@@ -57,6 +61,19 @@ describe("resetPasswordHandler", () => {
   it("consumes the token (one-time use)", async () => {
     await post(VALID_BODY)
     expect(resetTokenRepository.deleteByToken).toHaveBeenCalledWith(MOCK_RESET_TOKEN.token)
+  })
+
+  it("emits PASSWORD_RESET audit event on success", async () => {
+    await post(VALID_BODY)
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "PASSWORD_RESET", actorId: MOCK_USER.id })
+    )
+  })
+
+  it("does not emit audit event when token is invalid", async () => {
+    vi.mocked(resetTokenRepository.findByToken).mockReturnValue(Effect.succeed(null))
+    await post(VALID_BODY)
+    expect(writeAuditLog).not.toHaveBeenCalled()
   })
 
   it("returns 401 when token does not exist in DB", async () => {

@@ -18,11 +18,15 @@ vi.mock("@/lib/password", () => ({
 vi.mock("@/lib/token", () => ({
   issueTokenPair: vi.fn(),
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
 import { userRepository }                       from "@/repository/user.repository"
 import { sessionRepository }                    from "@/repository/session.repository"
 import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
 import { issueTokenPair }                       from "@/lib/token"
+import { writeAuditLog }                        from "@/lib/audit-log"
 import { loginHandler }                         from "@/handlers/login"
 
 const app = new Elysia().post("/login", loginHandler, { body: LoginBody })
@@ -54,10 +58,41 @@ describe("loginHandler", () => {
   })
 
   it("sets ec_refresh cookie with Path=/auth so it is sent to logout and refresh", async () => {
-    const res = await post({ email: "test@example.com", password: "password1" })
+    const res    = await post({ email: "test@example.com", password: "password1" })
     const cookie = res.headers.get("set-cookie") ?? ""
     expect(cookie).toContain("Path=/auth")
     expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
+  it("emits LOGIN_SUCCESS audit event on successful login", async () => {
+    await post({ email: "test@example.com", password: "password1" })
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "LOGIN_SUCCESS", actorId: MOCK_USER.id })
+    )
+  })
+
+  it("emits LOGIN_FAILED audit event on bad credentials", async () => {
+    vi.mocked(verifyPassword).mockReturnValue(Effect.succeed(false))
+    await post({ email: "test@example.com", password: "wrong" })
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "LOGIN_FAILED" })
+    )
+  })
+
+  it("emits OWNER_LOGIN in addition to LOGIN_SUCCESS for OWNER role", async () => {
+    vi.mocked(userRepository.findByEmail).mockReturnValue(
+      Effect.succeed({ ...MOCK_USER, role: "OWNER" as const })
+    )
+    await post({ email: "test@example.com", password: "password1" })
+    const calls = vi.mocked(writeAuditLog).mock.calls.map(c => c[0].event)
+    expect(calls).toContain("LOGIN_SUCCESS")
+    expect(calls).toContain("OWNER_LOGIN")
+  })
+
+  it("does not emit OWNER_LOGIN for non-OWNER users", async () => {
+    await post({ email: "test@example.com", password: "password1" })
+    const calls = vi.mocked(writeAuditLog).mock.calls.map(c => c[0].event)
+    expect(calls).not.toContain("OWNER_LOGIN")
   })
 
   it("returns 401 when user does not exist", async () => {

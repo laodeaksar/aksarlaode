@@ -1,5 +1,6 @@
 import { Effect }            from "effect"
 import { sessionRepository } from "@/repository/session.repository"
+import { writeAuditLog }     from "@/lib/audit-log"
 import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { message }           from "@repo/common/response"
 import type { HandlerCtx }   from "@/types"
@@ -33,6 +34,13 @@ export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx)
     set.status = status
     return body
   }
+
+  writeAuditLog({
+    event:    "SESSION_REVOKED",
+    actorId:  userId,
+    targetId: userId,
+    meta:     { sessionId },
+  })
 
   return message("Session revoked")
 }

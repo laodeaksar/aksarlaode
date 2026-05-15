@@ -1,21 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 import { Effect } from "effect"
-import { MOCK_TOKENS } from "../fixtures"
+import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
 
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: { deleteByToken: vi.fn() },
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
 import { sessionRepository } from "@/repository/session.repository"
+import { writeAuditLog }     from "@/lib/audit-log"
 import { logoutHandler }     from "@/handlers/logout"
 
 const app = new Elysia().post("/logout", logoutHandler)
 
-function post(cookie?: string) {
+function post(cookie?: string, userId?: string) {
+  const headers: Record<string, string> = {}
+  if (cookie)  headers["cookie"]    = cookie
+  if (userId)  headers["x-user-id"] = userId
   return app.handle(new Request("http://localhost/logout", {
-    method:  "POST",
-    headers: cookie ? { cookie } : {},
+    method: "POST",
+    headers,
   }))
 }
 
@@ -53,5 +60,17 @@ describe("logoutHandler", () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(sessionRepository.deleteByToken).not.toHaveBeenCalled()
+  })
+
+  it("emits LOGOUT audit event when x-user-id is present", async () => {
+    await post(undefined, MOCK_USER.id)
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "LOGOUT", actorId: MOCK_USER.id })
+    )
+  })
+
+  it("does not emit LOGOUT audit event when x-user-id is missing", async () => {
+    await post()
+    expect(writeAuditLog).not.toHaveBeenCalled()
   })
 })

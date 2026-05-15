@@ -1,5 +1,5 @@
 /**
- * Structured audit log for privileged OWNER actions.
+ * Structured audit log for security-relevant auth events.
  *
  * Emits JSON to stdout so it can be picked up by any log aggregator
  * (CloudWatch, Datadog, Loki, etc.) without a separate dependency.
@@ -7,7 +7,7 @@
  * Format:
  * {
  *   "audit":     true,
- *   "event":     "OWNER_TRANSFER",
+ *   "event":     "LOGIN_SUCCESS",
  *   "actorId":   "uuid-of-acting-user",
  *   "targetId":  "uuid-of-affected-user",
  *   "timestamp": "2024-05-13T10:00:00.000Z",
@@ -16,9 +16,18 @@
  */
 
 export type AuditEventName =
-  | "OWNER_TRANSFER"   // ownership transferred to another user
-  | "ROLE_CHANGE"      // any role mutation
-  | "OWNER_LOGIN"      // OWNER authenticated successfully
+  // ── Privileged account actions ───────────────────────────────────────────
+  | "OWNER_TRANSFER"    // ownership transferred to another user
+  | "ROLE_CHANGE"       // any role mutation or user deletion
+  | "OWNER_LOGIN"       // OWNER authenticated successfully (kept for back-compat)
+  // ── Session lifecycle ────────────────────────────────────────────────────
+  | "LOGIN_SUCCESS"     // any user authenticated successfully
+  | "LOGIN_FAILED"      // authentication attempt rejected (bad credentials)
+  | "LOGOUT"            // user explicitly logged out
+  | "SESSION_REVOKED"   // a specific session was revoked via the sessions API
+  // ── Credential changes ───────────────────────────────────────────────────
+  | "PASSWORD_CHANGED"  // password changed via change-password endpoint
+  | "PASSWORD_RESET"    // password reset via forgot/reset-password flow
 
 export type AuditEntry = {
   event:    AuditEventName

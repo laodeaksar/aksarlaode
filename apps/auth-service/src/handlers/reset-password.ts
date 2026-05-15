@@ -4,6 +4,7 @@ import { hashToken }            from "@/lib/token-hash"
 import { userRepository }       from "@/repository/user.repository"
 import { sessionRepository }    from "@/repository/session.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
+import { writeAuditLog }        from "@/lib/audit-log"
 import { AuthError, GoneError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { message }              from "@repo/common/response"
 
@@ -35,6 +36,8 @@ export const resetPasswordHandler = async ({
     yield* userRepository.updatePasswordHash(user.id, newHash)
     yield* resetTokenRepository.deleteByToken(tokenHash)
     yield* sessionRepository.deleteAllByUserId(user.id)
+
+    return { userId: user.id }
   })
 
   const result = await Effect.runPromiseExit(program)
@@ -44,6 +47,12 @@ export const resetPasswordHandler = async ({
     set.status = status
     return errBody
   }
+
+  writeAuditLog({
+    event:    "PASSWORD_RESET",
+    actorId:  result.value.userId,
+    targetId: result.value.userId,
+  })
 
   set.headers["Set-Cookie"] =
     `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`

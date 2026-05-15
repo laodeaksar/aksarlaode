@@ -48,12 +48,30 @@ export const loginHandler = async ({
   const result = await Effect.runPromiseExit(program)
 
   if (result._tag === "Failure") {
+    // Audit failed login attempts — email used as meta (not actorId since user
+    // may not exist; actorId is set to "anonymous" as a sentinel value).
+    writeAuditLog({
+      event:    "LOGIN_FAILED",
+      actorId:  "anonymous",
+      targetId: "anonymous",
+      meta:     { email: body.email },
+    })
+
     const { body: errBody, status } = toErrorResponse(result.cause.error)
     set.status = status
     return errBody
   }
 
   const { user, tokens } = result.value
+
+  // Audit every successful login (OWNER gets an additional dedicated event
+  // for backwards compatibility with existing alerting rules).
+  writeAuditLog({
+    event:    "LOGIN_SUCCESS",
+    actorId:  user.id,
+    targetId: user.id,
+    meta:     { role: user.role, email: user.email },
+  })
 
   if (user.role === "OWNER") {
     writeAuditLog({

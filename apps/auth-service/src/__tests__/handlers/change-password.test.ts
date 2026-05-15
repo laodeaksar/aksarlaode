@@ -14,10 +14,14 @@ vi.mock("@/lib/password", () => ({
   verifyPassword: vi.fn(),
   hashPassword:   vi.fn(),
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
 import { userRepository }           from "@/repository/user.repository"
 import { sessionRepository }        from "@/repository/session.repository"
 import { verifyPassword, hashPassword } from "@/lib/password"
+import { writeAuditLog }            from "@/lib/audit-log"
 import { changePasswordHandler }    from "@/handlers/change-password"
 
 const app = new Elysia().post("/change-password", changePasswordHandler, { body: ChangePasswordBody })
@@ -51,6 +55,26 @@ describe("changePasswordHandler", () => {
   it("clears the refresh cookie", async () => {
     const res = await post({ currentPassword: "oldPass1!", newPassword: "newPass1!" })
     expect(res.headers.get("set-cookie")).toContain("Max-Age=0")
+  })
+
+  it("clears cookie with Path=/auth to match login cookie path", async () => {
+    const res    = await post({ currentPassword: "oldPass1!", newPassword: "newPass1!" })
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
+  it("emits PASSWORD_CHANGED audit event on success", async () => {
+    await post({ currentPassword: "oldPass1!", newPassword: "newPass1!" })
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "PASSWORD_CHANGED", actorId: MOCK_USER.id })
+    )
+  })
+
+  it("does not emit audit event when current password is wrong", async () => {
+    vi.mocked(verifyPassword).mockReturnValue(Effect.succeed(false))
+    await post({ currentPassword: "wrong", newPassword: "newPass1!" })
+    expect(writeAuditLog).not.toHaveBeenCalled()
   })
 
   it("returns 401 when current password is wrong", async () => {

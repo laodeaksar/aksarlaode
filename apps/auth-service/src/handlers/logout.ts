@@ -1,10 +1,12 @@
 import { Effect }            from "effect"
 import { hashToken }         from "@/lib/token-hash"
 import { sessionRepository } from "@/repository/session.repository"
+import { writeAuditLog }     from "@/lib/audit-log"
 import { message }           from "@repo/common/response"
 import type { HandlerCtx }   from "@/types"
 
 export const logoutHandler = async ({ headers, set }: HandlerCtx) => {
+  const userId       = headers["x-user-id"]
   const cookieHeader = headers["cookie"] ?? ""
   const match        = cookieHeader.match(/ec_refresh=([^;]+)/)
   const refreshToken = match?.[1] ? decodeURIComponent(match[1]) : null
@@ -16,6 +18,14 @@ export const logoutHandler = async ({ headers, set }: HandlerCtx) => {
         sessionRepository.deleteByToken(tokenHash).pipe(Effect.orElse(() => Effect.void))
       )
     }
+  }
+
+  if (userId) {
+    writeAuditLog({
+      event:    "LOGOUT",
+      actorId:  userId,
+      targetId: userId,
+    })
   }
 
   set.headers["Set-Cookie"] =

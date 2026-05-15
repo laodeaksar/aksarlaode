@@ -9,8 +9,12 @@ vi.mock("@/repository/session.repository", () => ({
     deleteByIdAndUserId: vi.fn(),
   },
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
 import { sessionRepository }   from "@/repository/session.repository"
+import { writeAuditLog }       from "@/lib/audit-log"
 import { revokeSessionHandler } from "@/handlers/revoke-session"
 
 const app = new Elysia().delete("/sessions/:id", revokeSessionHandler)
@@ -38,6 +42,23 @@ describe("revokeSessionHandler", () => {
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.message).toContain("revoked")
+  })
+
+  it("emits SESSION_REVOKED audit event on success", async () => {
+    await del(MOCK_SESSION.id, MOCK_USER.id)
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event:    "SESSION_REVOKED",
+        actorId:  MOCK_USER.id,
+        meta:     expect.objectContaining({ sessionId: MOCK_SESSION.id }),
+      })
+    )
+  })
+
+  it("does not emit audit event when session is not found", async () => {
+    vi.mocked(sessionRepository.findByIdAndUserId).mockReturnValue(Effect.succeed(null))
+    await del("other-session", MOCK_USER.id)
+    expect(writeAuditLog).not.toHaveBeenCalled()
   })
 
   it("returns 404 when session does not belong to the user", async () => {

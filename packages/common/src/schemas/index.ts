@@ -1,4 +1,5 @@
 import { z } from "zod/v4"
+import { isAllowedAvatarUrl, ALLOWED_AVATAR_HOSTS } from "../lib/avatar"
 
 export const InitiatePaymentSchema = z.object({
   orderId:       z.string().uuid(),
@@ -42,9 +43,32 @@ export const ChangePasswordSchema = z.object({
 )
 
 export const UpdateProfileSchema = z.object({
-  name:      z.string().min(2).max(100).optional(),
-  phone:     z.string().min(7).max(20).optional(),
-  avatarUrl: z.string().url().max(500).optional(),
+  name:  z.string().min(2).max(100).optional(),
+  phone: z.string().min(7).max(20).optional(),
+
+  /**
+   * avatarUrl must be an HTTPS URL from a trusted CDN or avatar service.
+   *
+   * Enforces the same allowlist/blocklist as isAllowedAvatarUrl so that schema
+   * validation catches disallowed domains at the boundary — before any handler
+   * logic runs.  This protection applies to every service that imports this
+   * schema, not just auth-service.
+   *
+   * Allowed hosts: gravatar.com, ui-avatars.com, api.dicebear.com,
+   * res.cloudinary.com, images.unsplash.com, cdn.jsdelivr.net,
+   * lh3.googleusercontent.com, avatars.githubusercontent.com.
+   *
+   * Services with a self-hosted CDN should additionally validate against their
+   * own origin in the handler layer using apps/auth-service/src/lib/avatar.ts.
+   */
+  avatarUrl: z.string()
+    .url()
+    .max(500)
+    .refine(
+      (url) => isAllowedAvatarUrl(url),
+      { message: `avatarUrl must be an HTTPS URL from an allowed domain. Allowed: ${ALLOWED_AVATAR_HOSTS}` }
+    )
+    .optional(),
 }).refine(
   (data) => Object.keys(data).some(k => data[k as keyof typeof data] !== undefined),
   { message: "At least one field must be provided" }

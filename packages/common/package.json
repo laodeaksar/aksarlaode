@@ -5,15 +5,21 @@
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    "./schemas":          "./src/schemas/index.ts",
-    "./errors":   "./src/errors/index.ts",
-    "./response": "./src/response/index.ts"
+    "./schemas":   "./src/schemas/index.ts",
+    "./errors":    "./src/errors/index.ts",
+    "./response":  "./src/response/index.ts",
+    "./lib/avatar": "./src/lib/avatar.ts"
+  },
+  "scripts": {
+    "test":       "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
   }
 }

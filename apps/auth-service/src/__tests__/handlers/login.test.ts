@@ -5,23 +5,25 @@ import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
 import { LoginBody } from "@/schemas"
 
 vi.mock("@/repository/user.repository", () => ({
-  userRepository: { findByEmail: vi.fn(), findById: vi.fn(), create: vi.fn() },
+  userRepository: { findByEmail: vi.fn(), findById: vi.fn(), create: vi.fn(), updatePasswordHash: vi.fn() },
 }))
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: { create: vi.fn() },
 }))
 vi.mock("@/lib/password", () => ({
   verifyPassword: vi.fn(),
+  hashPassword:   vi.fn(),
+  needsRehash:    vi.fn(() => false),
 }))
 vi.mock("@/lib/token", () => ({
   issueTokenPair: vi.fn(),
 }))
 
-import { userRepository }    from "@/repository/user.repository"
-import { sessionRepository } from "@/repository/session.repository"
-import { verifyPassword }    from "@/lib/password"
-import { issueTokenPair }    from "@/lib/token"
-import { loginHandler }      from "@/handlers/login"
+import { userRepository }                       from "@/repository/user.repository"
+import { sessionRepository }                    from "@/repository/session.repository"
+import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
+import { issueTokenPair }                       from "@/lib/token"
+import { loginHandler }                         from "@/handlers/login"
 
 const app = new Elysia().post("/login", loginHandler, { body: LoginBody })
 
@@ -61,6 +63,28 @@ describe("loginHandler", () => {
     vi.mocked(verifyPassword).mockReturnValue(Effect.succeed(false))
     const res = await post({ email: "test@example.com", password: "wrong" })
     expect(res.status).toBe(401)
+  })
+
+  it("transparently upgrades a legacy PBKDF2 hash to Argon2id on successful login", async () => {
+    vi.mocked(needsRehash).mockReturnValue(true)
+    vi.mocked(hashPassword).mockReturnValue(Effect.succeed("$argon2id$v=19$new-hash"))
+    vi.mocked(userRepository.updatePasswordHash).mockReturnValue(Effect.succeed(undefined as any))
+
+    const res = await post({ email: "test@example.com", password: "password1" })
+    expect(res.status).toBe(200)
+    expect(vi.mocked(hashPassword)).toHaveBeenCalledWith("password1")
+    expect(vi.mocked(userRepository.updatePasswordHash)).toHaveBeenCalledWith(
+      MOCK_USER.id,
+      "$argon2id$v=19$new-hash"
+    )
+  })
+
+  it("still returns 200 when the Argon2id upgrade fails (fail-open)", async () => {
+    vi.mocked(needsRehash).mockReturnValue(true)
+    vi.mocked(hashPassword).mockReturnValue(Effect.fail(new Error("hash error") as any))
+
+    const res = await post({ email: "test@example.com", password: "password1" })
+    expect(res.status).toBe(200)
   })
 
   it("returns 422 when body is missing required fields", async () => {

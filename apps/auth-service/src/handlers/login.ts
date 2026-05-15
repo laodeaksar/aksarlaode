@@ -1,11 +1,11 @@
-import { Effect }            from "effect"
-import { verifyPassword }    from "@/lib/password"
-import { issueTokenPair }    from "@/lib/token"
-import { hashToken }         from "@/lib/token-hash"
-import { userRepository }    from "@/repository/user.repository"
-import { sessionRepository } from "@/repository/session.repository"
-import { writeAuditLog }     from "@/lib/audit-log"
-import { AuthError, toErrorResponse } from "@repo/common/errors"
+import { Effect }                              from "effect"
+import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
+import { issueTokenPair }                     from "@/lib/token"
+import { hashToken }                          from "@/lib/token-hash"
+import { userRepository }                     from "@/repository/user.repository"
+import { sessionRepository }                  from "@/repository/session.repository"
+import { writeAuditLog }                      from "@/lib/audit-log"
+import { AuthError, toErrorResponse }         from "@repo/common/errors"
 
 export const loginHandler = async ({
   body,
@@ -21,6 +21,16 @@ export const loginHandler = async ({
 
     const valid = yield* verifyPassword(body.password, user.passwordHash)
     if (!valid) return yield* Effect.fail(new AuthError("Invalid credentials"))
+
+    // Transparent Argon2id upgrade: if the stored hash uses the legacy PBKDF2
+    // format, re-hash with Argon2id now that we have the plaintext password.
+    // orElse ensures a DB hiccup here never blocks login.
+    if (needsRehash(user.passwordHash)) {
+      yield* hashPassword(body.password).pipe(
+        Effect.flatMap(newHash => userRepository.updatePasswordHash(user.id, newHash)),
+        Effect.orElse(() => Effect.void)
+      )
+    }
 
     const sessionId = crypto.randomUUID()
     const tokens    = yield* issueTokenPair(user.id, user.role, sessionId)

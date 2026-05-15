@@ -7,7 +7,7 @@ export const MOCK_USER = {
   email:        "test@example.com",
   name:         "Test User",
   role:         "CUSTOMER" as UserRole,
-  passwordHash: "salt:hash",
+  passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$bW9ja3NhbHQ$bW9ja2hhc2g",
   avatarUrl:    null as string | null,
   phone:        null as string | null,
   createdAt:    new Date("2026-01-01T00:00:00Z"),

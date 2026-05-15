@@ -1,5 +1,6 @@
 import { Effect }            from "effect"
 import { verifyToken, issueTokenPair } from "@/lib/token"
+import { hashToken }         from "@/lib/token-hash"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
 import { AuthError, toErrorResponse } from "@repo/common/errors"
@@ -13,6 +14,11 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
   const program = Effect.gen(function* () {
     if (!rawToken) return yield* Effect.fail(new AuthError())
 
+    const rawTokenHash = yield* Effect.tryPromise({
+      try:   () => hashToken(rawToken),
+      catch: () => new AuthError(),
+    })
+
     const payload = yield* verifyToken(rawToken).pipe(
       Effect.mapError(() => new AuthError())
     )
@@ -21,7 +27,7 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
       return yield* Effect.fail(new AuthError())
     }
 
-    const session = yield* sessionRepository.findByToken(rawToken).pipe(
+    const session = yield* sessionRepository.findByToken(rawTokenHash).pipe(
       Effect.mapError(() => new AuthError())
     )
     if (!session || session.expiresAt < new Date()) {
@@ -33,7 +39,7 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
     )
     if (!user) return yield* Effect.fail(new AuthError())
 
-    yield* sessionRepository.deleteByToken(rawToken).pipe(
+    yield* sessionRepository.deleteByToken(rawTokenHash).pipe(
       Effect.mapError(() => new AuthError())
     )
 
@@ -42,9 +48,13 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
       Effect.mapError(() => new AuthError())
     )
 
+    const newRefreshTokenHash = yield* Effect.tryPromise({
+      try:   () => hashToken(tokens.refreshToken),
+      catch: () => new AuthError(),
+    })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     yield* sessionRepository.create({
-      id: newSessionId, userId: user.id, token: tokens.refreshToken, expiresAt,
+      id: newSessionId, userId: user.id, token: newRefreshTokenHash, expiresAt,
     }).pipe(Effect.mapError(() => new AuthError()))
 
     return tokens

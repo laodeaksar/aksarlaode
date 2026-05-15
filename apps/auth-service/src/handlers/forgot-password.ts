@@ -1,4 +1,5 @@
 import { Effect }               from "effect"
+import { hashToken }            from "@/lib/token-hash"
 import { userRepository }       from "@/repository/user.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
 import { toErrorResponse }      from "@repo/common/errors"
@@ -22,8 +23,12 @@ export const forgotPasswordHandler = async ({
     yield* resetTokenRepository.deleteAllByUserId(user.id)
 
     const token     = generateResetToken()
+    const tokenHash = yield* Effect.tryPromise({
+      try:   () => hashToken(token),
+      catch: (e) => new Error(String(e)),
+    })
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-    yield* resetTokenRepository.create({ token, userId: user.id, expiresAt })
+    yield* resetTokenRepository.create({ token: tokenHash, userId: user.id, expiresAt })
 
     // TODO: enqueue email via email service — token must ONLY reach the user
     // via out-of-band channel (email), never in this HTTP response.

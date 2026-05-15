@@ -1,5 +1,6 @@
 import { Effect }               from "effect"
 import { hashPassword }         from "@/lib/password"
+import { hashToken }            from "@/lib/token-hash"
 import { userRepository }       from "@/repository/user.repository"
 import { sessionRepository }    from "@/repository/session.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
@@ -14,11 +15,16 @@ export const resetPasswordHandler = async ({
   set:  any
 }) => {
   const program = Effect.gen(function* () {
-    const record = yield* resetTokenRepository.findByToken(body.token)
+    const tokenHash = yield* Effect.tryPromise({
+      try:   () => hashToken(body.token),
+      catch: () => new AuthError("Invalid reset token"),
+    })
+
+    const record = yield* resetTokenRepository.findByToken(tokenHash)
     if (!record) return yield* Effect.fail(new AuthError("Invalid reset token"))
 
     if (record.expiresAt < new Date()) {
-      yield* resetTokenRepository.deleteByToken(body.token).pipe(Effect.orElse(() => Effect.void))
+      yield* resetTokenRepository.deleteByToken(tokenHash).pipe(Effect.orElse(() => Effect.void))
       return yield* Effect.fail(new GoneError("Reset token has expired"))
     }
 
@@ -27,7 +33,7 @@ export const resetPasswordHandler = async ({
 
     const newHash = yield* hashPassword(body.newPassword)
     yield* userRepository.updatePasswordHash(user.id, newHash)
-    yield* resetTokenRepository.deleteByToken(body.token)
+    yield* resetTokenRepository.deleteByToken(tokenHash)
     yield* sessionRepository.deleteAllByUserId(user.id)
   })
 

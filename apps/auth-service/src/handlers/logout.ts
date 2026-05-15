@@ -1,4 +1,5 @@
 import { Effect }            from "effect"
+import { hashToken }         from "@/lib/token-hash"
 import { sessionRepository } from "@/repository/session.repository"
 import { message }           from "@repo/common/response"
 import type { HandlerCtx }   from "@/types"
@@ -9,9 +10,12 @@ export const logoutHandler = async ({ headers, set }: HandlerCtx) => {
   const refreshToken = match?.[1] ? decodeURIComponent(match[1]) : null
 
   if (refreshToken) {
-    await Effect.runPromise(
-      sessionRepository.deleteByToken(refreshToken).pipe(Effect.orElse(() => Effect.void))
-    )
+    const tokenHash = await hashToken(refreshToken).catch(() => null)
+    if (tokenHash) {
+      await Effect.runPromise(
+        sessionRepository.deleteByToken(tokenHash).pipe(Effect.orElse(() => Effect.void))
+      )
+    }
   }
 
   set.headers["Set-Cookie"] =

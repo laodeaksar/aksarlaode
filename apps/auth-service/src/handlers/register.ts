@@ -1,9 +1,10 @@
 import { Effect }            from "effect"
 import { hashPassword }      from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
+import { hashToken }         from "@/lib/token-hash"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
-import { ConflictError, toErrorResponse } from "@repo/common/errors"
+import { AuthError, ConflictError, toErrorResponse } from "@repo/common/errors"
 
 export const registerHandler = async ({
   body,
@@ -25,8 +26,12 @@ export const registerHandler = async ({
     const sessionId = crypto.randomUUID()
     const tokens    = yield* issueTokenPair(user.id, user.role, sessionId)
 
+    const refreshTokenHash = yield* Effect.tryPromise({
+      try:   () => hashToken(tokens.refreshToken),
+      catch: () => new AuthError("Internal error"),
+    })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    yield* sessionRepository.create({ id: sessionId, userId: user.id, token: tokens.refreshToken, expiresAt })
+    yield* sessionRepository.create({ id: sessionId, userId: user.id, token: refreshTokenHash, expiresAt })
 
     return { user: { id: user.id, email: user.email, name: user.name }, tokens }
   })

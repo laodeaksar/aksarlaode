@@ -13,7 +13,10 @@ export const env = parseEnv(
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 
     // JWT & inter-service security
-    JWT_SECRET:             z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+    // Separate secrets prevent type-confusion: a 7-day refresh token cannot
+    // be accepted as a 15-minute access token even if it passes HMAC verification.
+    JWT_ACCESS_SECRET:      z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
+    JWT_REFRESH_SECRET:     z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
     INTERNAL_SERVICE_TOKEN: z.string().min(32, "INTERNAL_SERVICE_TOKEN must be at least 32 characters"),
 
     // Redis — used for distributed rate limiting

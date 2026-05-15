@@ -22,7 +22,7 @@ export const verifyJwt = (
 
     // 1. Import HMAC key and verify signature via WebCrypto
     const key = yield* Effect.tryPromise({
-      try:   () => importKey(env.JWT_SECRET, ["verify"]),
+      try:   () => importKey(env.JWT_ACCESS_SECRET, ["verify"]),
       catch: () => new TokenInvalidError({ reason: "key_import_failed" }),
     })
 
@@ -65,7 +65,7 @@ export const signJwt = (
 ): Effect.Effect<string, TokenInvalidError> =>
   Effect.tryPromise({
     try: async () => {
-      const key = await importKey(env.JWT_SECRET, ["sign"])
+      const key = await importKey(env.JWT_ACCESS_SECRET, ["sign"])
       const now = Math.floor(Date.now() / 1000)
 
       const header  = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }))

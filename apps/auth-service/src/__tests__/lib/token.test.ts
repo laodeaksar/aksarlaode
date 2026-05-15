@@ -22,6 +22,7 @@ describe("issueTokenPair", () => {
     expect(payload.sub).toBe("user-1")
     expect(payload.role).toBe("ADMIN")
     expect(payload.sessionId).toBe("session-1")
+    expect(payload.type).toBe("access")
   })
 
   it("embeds type:'refresh' in the refreshToken", async () => {
@@ -35,17 +36,26 @@ describe("issueTokenPair", () => {
 })
 
 describe("verifyToken", () => {
-  it("succeeds with a freshly issued token", async () => {
+  it("succeeds with a freshly issued access token", async () => {
     const { accessToken } = await Effect.runPromise(
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
-    const payload = await Effect.runPromise(verifyToken(accessToken))
+    const payload = await Effect.runPromise(verifyToken(accessToken, "access"))
     expect(payload.sub).toBe("user-1")
     expect(payload.role).toBe("CUSTOMER")
   })
 
+  it("succeeds with a freshly issued refresh token", async () => {
+    const { refreshToken } = await Effect.runPromise(
+      issueTokenPair("user-1", "CUSTOMER", "session-1")
+    )
+    const payload = await Effect.runPromise(verifyToken(refreshToken, "refresh"))
+    expect(payload.sub).toBe("user-1")
+    expect(payload.type).toBe("refresh")
+  })
+
   it("fails when the token has an invalid format", async () => {
-    const result = await Effect.runPromiseExit(verifyToken("not.a.jwt"))
+    const result = await Effect.runPromiseExit(verifyToken("not.a.jwt", "access"))
     expect(result._tag).toBe("Failure")
   })
 
@@ -55,7 +65,7 @@ describe("verifyToken", () => {
     )
     const [h, p] = accessToken.split(".")
     const tampered = `${h}.${p}.invalidsignature`
-    const result   = await Effect.runPromiseExit(verifyToken(tampered))
+    const result   = await Effect.runPromiseExit(verifyToken(tampered, "access"))
     expect(result._tag).toBe("Failure")
   })
 
@@ -66,7 +76,25 @@ describe("verifyToken", () => {
     )
     // Advance past 15-minute access token expiry
     vi.advanceTimersByTime(16 * 60 * 1000)
-    const result = await Effect.runPromiseExit(verifyToken(accessToken))
+    const result = await Effect.runPromiseExit(verifyToken(accessToken, "access"))
+    expect(result._tag).toBe("Failure")
+  })
+
+  it("fails when a refresh token is presented as an access token", async () => {
+    const { refreshToken } = await Effect.runPromise(
+      issueTokenPair("user-1", "CUSTOMER", "session-1")
+    )
+    // Attempt to use the refresh token where an access token is expected
+    const result = await Effect.runPromiseExit(verifyToken(refreshToken, "access"))
+    expect(result._tag).toBe("Failure")
+  })
+
+  it("fails when an access token is presented as a refresh token", async () => {
+    const { accessToken } = await Effect.runPromise(
+      issueTokenPair("user-1", "CUSTOMER", "session-1")
+    )
+    // Attempt to use the access token where a refresh token is expected
+    const result = await Effect.runPromiseExit(verifyToken(accessToken, "refresh"))
     expect(result._tag).toBe("Failure")
   })
 })

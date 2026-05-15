@@ -19,11 +19,11 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
       catch: () => new AuthError(),
     })
 
-    const payload = yield* verifyToken(rawToken).pipe(
+    const payload = yield* verifyToken(rawToken, "refresh").pipe(
       Effect.mapError(() => new AuthError())
     )
 
-    if (payload["type"] !== "refresh" || typeof payload["sub"] !== "string") {
+    if (typeof payload["sub"] !== "string") {
       return yield* Effect.fail(new AuthError())
     }
 

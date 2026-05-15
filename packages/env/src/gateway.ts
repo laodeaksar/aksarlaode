@@ -20,7 +20,8 @@ export const env = parseEnv(
     REDIS_PASSWORD: z.string().default(""),         // empty string = no auth (dev default)
 
     // ── Auth & security ──────────────────────────────────────────────────────
-    JWT_SECRET:             z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+    // Gateway only verifies access tokens — it never issues or reads refresh tokens.
+    JWT_ACCESS_SECRET:      z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
     INTERNAL_SERVICE_TOKEN: z.string().min(32, "INTERNAL_SERVICE_TOKEN must be at least 32 characters"),
 
     // ── Internal service URLs ────────────────────────────────────────────────

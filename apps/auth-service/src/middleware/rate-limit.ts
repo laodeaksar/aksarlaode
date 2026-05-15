@@ -1,19 +1,23 @@
-interface Entry {
-  count:   number
-  resetAt: number
-}
+import { redis } from "@/lib/redis"
 
-function createRateLimiter(maxRequests: number, windowMs: number) {
-  const store = new Map<string, Entry>()
-
-  setInterval(() => {
-    const now = Date.now()
-    for (const [key, entry] of store) {
-      if (entry.resetAt < now) store.delete(key)
-    }
-  }, 5 * 60 * 1000).unref()
-
-  return ({
+/**
+ * Redis-backed fixed-window rate limiter.
+ *
+ * Uses INCR + EXPIRE so the counter is atomic and shared across all
+ * auth-service replicas — bypassing via round-robin is not possible.
+ *
+ * Fail-open: if Redis is unavailable the request is allowed through
+ * so a Redis outage never takes down the auth endpoints entirely.
+ * A console error is emitted so the on-call team is alerted.
+ *
+ * IP resolution order:
+ *   1. x-real-ip    — set directly by the API gateway to the client IP
+ *   2. x-forwarded-for[0] — leftmost entry, trusted only when the gateway
+ *      strips & rewrites the header before forwarding (verify gateway config)
+ *   3. "unknown"    — fallback, all unknown clients share one bucket
+ */
+function createRateLimiter(maxRequests: number, windowSec: number, label: string) {
+  return async ({
     request,
     set,
   }: {
@@ -21,28 +25,36 @@ function createRateLimiter(maxRequests: number, windowMs: number) {
     set:     { status?: number; headers: Record<string, string> }
   }) => {
     const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       request.headers.get("x-real-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       "unknown"
 
-    const now   = Date.now()
-    const entry = store.get(ip)
+    const key = `rate:${label}:${ip}`
 
-    if (!entry || entry.resetAt < now) {
-      store.set(ip, { count: 1, resetAt: now + windowMs })
-      return
+    try {
+      const current = await redis.incr(key)
+      if (current === 1) {
+        await redis.expire(key, windowSec)
+      }
+
+      if (current > maxRequests) {
+        const ttl = await redis.ttl(key)
+        set.status                 = 429
+        set.headers["Retry-After"] = String(Math.max(ttl, 1))
+        return { error: "Too many requests, please try again later", code: "RATE_LIMITED" }
+      }
+    } catch (err) {
+      console.error(JSON.stringify({
+        event:  "rate_limit_redis_error",
+        label,
+        ip,
+        error:  String(err),
+      }))
+      // Fail-open: allow the request rather than taking down the endpoint
     }
-
-    if (entry.count >= maxRequests) {
-      set.status                  = 429
-      set.headers["Retry-After"]  = String(Math.ceil((entry.resetAt - now) / 1000))
-      return { error: "Too many requests, please try again later" }
-    }
-
-    entry.count++
   }
 }
 
-export const loginRateLimiter          = createRateLimiter(10, 15 * 60 * 1000)
-export const registerRateLimiter       = createRateLimiter(5,  60 * 60 * 1000)
-export const forgotPasswordRateLimiter = createRateLimiter(5,  60 * 60 * 1000)
+export const loginRateLimiter          = createRateLimiter(10, 15 * 60, "login")
+export const registerRateLimiter       = createRateLimiter(5,  60 * 60, "register")
+export const forgotPasswordRateLimiter = createRateLimiter(5,  60 * 60, "forgot-password")

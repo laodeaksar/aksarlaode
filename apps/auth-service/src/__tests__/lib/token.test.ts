@@ -18,7 +18,7 @@ describe("issueTokenPair", () => {
       issueTokenPair("user-1", "ADMIN", "session-1")
     )
     const [, bodyB64] = accessToken.split(".")
-    const payload     = JSON.parse(atob(bodyB64.replace(/-/g, "+").replace(/_/g, "/")))
+    const payload     = JSON.parse(atob(bodyB64!.replace(/-/g, "+").replace(/_/g, "/")))
     expect(payload.sub).toBe("user-1")
     expect(payload.role).toBe("ADMIN")
     expect(payload.sessionId).toBe("session-1")
@@ -30,8 +30,18 @@ describe("issueTokenPair", () => {
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
     const [, bodyB64] = refreshToken.split(".")
-    const payload     = JSON.parse(atob(bodyB64.replace(/-/g, "+").replace(/_/g, "/")))
+    const payload     = JSON.parse(atob(bodyB64!.replace(/-/g, "+").replace(/_/g, "/")))
     expect(payload.type).toBe("refresh")
+  })
+
+  it("sets alg:EdDSA in the JWT header", async () => {
+    const { accessToken } = await Effect.runPromise(
+      issueTokenPair("user-1", "CUSTOMER", "session-1")
+    )
+    const [headerB64] = accessToken.split(".")
+    const header      = JSON.parse(atob(headerB64!.replace(/-/g, "+").replace(/_/g, "/")))
+    expect(header.alg).toBe("EdDSA")
+    expect(header.typ).toBe("JWT")
   })
 })
 
@@ -41,8 +51,8 @@ describe("verifyToken", () => {
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
     const payload = await Effect.runPromise(verifyToken(accessToken, "access"))
-    expect(payload.sub).toBe("user-1")
-    expect(payload.role).toBe("CUSTOMER")
+    expect(payload["sub"]).toBe("user-1")
+    expect(payload["role"]).toBe("CUSTOMER")
   })
 
   it("succeeds with a freshly issued refresh token", async () => {
@@ -50,8 +60,8 @@ describe("verifyToken", () => {
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
     const payload = await Effect.runPromise(verifyToken(refreshToken, "refresh"))
-    expect(payload.sub).toBe("user-1")
-    expect(payload.type).toBe("refresh")
+    expect(payload["sub"]).toBe("user-1")
+    expect(payload["type"]).toBe("refresh")
   })
 
   it("fails when the token has an invalid format", async () => {
@@ -64,8 +74,20 @@ describe("verifyToken", () => {
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
     const [h, p] = accessToken.split(".")
-    const tampered = `${h}.${p}.invalidsignature`
+    const tampered = `${h}.${p}.invalidsignatureXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`
     const result   = await Effect.runPromiseExit(verifyToken(tampered, "access"))
+    expect(result._tag).toBe("Failure")
+  })
+
+  it("fails when alg header is not EdDSA (rejects HS256 tokens)", async () => {
+    // Craft a JWT with alg:HS256 header — verifyToken must reject it
+    const fakeHeader  = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+    const fakePayload = btoa(JSON.stringify({ sub: "x", exp: 9999999999, type: "access" }))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+    const fakeToken = `${fakeHeader}.${fakePayload}.invalidsig`
+
+    const result = await Effect.runPromiseExit(verifyToken(fakeToken, "access"))
     expect(result._tag).toBe("Failure")
   })
 
@@ -84,7 +106,6 @@ describe("verifyToken", () => {
     const { refreshToken } = await Effect.runPromise(
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
-    // Attempt to use the refresh token where an access token is expected
     const result = await Effect.runPromiseExit(verifyToken(refreshToken, "access"))
     expect(result._tag).toBe("Failure")
   })
@@ -93,7 +114,6 @@ describe("verifyToken", () => {
     const { accessToken } = await Effect.runPromise(
       issueTokenPair("user-1", "CUSTOMER", "session-1")
     )
-    // Attempt to use the access token where a refresh token is expected
     const result = await Effect.runPromiseExit(verifyToken(accessToken, "refresh"))
     expect(result._tag).toBe("Failure")
   })

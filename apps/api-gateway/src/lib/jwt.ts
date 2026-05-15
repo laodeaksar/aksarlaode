@@ -10,7 +10,12 @@ class TokenMalformedError extends Data.TaggedError("TokenMalformedError") {}
 export type JwtError = TokenExpiredError | TokenInvalidError | TokenMalformedError
 
 // ── Verify ────────────────────────────────────────────────────────────────────
-// Returns a fully-typed User so callers never touch raw payload fields.
+/**
+ * Verifies an EdDSA (Ed25519) access token using the public key only.
+ *
+ * The gateway never holds the private key — a compromised gateway cannot forge
+ * tokens.  Returns a fully-typed User so callers never touch raw payload fields.
+ */
 export const verifyJwt = (
   token: string
 ): Effect.Effect<User, JwtError> =>
@@ -20,9 +25,19 @@ export const verifyJwt = (
       return yield* Effect.fail(new TokenMalformedError())
     }
 
-    // 1. Import HMAC key and verify signature via WebCrypto
+    // 1. Validate alg header
+    const headerObj = yield* Effect.try({
+      try:   () => JSON.parse(atob(parts[0]!.replace(/-/g, "+").replace(/_/g, "/"))) as Record<string, unknown>,
+      catch: () => new TokenMalformedError(),
+    })
+
+    if (headerObj["alg"] !== "EdDSA") {
+      return yield* Effect.fail(new TokenInvalidError({ reason: "unexpected_algorithm" }))
+    }
+
+    // 2. Import Ed25519 public key and verify signature
     const key = yield* Effect.tryPromise({
-      try:   () => importKey(env.JWT_ACCESS_SECRET, ["verify"]),
+      try:   () => importPublicKey(env.JWT_ACCESS_PUBLIC_KEY),
       catch: () => new TokenInvalidError({ reason: "key_import_failed" }),
     })
 
@@ -35,18 +50,18 @@ export const verifyJwt = (
       return yield* Effect.fail(new TokenInvalidError({ reason: "bad_signature" }))
     }
 
-    // 2. Decode payload
+    // 3. Decode payload
     const payload = yield* Effect.try({
       try:   () => decodePayload(parts[1]!),
       catch: () => new TokenMalformedError(),
     })
 
-    // 3. Check expiry
+    // 4. Check expiry
     if (Date.now() / 1000 > payload.exp) {
       return yield* Effect.fail(new TokenExpiredError())
     }
 
-    // 4. Validate required claims
+    // 5. Validate required claims
     if (!payload.sub || !payload.role || !payload.sessionId) {
       return yield* Effect.fail(new TokenInvalidError({ reason: "missing_claims" }))
     }
@@ -58,33 +73,6 @@ export const verifyJwt = (
     } satisfies User
   })
 
-// ── Sign (only needed in tests / token re-issuance) ──────────────────────────
-export const signJwt = (
-  user: User,
-  expiresInSeconds = 900  // 15 min default
-): Effect.Effect<string, TokenInvalidError> =>
-  Effect.tryPromise({
-    try: async () => {
-      const key = await importKey(env.JWT_ACCESS_SECRET, ["sign"])
-      const now = Math.floor(Date.now() / 1000)
-
-      const header  = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }))
-      const body    = b64url(JSON.stringify({
-        sub:       user.id,
-        role:      user.role,
-        sessionId: user.sessionId,
-        iat:       now,
-        exp:       now + expiresInSeconds,
-      }))
-
-      const data      = `${header}.${body}`
-      const signature = await crypto.subtle.sign("HMAC", key, enc(data))
-
-      return `${data}.${b64url(signature)}`
-    },
-    catch: (e) => new TokenInvalidError({ reason: String(e) }),
-  })
-
 // ── WebCrypto helpers ─────────────────────────────────────────────────────────
 type JwtPayload = {
   sub:       string
@@ -94,31 +82,28 @@ type JwtPayload = {
   exp:       number
 }
 
-const enc    = (s: string) => new TextEncoder().encode(s)
-const b64url = (input: string | ArrayBuffer) =>
-  btoa(typeof input === "string" ? input : String.fromCharCode(...new Uint8Array(input)))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-
 function decodePayload(b64: string): JwtPayload {
-  const normalized = b64.replace(/-/g, "+").replace(/_/g, "/")
-  return JSON.parse(atob(normalized)) as JwtPayload
+  return JSON.parse(
+    atob(b64.replace(/-/g, "+").replace(/_/g, "/"))
+  ) as JwtPayload
 }
 
-async function importKey(secret: string, usages: KeyUsage[]): Promise<CryptoKey> {
+async function importPublicKey(b64: string): Promise<CryptoKey> {
+  const der = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
   return crypto.subtle.importKey(
-    "raw",
-    enc(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    "spki",
+    der,
+    { name: "Ed25519" },
     false,
-    usages
+    ["verify"]
   )
 }
 
 async function verifySignature(parts: string[], key: CryptoKey): Promise<boolean> {
-  const data = enc(`${parts[0]}.${parts[1]}`)
+  const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
   const sig  = Uint8Array.from(
     atob(parts[2]!.replace(/-/g, "+").replace(/_/g, "/")),
-    (c) => c.charCodeAt(0)
+    c => c.charCodeAt(0)
   )
-  return crypto.subtle.verify("HMAC", key, sig, data)
+  return crypto.subtle.verify("Ed25519", key, sig, data)
 }

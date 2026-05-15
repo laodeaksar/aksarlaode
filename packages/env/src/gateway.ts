@@ -17,11 +17,13 @@ export const env = parseEnv(
     // ── Cache ────────────────────────────────────────────────────────────────
     REDIS_HOST:     z.string().min(1, "REDIS_HOST is required"),
     REDIS_PORT:     z.coerce.number().int().positive().default(6379),
-    REDIS_PASSWORD: z.string().default(""),         // empty string = no auth (dev default)
+    REDIS_PASSWORD: z.string().default(""),
 
     // ── Auth & security ──────────────────────────────────────────────────────
-    // Gateway only verifies access tokens — it never issues or reads refresh tokens.
-    JWT_ACCESS_SECRET:      z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
+    // Gateway receives ONLY the Ed25519 public key (SPKI DER, base64-encoded).
+    // It verifies access tokens but can never sign or forge them — the private
+    // key lives exclusively in auth-service.
+    JWT_ACCESS_PUBLIC_KEY:  z.string().min(1, "JWT_ACCESS_PUBLIC_KEY is required"),
     INTERNAL_SERVICE_TOKEN: z.string().min(32, "INTERNAL_SERVICE_TOKEN must be at least 32 characters"),
 
     // ── Internal service URLs ────────────────────────────────────────────────

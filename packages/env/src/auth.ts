@@ -12,11 +12,23 @@ export const env = parseEnv(
     // PostgreSQL — accepts any connection string scheme (postgres://, postgresql://)
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 
-    // JWT & inter-service security
-    // Separate secrets prevent type-confusion: a 7-day refresh token cannot
-    // be accepted as a 15-minute access token even if it passes HMAC verification.
-    JWT_ACCESS_SECRET:      z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
-    JWT_REFRESH_SECRET:     z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
+    // ── JWT keypairs (Ed25519 / EdDSA) ───────────────────────────────────────
+    //
+    // Auth-service holds BOTH the private key (for signing) and the public key
+    // (for verifying the tokens it issued).  The api-gateway receives ONLY the
+    // public key — it can never forge a token even if fully compromised.
+    //
+    // Key encoding: base64-encoded DER bytes.
+    //   Private key → PKCS8 DER  → base64
+    //   Public key  → SPKI DER   → base64
+    //
+    // Generate with:  pnpm tsx scripts/generate-keypairs.ts
+    JWT_ACCESS_PRIVATE_KEY:  z.string().min(1, "JWT_ACCESS_PRIVATE_KEY is required"),
+    JWT_ACCESS_PUBLIC_KEY:   z.string().min(1, "JWT_ACCESS_PUBLIC_KEY is required"),
+    JWT_REFRESH_PRIVATE_KEY: z.string().min(1, "JWT_REFRESH_PRIVATE_KEY is required"),
+    JWT_REFRESH_PUBLIC_KEY:  z.string().min(1, "JWT_REFRESH_PUBLIC_KEY is required"),
+
+    // Shared inter-service firewall token
     INTERNAL_SERVICE_TOKEN: z.string().min(32, "INTERNAL_SERVICE_TOKEN must be at least 32 characters"),
 
     // Redis — used for distributed rate limiting

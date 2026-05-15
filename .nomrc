@@ -1,0 +1,19 @@
+# .npmrc
+
+# Menangani hoisting agar library (seperti ESLint/Next) bisa menemukan plugin di root
+public-hoist-pattern[]=*
+
+# Memastikan pnpm mengangkat dependensi ke node_modules utama jika diperlukan (shamefully-hoist)
+# Sangat disarankan untuk monorepo yang menggunakan banyak shared packages
+shamefully-hoist=true
+
+# Otomatis install peer dependencies untuk menghindari error manual
+auto-install-peers=true
+
+# Selalu hubungkan paket antar workspace secara lokal (workspace:*)
+link-workspace-packages=true
+prefer-workspace-packages=true
+
+# Optimasi log untuk CI/CD dan terminal agar tidak terlalu berisik
+loglevel=warn
+

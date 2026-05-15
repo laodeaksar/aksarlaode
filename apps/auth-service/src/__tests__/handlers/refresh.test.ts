@@ -51,6 +51,13 @@ describe("refreshHandler", () => {
     expect(res.headers.get("set-cookie")).toContain("ec_refresh=")
   })
 
+  it("rotated cookie uses Path=/auth so browser sends it to /auth/logout", async () => {
+    const res    = await post(REFRESH_COOKIE)
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
   it("rotates the session: deletes old, creates new", async () => {
     await post(REFRESH_COOKIE)
     expect(sessionRepository.deleteByToken).toHaveBeenCalled()

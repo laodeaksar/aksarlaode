@@ -19,7 +19,7 @@ export const logoutHandler = async ({ headers, set }: HandlerCtx) => {
   }
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
+    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
 
   return message("Logged out")
 }

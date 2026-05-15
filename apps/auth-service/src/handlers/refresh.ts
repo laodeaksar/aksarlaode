@@ -71,7 +71,7 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
   const tokens = result.value
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=${60 * 60 * 24 * 7}`
+    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=${60 * 60 * 24 * 7}`
 
   return { accessToken: tokens.accessToken }
 }

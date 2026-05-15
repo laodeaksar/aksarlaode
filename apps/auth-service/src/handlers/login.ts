@@ -65,7 +65,7 @@ export const loginHandler = async ({
   }
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=${60 * 60 * 24 * 7}`
+    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=${60 * 60 * 24 * 7}`
 
   return { user, accessToken: tokens.accessToken }
 }

@@ -82,4 +82,11 @@ describe("resetPasswordHandler", () => {
     const res = await post(VALID_BODY)
     expect(res.headers.get("set-cookie")).toContain("Max-Age=0")
   })
+
+  it("clears cookie with Path=/auth to match the login cookie path", async () => {
+    const res    = await post(VALID_BODY)
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
 })

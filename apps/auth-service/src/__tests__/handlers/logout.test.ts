@@ -37,6 +37,13 @@ describe("logoutHandler", () => {
     expect(res.headers.get("set-cookie")).toContain("Max-Age=0")
   })
 
+  it("clears cookie with Path=/auth so it overrides the cookie set at login", async () => {
+    const res    = await post()
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
   it("revokes the session from DB when cookie is present", async () => {
     await post(`ec_refresh=${encodeURIComponent(MOCK_TOKENS.refreshToken)}`)
     expect(sessionRepository.deleteByToken).toHaveBeenCalled()

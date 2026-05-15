@@ -53,6 +53,13 @@ describe("loginHandler", () => {
     expect(res.headers.get("set-cookie")).toContain("ec_refresh=")
   })
 
+  it("sets ec_refresh cookie with Path=/auth so it is sent to logout and refresh", async () => {
+    const res = await post({ email: "test@example.com", password: "password1" })
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
   it("returns 401 when user does not exist", async () => {
     vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(null))
     const res = await post({ email: "ghost@example.com", password: "password1" })

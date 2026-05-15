@@ -9,7 +9,14 @@ import { changePasswordHandler }     from "@/handlers/change-password"
 import { forgotPasswordHandler }     from "@/handlers/forgot-password"
 import { resetPasswordHandler }      from "@/handlers/reset-password"
 import { transferOwnershipHandler }  from "@/handlers/transfer-ownership"
-import { loginRateLimiter, registerRateLimiter, forgotPasswordRateLimiter } from "@/middleware/rate-limit"
+import {
+  loginRateLimiter,
+  registerRateLimiter,
+  forgotPasswordRateLimiter,
+  changePasswordRateLimiter,
+  resetPasswordRateLimiter,
+  refreshRateLimiter,
+} from "@/middleware/rate-limit"
 import {
   LoginBody,
   RegisterBody,
@@ -26,10 +33,10 @@ const authRoutes = new Elysia({ prefix: "/auth" })
   .post("/logout",          logoutHandler)
   .get("/me",               meHandler)
   .patch("/me",             updateProfileHandler,                                             { body: UpdateProfileBody })
-  .post("/change-password", changePasswordHandler,                                           { body: ChangePasswordBody })
-  .post("/forgot-password", forgotPasswordHandler,  { beforeHandle: forgotPasswordRateLimiter, body: ForgotPasswordBody })
-  .post("/reset-password",  resetPasswordHandler,                                            { body: ResetPasswordBody })
-  .post("/refresh",         refreshHandler)
+  .post("/change-password", changePasswordHandler,  { beforeHandle: changePasswordRateLimiter,  body: ChangePasswordBody })
+  .post("/forgot-password", forgotPasswordHandler,  { beforeHandle: forgotPasswordRateLimiter,  body: ForgotPasswordBody })
+  .post("/reset-password",  resetPasswordHandler,   { beforeHandle: resetPasswordRateLimiter,   body: ResetPasswordBody })
+  .post("/refresh",         refreshHandler,         { beforeHandle: refreshRateLimiter })
 
   // ── OWNER-only routes ───────────────────────────────────────────────────
   // Gateway enforces minRole: "OWNER" for /auth/owner/* via ROUTE_PERMISSIONS

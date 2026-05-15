@@ -58,3 +58,6 @@ function createRateLimiter(maxRequests: number, windowSec: number, label: string
 export const loginRateLimiter          = createRateLimiter(10, 15 * 60, "login")
 export const registerRateLimiter       = createRateLimiter(5,  60 * 60, "register")
 export const forgotPasswordRateLimiter = createRateLimiter(5,  60 * 60, "forgot-password")
+export const changePasswordRateLimiter = createRateLimiter(5,  15 * 60, "change-password")
+export const resetPasswordRateLimiter  = createRateLimiter(10, 60 * 60, "reset-password")
+export const refreshRateLimiter        = createRateLimiter(30, 15 * 60, "refresh")

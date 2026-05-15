@@ -46,7 +46,7 @@ export const resetPasswordHandler = async ({
   }
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=0`
+    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
 
   return message("Password reset successful. Please log in with your new password.")
 }

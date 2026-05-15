@@ -17,7 +17,7 @@ export const forgotPasswordHandler = async ({
 }) => {
   const program = Effect.gen(function* () {
     const user = yield* userRepository.findByEmail(body.email)
-    if (!user) return null
+    if (!user) return
 
     yield* resetTokenRepository.deleteAllByUserId(user.id)
 
@@ -25,7 +25,13 @@ export const forgotPasswordHandler = async ({
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
     yield* resetTokenRepository.create({ token, userId: user.id, expiresAt })
 
-    return token
+    // TODO: enqueue email via email service — token must ONLY reach the user
+    // via out-of-band channel (email), never in this HTTP response.
+    // Example:
+    //   await emailQueue.add("password-reset", {
+    //     to:       user.email,
+    //     resetUrl: `${env.WEB_URL}/reset-password?token=${token}`,
+    //   })
   })
 
   const result = await Effect.runPromiseExit(program)
@@ -36,8 +42,7 @@ export const forgotPasswordHandler = async ({
     return errBody
   }
 
-  return {
-    message:    "If that email is registered, a reset token has been issued.",
-    resetToken: result.value ?? null,
-  }
+  // Response is intentionally identical whether the email is registered or not
+  // to prevent user enumeration, and the reset token is NEVER returned here.
+  return { message: "If that email is registered, a reset link has been sent." }
 }

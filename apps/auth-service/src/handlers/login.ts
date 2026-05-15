@@ -3,6 +3,7 @@ import { verifyPassword }    from "@/lib/password"
 import { issueTokenPair }    from "@/lib/token"
 import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
+import { writeAuditLog }     from "@/lib/audit-log"
 import { AuthError, toErrorResponse } from "@repo/common/errors"
 
 export const loginHandler = async ({
@@ -38,6 +39,15 @@ export const loginHandler = async ({
   }
 
   const { user, tokens } = result.value
+
+  if (user.role === "OWNER") {
+    writeAuditLog({
+      event:    "OWNER_LOGIN",
+      actorId:  user.id,
+      targetId: user.id,
+      meta:     { email: user.email },
+    })
+  }
 
   set.headers["Set-Cookie"] =
     `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=${60 * 60 * 24 * 7}`

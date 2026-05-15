@@ -18,6 +18,7 @@
 import { Effect }              from "effect"
 import { verifyPassword }      from "@/lib/password"
 import { userRepository }      from "@/repository/user.repository"
+import { sessionRepository }   from "@/repository/session.repository"
 import { writeAuditLog }       from "@/lib/audit-log"
 import { isAtLeastOwner }      from "@/lib/role"
 import type { HandlerCtx }     from "@/types"
@@ -69,6 +70,15 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
     // ── Atomic role swap ──────────────────────────────────────────────────
     // transferOwnership runs both updates inside a single DB transaction.
     const result = yield* userRepository.transferOwnership(actorId, targetUserId)
+
+    // ── Invalidate all sessions for both parties ───────────────────────
+    // Previous owner's sessions carry a JWT that still claims OWNER role.
+    // Deleting them forces re-login and prevents privilege retention past
+    // this point. New owner sessions are also cleared so their next login
+    // issues a token that correctly reflects the OWNER role.
+    yield* sessionRepository.deleteAllByUserId(actorId)
+    yield* sessionRepository.deleteAllByUserId(targetUserId)
+
     return result
   })
 

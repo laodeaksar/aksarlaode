@@ -52,7 +52,10 @@ export const verifyToken = (
       ) as Record<string, unknown>
 
       const now = Math.floor(Date.now() / 1000)
-      if (typeof payload.exp === "number" && payload.exp < now) {
+      if (typeof payload.exp !== "number") {
+        throw new Error("Token missing expiry claim")
+      }
+      if (payload.exp < now) {
         throw new Error("Token expired")
       }
 

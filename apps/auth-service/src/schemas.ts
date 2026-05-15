@@ -1,4 +1,12 @@
-import { t } from "elysia"
+import { t }              from "elysia"
+import { FormatRegistry } from "@sinclair/typebox"
+import { isAllowedAvatarUrl } from "@/lib/avatar"
+
+// Register a custom TypeBox format that mirrors the Zod isAllowedAvatarUrl
+// rules: HTTPS only, domain allowlist, no raw IPs, no internal hostnames.
+// Registering here (module load time) ensures the format is available before
+// any Elysia route parses a request body.
+FormatRegistry.Set("avatar-url", (value) => isAllowedAvatarUrl(value))
 
 export const LoginBody = t.Object({
   email:    t.String({ format: "email" }),
@@ -14,7 +22,7 @@ export const RegisterBody = t.Object({
 export const UpdateProfileBody = t.Object({
   name:      t.Optional(t.String({ minLength: 2, maxLength: 100 })),
   phone:     t.Optional(t.String({ minLength: 7, maxLength: 20 })),
-  avatarUrl: t.Optional(t.String({ format: "uri",  maxLength: 500 })),
+  avatarUrl: t.Optional(t.String({ format: "avatar-url", maxLength: 500 })),
 })
 
 export const ChangePasswordBody = t.Object({

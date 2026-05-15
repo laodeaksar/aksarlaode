@@ -1,11 +1,26 @@
-import { Effect }                              from "effect"
+import { Effect }                                    from "effect"
 import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
-import { issueTokenPair }                     from "@/lib/token"
-import { hashToken }                          from "@/lib/token-hash"
-import { userRepository }                     from "@/repository/user.repository"
-import { sessionRepository }                  from "@/repository/session.repository"
-import { writeAuditLog }                      from "@/lib/audit-log"
-import { AuthError, toErrorResponse }         from "@repo/common/errors"
+import { issueTokenPair }                            from "@/lib/token"
+import { hashToken }                                 from "@/lib/token-hash"
+import { userRepository }                            from "@/repository/user.repository"
+import { sessionRepository }                         from "@/repository/session.repository"
+import { writeAuditLog }                             from "@/lib/audit-log"
+import { AuthError, toErrorResponse }                from "@repo/common/errors"
+
+/**
+ * Maximum number of concurrent sessions allowed per user.
+ *
+ * When a user logs in and already has MAX_SESSIONS active sessions, the
+ * oldest session (by createdAt) is evicted to make room for the new one.
+ * This enforces a hard upper bound on session table growth and gives users
+ * a natural signal (via the sessions list) that a device they have not used
+ * recently has been signed out.
+ *
+ * Choosing 5: covers phone, tablet, laptop, work machine, and one spare —
+ * enough for legitimate users, low enough to make mass session accumulation
+ * (e.g. after credential stuffing) visible in the sessions list.
+ */
+const MAX_SESSIONS_PER_USER = 5
 
 export const loginHandler = async ({
   body,
@@ -15,16 +30,17 @@ export const loginHandler = async ({
   set:  any
 }) => {
   const program = Effect.gen(function* () {
+    // ── 1. Verify credentials ───────────────────────────────────────────────
     const user = yield* userRepository.findByEmail(body.email)
-
     if (!user) return yield* Effect.fail(new AuthError("Invalid credentials"))
 
     const valid = yield* verifyPassword(body.password, user.passwordHash)
     if (!valid) return yield* Effect.fail(new AuthError("Invalid credentials"))
 
-    // Transparent Argon2id upgrade: if the stored hash uses the legacy PBKDF2
-    // format, re-hash with Argon2id now that we have the plaintext password.
-    // orElse ensures a DB hiccup here never blocks login.
+    // ── 2. Transparent Argon2id upgrade ─────────────────────────────────────
+    // If the stored hash uses the legacy PBKDF2 format, re-hash with Argon2id
+    // now that we have the plaintext password. orElse ensures a DB hiccup here
+    // never blocks login.
     if (needsRehash(user.passwordHash)) {
       yield* hashPassword(body.password).pipe(
         Effect.flatMap(newHash => userRepository.updatePasswordHash(user.id, newHash)),
@@ -32,6 +48,29 @@ export const loginHandler = async ({
       )
     }
 
+    // ── 3. Enforce per-user session cap ─────────────────────────────────────
+    // Count active sessions. If at or above the limit, evict the oldest
+    // session(s) to make room. orElse means a DB hiccup here never blocks
+    // login — worst case the user briefly exceeds the cap by 1.
+    const sessionCount = yield* sessionRepository.countByUserId(user.id).pipe(
+      Effect.orElse(() => Effect.succeed(0))
+    )
+
+    if (sessionCount >= MAX_SESSIONS_PER_USER) {
+      const excess = sessionCount - MAX_SESSIONS_PER_USER + 1   // +1 for the session we're about to create
+      yield* sessionRepository.deleteOldestByUserId(user.id, excess).pipe(
+        Effect.orElse(() => Effect.void)
+      )
+
+      console.info(JSON.stringify({
+        event:    "session_cap_eviction",
+        userId:   user.id,
+        evicted:  excess,
+        cap:      MAX_SESSIONS_PER_USER,
+      }))
+    }
+
+    // ── 4. Issue tokens and create new session ───────────────────────────────
     const sessionId = crypto.randomUUID()
     const tokens    = yield* issueTokenPair(user.id, user.role, sessionId)
 
@@ -40,7 +79,9 @@ export const loginHandler = async ({
       catch: () => new AuthError("Internal error"),
     })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    yield* sessionRepository.create({ id: sessionId, userId: user.id, token: refreshTokenHash, expiresAt })
+    yield* sessionRepository.create({
+      id: sessionId, userId: user.id, token: refreshTokenHash, expiresAt,
+    })
 
     return { user: { id: user.id, email: user.email, name: user.name, role: user.role }, tokens }
   })
@@ -48,8 +89,8 @@ export const loginHandler = async ({
   const result = await Effect.runPromiseExit(program)
 
   if (result._tag === "Failure") {
-    // Audit failed login attempts — email used as meta (not actorId since user
-    // may not exist; actorId is set to "anonymous" as a sentinel value).
+    // Audit failed login attempts. Email is logged as meta (not actorId) since
+    // the user may not exist. "anonymous" is a sentinel — not a real userId.
     writeAuditLog({
       event:    "LOGIN_FAILED",
       actorId:  "anonymous",
@@ -64,8 +105,6 @@ export const loginHandler = async ({
 
   const { user, tokens } = result.value
 
-  // Audit every successful login (OWNER gets an additional dedicated event
-  // for backwards compatibility with existing alerting rules).
   writeAuditLog({
     event:    "LOGIN_SUCCESS",
     actorId:  user.id,

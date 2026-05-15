@@ -8,9 +8,10 @@
     "start": "bun run dist/index.js",
     "typecheck":    "tsc --noEmit",
     "clean":        "rm -rf dist",
-    "test":         "vitest run",
-    "test:watch":   "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test":             "vitest run",
+    "test:watch":       "vitest",
+    "test:coverage":    "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "elysia":              "^1.1.0",

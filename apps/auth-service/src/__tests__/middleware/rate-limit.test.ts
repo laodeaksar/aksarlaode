@@ -122,15 +122,35 @@ describe("rate-limit middleware — new limiters", () => {
     })
   })
 
-  // ── Fail-open behaviour (shared across all limiters) ──────────────────────
+  // ── Fail-closed behaviour (shared across all limiters) ───────────────────
+  //
+  // Auth endpoints are high-value brute-force targets.  When Redis is
+  // unreachable the rate limiter MUST block — not silently allow — so an
+  // outage cannot be exploited to bypass brute-force protection.
 
-  describe("fail-open when Redis is unavailable", () => {
+  describe("fail-closed when Redis is unavailable", () => {
     const app = makeApp(changePasswordRateLimiter as any)
 
-    it("allows the request through when Redis throws", async () => {
+    it("returns 503 when Redis throws", async () => {
       vi.mocked(redis.incr).mockRejectedValue(new Error("connection refused"))
+      const res  = await post(app)
+      const body = await res.json()
+      expect(res.status).toBe(503)
+      expect(body.code).toBe("SERVICE_UNAVAILABLE")
+    })
+
+    it("sets Retry-After to the window duration on Redis failure", async () => {
+      vi.mocked(redis.incr).mockRejectedValue(new Error("ECONNREFUSED"))
       const res = await post(app)
-      expect(res.status).toBe(200)
+      // changePasswordRateLimiter window = 15 min = 900 s
+      expect(res.headers.get("Retry-After")).toBe("900")
+    })
+
+    it("returns 503 for loginRateLimiter when Redis throws", async () => {
+      const loginApp = makeApp(loginRateLimiter as any)
+      vi.mocked(redis.incr).mockRejectedValue(new Error("timeout"))
+      const res = await post(loginApp)
+      expect(res.status).toBe(503)
     })
   })
 

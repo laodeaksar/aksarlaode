@@ -6,9 +6,11 @@ import { redis } from "@/lib/redis"
  * Uses INCR + EXPIRE so the counter is atomic and shared across all
  * auth-service replicas — bypassing via round-robin is not possible.
  *
- * Fail-open: if Redis is unavailable the request is allowed through
- * so a Redis outage never takes down the auth endpoints entirely.
- * A console error is emitted so the on-call team is alerted.
+ * Fail-closed: if Redis is unavailable the request is BLOCKED with 503.
+ * Auth endpoints are high-value attack targets; silently disabling rate
+ * limiting during an outage would leave login, register, and
+ * password-reset routes wide open to brute force.
+ * A structured error is emitted so the on-call team is alerted.
  *
  * IP resolution order:
  *   1. x-real-ip    — set directly by the API gateway to the client IP
@@ -50,7 +52,14 @@ function createRateLimiter(maxRequests: number, windowSec: number, label: string
         ip,
         error:  String(err),
       }))
-      // Fail-open: allow the request rather than taking down the endpoint
+      // Fail-closed: block the request so a Redis outage cannot be exploited
+      // to bypass brute-force protection on authentication endpoints.
+      set.status                 = 503
+      set.headers["Retry-After"] = String(windowSec)
+      return {
+        error: "Rate limiting service unavailable, please try again later",
+        code:  "SERVICE_UNAVAILABLE",
+      }
     }
   }
 }

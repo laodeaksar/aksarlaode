@@ -3,7 +3,8 @@
  *
  * GET    /admin/users            — paginated user list  (minRole: ADMIN)
  * PATCH  /admin/users/:id/role   — role mutation        (minRole: OWNER)
- * DELETE /admin/users/:id        — hard-delete + cascade (minRole: OWNER)
+ * DELETE /admin/users/:id        — soft-delete          (minRole: OWNER)
+ * PATCH  /admin/users/:id/restore — restore soft-deleted user (minRole: OWNER)
  *
  * passwordHash is stripped from every response — it never leaves this service.
  */
@@ -26,6 +27,7 @@ type RawUser = {
   phone:        string | null
   createdAt:    Date
   updatedAt:    Date
+  deletedAt:    Date | null
   passwordHash: string
 }
 
@@ -38,6 +40,7 @@ const shapeUser = (u: RawUser) => ({
   phone:     u.phone     ?? null,
   createdAt: u.createdAt.toISOString(),
   updatedAt: u.updatedAt.toISOString(),
+  deletedAt: u.deletedAt ? u.deletedAt.toISOString() : null,
 })
 
 // ── GET /admin/users ──────────────────────────────────────────────────────────
@@ -50,7 +53,7 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
     return { error: "Forbidden — ADMIN role required", code: "FORBIDDEN" }
   }
 
-  const q = query as { page?: string; limit?: string; role?: string }
+  const q = query as { page?: string; limit?: string; role?: string; includeDeleted?: boolean }
 
   const page  = Math.max(1, Number(q.page  ?? 1))
   const limit = Math.min(100, Math.max(1, Number(q.limit ?? 20)))
@@ -63,8 +66,11 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
     return { error: `Invalid role filter: ${q.role}`, code: "INVALID_ROLE" }
   }
 
+  // ?includeDeleted=true is an OWNER-only privilege
+  const includeDeleted = q.includeDeleted === true && isAtLeastOwner(actorRole)
+
   const result = await Effect.runPromiseExit(
-    userRepository.findAll({ page, limit, role: roleFilter })
+    userRepository.findAll({ page, limit, role: roleFilter, includeDeleted })
   )
 
   if (result._tag === "Failure") {
@@ -168,13 +174,11 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
   }
 
   const program = Effect.gen(function* () {
-    // ── Gate 3: target must exist ──────────────────────────────────────────
+    // ── Gate 3: target must exist and not already be soft-deleted ──────────
     const target = yield* userRepository.findById(targetId)
     if (!target) return yield* Effect.fail({ _tag: "NotFoundError" as const })
 
     // ── Gate 4: hard block on OWNER deletion ──────────────────────────────
-    // canManage() already returns false for OWNER targets, but an explicit
-    // check with a dedicated error code gives clearer feedback to API callers.
     if (target.role === "OWNER") {
       return yield* Effect.fail({ _tag: "OwnerProtectedError" as const })
     }
@@ -184,13 +188,11 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
       return yield* Effect.fail({ _tag: "ForbiddenError" as const })
     }
 
-    // ── Cascade: invalidate all sessions before deleting the user row ──────
-    // If session deletion fails, abort — it is safer to leave the user row
-    // intact than to orphan active sessions.
+    // ── Invalidate all sessions so the user is immediately logged out ──────
     yield* sessionRepository.deleteAllByUserId(targetId)
 
-    // ── Hard-delete the user ───────────────────────────────────────────────
-    const deleted = yield* userRepository.deleteById(targetId)
+    // ── Soft-delete the user ───────────────────────────────────────────────
+    const deleted = yield* userRepository.softDeleteById(targetId)
     return { target, deleted }
   })
 
@@ -211,16 +213,65 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
     event:    "ROLE_CHANGE",
     actorId,
     targetId,
-    meta: { action: "DELETE", deletedRole: target.role },
+    meta: { action: "SOFT_DELETE", deletedRole: target.role },
   })
 
   set.status = 200
   return {
-    message: `User ${targetId} deleted and all sessions invalidated.`,
+    message: `User ${targetId} soft-deleted and all sessions invalidated.`,
     deleted: {
-      id:    target.id,
-      email: target.email,
-      role:  target.role,
+      id:        target.id,
+      email:     target.email,
+      role:      target.role,
+      deletedAt: new Date().toISOString(),
     },
+  }
+}
+
+// ── PATCH /admin/users/:id/restore ───────────────────────────────────────────
+
+export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerCtx) => {
+  const { id: targetId } = params as { id: string }
+  const actorId          = headers["x-user-id"]
+  const actorRole        = headers["x-user-role"] as UserRole | undefined
+
+  if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
+    set.status = 403
+    return { error: "Forbidden — OWNER role required", code: "FORBIDDEN" }
+  }
+
+  const program = Effect.gen(function* () {
+    // Must use the include-deleted variant to find the target
+    const target = yield* userRepository.findByIdIncludeDeleted(targetId)
+    if (!target)            return yield* Effect.fail({ _tag: "NotFoundError"   as const })
+    if (!target.deletedAt)  return yield* Effect.fail({ _tag: "NotDeletedError" as const })
+
+    const restored = yield* userRepository.restoreById(targetId)
+    return { target, restored }
+  })
+
+  const exit = await Effect.runPromiseExit(program)
+
+  if (exit._tag === "Failure") {
+    const err = exit.cause.error as { _tag: string }
+    if (err._tag === "NotFoundError")   { set.status = 404; return { error: "User not found",                code: "USER_NOT_FOUND"  } }
+    if (err._tag === "NotDeletedError") { set.status = 409; return { error: "User is not soft-deleted",      code: "NOT_DELETED"     } }
+    set.status = 500
+    return { error: "Failed to restore user" }
+  }
+
+  const { restored } = exit.value
+
+  writeAuditLog({
+    event:    "ROLE_CHANGE",
+    actorId,
+    targetId,
+    meta: { action: "RESTORE", restoredRole: restored!.role },
+  })
+
+  set.status = 200
+  return {
+    message: `User ${targetId} restored successfully.`,
+    user:    shapeUser(restored as RawUser),
   }
 }

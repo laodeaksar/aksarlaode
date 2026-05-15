@@ -42,13 +42,14 @@ export const TransferOwnershipBody = t.Object({
 })
 
 export const AdminUserQuery = t.Object({
-  page:  t.Optional(t.Numeric({ minimum: 1 })),
-  limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
-  role:  t.Optional(t.Union([
+  page:           t.Optional(t.Numeric({ minimum: 1 })),
+  limit:          t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+  role:           t.Optional(t.Union([
     t.Literal("CUSTOMER"),
     t.Literal("ADMIN"),
     t.Literal("OWNER"),
   ], { description: "Filter by role" })),
+  includeDeleted: t.Optional(t.BooleanString({ description: "Include soft-deleted users (OWNER only)" })),
 })
 
 export const UpdateUserRoleBody = t.Object({

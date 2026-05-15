@@ -1,29 +1,49 @@
 import { Effect, Data }      from "effect"
 import { db, schema }        from "@repo/database"
-import { eq, desc, sql }     from "drizzle-orm"
+import { eq, desc, sql, and, isNull, isNotNull } from "drizzle-orm"
 import type { UserRole }     from "@/types"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
 const findByEmail = (email: string) =>
   Effect.tryPromise({
-    try:   () => db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1)
+    try:   () => db.select().from(schema.users)
+                   .where(and(eq(schema.users.email, email), isNull(schema.users.deletedAt)))
+                   .limit(1)
                    .then(r => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const findById = (id: string) =>
   Effect.tryPromise({
-    try:   () => db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1)
+    try:   () => db.select().from(schema.users)
+                   .where(and(eq(schema.users.id, id), isNull(schema.users.deletedAt)))
+                   .limit(1)
                    .then(r => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
   })
 
-const findAll = (opts: { page: number; limit: number; role?: UserRole }) =>
+/** Like findById but also returns soft-deleted users — used by the restore endpoint. */
+const findByIdIncludeDeleted = (id: string) =>
+  Effect.tryPromise({
+    try:   () => db.select().from(schema.users)
+                   .where(eq(schema.users.id, id))
+                   .limit(1)
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+const findAll = (opts: { page: number; limit: number; role?: UserRole; includeDeleted?: boolean }) =>
   Effect.tryPromise({
     try: async () => {
-      const offset    = (opts.page - 1) * opts.limit
-      const condition = opts.role ? eq(schema.users.role, opts.role) : undefined
+      const offset = (opts.page - 1) * opts.limit
+
+      const conditions = [
+        opts.role ? eq(schema.users.role, opts.role) : undefined,
+        opts.includeDeleted ? undefined : isNull(schema.users.deletedAt),
+      ].filter(Boolean) as Parameters<typeof and>
+
+      const condition = conditions.length > 0 ? and(...conditions) : undefined
 
       const [items, [countRow]] = await Promise.all([
         db.select().from(schema.users)
@@ -108,6 +128,33 @@ const deleteById = (id: string) =>
   })
 
 /**
+ * Soft-delete a user by setting deletedAt to now.
+ * The row is preserved and can be restored by an OWNER.
+ */
+const softDeleteById = (id: string) =>
+  Effect.tryPromise({
+    try:   () => db.update(schema.users)
+                   .set({ deletedAt: new Date(), updatedAt: new Date() })
+                   .where(and(eq(schema.users.id, id), isNull(schema.users.deletedAt)))
+                   .returning()
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+/**
+ * Restore a previously soft-deleted user by clearing deletedAt.
+ */
+const restoreById = (id: string) =>
+  Effect.tryPromise({
+    try:   () => db.update(schema.users)
+                   .set({ deletedAt: null, updatedAt: new Date() })
+                   .where(and(eq(schema.users.id, id), isNotNull(schema.users.deletedAt)))
+                   .returning()
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+/**
  * Atomically swap ownership: `fromId` → ADMIN, `toId` → OWNER.
  * Both updates run inside a single Drizzle transaction.
  */
@@ -140,11 +187,14 @@ const transferOwnership = (fromId: string, toId: string) =>
 export const userRepository = {
   findByEmail,
   findById,
+  findByIdIncludeDeleted,
   findAll,
   create,
   update,
   updatePasswordHash,
   updateRole,
   deleteById,
+  softDeleteById,
+  restoreById,
   transferOwnership,
 }

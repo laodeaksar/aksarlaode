@@ -1,5 +1,6 @@
 import { Effect }            from "effect"
 import { sessionRepository } from "@/repository/session.repository"
+import { denySession }       from "@/lib/session-denylist"
 import { writeAuditLog }     from "@/lib/audit-log"
 import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
 import { message }           from "@repo/common/response"
@@ -34,6 +35,12 @@ export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx)
     set.status = status
     return body
   }
+
+  // Add revoked sessionId to the denylist so any access token carrying that
+  // sessionId is immediately rejected for the remaining access token TTL.
+  // This closes the window where a revoked-session's access token would still
+  // be accepted by the gateway (which only checks JWT signature and expiry).
+  await denySession(sessionId)
 
   writeAuditLog({
     event:    "SESSION_REVOKED",

@@ -5,9 +5,23 @@ import {
   adminDeleteUserHandler,
   adminRestoreUserHandler,
 } from "@/handlers/admin-users"
+import { serviceTokenMiddleware } from "@/middleware/service-token"
 import { AdminUserQuery, UpdateUserRoleBody } from "@/schemas"
 
+/**
+ * Admin user management routes.
+ *
+ * serviceTokenMiddleware is the first guard on this router.
+ * It validates x-service-token using a constant-time comparison so that
+ * even if this service is accidentally exposed directly (not behind the
+ * api-gateway), an attacker cannot reach any admin endpoint by forging
+ * x-user-role: OWNER in their request.
+ *
+ * The api-gateway already injects x-service-token on every proxied request,
+ * so legitimate traffic from the gateway is unaffected.
+ */
 const adminRoutes = new Elysia({ prefix: "/admin" })
+  .onBeforeHandle(serviceTokenMiddleware)
   .get("/users", adminListUsersHandler, {
     query: AdminUserQuery,
     detail: {

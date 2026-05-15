@@ -89,9 +89,26 @@ export async function proxyTo(
 function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   const headers = new Headers(c.req.raw.headers)
 
+  // ── Strip sensitive / spoofable client-supplied headers ──────────────────
   headers.delete("Authorization")
   headers.delete("Cookie")
 
+  // P0 fix: overwrite forwarding headers with the trusted IP extracted by the
+  // gateway (from cf-connecting-ip or x-real-ip set by the reverse proxy).
+  // If these are passed through unchanged, a client can fake X-Forwarded-For
+  // to bypass IP-based rate limiting in downstream services such as auth-service.
+  const clientIp =
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-real-ip") ??
+    "unknown"
+
+  headers.delete("x-forwarded-for")
+  headers.delete("x-forwarded-host")
+  headers.delete("x-real-ip")
+  headers.set("x-forwarded-for", clientIp)
+  headers.set("x-real-ip",       clientIp)
+
+  // ── Inject verified identity from the gateway's JWT validation ───────────
   const user = c.var.user
   if (user) {
     headers.set("x-user-id",    user.id)

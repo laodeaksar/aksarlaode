@@ -25,7 +25,7 @@ export const issueTokenPair = (
   Effect.gen(function* () {
     const accessToken  = yield* signToken(
       { sub: userId, role, sessionId, type: "access" },
-      60 * 15,
+      60 * 5,    // 5 min — reduced from 15 min to shorten the post-logout revocation window
       env.JWT_ACCESS_PRIVATE_KEY
     )
     const refreshToken = yield* signToken(

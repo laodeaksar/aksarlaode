@@ -2,6 +2,8 @@ import { Effect }               from "effect"
 import { hashToken }            from "@/lib/token-hash"
 import { userRepository }       from "@/repository/user.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
+import { enqueuePasswordReset } from "@/lib/email-queue"
+import { env }                  from "@repo/env/auth"
 import { toErrorResponse }      from "@repo/common/errors"
 
 function generateResetToken(): string {
@@ -18,7 +20,7 @@ export const forgotPasswordHandler = async ({
 }) => {
   const program = Effect.gen(function* () {
     const user = yield* userRepository.findByEmail(body.email)
-    if (!user) return
+    if (!user) return   // early exit — enumeration-safe, same response below
 
     yield* resetTokenRepository.deleteAllByUserId(user.id)
 
@@ -27,16 +29,28 @@ export const forgotPasswordHandler = async ({
       try:   () => hashToken(token),
       catch: (e) => new Error(String(e)),
     })
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)   // 1 hour
     yield* resetTokenRepository.create({ token: tokenHash, userId: user.id, expiresAt })
 
-    // TODO: enqueue email via email service — token must ONLY reach the user
-    // via out-of-band channel (email), never in this HTTP response.
-    // Example:
-    //   await emailQueue.add("password-reset", {
-    //     to:       user.email,
-    //     resetUrl: `${env.WEB_URL}/reset-password?token=${token}`,
-    //   })
+    // Enqueue password-reset email via email-worker (BullMQ → apps/email-worker).
+    // The raw token travels only through the Redis job payload — never in an HTTP
+    // response body — so it is only accessible to whoever receives the email.
+    yield* Effect.tryPromise({
+      try: () => enqueuePasswordReset({
+        to:       user.email,
+        resetUrl: `${env.WEB_URL}/reset-password?token=${token}`,
+      }),
+      catch: (e) => {
+        // Log the failure loudly — a failed enqueue means the user will never
+        // receive the reset link. On-call must be alerted.
+        console.error(JSON.stringify({
+          event:  "password_reset_email_enqueue_error",
+          userId: user.id,
+          error:  String(e),
+        }))
+        return new Error("Email delivery unavailable")
+      },
+    })
   })
 
   const result = await Effect.runPromiseExit(program)
@@ -48,6 +62,6 @@ export const forgotPasswordHandler = async ({
   }
 
   // Response is intentionally identical whether the email is registered or not
-  // to prevent user enumeration, and the reset token is NEVER returned here.
+  // to prevent user enumeration. The reset token is NEVER returned here.
   return { message: "If that email is registered, a reset link has been sent." }
 }

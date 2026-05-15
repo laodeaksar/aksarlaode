@@ -58,6 +58,24 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   // result.value is already a typed User ({ id, role, sessionId })
   c.set("authPayload", result.value)
+
+  // ── Session denylist check (recommended for production) ───────────────────
+  // To enforce immediate revocation after logout/session-revoke, call:
+  //
+  //   const { sessionId } = result.value as { sessionId: string }
+  //   const res = await fetch(
+  //     `${env.AUTH_SERVICE_URL}/session/internal/${sessionId}/valid`,
+  //     { headers: { "x-service-token": env.INTERNAL_SERVICE_TOKEN } }
+  //   )
+  //   if (!res.ok) {
+  //     return c.json({ error: "Session revoked", code: "UNAUTHORIZED" }, 401)
+  //   }
+  //
+  // This adds ~5–10 ms per request. The circuit breaker on the auth-service
+  // route handles downtime gracefully. Enable once Redis is confirmed shared
+  // between auth-service and the gateway's deployment environment.
+  // ─────────────────────────────────────────────────────────────────────────
+
   await next()
 }
 

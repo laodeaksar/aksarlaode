@@ -1,23 +1,17 @@
 import { Queue } from "bullmq"
 import { redis } from "@/lib/redis"
 
+// FIX EML-01: queue name changed from "password-reset" to "email" so this
+// producer targets the same queue that email-worker's Worker is listening on.
+// Job name "password-reset" matches the HANDLERS map in email.processor.ts.
+
 export type PasswordResetJobData = {
-  to:       string
-  resetUrl: string
+  userId:    string
+  email:     string
+  resetLink: string
 }
 
-/**
- * BullMQ queue for outbound password-reset emails.
- *
- * Jobs are consumed by apps/email-worker. The same ioredis connection is
- * reused across the auth-service so we don't open extra sockets.
- *
- * Retry policy: 3 attempts with exponential back-off (5s → 25s → 125s).
- * After all retries fail, the job moves to the "failed" set so ops can
- * inspect it. Neither complete nor failed jobs are kept indefinitely to
- * prevent Redis memory growth.
- */
-const passwordResetQueue = new Queue("password-reset", {
+const emailQueue = new Queue("email", {
   connection: redis,
   defaultJobOptions: {
     removeOnComplete: 100,
@@ -27,12 +21,6 @@ const passwordResetQueue = new Queue("password-reset", {
   },
 })
 
-/**
- * Enqueue a password-reset email.
- *
- * The raw reset token (not the hash) is embedded in `resetUrl` here —
- * it travels only through the Redis job payload, never in an HTTP response.
- */
 export async function enqueuePasswordReset(data: PasswordResetJobData): Promise<void> {
-  await passwordResetQueue.add("send-password-reset-email", data)
+  await emailQueue.add("password-reset", data)
 }

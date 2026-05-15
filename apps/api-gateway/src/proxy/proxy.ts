@@ -35,9 +35,17 @@ export async function proxyTo(
   const targetUrl    = new URL(strippedPath, baseUrl)
   targetUrl.search   = requestUrl.search
 
-  let body: ArrayBuffer | null = null
+  let body: BodyInit | null = null
   if (!["GET", "HEAD"].includes(c.req.method)) {
-    body = await c.req.arrayBuffer()
+    // FIX GW-04: if auth-resolver already read the body for HMAC verification
+    // it cached the raw text in context.  Re-use that cache so we forward the
+    // original bytes instead of an empty stream.
+    const cached = c.var.webhookRawBody
+    if (cached !== null && cached !== undefined) {
+      body = cached
+    } else {
+      body = await c.req.arrayBuffer()
+    }
   }
 
   const upstreamRequest = new Request(targetUrl.toString(), {
@@ -54,8 +62,6 @@ export async function proxyTo(
   try {
     const response = await fetch(upstreamRequest, { signal })
 
-    // 5xx from upstream counts as a circuit failure.
-    // 4xx is the client's fault — don't penalise the service for it.
     if (response.status >= 500) {
       breaker.failure()
     } else {
@@ -64,10 +70,8 @@ export async function proxyTo(
 
     return response
   } catch (e) {
-    // Every thrown error (timeout or connection failure) is a circuit failure.
     breaker.failure()
 
-    // Re-throw AbortError — requestTimeout middleware converts it to 504.
     if (e instanceof Error && e.name === "AbortError") throw e
 
     console.error(JSON.stringify({
@@ -89,14 +93,9 @@ export async function proxyTo(
 function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   const headers = new Headers(c.req.raw.headers)
 
-  // ── Strip sensitive / spoofable client-supplied headers ──────────────────
   headers.delete("Authorization")
   headers.delete("Cookie")
 
-  // P0 fix: overwrite forwarding headers with the trusted IP extracted by the
-  // gateway (from cf-connecting-ip or x-real-ip set by the reverse proxy).
-  // If these are passed through unchanged, a client can fake X-Forwarded-For
-  // to bypass IP-based rate limiting in downstream services such as auth-service.
   const clientIp =
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-real-ip") ??
@@ -108,7 +107,6 @@ function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   headers.set("x-forwarded-for", clientIp)
   headers.set("x-real-ip",       clientIp)
 
-  // ── Inject verified identity from the gateway's JWT validation ───────────
   const user = c.var.user
   if (user) {
     headers.set("x-user-id",    user.id)

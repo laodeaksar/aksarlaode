@@ -1,14 +1,30 @@
 import type { MailChannelsProvider } from "@/providers/mailchannels.provider"
+import { fetchUserEmail }             from "@/lib/user-client"
+import type { EmailJobPayload }       from "@/queues/email.queue"
+
+// FIX EML-02: previous version sent to payload.userId (a UUID) — not an email
+// address.  Now uses payload.userEmail (set by EML-03 producer update).
+// Falls back to fetching from auth-service via user-client if payload.userEmail
+// is missing (old job produced before the producer update was deployed).
 
 export async function handleOrderCreated(
-  payload:  { orderId: string; userId: string; grandTotal: number },
+  payload:  EmailJobPayload["order-created"],
   provider: MailChannelsProvider
 ) {
   try {
+    const to = payload.userEmail || await fetchUserEmail(payload.userId)
+
+    if (!to) {
+      console.warn(JSON.stringify({ event: "order_created_email_skipped_no_address", orderId: payload.orderId }))
+      return { success: false, error: "No email address resolved", retryable: false }
+    }
+
     await provider.send({
-      to:      payload.userId,
-      subject: `Order ${payload.orderId} Created`,
-      html:    `<p>Your order <strong>${payload.orderId}</strong> has been placed. Total: Rp ${payload.grandTotal.toLocaleString()}</p>`,
+      to,
+      subject: `Order ${payload.orderId} Confirmed`,
+      html: `<p>Your order <strong>${payload.orderId}</strong> has been placed successfully.</p>
+             <p>Total: <strong>Rp ${payload.grandTotal.toLocaleString("id-ID")}</strong></p>
+             <p>We will notify you once your order is being processed.</p>`,
     })
     return { success: true }
   } catch (e) {

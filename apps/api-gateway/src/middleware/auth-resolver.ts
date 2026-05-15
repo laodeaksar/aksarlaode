@@ -12,11 +12,15 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   // ── 1. Public routes — pass straight through ──────────────────────────────
   if (isPublic(path, method)) {
     c.set("authPayload", null)
+    c.set("webhookRawBody", null)
     return next()
   }
 
   // ── 2. Webhook routes — HMAC signature only ───────────────────────────────
   if (isWebhook(path)) {
+    // FIX GW-04: read body once and cache it in context so proxy.ts can forward
+    // it without trying to re-read the already-consumed stream (which yields an
+    // empty body and silently breaks every downstream webhook handler).
     const body      = await c.req.text()
     const signature = c.req.header("x-midtrans-signature") ?? ""
 
@@ -30,10 +34,13 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     }
 
     c.set("authPayload", { type: "webhook" })
+    c.set("webhookRawBody", body)
     return next()
   }
 
   // ── 3. Protected routes — Bearer JWT ─────────────────────────────────────
+  c.set("webhookRawBody", null)
+
   const authHeader = c.req.header("Authorization")
   const token      = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
 
@@ -47,7 +54,6 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const result = await Effect.runPromiseExit(verifyJwt(token))
 
   if (result._tag === "Failure") {
-    // Distinguish between expired (token was valid but stale) and invalid (bad sig / malformed)
     const tag  = (result.cause.error as { _tag?: string })?._tag ?? ""
     const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED"
     return c.json(
@@ -56,7 +62,6 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     )
   }
 
-  // result.value is already a typed User ({ id, role, sessionId })
   c.set("authPayload", result.value)
 
   // ── Session denylist check (recommended for production) ───────────────────

@@ -12,5 +12,8 @@ export type AppEnv = {
     authPayload: unknown        // raw JWT payload, pre-validation
     user:        User | null    // validated, set by contextInjector
     abortSignal: AbortSignal    // set by requestTimeout, consumed by proxy
+    // FIX GW-04: webhook body cached here after HMAC verification so the
+    // proxy can forward it without re-reading an already-consumed stream.
+    webhookRawBody: string | null
   }
 }

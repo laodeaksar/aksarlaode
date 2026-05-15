@@ -26,9 +26,15 @@ function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? "Login failed"); return }
-      if (data?.data?.role !== "ADMIN" && data?.role !== "ADMIN") {
-        setError("Admin access required"); return
+
+      // FIX ADM-01: auth-service response shape is { user: { role }, accessToken }
+      // Previous code checked data?.data?.role and data?.role — both always undefined.
+      const role = data?.user?.role
+      if (role !== "ADMIN") {
+        setError("Admin access required")
+        return
       }
+
       navigate({ to: "/dashboard" })
     } catch {
       setError("Network error")

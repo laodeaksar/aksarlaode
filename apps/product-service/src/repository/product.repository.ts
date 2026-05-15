@@ -1,6 +1,6 @@
 import { Effect, Data } from "effect"
 import { db, schema }   from "@repo/database"
-import { eq, or, sql }  from "drizzle-orm"
+import { eq, sql }      from "drizzle-orm"
 import { buildProductQuery, type ProductFilters } from "@/lib/query-builder"
 
 // ── Error types ────────────────────────────────────────────────────────────
@@ -44,10 +44,9 @@ const findById = (id: string) =>
   })
 
 // ── findByIdOrSlug ─────────────────────────────────────────────────────────
-// Accepts a UUID or a URL slug. Uses an exact column match to stay index-friendly.
 const findByIdOrSlug = (idOrSlug: string) =>
   Effect.gen(function* () {
-    const isUuid   = UUID_REGEX.test(idOrSlug)
+    const isUuid    = UUID_REGEX.test(idOrSlug)
     const condition = isUuid
       ? eq(schema.products.id,   idOrSlug)
       : eq(schema.products.slug, idOrSlug)
@@ -74,7 +73,6 @@ const create = (data: NewProduct) =>
   })
 
 // ── update ─────────────────────────────────────────────────────────────────
-// Verifies the product exists first so handlers get a clean 404, not a silent no-op.
 const update = (id: string, data: UpdateProduct) =>
   Effect.gen(function* () {
     yield* findById(id)
@@ -93,7 +91,6 @@ const update = (id: string, data: UpdateProduct) =>
   })
 
 // ── deleteById ─────────────────────────────────────────────────────────────
-// Verifies the product exists first so handlers return 404 instead of silent success.
 const deleteById = (id: string) =>
   Effect.gen(function* () {
     yield* findById(id)
@@ -104,32 +101,57 @@ const deleteById = (id: string) =>
     })
   })
 
-// ── Atomic stock operations ────────────────────────────────────────────────
+// ── reserveStock ───────────────────────────────────────────────────────────
+// FIX PRD-01: single atomic UPDATE with RETURNING — no TOCTOU window.
+// If WHERE (stock >= quantity) fails because of concurrent reservation, the
+// UPDATE touches 0 rows and RETURNING returns an empty array.  We detect that
+// and raise InsufficientStockError so the caller never thinks a reservation
+// succeeded when it silently did nothing.
 const reserveStock = (productId: string, quantity: number) =>
   Effect.gen(function* () {
-    const product = yield* findById(productId)
-
-    if (product.stock < quantity) {
-      return yield* Effect.fail(
-        new InsufficientStockError({ productId, requested: quantity, available: product.stock })
-      )
-    }
-
-    yield* Effect.tryPromise({
+    const updated = yield* Effect.tryPromise({
       try: () =>
         db.update(schema.products)
           .set({ stock: sql`${schema.products.stock} - ${quantity}` })
           .where(
-            // double-check in the same UPDATE — atomic guard against race conditions
-            sql`${schema.products.id} = ${productId} AND ${schema.products.stock} >= ${quantity}`
-          ),
+            sql`${schema.products.id} = ${productId}
+                AND ${schema.products.stock} >= ${quantity}`
+          )
+          .returning({ id: schema.products.id, stock: schema.products.stock }),
       catch: (e) => new DbError({ cause: e }),
     })
+
+    if (updated.length === 0) {
+      // Distinguish "product not found" from "not enough stock" for the caller.
+      const check = yield* Effect.tryPromise({
+        try:   () =>
+          db.select({ stock: schema.products.stock })
+            .from(schema.products)
+            .where(eq(schema.products.id, productId))
+            .limit(1),
+        catch: (e) => new DbError({ cause: e }),
+      })
+
+      if (check.length === 0) {
+        return yield* Effect.fail(new ProductNotFoundError({ id: productId }))
+      }
+
+      return yield* Effect.fail(
+        new InsufficientStockError({
+          productId,
+          requested: quantity,
+          available: check[0]!.stock,
+        })
+      )
+    }
+
+    return updated[0]!
   })
 
+// ── releaseStock ───────────────────────────────────────────────────────────
 const releaseStock = (productId: string, quantity: number) =>
   Effect.tryPromise({
-    try:   () =>
+    try: () =>
       db.update(schema.products)
         .set({ stock: sql`${schema.products.stock} + ${quantity}` })
         .where(eq(schema.products.id, productId)),

@@ -2,15 +2,29 @@ import { render }    from "@/templates/engine"
 import { orderConfirmationTemplate } from "@/templates/order-confirmation.html"
 import type { BaseProvider }         from "@/providers/base.provider"
 import type { EmailJobPayload }      from "@/queues/email.queue"
+import { fetchUserEmail, fetchUserName } from "@/lib/user-client"
 
-// Enrich payload from order-service / user-service before sending
+// FIX EML-02: fetchUserEmail and fetchUserName were called but never defined
+// anywhere in the codebase → ReferenceError on every job execution.
+// They are now imported from @/lib/user-client which calls auth-service
+// using the internal service token.
+//
+// FIX EML-03: uses payload.userEmail when present (set by updated producers)
+// and falls back to fetchUserEmail(payload.userId) for older enqueued jobs.
+
 export async function handleOrderConfirmation(
   payload:  EmailJobPayload["order-confirmation"],
   provider: BaseProvider
 ) {
-  // In production: fetch user email from auth-service via internal call
-  const userEmail    = await fetchUserEmail(payload.userId)
-  const customerName = await fetchUserName(payload.userId)
+  const userId = payload.userId ?? ""
+
+  const to           = payload.userEmail || await fetchUserEmail(userId)
+  const customerName = await fetchUserName(userId)
+
+  if (!to) {
+    console.warn(JSON.stringify({ event: "order_confirmation_email_skipped_no_address", orderId: payload.orderId }))
+    return { success: false, error: "No email address resolved", retryable: false }
+  }
 
   const html = render(orderConfirmationTemplate, {
     orderId:      payload.orderId,
@@ -21,7 +35,7 @@ export async function handleOrderConfirmation(
   })
 
   return provider.send({
-    to:      userEmail,
+    to,
     subject: `✅ Payment Confirmed — ${payload.orderId}`,
     html,
   })

@@ -8,21 +8,27 @@ export type EmailJobType =
   | "password-reset"
   | "shipping-update"
 
+// FIX EML-03: all order-related payloads now include userEmail so handlers
+// can send email without an extra auth-service round-trip.
+// userId is kept for backward compat and fallback lookup.
 export type EmailJobPayload = {
   "order-created": {
     orderId:    string
     userId:     string
+    userEmail:  string   // FIX: was missing → handler sent to UUID, not email
     grandTotal: number
   }
   "order-confirmation": {
-    orderId: string
-    userId:  string
-    amount:  number
+    orderId:   string
+    userId?:   string
+    userEmail: string   // FIX: was missing → fetchUserEmail was undefined
+    amount:    number
   }
   "order-cancelled": {
-    orderId: string
-    userId:  string
-    reason:  string
+    orderId:   string
+    userId?:   string
+    userEmail: string   // FIX: was missing → handler sent to UUID, not email
+    reason:    string
   }
   "password-reset": {
     userId:    string
@@ -31,7 +37,8 @@ export type EmailJobPayload = {
   }
   "shipping-update": {
     orderId:        string
-    userId:         string
+    userId?:        string
+    userEmail:      string   // FIX: was missing → handler sent to UUID, not email
     trackingNumber: string
     courierName:    string
     estimatedDate:  string

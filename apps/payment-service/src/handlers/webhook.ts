@@ -6,51 +6,81 @@ import { emailQueue }        from "@/lib/email-queue"
 import type { MidtransNotification } from "@/lib/midtrans"
 import type { AppEnv } from "@/types"
 
-// Midtrans transaction_status → our PaymentStatus
-const STATUS_MAP: Record<string, string> = {
-  capture:  "PAID",
+// FIX PAY-04: split into two maps.
+//
+// PAYMENT_STATUS_MAP stores the internal payment record status — mirrors
+// Midtrans transaction_status values faithfully.
+//
+// ORDER_STATUS_MAP maps to the OrderStatus enum accepted by order-service.
+// "deny" / "expire" / "cancel" all map to "CANCELLED" (the only terminal-
+// failure state in the order state machine).  "pending" maps to null meaning
+// "do not change the order status" — the order is already PENDING_PAYMENT.
+// Sending "PENDING" would make order-service return 422 (not a valid enum
+// value) and leave the order-service status stale.
+
+const PAYMENT_STATUS_MAP: Record<string, string> = {
+  capture:    "PAID",
   settlement: "PAID",
-  pending:  "PENDING",
-  deny:     "FAILED",
-  cancel:   "CANCELLED",
-  expire:   "EXPIRED",
-  refund:   "REFUNDED",
+  pending:    "PENDING",
+  deny:       "FAILED",
+  cancel:     "CANCELLED",
+  expire:     "EXPIRED",
+  refund:     "REFUNDED",
+}
+
+const ORDER_STATUS_MAP: Record<string, string | null> = {
+  capture:    "PAID",
+  settlement: "PAID",
+  pending:    null,        // no-op — order stays PENDING_PAYMENT
+  deny:       "CANCELLED", // was "FAILED" — invalid OrderStatus → 422
+  cancel:     "CANCELLED",
+  expire:     "CANCELLED", // was "EXPIRED" — invalid OrderStatus → 422
+  refund:     "REFUNDED",
 }
 
 export const webhookHandler = async (c: Context<AppEnv>) => {
-  // Body already validated by HMAC middleware in api-gateway
+  // Body is forwarded intact by api-gateway after the GW-04 fix (body cached
+  // in context.webhookRawBody and re-used by the proxy before forwarding).
   const notification = await c.req.json<MidtransNotification>()
 
   const program = Effect.gen(function* () {
-    const paymentStatus = STATUS_MAP[notification.transaction_status] ?? "UNKNOWN"
+    const txStatus     = notification.transaction_status ?? ""
+    const paymentStatus = PAYMENT_STATUS_MAP[txStatus] ?? "UNKNOWN"
+    const orderStatus   = ORDER_STATUS_MAP[txStatus]    // null = skip
 
-    // 1. Update payment record
+    // 1. Update payment record (status + paymentType + paidAt)
     const payment = yield* paymentRepository.updateByOrderId(notification.order_id, {
       status:      paymentStatus,
       paymentType: notification.payment_type,
       paidAt:      paymentStatus === "PAID" ? new Date() : undefined,
     })
 
-    // 2. Sync order-service with new status
-    yield* orderClient.updateStatus(notification.order_id, paymentStatus)
+    // 2. Sync order-service — only when there is a meaningful order status change
+    if (orderStatus !== null) {
+      yield* orderClient.updateStatus(notification.order_id, orderStatus)
+    }
 
-    // 3. Side effects — fire-and-forget via BullMQ
+    // 3. Side effects — enqueue email jobs (fire-and-forget via BullMQ)
+    //    userEmail comes from the payment record's associated user.
+    //    If the user email is not stored on the payment, the email-worker will
+    //    fall back to fetching it from auth-service using the userId.
+    const userEmail = (payment as any).userEmail ?? ""
+
     if (paymentStatus === "PAID") {
       yield* emailQueue.add("order-confirmation", {
-        orderId: notification.order_id,
-        userId:  payment.userId,
-        amount:  payment.amount,
+        orderId:   notification.order_id,
+        userEmail,
+        amount:    payment.amount,
       })
     }
 
-    if (paymentStatus === "EXPIRED" || paymentStatus === "CANCELLED") {
-      // Release stock reservation
+    if (paymentStatus === "EXPIRED" || paymentStatus === "CANCELLED" || paymentStatus === "FAILED") {
       yield* orderClient.releaseStock(notification.order_id)
 
-      yield* emailQueue.add("order-cancelled", {
-        orderId: notification.order_id,
-        userId:  payment.userId,
-        reason:  paymentStatus,
+      yield* emailQueue.addCancelled({
+        orderId:   notification.order_id,
+        userEmail,
+        reason:    paymentStatus,
       })
     }
 
@@ -59,9 +89,14 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
 
   const result = await Effect.runPromiseExit(program)
 
-  // Always return 200 to Midtrans — retries if we 5xx
+  // Always return 200 to Midtrans — if we 5xx it retries indefinitely.
   if (result._tag === "Failure") {
-    console.error("Webhook processing failed", result.cause)
+    console.error(JSON.stringify({
+      event:    "webhook_processing_failed",
+      orderId:  notification?.order_id,
+      txStatus: notification?.transaction_status,
+      cause:    String(result.cause),
+    }))
     return c.json({ received: false }, 200)
   }
 

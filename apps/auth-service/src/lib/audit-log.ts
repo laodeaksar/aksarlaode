@@ -20,6 +20,8 @@ export type AuditEventName =
   | "OWNER_TRANSFER"    // ownership transferred to another user
   | "ROLE_CHANGE"       // any role mutation or user deletion
   | "OWNER_LOGIN"       // OWNER authenticated successfully (kept for back-compat)
+  // ── Account lifecycle ────────────────────────────────────────────────────
+  | "ACCOUNT_CREATED"   // new user account successfully registered
   // ── Session lifecycle ────────────────────────────────────────────────────
   | "LOGIN_SUCCESS"     // any user authenticated successfully
   | "LOGIN_FAILED"      // authentication attempt rejected (bad credentials)

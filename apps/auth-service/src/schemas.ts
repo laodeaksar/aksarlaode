@@ -41,7 +41,10 @@ export const ForgotPasswordBody = t.Object({
 })
 
 export const ResetPasswordBody = t.Object({
-  token:       t.String({ minLength: 1 }),
+  // Reset tokens are always 32 CSPRNG bytes encoded as 64 lowercase hex chars.
+  // Rejecting other formats at the schema layer avoids a DB round-trip for
+  // obviously invalid input (arbitrary strings, path traversal attempts, etc.).
+  token:       t.String({ minLength: 64, maxLength: 64, pattern: "^[0-9a-f]{64}$" }),
   newPassword: t.String({ minLength: 8, maxLength: 72 }),
 })
 

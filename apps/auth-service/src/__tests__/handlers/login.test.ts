@@ -8,7 +8,12 @@ vi.mock("@/repository/user.repository", () => ({
   userRepository: { findByEmail: vi.fn(), findById: vi.fn(), create: vi.fn(), updatePasswordHash: vi.fn() },
 }))
 vi.mock("@/repository/session.repository", () => ({
-  sessionRepository: { create: vi.fn() },
+  sessionRepository: {
+    create:               vi.fn(),
+    // Required by the session-cap logic added to loginHandler
+    countByUserId:        vi.fn(() => Effect.succeed(0)),
+    deleteOldestByUserId: vi.fn(() => Effect.succeed(undefined)),
+  },
 }))
 vi.mock("@/lib/password", () => ({
   verifyPassword: vi.fn(),

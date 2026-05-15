@@ -2,8 +2,19 @@ import { Effect, Data }      from "effect"
 import { db, schema }        from "@repo/database"
 import { eq, desc, sql, and, isNull, isNotNull } from "drizzle-orm"
 import type { UserRole }     from "@/types"
+import { ConflictError }     from "@repo/common/errors"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
+
+// Postgres error code for unique constraint violation
+function isUniqueViolation(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "code" in e &&
+    (e as { code: unknown }).code === "23505"
+  )
+}
 
 const findByEmail = (email: string) =>
   Effect.tryPromise({
@@ -78,7 +89,9 @@ const create = (data: {
   Effect.tryPromise({
     try:   () => db.insert(schema.users).values({ id: crypto.randomUUID(), ...data })
                    .returning().then(r => r[0]!),
-    catch: (e) => new DbError({ cause: e }),
+    // Map Postgres unique_violation (23505) on email → ConflictError → 409
+    // so callers receive the correct semantic error instead of a generic 500.
+    catch: (e) => isUniqueViolation(e) ? new ConflictError("email") : new DbError({ cause: e }),
   })
 
 const updatePasswordHash = (id: string, passwordHash: string) =>

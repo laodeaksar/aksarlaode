@@ -17,18 +17,20 @@ import { canManage, isAtLeastAdmin, isAtLeastOwner } from "@/lib/role"
 import { writeAuditLog }   from "@/lib/audit-log"
 
 // ── Projection ────────────────────────────────────────────────────────────────
+// passwordHash is excluded at the DB query layer (SAFE_USER_COLUMNS in
+// user.repository.ts) so it is never present in items returned by findAll.
+// The type below reflects what the repository actually returns.
 
 type RawUser = {
-  id:           string
-  email:        string
-  name:         string
-  role:         string
-  avatarUrl:    string | null
-  phone:        string | null
-  createdAt:    Date
-  updatedAt:    Date
-  deletedAt:    Date | null
-  passwordHash: string
+  id:        string
+  email:     string
+  name:      string
+  role:      string
+  avatarUrl: string | null
+  phone:     string | null
+  createdAt: Date
+  updatedAt: Date
+  deletedAt: Date | null
 }
 
 const shapeUser = (u: RawUser) => ({

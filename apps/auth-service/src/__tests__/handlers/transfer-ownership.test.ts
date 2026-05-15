@@ -8,10 +8,18 @@ const mockFindById          = vi.fn()
 const mockTransferOwnership = vi.fn()
 const mockVerifyPassword    = vi.fn()
 
+const mockDeleteAllSessions = vi.fn()
+
 vi.mock("@/repository/user.repository", () => ({
   userRepository: {
     findById:          (...a: unknown[]) => mockFindById(...a),
     transferOwnership: (...a: unknown[]) => mockTransferOwnership(...a),
+  },
+}))
+
+vi.mock("@/repository/session.repository", () => ({
+  sessionRepository: {
+    deleteAllByUserId: (...a: unknown[]) => mockDeleteAllSessions(...a),
   },
 }))
 
@@ -63,6 +71,8 @@ beforeEach(() => {
   )
   mockVerifyPassword.mockReturnValue(Effect.succeed(true))
   mockTransferOwnership.mockReturnValue(Effect.succeed(TRANSFER_RESULT))
+  // Handler invalidates sessions for both actors after a successful transfer
+  mockDeleteAllSessions.mockReturnValue(Effect.succeed(undefined))
 })
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

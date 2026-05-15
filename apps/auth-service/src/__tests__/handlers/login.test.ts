@@ -10,7 +10,6 @@ vi.mock("@/repository/user.repository", () => ({
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: {
     create:               vi.fn(),
-    // Required by the session-cap logic added to loginHandler
     countByUserId:        vi.fn(() => Effect.succeed(0)),
     deleteOldestByUserId: vi.fn(() => Effect.succeed(undefined)),
   },
@@ -26,13 +25,22 @@ vi.mock("@/lib/token", () => ({
 vi.mock("@/lib/audit-log", () => ({
   writeAuditLog: vi.fn(),
 }))
+// Per-email account lockout — default: allow all (unlocked)
+vi.mock("@/lib/account-lockout", () => ({
+  recordEmailAttempt: vi.fn(() => Promise.resolve({ locked: false })),
+}))
+// PII masking — return a deterministic value so assertions are stable
+vi.mock("@/lib/pii", () => ({
+  maskEmail: vi.fn((email: string) => `${email[0]}***@example.com`),
+}))
 
-import { userRepository }                       from "@/repository/user.repository"
-import { sessionRepository }                    from "@/repository/session.repository"
+import { userRepository }                            from "@/repository/user.repository"
+import { sessionRepository }                         from "@/repository/session.repository"
 import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
-import { issueTokenPair }                       from "@/lib/token"
-import { writeAuditLog }                        from "@/lib/audit-log"
-import { loginHandler }                         from "@/handlers/login"
+import { issueTokenPair }                            from "@/lib/token"
+import { writeAuditLog }                             from "@/lib/audit-log"
+import { recordEmailAttempt }                        from "@/lib/account-lockout"
+import { loginHandler }                              from "@/handlers/login"
 
 const app = new Elysia().post("/login", loginHandler, { body: LoginBody })
 
@@ -51,6 +59,7 @@ describe("loginHandler", () => {
     vi.mocked(verifyPassword).mockReturnValue(Effect.succeed(true))
     vi.mocked(issueTokenPair).mockReturnValue(Effect.succeed(MOCK_TOKENS))
     vi.mocked(sessionRepository.create).mockReturnValue(Effect.succeed({} as any))
+    vi.mocked(recordEmailAttempt).mockResolvedValue({ locked: false })
   })
 
   it("returns 200 with accessToken on valid credentials", async () => {
@@ -69,6 +78,21 @@ describe("loginHandler", () => {
     expect(cookie).not.toContain("Path=/auth/refresh")
   })
 
+  it("calls recordEmailAttempt before any DB lookup", async () => {
+    await post({ email: "test@example.com", password: "password1" })
+    expect(recordEmailAttempt).toHaveBeenCalled()
+  })
+
+  it("returns 429 and skips DB lookup when email is locked out", async () => {
+    vi.mocked(recordEmailAttempt).mockResolvedValue({ locked: true, retryAfterSec: 300 })
+    const res  = await post({ email: "test@example.com", password: "password1" })
+    const body = await res.json()
+    expect(res.status).toBe(429)
+    expect(body.code).toBe("ACCOUNT_LOCKED")
+    expect(res.headers.get("Retry-After")).toBe("300")
+    expect(userRepository.findByEmail).not.toHaveBeenCalled()
+  })
+
   it("emits LOGIN_SUCCESS audit event on successful login", async () => {
     await post({ email: "test@example.com", password: "password1" })
     expect(writeAuditLog).toHaveBeenCalledWith(
@@ -76,12 +100,25 @@ describe("loginHandler", () => {
     )
   })
 
-  it("emits LOGIN_FAILED audit event on bad credentials", async () => {
+  it("does NOT include plaintext email in LOGIN_SUCCESS audit event", async () => {
+    await post({ email: "test@example.com", password: "password1" })
+    const successCall = vi.mocked(writeAuditLog).mock.calls.find(
+      ([entry]) => entry.event === "LOGIN_SUCCESS"
+    )
+    expect(JSON.stringify(successCall)).not.toContain("test@example.com")
+  })
+
+  it("emits LOGIN_FAILED audit event with masked email on bad credentials", async () => {
     vi.mocked(verifyPassword).mockReturnValue(Effect.succeed(false))
     await post({ email: "test@example.com", password: "wrong" })
-    expect(writeAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "LOGIN_FAILED" })
+    const failCall = vi.mocked(writeAuditLog).mock.calls.find(
+      ([entry]) => entry.event === "LOGIN_FAILED"
     )
+    expect(failCall).toBeDefined()
+    const meta = failCall?.[0].meta as Record<string, string>
+    expect(meta["emailMask"]).toBeDefined()
+    // Must not log the plaintext email
+    expect(JSON.stringify(failCall)).not.toContain("test@example.com")
   })
 
   it("emits OWNER_LOGIN in addition to LOGIN_SUCCESS for OWNER role", async () => {

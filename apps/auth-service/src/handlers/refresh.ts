@@ -39,10 +39,6 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
     )
     if (!user) return yield* Effect.fail(new AuthError())
 
-    yield* sessionRepository.deleteByToken(rawTokenHash).pipe(
-      Effect.mapError(() => new AuthError())
-    )
-
     const newSessionId = crypto.randomUUID()
     const tokens       = yield* issueTokenPair(user.id, user.role, newSessionId).pipe(
       Effect.mapError(() => new AuthError())
@@ -53,7 +49,13 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
       catch: () => new AuthError(),
     })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    yield* sessionRepository.create({
+
+    // ── Atomic session rotation ──────────────────────────────────────────────
+    // rotateSession runs DELETE old + INSERT new in a single Postgres
+    // transaction. This eliminates the failure mode where the old session is
+    // deleted but the new one is never created, which would orphan the client's
+    // cookie and force an unexpected re-login.
+    yield* sessionRepository.rotateSession(rawTokenHash, {
       id: newSessionId, userId: user.id, token: newRefreshTokenHash, expiresAt,
     }).pipe(Effect.mapError(() => new AuthError()))
 

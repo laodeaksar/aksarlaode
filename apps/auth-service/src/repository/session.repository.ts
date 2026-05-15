@@ -2,6 +2,13 @@ import { Effect, Data }        from "effect"
 import { db, schema }          from "@repo/database"
 import { eq, and, sql, inArray, asc } from "drizzle-orm"
 
+export type NewSessionData = {
+  id:        string
+  userId:    string
+  token:     string
+  expiresAt: Date
+}
+
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
 const create = (data: {
@@ -121,9 +128,52 @@ const deleteOldestByUserId = (userId: string, count: number) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
+/**
+ * Atomically delete an old session and insert a new one in a single Postgres
+ * transaction — used by the refresh token rotation flow.
+ *
+ * ── Why a transaction ─────────────────────────────────────────────────────────
+ * Without a transaction, two things can go wrong:
+ *
+ * 1. Delete succeeds, INSERT fails (transient DB error): the old refresh token
+ *    is gone but no new session exists. The client's cookie is now orphaned —
+ *    the next /auth/refresh attempt returns 401, forcing a re-login. This is
+ *    a reliability issue that manifests as an unexpected forced-logout.
+ *
+ * 2. INSERT succeeds, Delete fails (less likely with sequential code, but
+ *    possible if the connection drops mid-flight): two sessions now exist for
+ *    the same logical "slot", leaking a row until the older one expires.
+ *
+ * With a transaction, exactly one of these outcomes is possible:
+ *   (a) Both writes committed — rotation succeeded.
+ *   (b) Neither write committed — client retries with the original cookie.
+ */
+const rotateSession = (oldTokenHash: string, newSessionData: NewSessionData) =>
+  Effect.tryPromise({
+    try: () =>
+      db.transaction(async (tx) => {
+        await tx
+          .delete(schema.sessions)
+          .where(eq(schema.sessions.token, oldTokenHash))
+
+        const [session] = await tx
+          .insert(schema.sessions)
+          .values(newSessionData)
+          .returning()
+
+        if (!session) {
+          throw new Error("rotateSession: INSERT produced no rows")
+        }
+
+        return session
+      }),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
 export const sessionRepository = {
   create,
   countByUserId,
+  rotateSession,
   findByToken,
   findPageByUserId,
   findByIdAndUserId,

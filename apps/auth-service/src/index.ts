@@ -9,45 +9,48 @@ import { serviceTokenMiddleware } from "./middleware/service-token"
 
 const PORT = parseInt(process.env["PORT"] ?? "3001", 10)
 
-const DOCS_PATH = env.NODE_ENV === "production" ? "/_internal/docs" : "/docs"
-
 const app = new Elysia()
 
-  // ── API docs (mounted before auth guard so /docs is reachable in dev) ───────
-  .use(swagger({
-    documentation: {
-      info: {
-        title:       "Auth Service API",
-        version:     "1.0.0",
-        description: "Handles authentication, session management, and user administration for the platform.",
-      },
-      tags: [
-        { name: "Auth",     description: "Login, register, token refresh, profile and password management" },
-        { name: "Sessions", description: "List and revoke active user sessions" },
-        { name: "Admin",    description: "User management — requires ADMIN or OWNER role" },
-        { name: "Owner",    description: "Ownership transfer — requires OWNER role" },
-        { name: "Health",   description: "Service health check" },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type:         "http",
-            scheme:       "bearer",
-            bearerFormat: "JWT",
-            description:  "Short-lived access token issued by POST /auth/login or POST /auth/refresh.",
+  // ── API docs — development only ──────────────────────────────────────────────
+  // Swagger exposes the full API surface (all routes, schemas, security schemes).
+  // In production this leaks attack surface. Disabled; use `pnpm dev` locally.
+  .use(env.NODE_ENV !== "production"
+    ? swagger({
+        documentation: {
+          info: {
+            title:       "Auth Service API",
+            version:     "1.0.0",
+            description: "Handles authentication, session management, and user administration for the platform.",
           },
-          serviceToken: {
-            type:        "apiKey",
-            in:          "header",
-            name:        "x-service-token",
-            description: "Internal service-to-service token required by the API gateway.",
+          tags: [
+            { name: "Auth",     description: "Login, register, token refresh, profile and password management" },
+            { name: "Sessions", description: "List and revoke active user sessions" },
+            { name: "Admin",    description: "User management — requires ADMIN or OWNER role" },
+            { name: "Owner",    description: "Ownership transfer — requires OWNER role" },
+            { name: "Health",   description: "Service health check" },
+          ],
+          components: {
+            securitySchemes: {
+              bearerAuth: {
+                type:         "http",
+                scheme:       "bearer",
+                bearerFormat: "JWT",
+                description:  "Short-lived access token issued by POST /auth/login or POST /auth/refresh.",
+              },
+              serviceToken: {
+                type:        "apiKey",
+                in:          "header",
+                name:        "x-service-token",
+                description: "Internal service-to-service token required by the API gateway.",
+              },
+            },
           },
+          security: [{ bearerAuth: [] }],
         },
-      },
-      security: [{ bearerAuth: [] }],
-    },
-    path: DOCS_PATH,
-  }))
+        path: "/docs",
+      })
+    : new Elysia()
+  )
 
   .use(cors({
     origin:         [env.WEB_URL, env.ADMIN_URL],
@@ -64,6 +67,20 @@ const app = new Elysia()
       method:    request.method,
       path:      new URL(request.url).pathname,
     }))
+  })
+
+  // ── Security response headers ─────────────────────────────────────────────
+  // Applied to every response. These defend against content-type sniffing,
+  // clickjacking, and accidental referrer leakage even for an internal API.
+  // HSTS is only emitted in production — in dev, the service may run over HTTP.
+  .onAfterHandle(({ set }) => {
+    set.headers["X-Content-Type-Options"] = "nosniff"
+    set.headers["X-Frame-Options"]        = "DENY"
+    set.headers["Referrer-Policy"]        = "no-referrer"
+    set.headers["Permissions-Policy"]     = "geolocation=(), microphone=(), camera=()"
+    if (env.NODE_ENV === "production") {
+      set.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    }
   })
 
   .onBeforeHandle(serviceTokenMiddleware)
@@ -98,8 +115,10 @@ const app = new Elysia()
 
   .listen(PORT)
 
-console.info(`🔐 auth-service running on http://localhost:${PORT}`)
-console.info(`📄 API docs available at http://localhost:${PORT}${DOCS_PATH}`)
+console.info(`auth-service running on http://localhost:${PORT}`)
+if (env.NODE_ENV !== "production") {
+  console.info(`API docs at http://localhost:${PORT}/docs`)
+}
 
 const shutdown = async (signal: string) => {
   console.info(`Received ${signal}, shutting down...`)

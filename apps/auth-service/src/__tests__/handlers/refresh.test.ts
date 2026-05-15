@@ -7,17 +7,20 @@ vi.mock("@/repository/user.repository", () => ({
   userRepository: { findById: vi.fn() },
 }))
 vi.mock("@/repository/session.repository", () => ({
-  sessionRepository: { findByToken: vi.fn(), deleteByToken: vi.fn(), create: vi.fn() },
+  sessionRepository: {
+    findByToken:   vi.fn(),
+    rotateSession: vi.fn(),   // atomic rotation replaces separate delete + create
+  },
 }))
 vi.mock("@/lib/token", () => ({
   verifyToken:    vi.fn(),
   issueTokenPair: vi.fn(),
 }))
 
-import { userRepository }    from "@/repository/user.repository"
-import { sessionRepository } from "@/repository/session.repository"
+import { userRepository }             from "@/repository/user.repository"
+import { sessionRepository }          from "@/repository/session.repository"
 import { verifyToken, issueTokenPair } from "@/lib/token"
-import { refreshHandler }    from "@/handlers/refresh"
+import { refreshHandler }             from "@/handlers/refresh"
 
 const REFRESH_COOKIE = `ec_refresh=${encodeURIComponent(MOCK_TOKENS.refreshToken)}`
 
@@ -38,9 +41,8 @@ describe("refreshHandler", () => {
     )
     vi.mocked(sessionRepository.findByToken).mockReturnValue(Effect.succeed(MOCK_SESSION))
     vi.mocked(userRepository.findById).mockReturnValue(Effect.succeed(MOCK_USER))
-    vi.mocked(sessionRepository.deleteByToken).mockReturnValue(Effect.succeed({} as any))
+    vi.mocked(sessionRepository.rotateSession).mockReturnValue(Effect.succeed({} as any))
     vi.mocked(issueTokenPair).mockReturnValue(Effect.succeed(MOCK_TOKENS))
-    vi.mocked(sessionRepository.create).mockReturnValue(Effect.succeed({} as any))
   })
 
   it("returns 200 with new accessToken on valid refresh cookie", async () => {
@@ -58,10 +60,14 @@ describe("refreshHandler", () => {
     expect(cookie).not.toContain("Path=/auth/refresh")
   })
 
-  it("rotates the session: deletes old, creates new", async () => {
+  it("atomically rotates the session via rotateSession", async () => {
     await post(REFRESH_COOKIE)
-    expect(sessionRepository.deleteByToken).toHaveBeenCalled()
-    expect(sessionRepository.create).toHaveBeenCalled()
+    // Single call to rotateSession — not separate delete + create
+    expect(sessionRepository.rotateSession).toHaveBeenCalledTimes(1)
+    expect(sessionRepository.rotateSession).toHaveBeenCalledWith(
+      expect.any(String),   // old token hash
+      expect.objectContaining({ userId: MOCK_USER.id })
+    )
   })
 
   it("returns 401 when no cookie is present", async () => {
@@ -84,6 +90,14 @@ describe("refreshHandler", () => {
   it("returns 401 when session is expired", async () => {
     vi.mocked(sessionRepository.findByToken).mockReturnValue(
       Effect.succeed({ ...MOCK_SESSION, expiresAt: new Date("2000-01-01") })
+    )
+    const res = await post(REFRESH_COOKIE)
+    expect(res.status).toBe(401)
+  })
+
+  it("returns 401 when rotateSession fails (keeps client safe — no orphaned cookie)", async () => {
+    vi.mocked(sessionRepository.rotateSession).mockReturnValue(
+      Effect.fail(new Error("DB down") as any)
     )
     const res = await post(REFRESH_COOKIE)
     expect(res.status).toBe(401)

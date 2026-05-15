@@ -5,10 +5,13 @@ import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
 import { RegisterBody } from "@/schemas"
 
 vi.mock("@/repository/user.repository", () => ({
-  userRepository: { findByEmail: vi.fn(), create: vi.fn() },
+  userRepository: { findByEmail: vi.fn() },
 }))
-vi.mock("@/repository/session.repository", () => ({
-  sessionRepository: { create: vi.fn() },
+// createUserWithSession is the atomic transaction that replaces the old
+// separate userRepository.create + sessionRepository.create calls.
+vi.mock("@/repository/auth.repository", () => ({
+  createUserWithSession: vi.fn(),
+  consumeResetToken:     vi.fn(),
 }))
 vi.mock("@/lib/password", () => ({
   hashPassword: vi.fn(),
@@ -16,12 +19,15 @@ vi.mock("@/lib/password", () => ({
 vi.mock("@/lib/token", () => ({
   issueTokenPair: vi.fn(),
 }))
+vi.mock("@/lib/audit-log", () => ({
+  writeAuditLog: vi.fn(),
+}))
 
-import { userRepository }    from "@/repository/user.repository"
-import { sessionRepository } from "@/repository/session.repository"
-import { hashPassword }      from "@/lib/password"
-import { issueTokenPair }    from "@/lib/token"
-import { registerHandler }   from "@/handlers/register"
+import { userRepository }         from "@/repository/user.repository"
+import { createUserWithSession }  from "@/repository/auth.repository"
+import { hashPassword }           from "@/lib/password"
+import { issueTokenPair }         from "@/lib/token"
+import { registerHandler }        from "@/handlers/register"
 
 const app = new Elysia().post("/register", registerHandler, { body: RegisterBody })
 
@@ -38,9 +44,11 @@ describe("registerHandler", () => {
     vi.clearAllMocks()
     vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(null))
     vi.mocked(hashPassword).mockReturnValue(Effect.succeed("hashed:password"))
-    vi.mocked(userRepository.create).mockReturnValue(Effect.succeed(MOCK_USER))
     vi.mocked(issueTokenPair).mockReturnValue(Effect.succeed(MOCK_TOKENS))
-    vi.mocked(sessionRepository.create).mockReturnValue(Effect.succeed({} as any))
+    // createUserWithSession atomically creates user row + session row
+    vi.mocked(createUserWithSession).mockReturnValue(
+      Effect.succeed({ user: MOCK_USER, session: {} as any })
+    )
   })
 
   it("returns 201 with accessToken on valid registration", async () => {
@@ -52,7 +60,14 @@ describe("registerHandler", () => {
     expect(res.headers.get("set-cookie")).toContain("ec_refresh=")
   })
 
-  it("returns 409 when email already exists", async () => {
+  it("sets ec_refresh cookie with Path=/auth", async () => {
+    const res    = await post({ email: "new@example.com", name: "New User", password: "password1" })
+    const cookie = res.headers.get("set-cookie") ?? ""
+    expect(cookie).toContain("Path=/auth")
+    expect(cookie).not.toContain("Path=/auth/refresh")
+  })
+
+  it("returns 409 when email already exists (fast-path check)", async () => {
     vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(MOCK_USER))
     const res  = await post({ email: "test@example.com", name: "Dup", password: "password1" })
     const body = await res.json()
@@ -70,11 +85,25 @@ describe("registerHandler", () => {
     expect(res.status).toBe(422)
   })
 
-  it("hashes the password before storing", async () => {
+  it("hashes the password and passes it to createUserWithSession", async () => {
     await post({ email: "new@example.com", name: "User", password: "password1" })
     expect(hashPassword).toHaveBeenCalledWith("password1")
-    expect(userRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ passwordHash: "hashed:password" })
+    expect(createUserWithSession).toHaveBeenCalledWith(
+      expect.objectContaining({ passwordHash: "hashed:password" }),
+      expect.any(Object)
     )
+  })
+
+  it("returns 409 on DB-level unique constraint violation (concurrent registration race)", async () => {
+    const { ConflictError } = await import("@repo/common/errors")
+    vi.mocked(createUserWithSession).mockReturnValue(
+      Effect.fail(new ConflictError("email"))
+    )
+    // Make findByEmail say email is free so the race is on the DB insert
+    vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(null))
+    const res  = await post({ email: "race@example.com", name: "Race User", password: "password1" })
+    const body = await res.json()
+    expect(res.status).toBe(409)
+    expect(body.field).toBe("email")
   })
 })

@@ -5,6 +5,8 @@ import { hashToken }                                 from "@/lib/token-hash"
 import { userRepository }                            from "@/repository/user.repository"
 import { sessionRepository }                         from "@/repository/session.repository"
 import { writeAuditLog }                             from "@/lib/audit-log"
+import { recordEmailAttempt }                        from "@/lib/account-lockout"
+import { maskEmail }                                 from "@/lib/pii"
 import { AuthError, toErrorResponse }                from "@repo/common/errors"
 
 /**
@@ -29,6 +31,23 @@ export const loginHandler = async ({
   body: { email: string; password: string }
   set:  any
 }) => {
+  // ── Per-email account lockout ─────────────────────────────────────────────
+  // Check and record this attempt BEFORE any DB query. Both successful and
+  // failed attempts count so an attacker cannot work around the limit by
+  // knowing the correct password. The email is hashed before use as a key
+  // so plaintext addresses are never stored in Redis.
+  //
+  // This is orthogonal to the per-IP rate limiter: an attacker using 1,000
+  // IPs is still bounded to 20 attempts per hour against this specific email.
+  const emailHash    = await hashToken(body.email.toLowerCase().trim())
+  const lockoutCheck = await recordEmailAttempt(emailHash)
+
+  if (lockoutCheck.locked) {
+    set.status = 429
+    set.headers["Retry-After"] = String(lockoutCheck.retryAfterSec)
+    return { error: "Too many login attempts. Please try again later.", code: "ACCOUNT_LOCKED" }
+  }
+
   const program = Effect.gen(function* () {
     // ── 1. Verify credentials ───────────────────────────────────────────────
     const user = yield* userRepository.findByEmail(body.email)
@@ -89,13 +108,14 @@ export const loginHandler = async ({
   const result = await Effect.runPromiseExit(program)
 
   if (result._tag === "Failure") {
-    // Audit failed login attempts. Email is logged as meta (not actorId) since
-    // the user may not exist. "anonymous" is a sentinel — not a real userId.
+    // Audit failed login attempts. Email is masked (not plaintext) to protect
+    // PII in log aggregators. "anonymous" actorId is a sentinel for events
+    // where the actor's identity could not be verified.
     writeAuditLog({
       event:    "LOGIN_FAILED",
       actorId:  "anonymous",
       targetId: "anonymous",
-      meta:     { email: body.email },
+      meta:     { emailMask: maskEmail(body.email) },
     })
 
     const { body: errBody, status } = toErrorResponse(result.cause.error)
@@ -105,11 +125,13 @@ export const loginHandler = async ({
 
   const { user, tokens } = result.value
 
+  // Email omitted from LOGIN_SUCCESS — actorId (userId) is sufficient for
+  // correlation and avoids storing PII in log aggregators.
   writeAuditLog({
     event:    "LOGIN_SUCCESS",
     actorId:  user.id,
     targetId: user.id,
-    meta:     { role: user.role, email: user.email },
+    meta:     { role: user.role },
   })
 
   if (user.role === "OWNER") {
@@ -117,7 +139,6 @@ export const loginHandler = async ({
       event:    "OWNER_LOGIN",
       actorId:  user.id,
       targetId: user.id,
-      meta:     { email: user.email },
     })
   }
 

@@ -1,5 +1,6 @@
 import { Effect, Data }  from "effect"
 import { db, schema }    from "@repo/database"
+import { eq }            from "drizzle-orm"
 import type { UserRole } from "@/types"
 import { ConflictError } from "@repo/common/errors"
 
@@ -74,4 +75,67 @@ export const createUserWithSession = (
       isUniqueViolation(e)
         ? new ConflictError("email")
         : new DbError({ cause: e }),
+  })
+
+/**
+ * Atomically consume a password-reset token and apply the new password hash.
+ *
+ * ── Why a single transaction ──────────────────────────────────────────────────
+ * Without a transaction the sequence is:
+ *   1. updatePasswordHash  ← succeeds
+ *   2. deleteByToken       ← fails (transient DB error)
+ *   3. deleteAllSessions   ← never reached
+ *
+ * In that failure mode the password is changed but the reset token is NOT
+ * invalidated — an attacker who intercepted the reset URL (referer leak,
+ * email forward, proxy log) can reuse it to reset the password again to a
+ * value they control, achieving full account takeover.
+ *
+ * With a transaction all three writes are atomic: if any step fails, Postgres
+ * rolls back the entire operation. The token remains valid, the password is
+ * unchanged, and the client can safely retry with the same link.
+ *
+ * ── Ordering ─────────────────────────────────────────────────────────────────
+ * The token is deleted FIRST inside the transaction. This ensures that even if
+ * two concurrent requests arrive with the same token, only one can delete the
+ * row — the other finds zero rows deleted and the transaction is a no-op
+ * (the outer handler re-checks for the token and returns 401).
+ */
+export const consumeResetToken = (
+  tokenHash:       string,
+  userId:          string,
+  newPasswordHash: string,
+) =>
+  Effect.tryPromise({
+    try: () =>
+      db.transaction(async (tx) => {
+        // 1. Delete the token first — acts as an optimistic lock.
+        //    If two concurrent requests arrive, only one deletes the row.
+        const deleted = await tx
+          .delete(schema.passwordResetTokens)
+          .where(eq(schema.passwordResetTokens.token, tokenHash))
+          .returning()
+
+        if (deleted.length === 0) {
+          throw new Error("TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED")
+        }
+
+        // 2. Update the password hash.
+        await tx
+          .update(schema.users)
+          .set({ passwordHash: newPasswordHash, updatedAt: new Date() })
+          .where(eq(schema.users.id, userId))
+
+        // 3. Invalidate all active sessions so any stolen session cookie is
+        //    immediately unusable.
+        await tx
+          .delete(schema.sessions)
+          .where(eq(schema.sessions.userId, userId))
+      }),
+    catch: (e) => {
+      if (e instanceof Error && e.message === "TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED") {
+        return new ConflictError("token", "Reset token not found or already consumed")
+      }
+      return new DbError({ cause: e })
+    },
   })

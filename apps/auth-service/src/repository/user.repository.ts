@@ -6,6 +6,32 @@ import { ConflictError }     from "@repo/common/errors"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
+/**
+ * Safe column projection for user listings — explicitly excludes passwordHash.
+ *
+ * Using db.select() (SELECT *) on a listing endpoint means passwordHash is
+ * fetched from the DB and held in memory, even though it is immediately
+ * stripped in the handler by shapeUser(). If a new code path ever forgets
+ * shapeUser(), the hash leaks into the response.
+ *
+ * This projection enforces the exclusion at the query layer, so the hash
+ * is never present in JavaScript memory for listing operations.
+ *
+ * Note: findByEmail / findById retain SELECT * because they are used by the
+ * auth flow which requires passwordHash for credential verification.
+ */
+const SAFE_USER_COLUMNS = {
+  id:        schema.users.id,
+  email:     schema.users.email,
+  name:      schema.users.name,
+  role:      schema.users.role,
+  avatarUrl: schema.users.avatarUrl,
+  phone:     schema.users.phone,
+  createdAt: schema.users.createdAt,
+  updatedAt: schema.users.updatedAt,
+  deletedAt: schema.users.deletedAt,
+} as const
+
 // Postgres error code for unique constraint violation
 function isUniqueViolation(e: unknown): boolean {
   return (
@@ -57,7 +83,7 @@ const findAll = (opts: { page: number; limit: number; role?: UserRole; includeDe
       const condition = conditions.length > 0 ? and(...conditions) : undefined
 
       const [items, [countRow]] = await Promise.all([
-        db.select().from(schema.users)
+        db.select(SAFE_USER_COLUMNS).from(schema.users)   // explicit projection — no passwordHash
           .where(condition)
           .orderBy(desc(schema.users.createdAt))
           .limit(opts.limit)

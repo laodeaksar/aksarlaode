@@ -108,7 +108,9 @@ function createRateLimiter(maxRequests: number, windowSec: number, label: string
 
     // Unique member prevents two concurrent requests at the same millisecond
     // from sharing a ZADD entry and under-counting the window.
-    const member = `${now}:${Math.random().toString(36).slice(2, 9)}`
+    // crypto.randomUUID() uses CSPRNG — Math.random() is NOT cryptographically
+    // secure and can produce collisions under concurrent load.
+    const member = `${now}:${crypto.randomUUID()}`
     const key    = `rate:sw:${label}:${ip}`   // "sw" prefix distinguishes from old fixed-window keys
 
     try {

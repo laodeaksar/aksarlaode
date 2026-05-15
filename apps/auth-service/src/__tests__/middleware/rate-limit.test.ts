@@ -1,11 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Elysia } from "elysia"
 
+/**
+ * The rate limiter implementation uses redis.eval() to run an atomic Lua
+ * sliding-window script. Previous versions of this test mocked redis.incr /
+ * redis.expire / redis.ttl — methods that the implementation never calls —
+ * which meant the test suite passed while providing zero coverage of the actual
+ * rate-limiting logic.
+ *
+ * This file mocks redis.eval() correctly and asserts on the values the
+ * Lua script returns:
+ *   [1, 0]       → request allowed
+ *   [0, retryMs] → request blocked; Retry-After = ceil(retryMs / 1000) seconds
+ *
+ * On a Redis error, the middleware must fail-closed (503) so that an outage
+ * cannot be exploited to bypass brute-force protection on auth endpoints.
+ */
+
 vi.mock("@/lib/redis", () => ({
   redis: {
-    incr: vi.fn(),
-    expire: vi.fn(),
-    ttl:  vi.fn(),
+    eval: vi.fn(),
   },
 }))
 
@@ -19,7 +33,9 @@ import {
   refreshRateLimiter,
 } from "@/middleware/rate-limit"
 
-function makeApp(limiter: ReturnType<typeof loginRateLimiter> extends Promise<unknown> ? never : typeof loginRateLimiter) {
+type AnyLimiter = typeof loginRateLimiter
+
+function makeApp(limiter: AnyLimiter) {
   return new Elysia()
     .post("/test", () => ({ ok: true }), { beforeHandle: limiter })
 }
@@ -31,140 +47,216 @@ function post(app: Elysia, ip = "1.2.3.4") {
   }))
 }
 
-// Helper — make Redis report `current` as the counter value
-function mockCount(current: number, ttl = 60) {
-  vi.mocked(redis.incr).mockResolvedValue(current)
-  vi.mocked(redis.expire).mockResolvedValue(1)
-  vi.mocked(redis.ttl).mockResolvedValue(ttl)
+/** Mock the Lua script returning "allowed" — [1, 0]. */
+function mockAllowed() {
+  vi.mocked(redis.eval).mockResolvedValue([1, 0])
 }
 
-describe("rate-limit middleware — new limiters", () => {
+/** Mock the Lua script returning "blocked" with a retry hint in milliseconds. */
+function mockBlocked(retryMs = 60_000) {
+  vi.mocked(redis.eval).mockResolvedValue([0, retryMs])
+}
+
+/** Simulate Redis being unavailable. */
+function mockRedisDown(message = "ECONNREFUSED") {
+  vi.mocked(redis.eval).mockRejectedValue(new Error(message))
+}
+
+// ── changePasswordRateLimiter (5 req / 15 min) ──────────────────────────────
+
+describe("changePasswordRateLimiter", () => {
+  const app = makeApp(changePasswordRateLimiter as AnyLimiter)
+
   beforeEach(() => vi.clearAllMocks())
 
-  // ── changePasswordRateLimiter (5 / 15 min) ─────────────────────────────────
-
-  describe("changePasswordRateLimiter", () => {
-    const app = makeApp(changePasswordRateLimiter as any)
-
-    it("allows request when under limit", async () => {
-      mockCount(1)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
-
-    it("allows request exactly at the limit (5th request)", async () => {
-      mockCount(5)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
-
-    it("returns 429 when limit is exceeded (6th request)", async () => {
-      mockCount(6, 45)
-      const res  = await post(app)
-      const body = await res.json()
-      expect(res.status).toBe(429)
-      expect(body.code).toBe("RATE_LIMITED")
-      expect(res.headers.get("Retry-After")).toBe("45")
-    })
+  it("allows request when under limit", async () => {
+    mockAllowed()
+    const res = await post(app)
+    expect(res.status).toBe(200)
   })
 
-  // ── resetPasswordRateLimiter (10 / 60 min) ─────────────────────────────────
-
-  describe("resetPasswordRateLimiter", () => {
-    const app = makeApp(resetPasswordRateLimiter as any)
-
-    it("allows request when under limit", async () => {
-      mockCount(3)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
-
-    it("allows request exactly at the limit (10th request)", async () => {
-      mockCount(10)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
-
-    it("returns 429 when limit is exceeded (11th request)", async () => {
-      mockCount(11, 120)
-      const res  = await post(app)
-      const body = await res.json()
-      expect(res.status).toBe(429)
-      expect(body.code).toBe("RATE_LIMITED")
-      expect(res.headers.get("Retry-After")).toBe("120")
-    })
+  it("returns 429 when Lua script says blocked", async () => {
+    mockBlocked(45_000)
+    const res  = await post(app)
+    const body = await res.json()
+    expect(res.status).toBe(429)
+    expect(body.code).toBe("RATE_LIMITED")
+    expect(res.headers.get("Retry-After")).toBe("45")
   })
 
-  // ── refreshRateLimiter (30 / 15 min) ───────────────────────────────────────
+  it("includes X-RateLimit-Limit header on block", async () => {
+    mockBlocked(30_000)
+    const res = await post(app)
+    expect(res.headers.get("X-RateLimit-Limit")).toBe("5")
+  })
+})
 
-  describe("refreshRateLimiter", () => {
-    const app = makeApp(refreshRateLimiter as any)
+// ── resetPasswordRateLimiter (10 req / 60 min) ──────────────────────────────
 
-    it("allows request when under limit", async () => {
-      mockCount(10)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
+describe("resetPasswordRateLimiter", () => {
+  const app = makeApp(resetPasswordRateLimiter as AnyLimiter)
 
-    it("allows request exactly at the limit (30th request)", async () => {
-      mockCount(30)
-      const res = await post(app)
-      expect(res.status).toBe(200)
-    })
+  beforeEach(() => vi.clearAllMocks())
 
-    it("returns 429 when limit is exceeded (31st request)", async () => {
-      mockCount(31, 300)
-      const res  = await post(app)
-      const body = await res.json()
-      expect(res.status).toBe(429)
-      expect(body.code).toBe("RATE_LIMITED")
-      expect(res.headers.get("Retry-After")).toBe("300")
-    })
+  it("allows request when under limit", async () => {
+    mockAllowed()
+    const res = await post(app)
+    expect(res.status).toBe(200)
   })
 
-  // ── Fail-closed behaviour (shared across all limiters) ───────────────────
-  //
-  // Auth endpoints are high-value brute-force targets.  When Redis is
-  // unreachable the rate limiter MUST block — not silently allow — so an
-  // outage cannot be exploited to bypass brute-force protection.
+  it("returns 429 when blocked", async () => {
+    mockBlocked(120_000)
+    const res  = await post(app)
+    const body = await res.json()
+    expect(res.status).toBe(429)
+    expect(body.code).toBe("RATE_LIMITED")
+    expect(res.headers.get("Retry-After")).toBe("120")
+  })
+})
 
-  describe("fail-closed when Redis is unavailable", () => {
-    const app = makeApp(changePasswordRateLimiter as any)
+// ── refreshRateLimiter (30 req / 15 min) ────────────────────────────────────
 
-    it("returns 503 when Redis throws", async () => {
-      vi.mocked(redis.incr).mockRejectedValue(new Error("connection refused"))
-      const res  = await post(app)
-      const body = await res.json()
-      expect(res.status).toBe(503)
-      expect(body.code).toBe("SERVICE_UNAVAILABLE")
-    })
+describe("refreshRateLimiter", () => {
+  const app = makeApp(refreshRateLimiter as AnyLimiter)
 
-    it("sets Retry-After to the window duration on Redis failure", async () => {
-      vi.mocked(redis.incr).mockRejectedValue(new Error("ECONNREFUSED"))
-      const res = await post(app)
-      // changePasswordRateLimiter window = 15 min = 900 s
-      expect(res.headers.get("Retry-After")).toBe("900")
-    })
+  beforeEach(() => vi.clearAllMocks())
 
-    it("returns 503 for loginRateLimiter when Redis throws", async () => {
-      const loginApp = makeApp(loginRateLimiter as any)
-      vi.mocked(redis.incr).mockRejectedValue(new Error("timeout"))
-      const res = await post(loginApp)
-      expect(res.status).toBe(503)
-    })
+  it("allows request when under limit", async () => {
+    mockAllowed()
+    const res = await post(app)
+    expect(res.status).toBe(200)
   })
 
-  // ── IP isolation: different IPs have separate buckets ─────────────────────
+  it("returns 429 with correct Retry-After when blocked", async () => {
+    mockBlocked(300_000)
+    const res  = await post(app)
+    const body = await res.json()
+    expect(res.status).toBe(429)
+    expect(body.code).toBe("RATE_LIMITED")
+    expect(res.headers.get("Retry-After")).toBe("300")
+  })
+})
 
-  describe("IP bucket isolation", () => {
-    const app = makeApp(changePasswordRateLimiter as any)
+// ── loginRateLimiter (10 req / 15 min) ──────────────────────────────────────
 
-    it("uses x-real-ip as the rate-limit key", async () => {
-      mockCount(6)
-      await post(app, "10.0.0.1")
-      expect(redis.incr).toHaveBeenCalledWith(
-        expect.stringContaining("10.0.0.1")
-      )
-    })
+describe("loginRateLimiter", () => {
+  const app = makeApp(loginRateLimiter as AnyLimiter)
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it("allows request when under limit", async () => {
+    mockAllowed()
+    const res = await post(app)
+    expect(res.status).toBe(200)
+  })
+
+  it("returns 429 when blocked", async () => {
+    mockBlocked(900_000)
+    const res = await post(app)
+    expect(res.status).toBe(429)
+  })
+})
+
+// ── Fail-closed when Redis is unavailable ────────────────────────────────────
+//
+// Auth endpoints are high-value brute-force targets. When Redis is unreachable
+// the rate limiter MUST block (503), not silently allow. An outage that silently
+// disables rate limiting would allow unlimited brute-force during the window.
+
+describe("fail-closed when Redis is unavailable", () => {
+  const app = makeApp(changePasswordRateLimiter as AnyLimiter)
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it("returns 503 when redis.eval throws", async () => {
+    mockRedisDown("connection refused")
+    const res  = await post(app)
+    const body = await res.json()
+    expect(res.status).toBe(503)
+    expect(body.code).toBe("SERVICE_UNAVAILABLE")
+  })
+
+  it("sets Retry-After to the window duration on Redis failure", async () => {
+    mockRedisDown("ECONNREFUSED")
+    const res = await post(app)
+    // changePasswordRateLimiter window = 15 min = 900 s
+    expect(res.headers.get("Retry-After")).toBe("900")
+  })
+
+  it("returns 503 for loginRateLimiter when Redis throws", async () => {
+    const loginApp = makeApp(loginRateLimiter as AnyLimiter)
+    mockRedisDown("timeout")
+    const res = await post(loginApp)
+    expect(res.status).toBe(503)
+  })
+
+  it("returns 503 for forgotPasswordRateLimiter when Redis throws", async () => {
+    const fpApp = makeApp(forgotPasswordRateLimiter as AnyLimiter)
+    mockRedisDown()
+    const res = await post(fpApp)
+    expect(res.status).toBe(503)
+  })
+})
+
+// ── IP bucket isolation ──────────────────────────────────────────────────────
+//
+// Each (label, IP) pair must use a distinct Redis key so that traffic from
+// different IPs does not share the same rate-limit window.
+
+describe("IP bucket isolation", () => {
+  const app = makeApp(changePasswordRateLimiter as AnyLimiter)
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it("uses x-real-ip as part of the Redis key", async () => {
+    mockAllowed()
+    await post(app, "10.0.0.1")
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.any(String),          // Lua script
+      1,                           // number of KEYS
+      expect.stringContaining("10.0.0.1"),  // KEYS[1] contains the IP
+      expect.any(String),          // ARGV[1] now
+      expect.any(String),          // ARGV[2] window_start
+      expect.any(String),          // ARGV[3] max_requests
+      expect.any(String),          // ARGV[4] ttl_sec
+      expect.any(String),          // ARGV[5] member (crypto.randomUUID())
+    )
+  })
+
+  it("uses different Redis keys for different IPs", async () => {
+    mockAllowed()
+    await post(app, "10.0.0.1")
+    const firstKey = vi.mocked(redis.eval).mock.calls[0]?.[2] as string
+
+    vi.clearAllMocks()
+    mockAllowed()
+    await post(app, "10.0.0.2")
+    const secondKey = vi.mocked(redis.eval).mock.calls[0]?.[2] as string
+
+    expect(firstKey).not.toBe(secondKey)
+    expect(firstKey).toContain("10.0.0.1")
+    expect(secondKey).toContain("10.0.0.2")
+  })
+})
+
+// ── registerRateLimiter (5 req / 60 min) ────────────────────────────────────
+
+describe("registerRateLimiter", () => {
+  const app = makeApp(registerRateLimiter as AnyLimiter)
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it("allows request when under limit", async () => {
+    mockAllowed()
+    const res = await post(app)
+    expect(res.status).toBe(200)
+  })
+
+  it("returns 429 when blocked", async () => {
+    mockBlocked(3600_000)
+    const res  = await post(app)
+    const body = await res.json()
+    expect(res.status).toBe(429)
+    expect(body.code).toBe("RATE_LIMITED")
   })
 })

@@ -8,14 +8,16 @@ const mockFindAll          = vi.fn()
 const mockFindById         = vi.fn()
 const mockUpdateRole       = vi.fn()
 const mockDeleteById       = vi.fn()
+const mockSoftDeleteById   = vi.fn()
 const mockDeleteAllSessions = vi.fn()
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: {
-    findAll:    (...a: unknown[]) => mockFindAll(...a),
-    findById:   (...a: unknown[]) => mockFindById(...a),
-    updateRole: (...a: unknown[]) => mockUpdateRole(...a),
-    deleteById: (...a: unknown[]) => mockDeleteById(...a),
+    findAll:        (...a: unknown[]) => mockFindAll(...a),
+    findById:       (...a: unknown[]) => mockFindById(...a),
+    updateRole:     (...a: unknown[]) => mockUpdateRole(...a),
+    deleteById:     (...a: unknown[]) => mockDeleteById(...a),
+    softDeleteById: (...a: unknown[]) => mockSoftDeleteById(...a),   // handler uses soft-delete
   },
 }))
 
@@ -56,6 +58,7 @@ beforeEach(() => {
   mockFindById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
   mockUpdateRole.mockReturnValue(Effect.succeed({ ...MOCK_ADMIN, role: "CUSTOMER" }))
   mockDeleteById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
+  mockSoftDeleteById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
   mockDeleteAllSessions.mockReturnValue(Effect.succeed(undefined))
 })
 
@@ -260,10 +263,10 @@ describe("adminDeleteUserHandler — OWNER protection", () => {
     expect(res.code).toBe("OWNER_PROTECTED")
   })
 
-  it("does not call deleteById when target is an OWNER", async () => {
+  it("does not call softDeleteById when target is an OWNER", async () => {
     mockFindById.mockReturnValue(Effect.succeed({ ...MOCK_OWNER, id: "other-owner-id" }))
     await adminDeleteUserHandler(makeCtx({}, {}, {}, { id: "other-owner-id" }) as any)
-    expect(mockDeleteById).not.toHaveBeenCalled()
+    expect(mockSoftDeleteById).not.toHaveBeenCalled()
   })
 })
 
@@ -271,7 +274,7 @@ describe("adminDeleteUserHandler — cascade session invalidation", () => {
   it("deletes all sessions before the user row", async () => {
     const order: string[] = []
     mockDeleteAllSessions.mockImplementation(() => { order.push("sessions"); return Effect.succeed(undefined) })
-    mockDeleteById.mockImplementation(() => { order.push("user"); return Effect.succeed(MOCK_ADMIN) })
+    mockSoftDeleteById.mockImplementation(() => { order.push("user"); return Effect.succeed(MOCK_ADMIN) })
 
     await adminDeleteUserHandler(makeCtx({}, {}, {}, { id: MOCK_ADMIN.id }) as any)
 
@@ -283,7 +286,7 @@ describe("adminDeleteUserHandler — cascade session invalidation", () => {
     const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
     const res = await adminDeleteUserHandler(ctx as any) as any
     expect(ctx.set.status).toBe(500)
-    expect(mockDeleteById).not.toHaveBeenCalled()
+    expect(mockSoftDeleteById).not.toHaveBeenCalled()
   })
 
   it("calls deleteAllByUserId with the correct targetId", async () => {
@@ -320,15 +323,15 @@ describe("adminDeleteUserHandler — response shape", () => {
 })
 
 describe("adminDeleteUserHandler — DB failure", () => {
-  it("returns 500 when deleteById fails", async () => {
-    mockDeleteById.mockReturnValue(Effect.fail(new Error("db down")))
+  it("returns 500 when softDeleteById fails", async () => {
+    mockSoftDeleteById.mockReturnValue(Effect.fail(new Error("db down")))
     const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
     const res = await adminDeleteUserHandler(ctx as any) as any
     expect(ctx.set.status).toBe(500)
   })
 
   it("does not expose internal error details", async () => {
-    mockDeleteById.mockReturnValue(Effect.fail(new Error("foreign key violation on orders table")))
+    mockSoftDeleteById.mockReturnValue(Effect.fail(new Error("foreign key violation on orders table")))
     const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
     const res = await adminDeleteUserHandler(ctx as any) as any
     expect(JSON.stringify(res)).not.toContain("foreign key")

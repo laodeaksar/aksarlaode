@@ -1,6 +1,6 @@
 import { t }              from "elysia"
 import { FormatRegistry } from "@sinclair/typebox"
-import { isAllowedAvatarUrl } from "@/lib/avatar"
+import { isAllowedAvatarUrl, ALLOWED_AVATAR_HOSTS } from "@/lib/avatar"
 
 // Register a custom TypeBox format that mirrors the Zod isAllowedAvatarUrl
 // rules: HTTPS only, domain allowlist, no raw IPs, no internal hostnames.
@@ -22,7 +22,13 @@ export const RegisterBody = t.Object({
 export const UpdateProfileBody = t.Object({
   name:      t.Optional(t.String({ minLength: 2, maxLength: 100 })),
   phone:     t.Optional(t.String({ minLength: 7, maxLength: 20 })),
-  avatarUrl: t.Optional(t.String({ format: "avatar-url", maxLength: 500 })),
+  avatarUrl: t.Optional(t.String({
+    format:      "avatar-url",
+    maxLength:   500,
+    description: `HTTPS URL pointing to the user's avatar image. ` +
+                 `Must come from an allowed host: ${ALLOWED_AVATAR_HOSTS}. ` +
+                 `Raw IP addresses, localhost, and cloud metadata endpoints are always rejected.`,
+  })),
 })
 
 export const ChangePasswordBody = t.Object({

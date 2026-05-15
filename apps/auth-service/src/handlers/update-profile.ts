@@ -1,7 +1,8 @@
-import { Effect }           from "effect"
-import { userRepository }  from "@/repository/user.repository"
+import { Effect }                from "effect"
+import { userRepository }       from "@/repository/user.repository"
+import { isAllowedAvatarUrl, ALLOWED_AVATAR_HOSTS } from "@/lib/avatar"
 import { AuthError, ValidationError, NotFoundError, toErrorResponse } from "@repo/common/errors"
-import { ok }              from "@repo/common/response"
+import { ok }                   from "@repo/common/response"
 
 export const updateProfileHandler = async ({
   body,
@@ -21,7 +22,24 @@ export const updateProfileHandler = async ({
   }
 
   if (!body.name && !body.phone && !body.avatarUrl) {
-    const { body: errBody, status } = toErrorResponse(new ValidationError("At least one field must be provided"))
+    const { body: errBody, status } = toErrorResponse(
+      new ValidationError("At least one field must be provided")
+    )
+    set.status = status
+    return errBody
+  }
+
+  // ── avatarUrl domain allowlist ─────────────────────────────────────────────
+  // Reject URLs pointing at arbitrary hosts to prevent SSRF and open-redirect
+  // attacks through the avatar field.  Only HTTPS URLs whose hostname belongs
+  // to a known-safe CDN or the application's own origin are accepted.
+  if (body.avatarUrl !== undefined && !isAllowedAvatarUrl(body.avatarUrl)) {
+    const { body: errBody, status } = toErrorResponse(
+      new ValidationError(
+        `avatarUrl must be an HTTPS URL from an allowed domain. ` +
+        `Allowed: ${ALLOWED_AVATAR_HOSTS}`
+      )
+    )
     set.status = status
     return errBody
   }

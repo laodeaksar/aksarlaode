@@ -5,7 +5,7 @@ import { MOCK_USER, MOCK_SESSION } from "../fixtures"
 import { SessionQuery } from "@/schemas"
 
 vi.mock("@/repository/session.repository", () => ({
-  sessionRepository: { findAllByUserId: vi.fn() },
+  sessionRepository: { findPageByUserId: vi.fn() },
 }))
 
 import { sessionRepository }  from "@/repository/session.repository"
@@ -22,8 +22,8 @@ function get(userId?: string, query = "") {
 describe("listSessionsHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(sessionRepository.findAllByUserId).mockReturnValue(
-      Effect.succeed([MOCK_SESSION])
+    vi.mocked(sessionRepository.findPageByUserId).mockReturnValue(
+      Effect.succeed({ items: [MOCK_SESSION], total: 1 })
     )
   })
 
@@ -47,13 +47,26 @@ describe("listSessionsHandler", () => {
     expect(res.status).toBe(401)
   })
 
+  it("passes correct limit and offset to the repository", async () => {
+    vi.mocked(sessionRepository.findPageByUserId).mockReturnValue(
+      Effect.succeed({ items: [], total: 25 })
+    )
+
+    await get(MOCK_USER.id, "?page=2&limit=10")
+
+    expect(sessionRepository.findPageByUserId).toHaveBeenCalledWith(
+      MOCK_USER.id,
+      { limit: 10, offset: 10 },
+    )
+  })
+
   it("supports pagination via query params", async () => {
-    const sessions = Array.from({ length: 25 }, (_, i) => ({
+    const items = Array.from({ length: 10 }, (_, i) => ({
       ...MOCK_SESSION,
       id: `session-${i}`,
     }))
-    vi.mocked(sessionRepository.findAllByUserId).mockReturnValue(
-      Effect.succeed(sessions)
+    vi.mocked(sessionRepository.findPageByUserId).mockReturnValue(
+      Effect.succeed({ items, total: 25 })
     )
 
     const res  = await get(MOCK_USER.id, "?page=2&limit=10")

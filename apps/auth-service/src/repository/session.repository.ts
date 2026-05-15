@@ -1,6 +1,6 @@
 import { Effect, Data } from "effect"
 import { db, schema }   from "@repo/database"
-import { eq, and }      from "drizzle-orm"
+import { eq, and, sql } from "drizzle-orm"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -35,11 +35,29 @@ const deleteAllByUserId = (userId: string) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
-const findAllByUserId = (userId: string) =>
+const findPageByUserId = (
+  userId: string,
+  opts: { limit: number; offset: number },
+) =>
   Effect.tryPromise({
-    try:   () => db.select().from(schema.sessions)
-                   .where(eq(schema.sessions.userId, userId))
-                   .orderBy(schema.sessions.createdAt),
+    try: async () => {
+      const [items, [countRow]] = await Promise.all([
+        db.select({
+            id:        schema.sessions.id,
+            createdAt: schema.sessions.createdAt,
+            expiresAt: schema.sessions.expiresAt,
+          })
+          .from(schema.sessions)
+          .where(eq(schema.sessions.userId, userId))
+          .orderBy(schema.sessions.createdAt)
+          .limit(opts.limit)
+          .offset(opts.offset),
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(schema.sessions)
+          .where(eq(schema.sessions.userId, userId)),
+      ])
+      return { items, total: countRow?.count ?? 0 }
+    },
     catch: (e) => new DbError({ cause: e }),
   })
 
@@ -62,7 +80,7 @@ const deleteByIdAndUserId = (id: string, userId: string) =>
 export const sessionRepository = {
   create,
   findByToken,
-  findAllByUserId,
+  findPageByUserId,
   findByIdAndUserId,
   deleteByToken,
   deleteByIdAndUserId,

@@ -20,11 +20,12 @@ export const listSessionsHandler = async ({
     return body
   }
 
-  const page  = Math.max(1, query.page  ?? 1)
-  const limit = Math.min(50, Math.max(1, query.limit ?? 20))
+  const page   = Math.max(1, query.page  ?? 1)
+  const limit  = Math.min(50, Math.max(1, query.limit ?? 20))
+  const offset = (page - 1) * limit
 
   const result = await Effect.runPromiseExit(
-    sessionRepository.findAllByUserId(userId)
+    sessionRepository.findPageByUserId(userId, { limit, offset })
   )
 
   if (result._tag === "Failure") {
@@ -33,14 +34,7 @@ export const listSessionsHandler = async ({
     return body
   }
 
-  const all = result.value.map(s => ({
-    id:        s.id,
-    createdAt: s.createdAt,
-    expiresAt: s.expiresAt,
-  }))
+  const { items, total } = result.value
 
-  const total = all.length
-  const slice = all.slice((page - 1) * limit, page * limit)
-
-  return paginated(slice, { page, limit, total })
+  return paginated(items, { page, limit, total })
 }

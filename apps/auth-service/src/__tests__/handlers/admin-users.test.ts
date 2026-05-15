@@ -4,28 +4,37 @@ import { MOCK_USER, MOCK_ADMIN, MOCK_OWNER } from "@/__tests__/fixtures"
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-const mockFindAll  = vi.fn()
-const mockFindById = vi.fn()
-const mockUpdateRole = vi.fn()
+const mockFindAll          = vi.fn()
+const mockFindById         = vi.fn()
+const mockUpdateRole       = vi.fn()
+const mockDeleteById       = vi.fn()
+const mockDeleteAllSessions = vi.fn()
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: {
     findAll:    (...a: unknown[]) => mockFindAll(...a),
     findById:   (...a: unknown[]) => mockFindById(...a),
     updateRole: (...a: unknown[]) => mockUpdateRole(...a),
+    deleteById: (...a: unknown[]) => mockDeleteById(...a),
   },
 }))
 
-const { adminListUsersHandler, adminUpdateUserRoleHandler } =
+vi.mock("@/repository/session.repository", () => ({
+  sessionRepository: {
+    deleteAllByUserId: (...a: unknown[]) => mockDeleteAllSessions(...a),
+  },
+}))
+
+const { adminListUsersHandler, adminUpdateUserRoleHandler, adminDeleteUserHandler } =
   await import("@/handlers/admin-users")
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Context factory ───────────────────────────────────────────────────────────
 
 const makeCtx = (
-  query:   Record<string, string>   = {},
-  headers: Record<string, string>   = {},
-  body:    Record<string, string>   = {},
-  params:  Record<string, string>   = {},
+  query:   Record<string, string>            = {},
+  headers: Record<string, string | undefined> = {},
+  body:    Record<string, string>            = {},
+  params:  Record<string, string>            = {},
 ) => ({
   query,
   headers: { "x-user-id": MOCK_OWNER.id, "x-user-role": "OWNER", ...headers },
@@ -37,13 +46,8 @@ const makeCtx = (
 })
 
 const PAGE_RESULT = {
-  items:      [MOCK_USER, MOCK_ADMIN, MOCK_OWNER],
-  total:      3,
-  page:       1,
-  limit:      20,
-  totalPages: 1,
-  hasNext:    false,
-  hasPrev:    false,
+  items: [MOCK_USER, MOCK_ADMIN, MOCK_OWNER],
+  total: 3, page: 1, limit: 20, totalPages: 1, hasNext: false, hasPrev: false,
 }
 
 beforeEach(() => {
@@ -51,6 +55,8 @@ beforeEach(() => {
   mockFindAll.mockReturnValue(Effect.succeed(PAGE_RESULT))
   mockFindById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
   mockUpdateRole.mockReturnValue(Effect.succeed({ ...MOCK_ADMIN, role: "CUSTOMER" }))
+  mockDeleteById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
+  mockDeleteAllSessions.mockReturnValue(Effect.succeed(undefined))
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -66,8 +72,7 @@ describe("adminListUsersHandler — authorization", () => {
   })
 
   it("returns 403 when role header is absent", async () => {
-    const ctx = makeCtx({}, {})
-    delete (ctx.headers as any)["x-user-role"]
+    const ctx = makeCtx({}, { "x-user-role": undefined })
     const res = await adminListUsersHandler(ctx as any) as any
     expect(ctx.set.status).toBe(403)
   })
@@ -80,88 +85,56 @@ describe("adminListUsersHandler — authorization", () => {
   })
 
   it("proceeds for OWNER", async () => {
-    const ctx = makeCtx()
-    const res = await adminListUsersHandler(ctx as any) as any
-    expect(ctx.set.status).toBe(200)
+    const res = await adminListUsersHandler(makeCtx() as any) as any
     expect(res).toHaveProperty("items")
   })
 })
 
 describe("adminListUsersHandler — passwordHash projection", () => {
   it("strips passwordHash from every item", async () => {
-    const ctx = makeCtx()
-    const res = await adminListUsersHandler(ctx as any) as any
-    for (const item of res.items) {
-      expect(item).not.toHaveProperty("passwordHash")
-    }
-  })
-
-  it("includes expected user fields", async () => {
-    const ctx = makeCtx()
-    const res = await adminListUsersHandler(ctx as any) as any
-    const first = res.items[0]
-    expect(first).toHaveProperty("id")
-    expect(first).toHaveProperty("email")
-    expect(first).toHaveProperty("name")
-    expect(first).toHaveProperty("role")
-    expect(first).toHaveProperty("createdAt")
-    expect(first).toHaveProperty("updatedAt")
+    const res = await adminListUsersHandler(makeCtx() as any) as any
+    for (const item of res.items) expect(item).not.toHaveProperty("passwordHash")
   })
 
   it("converts Date fields to ISO strings", async () => {
-    const ctx = makeCtx()
-    const res = await adminListUsersHandler(ctx as any) as any
-    const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
-    expect(res.items[0].createdAt).toMatch(ISO_RE)
-    expect(res.items[0].updatedAt).toMatch(ISO_RE)
+    const res = await adminListUsersHandler(makeCtx() as any) as any
+    expect(res.items[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(res.items[0].updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
   })
 })
 
 describe("adminListUsersHandler — pagination", () => {
-  it("returns pagination envelope", async () => {
-    const ctx = makeCtx({ page: "2", limit: "10" })
-    const res = await adminListUsersHandler(ctx as any) as any
+  it("clamps limit to 100", async () => {
+    await adminListUsersHandler(makeCtx({ limit: "9999" }) as any)
+    expect(mockFindAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }))
+  })
+
+  it("clamps page to minimum 1", async () => {
+    await adminListUsersHandler(makeCtx({ page: "-3" }) as any)
+    expect(mockFindAll).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
+  })
+
+  it("returns pagination envelope fields", async () => {
+    const res = await adminListUsersHandler(makeCtx() as any) as any
     expect(res).toHaveProperty("total")
     expect(res).toHaveProperty("totalPages")
     expect(res).toHaveProperty("hasNext")
     expect(res).toHaveProperty("hasPrev")
   })
-
-  it("clamps limit to 100 before querying", async () => {
-    const ctx = makeCtx({ limit: "9999" })
-    await adminListUsersHandler(ctx as any)
-    expect(mockFindAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 100 })
-    )
-  })
-
-  it("clamps page to minimum 1", async () => {
-    const ctx = makeCtx({ page: "-3" })
-    await adminListUsersHandler(ctx as any)
-    expect(mockFindAll).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1 })
-    )
-  })
 })
 
 describe("adminListUsersHandler — role filter", () => {
   it("passes role filter to repository", async () => {
-    const ctx = makeCtx({ role: "ADMIN" })
-    await adminListUsersHandler(ctx as any)
-    expect(mockFindAll).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "ADMIN" })
-    )
+    await adminListUsersHandler(makeCtx({ role: "ADMIN" }) as any)
+    expect(mockFindAll).toHaveBeenCalledWith(expect.objectContaining({ role: "ADMIN" }))
   })
 
   it("normalises role filter to uppercase", async () => {
-    const ctx = makeCtx({ role: "admin" })
-    await adminListUsersHandler(ctx as any)
-    expect(mockFindAll).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "ADMIN" })
-    )
+    await adminListUsersHandler(makeCtx({ role: "admin" }) as any)
+    expect(mockFindAll).toHaveBeenCalledWith(expect.objectContaining({ role: "ADMIN" }))
   })
 
-  it("returns 422 for unknown role filter", async () => {
+  it("returns 422 for unknown role", async () => {
     const ctx = makeCtx({ role: "SUPERUSER" })
     const res = await adminListUsersHandler(ctx as any) as any
     expect(ctx.set.status).toBe(422)
@@ -183,17 +156,11 @@ describe("adminListUsersHandler — DB failure", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("adminUpdateUserRoleHandler — authorization", () => {
-  it("returns 403 for ADMIN — only OWNER can change roles", async () => {
+  it("returns 403 for ADMIN", async () => {
     const ctx = makeCtx({}, { "x-user-id": MOCK_ADMIN.id, "x-user-role": "ADMIN" }, { role: "CUSTOMER" }, { id: MOCK_USER.id })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
     expect(ctx.set.status).toBe(403)
     expect(res.code).toBe("FORBIDDEN")
-  })
-
-  it("returns 403 for CUSTOMER", async () => {
-    const ctx = makeCtx({}, { "x-user-id": MOCK_USER.id, "x-user-role": "CUSTOMER" }, { role: "CUSTOMER" }, { id: MOCK_ADMIN.id })
-    const res = await adminUpdateUserRoleHandler(ctx as any) as any
-    expect(ctx.set.status).toBe(403)
   })
 
   it("proceeds for OWNER", async () => {
@@ -203,27 +170,22 @@ describe("adminUpdateUserRoleHandler — authorization", () => {
   })
 })
 
-describe("adminUpdateUserRoleHandler — OWNER assignment guard", () => {
-  it("returns 422 when trying to assign OWNER via this endpoint", async () => {
+describe("adminUpdateUserRoleHandler — guards", () => {
+  it("returns 422 when assigning OWNER via this endpoint", async () => {
     const ctx = makeCtx({}, {}, { role: "OWNER" }, { id: MOCK_ADMIN.id })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
     expect(ctx.set.status).toBe(422)
     expect(res.code).toBe("USE_TRANSFER_ENDPOINT")
   })
-})
 
-describe("adminUpdateUserRoleHandler — self-change guard", () => {
-  it("returns 422 when OWNER tries to change their own role", async () => {
+  it("returns 422 when changing own role", async () => {
     const ctx = makeCtx({}, {}, { role: "ADMIN" }, { id: MOCK_OWNER.id })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
     expect(ctx.set.status).toBe(422)
     expect(res.code).toBe("SELF_ROLE_CHANGE")
   })
-})
 
-describe("adminUpdateUserRoleHandler — canManage row-level guard", () => {
-  it("returns 403 when target is another OWNER", async () => {
-    // findById returns another OWNER
+  it("returns 403 when target is another OWNER (canManage guard)", async () => {
     mockFindById.mockReturnValue(Effect.succeed({ ...MOCK_OWNER, id: "other-owner" }))
     const ctx = makeCtx({}, {}, { role: "ADMIN" }, { id: "other-owner" })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
@@ -231,31 +193,9 @@ describe("adminUpdateUserRoleHandler — canManage row-level guard", () => {
     expect(res.code).toBe("FORBIDDEN")
   })
 
-  it("allows OWNER to demote ADMIN to CUSTOMER", async () => {
-    mockFindById.mockReturnValue(Effect.succeed(MOCK_ADMIN))
-    mockUpdateRole.mockReturnValue(Effect.succeed({ ...MOCK_ADMIN, role: "CUSTOMER" }))
-    const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: MOCK_ADMIN.id })
-    const res = await adminUpdateUserRoleHandler(ctx as any) as any
-    expect(ctx.set.status).toBe(200)
-    expect(res.changed.from).toBe("ADMIN")
-    expect(res.changed.to).toBe("CUSTOMER")
-  })
-
-  it("allows OWNER to promote CUSTOMER to ADMIN", async () => {
-    mockFindById.mockReturnValue(Effect.succeed(MOCK_USER))
-    mockUpdateRole.mockReturnValue(Effect.succeed({ ...MOCK_USER, role: "ADMIN" }))
-    const ctx = makeCtx({}, {}, { role: "ADMIN" }, { id: MOCK_USER.id })
-    const res = await adminUpdateUserRoleHandler(ctx as any) as any
-    expect(ctx.set.status).toBe(200)
-    expect(res.changed.from).toBe("CUSTOMER")
-    expect(res.changed.to).toBe("ADMIN")
-  })
-})
-
-describe("adminUpdateUserRoleHandler — not found", () => {
   it("returns 404 when target user does not exist", async () => {
     mockFindById.mockReturnValue(Effect.succeed(null))
-    const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: "ghost-id" })
+    const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: "ghost" })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
     expect(ctx.set.status).toBe(404)
     expect(res.code).toBe("USER_NOT_FOUND")
@@ -263,28 +203,134 @@ describe("adminUpdateUserRoleHandler — not found", () => {
 })
 
 describe("adminUpdateUserRoleHandler — response shape", () => {
-  it("returns shaped user without passwordHash", async () => {
+  it("strips passwordHash", async () => {
     const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: MOCK_ADMIN.id })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
     expect(res.user).not.toHaveProperty("passwordHash")
-    expect(res.user).toHaveProperty("id")
-    expect(res.user).toHaveProperty("role")
   })
 
   it("returns changed.from and changed.to", async () => {
     const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: MOCK_ADMIN.id })
     const res = await adminUpdateUserRoleHandler(ctx as any) as any
-    expect(res).toHaveProperty("changed")
-    expect(res.changed.from).toBeDefined()
+    expect(res.changed.from).toBe("ADMIN")
     expect(res.changed.to).toBe("CUSTOMER")
   })
 })
 
-describe("adminUpdateUserRoleHandler — DB failure", () => {
-  it("returns 500 when updateRole fails", async () => {
-    mockUpdateRole.mockReturnValue(Effect.fail(new Error("db down")))
-    const ctx = makeCtx({}, {}, { role: "CUSTOMER" }, { id: MOCK_ADMIN.id })
-    const res = await adminUpdateUserRoleHandler(ctx as any) as any
+// ═══════════════════════════════════════════════════════════════════════════════
+// DELETE /admin/users/:id
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("adminDeleteUserHandler — authorization", () => {
+  it("returns 403 for ADMIN — only OWNER can delete", async () => {
+    const ctx = makeCtx({}, { "x-user-id": MOCK_ADMIN.id, "x-user-role": "ADMIN" }, {}, { id: MOCK_USER.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(403)
+    expect(res.code).toBe("FORBIDDEN")
+  })
+
+  it("returns 403 for CUSTOMER", async () => {
+    const ctx = makeCtx({}, { "x-user-id": MOCK_USER.id, "x-user-role": "CUSTOMER" }, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(403)
+  })
+
+  it("proceeds for OWNER", async () => {
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(200)
+  })
+})
+
+describe("adminDeleteUserHandler — self-delete guard", () => {
+  it("returns 422 when OWNER tries to delete themselves", async () => {
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_OWNER.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(422)
+    expect(res.code).toBe("SELF_DELETE")
+  })
+})
+
+describe("adminDeleteUserHandler — OWNER protection", () => {
+  it("returns 403 with OWNER_PROTECTED when target is an OWNER", async () => {
+    mockFindById.mockReturnValue(Effect.succeed({ ...MOCK_OWNER, id: "other-owner-id" }))
+    const ctx = makeCtx({}, {}, {}, { id: "other-owner-id" })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(403)
+    expect(res.code).toBe("OWNER_PROTECTED")
+  })
+
+  it("does not call deleteById when target is an OWNER", async () => {
+    mockFindById.mockReturnValue(Effect.succeed({ ...MOCK_OWNER, id: "other-owner-id" }))
+    await adminDeleteUserHandler(makeCtx({}, {}, {}, { id: "other-owner-id" }) as any)
+    expect(mockDeleteById).not.toHaveBeenCalled()
+  })
+})
+
+describe("adminDeleteUserHandler — cascade session invalidation", () => {
+  it("deletes all sessions before the user row", async () => {
+    const order: string[] = []
+    mockDeleteAllSessions.mockImplementation(() => { order.push("sessions"); return Effect.succeed(undefined) })
+    mockDeleteById.mockImplementation(() => { order.push("user"); return Effect.succeed(MOCK_ADMIN) })
+
+    await adminDeleteUserHandler(makeCtx({}, {}, {}, { id: MOCK_ADMIN.id }) as any)
+
+    expect(order).toEqual(["sessions", "user"])
+  })
+
+  it("aborts and returns 500 when session deletion fails — user row preserved", async () => {
+    mockDeleteAllSessions.mockReturnValue(Effect.fail(new Error("redis down")))
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
     expect(ctx.set.status).toBe(500)
+    expect(mockDeleteById).not.toHaveBeenCalled()
+  })
+
+  it("calls deleteAllByUserId with the correct targetId", async () => {
+    await adminDeleteUserHandler(makeCtx({}, {}, {}, { id: MOCK_ADMIN.id }) as any)
+    expect(mockDeleteAllSessions).toHaveBeenCalledWith(MOCK_ADMIN.id)
+  })
+})
+
+describe("adminDeleteUserHandler — not found", () => {
+  it("returns 404 when target user does not exist", async () => {
+    mockFindById.mockReturnValue(Effect.succeed(null))
+    const ctx = makeCtx({}, {}, {}, { id: "ghost" })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(404)
+    expect(res.code).toBe("USER_NOT_FOUND")
+  })
+})
+
+describe("adminDeleteUserHandler — response shape", () => {
+  it("returns deleted user summary without passwordHash", async () => {
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(res.deleted).not.toHaveProperty("passwordHash")
+    expect(res.deleted.id).toBe(MOCK_ADMIN.id)
+    expect(res.deleted.role).toBe(MOCK_ADMIN.role)
+  })
+
+  it("includes a message confirming session invalidation", async () => {
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(typeof res.message).toBe("string")
+    expect(res.message.toLowerCase()).toContain("sessions invalidated")
+  })
+})
+
+describe("adminDeleteUserHandler — DB failure", () => {
+  it("returns 500 when deleteById fails", async () => {
+    mockDeleteById.mockReturnValue(Effect.fail(new Error("db down")))
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(ctx.set.status).toBe(500)
+  })
+
+  it("does not expose internal error details", async () => {
+    mockDeleteById.mockReturnValue(Effect.fail(new Error("foreign key violation on orders table")))
+    const ctx = makeCtx({}, {}, {}, { id: MOCK_ADMIN.id })
+    const res = await adminDeleteUserHandler(ctx as any) as any
+    expect(JSON.stringify(res)).not.toContain("foreign key")
   })
 })

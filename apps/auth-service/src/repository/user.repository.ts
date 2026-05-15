@@ -84,17 +84,25 @@ const update = (
     catch: (e) => new DbError({ cause: e }),
   })
 
-/**
- * Update a user's role.
- * Intentionally separate from `update` so role mutations are explicit
- * and auditable.
- */
+/** Role mutation — explicitly separate so mutations are auditable. */
 const updateRole = (id: string, role: UserRole) =>
   Effect.tryPromise({
     try:   () => db.update(schema.users)
                    .set({ role, updatedAt: new Date() })
                    .where(eq(schema.users.id, id))
                    .returning()
+                   .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+/**
+ * Hard-delete a user row.
+ * Callers are responsible for cascading session invalidation BEFORE
+ * calling this — see adminDeleteUserHandler.
+ */
+const deleteById = (id: string) =>
+  Effect.tryPromise({
+    try:   () => db.delete(schema.users).where(eq(schema.users.id, id)).returning()
                    .then(r => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
   })
@@ -137,5 +145,6 @@ export const userRepository = {
   update,
   updatePasswordHash,
   updateRole,
+  deleteById,
   transferOwnership,
 }

@@ -1,8 +1,9 @@
 /**
  * Admin user management handlers.
  *
- * GET  /admin/users            — paginated user list (minRole: ADMIN)
- * PATCH /admin/users/:id/role  — role mutation    (minRole: OWNER)
+ * GET    /admin/users            — paginated user list  (minRole: ADMIN)
+ * PATCH  /admin/users/:id/role   — role mutation        (minRole: OWNER)
+ * DELETE /admin/users/:id        — hard-delete + cascade (minRole: OWNER)
  *
  * passwordHash is stripped from every response — it never leaves this service.
  */
@@ -10,10 +11,11 @@ import { Effect }          from "effect"
 import type { HandlerCtx } from "@/types"
 import type { UserRole }   from "@/types"
 import { userRepository }  from "@/repository/user.repository"
+import { sessionRepository } from "@/repository/session.repository"
 import { canManage, isAtLeastAdmin, isAtLeastOwner } from "@/lib/role"
 import { writeAuditLog }   from "@/lib/audit-log"
 
-// ── Projection — passwordHash must never appear in API responses ──────────────
+// ── Projection ────────────────────────────────────────────────────────────────
 
 type RawUser = {
   id:           string
@@ -24,7 +26,7 @@ type RawUser = {
   phone:        string | null
   createdAt:    Date
   updatedAt:    Date
-  passwordHash: string   // present in DB row, stripped here
+  passwordHash: string
 }
 
 const shapeUser = (u: RawUser) => ({
@@ -38,7 +40,7 @@ const shapeUser = (u: RawUser) => ({
   updatedAt: u.updatedAt.toISOString(),
 })
 
-// ── GET /admin/users ─────────────────────────────────────────────────────────
+// ── GET /admin/users ──────────────────────────────────────────────────────────
 
 export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx) => {
   const actorRole = headers["x-user-role"] as UserRole | undefined
@@ -53,7 +55,6 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
   const page  = Math.max(1, Number(q.page  ?? 1))
   const limit = Math.min(100, Math.max(1, Number(q.limit ?? 20)))
 
-  // Validate optional role filter
   const VALID_ROLES = new Set<UserRole>(["CUSTOMER", "ADMIN", "OWNER"])
   const roleFilter  = q.role?.toUpperCase() as UserRole | undefined
 
@@ -92,14 +93,11 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
   const actorId           = headers["x-user-id"]
   const actorRole         = headers["x-user-role"] as UserRole | undefined
 
-  // ── Gate 1: caller must be OWNER ──────────────────────────────────────────
   if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
     set.status = 403
     return { error: "Forbidden — OWNER role required", code: "FORBIDDEN" }
   }
 
-  // ── Gate 2: OWNER cannot be assigned via this endpoint ───────────────────
-  // Use POST /auth/owner/transfer for ownership transfers.
   if (newRole === "OWNER") {
     set.status = 422
     return {
@@ -108,21 +106,15 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
     }
   }
 
-  // ── Gate 3: cannot mutate own role ───────────────────────────────────────
   if (actorId === targetId) {
     set.status = 422
     return { error: "Cannot change your own role", code: "SELF_ROLE_CHANGE" }
   }
 
   const program = Effect.gen(function* () {
-    // ── Gate 4: target must exist ──────────────────────────────────────────
     const target = yield* userRepository.findById(targetId)
     if (!target) return yield* Effect.fail({ _tag: "NotFoundError" as const })
 
-    // ── Gate 5: row-level canManage check ─────────────────────────────────
-    // Prevents OWNER from managing another OWNER (shouldn't happen since
-    // newRole === "OWNER" is blocked above, but this also protects against
-    // demoting an existing OWNER to ADMIN or CUSTOMER via this endpoint).
     if (!canManage(actorRole, target.role as UserRole)) {
       return yield* Effect.fail({ _tag: "ForbiddenError" as const })
     }
@@ -135,14 +127,8 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
 
   if (exit._tag === "Failure") {
     const err = exit.cause.error as { _tag: string }
-    if (err._tag === "NotFoundError") {
-      set.status = 404
-      return { error: "User not found", code: "USER_NOT_FOUND" }
-    }
-    if (err._tag === "ForbiddenError") {
-      set.status = 403
-      return { error: "Cannot manage a user with equal or higher role", code: "FORBIDDEN" }
-    }
+    if (err._tag === "NotFoundError")  { set.status = 404; return { error: "User not found",                             code: "USER_NOT_FOUND" } }
+    if (err._tag === "ForbiddenError") { set.status = 403; return { error: "Cannot manage a user with equal or higher role", code: "FORBIDDEN"    } }
     set.status = 500
     return { error: "Failed to update user role" }
   }
@@ -159,5 +145,82 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
   return {
     user:    shapeUser(updated as RawUser),
     changed: { from: target.role, to: newRole },
+  }
+}
+
+// ── DELETE /admin/users/:id ───────────────────────────────────────────────────
+
+export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCtx) => {
+  const { id: targetId } = params as { id: string }
+  const actorId          = headers["x-user-id"]
+  const actorRole        = headers["x-user-role"] as UserRole | undefined
+
+  // ── Gate 1: caller must be OWNER ──────────────────────────────────────────
+  if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
+    set.status = 403
+    return { error: "Forbidden — OWNER role required", code: "FORBIDDEN" }
+  }
+
+  // ── Gate 2: cannot delete yourself ────────────────────────────────────────
+  if (actorId === targetId) {
+    set.status = 422
+    return { error: "Cannot delete your own account", code: "SELF_DELETE" }
+  }
+
+  const program = Effect.gen(function* () {
+    // ── Gate 3: target must exist ──────────────────────────────────────────
+    const target = yield* userRepository.findById(targetId)
+    if (!target) return yield* Effect.fail({ _tag: "NotFoundError" as const })
+
+    // ── Gate 4: hard block on OWNER deletion ──────────────────────────────
+    // canManage() already returns false for OWNER targets, but an explicit
+    // check with a dedicated error code gives clearer feedback to API callers.
+    if (target.role === "OWNER") {
+      return yield* Effect.fail({ _tag: "OwnerProtectedError" as const })
+    }
+
+    // canManage covers remaining cases (e.g. ADMIN attempting via a future role)
+    if (!canManage(actorRole, target.role as UserRole)) {
+      return yield* Effect.fail({ _tag: "ForbiddenError" as const })
+    }
+
+    // ── Cascade: invalidate all sessions before deleting the user row ──────
+    // If session deletion fails, abort — it is safer to leave the user row
+    // intact than to orphan active sessions.
+    yield* sessionRepository.deleteAllByUserId(targetId)
+
+    // ── Hard-delete the user ───────────────────────────────────────────────
+    const deleted = yield* userRepository.deleteById(targetId)
+    return { target, deleted }
+  })
+
+  const exit = await Effect.runPromiseExit(program)
+
+  if (exit._tag === "Failure") {
+    const err = exit.cause.error as { _tag: string }
+    if (err._tag === "NotFoundError")       { set.status = 404; return { error: "User not found",                   code: "USER_NOT_FOUND"    } }
+    if (err._tag === "OwnerProtectedError") { set.status = 403; return { error: "OWNER accounts cannot be deleted", code: "OWNER_PROTECTED"   } }
+    if (err._tag === "ForbiddenError")      { set.status = 403; return { error: "Cannot delete a user with equal or higher role", code: "FORBIDDEN" } }
+    set.status = 500
+    return { error: "Failed to delete user" }
+  }
+
+  const { target } = exit.value
+
+  writeAuditLog({
+    event:    "ROLE_CHANGE",
+    actorId,
+    targetId,
+    meta: { action: "DELETE", deletedRole: target.role },
+  })
+
+  set.status = 200
+  return {
+    message: `User ${targetId} deleted and all sessions invalidated.`,
+    deleted: {
+      id:    target.id,
+      email: target.email,
+      role:  target.role,
+    },
   }
 }

@@ -44,8 +44,10 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   // ── Owner-exclusive routes ────────────────────────────────────────────────
   // Transfer ownership — only the current OWNER can initiate
   { pattern: /^\/auth\/owner\//,              method: "*",      minRole: "OWNER"    },
-  // Role mutation — more privileged than generic admin actions; must precede /admin catch-all
+  // Role mutation — must precede the /admin catch-all
   { pattern: /^\/admin\/users\/.+\/role$/,    method: "PATCH",  minRole: "OWNER"    },
+  // Hard-delete user (cascade-invalidates sessions) — must precede /admin catch-all
+  { pattern: /^\/admin\/users\/.+$/,          method: "DELETE", minRole: "OWNER"    },
 
   // ── Admin panel ───────────────────────────────────────────────────────────
   { pattern: /^\/admin/,                      method: "*",      minRole: "ADMIN"    },

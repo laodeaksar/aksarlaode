@@ -1,0 +1,75 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build outputs ──────────────────────────────────────────
+dist/
+build/
+.next/
+.astro/
+out/
+
+# ── Turbo ─────────────────────────────────────────────────
+.turbo/
+
+# ── Cloudflare Workers ────────────────────────────────────
+.wrangler/
+.dev.vars
+
+# ── Environment files ──────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+!.env.example
+
+# ── Database ───────────────────────────────────────────────
+# drizzle/migrations/*.sql
+*.sqlite
+*.sqlite-journal
+
+# ── Logs ──────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Testing ────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── TypeScript ─────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Docker ────────────────────────────────────────────────
+docker/postgres/data/
+docker/mongo/data/
+docker/redis/data/
+
+# ── Misc ──────────────────────────────────────────────────
+.cache/
+tmp/
+temp/

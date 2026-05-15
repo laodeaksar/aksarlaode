@@ -2,6 +2,7 @@ import { Effect }          from "effect"
 import type { Context }    from "elysia"
 import { env }             from "@repo/env/order"
 import { orderRepository } from "@/repository/order.repository"
+import { shapeOrder }      from "@/lib/shape-order"
 import type { UpdateStatusBody } from "@/types"
 
 export const updateStatusHandler = async ({ params, body, headers, set }: Context) => {
@@ -9,10 +10,10 @@ export const updateStatusHandler = async ({ params, body, headers, set }: Contex
   const { status, note } = body as UpdateStatusBody
 
   // ── Authorization — admin role OR trusted internal service only ──────────
-  const role            = headers["x-user-role"]
-  const serviceToken    = headers["x-service-token"]
-  const isAdmin         = role === "ADMIN"
-  const isInternalCall  = serviceToken === env.INTERNAL_SERVICE_TOKEN
+  const role           = headers["x-user-role"]
+  const serviceToken   = headers["x-service-token"]
+  const isAdmin        = role === "ADMIN"
+  const isInternalCall = serviceToken === env.INTERNAL_SERVICE_TOKEN
 
   if (!isAdmin && !isInternalCall) {
     set.status = 403
@@ -31,10 +32,13 @@ export const updateStatusHandler = async ({ params, body, headers, set }: Contex
 
   if (result._tag === "Failure") {
     const err = result.cause.error as { _tag: string }
-    if (err._tag === "OrderNotFoundError") { set.status = 404; return { error: "Order not found" } }
+    if (err._tag === "OrderNotFoundError") {
+      set.status = 404
+      return { error: "Order not found", code: "ORDER_NOT_FOUND" }
+    }
     set.status = 500
     return { error: "Failed to update status" }
   }
 
-  return result.value
+  return shapeOrder(result.value as Record<string, any>)
 }

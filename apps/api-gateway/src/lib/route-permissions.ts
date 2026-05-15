@@ -43,10 +43,12 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
 }> = [
   // ── Owner-exclusive routes ────────────────────────────────────────────────
   // Transfer ownership — only the current OWNER can initiate
-  { pattern: /^\/auth\/owner\//,        method: "*",      minRole: "OWNER"    },
+  { pattern: /^\/auth\/owner\//,              method: "*",      minRole: "OWNER"    },
+  // Role mutation — more privileged than generic admin actions; must precede /admin catch-all
+  { pattern: /^\/admin\/users\/.+\/role$/,    method: "PATCH",  minRole: "OWNER"    },
 
   // ── Admin panel ───────────────────────────────────────────────────────────
-  { pattern: /^\/admin/,                method: "*",      minRole: "ADMIN"    },
+  { pattern: /^\/admin/,                      method: "*",      minRole: "ADMIN"    },
 
   // ── Products — writes are admin-only, reads are public (handled above) ────
   { pattern: /^\/products/,             method: "POST",   minRole: "ADMIN"    },

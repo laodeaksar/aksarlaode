@@ -40,3 +40,19 @@ export const TransferOwnershipBody = t.Object({
   targetUserId:    t.String({ minLength: 1, description: "ID of the user who will become the new OWNER" }),
   currentPassword: t.String({ minLength: 1, description: "OWNER's current password — re-auth guard" }),
 })
+
+export const AdminUserQuery = t.Object({
+  page:  t.Optional(t.Numeric({ minimum: 1 })),
+  limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+  role:  t.Optional(t.Union([
+    t.Literal("CUSTOMER"),
+    t.Literal("ADMIN"),
+    t.Literal("OWNER"),
+  ], { description: "Filter by role" })),
+})
+
+export const UpdateUserRoleBody = t.Object({
+  role: t.Union([t.Literal("CUSTOMER"), t.Literal("ADMIN")], {
+    description: "Target role. OWNER cannot be assigned here — use POST /auth/owner/transfer.",
+  }),
+})

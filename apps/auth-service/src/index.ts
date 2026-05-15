@@ -3,6 +3,7 @@ import { cors }    from "@elysiajs/cors"
 import { env }     from "@repo/env/auth"
 import authRoutes    from "./routes/auth.routes"
 import sessionRoutes from "./routes/session.routes"
+import adminRoutes   from "./routes/admin.routes"
 import { serviceTokenMiddleware } from "./middleware/service-token"
 
 const PORT = parseInt(process.env["PORT"] ?? "3001", 10)
@@ -32,6 +33,7 @@ const app = new Elysia()
 
   .use(authRoutes)
   .use(sessionRoutes)
+  .use(adminRoutes)
 
   .onError(({ code, error, set }) => {
     console.error(JSON.stringify({

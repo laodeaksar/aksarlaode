@@ -1,7 +1,7 @@
-import { Effect, Data } from "effect"
-import { db, schema }   from "@repo/database"
-import { eq }           from "drizzle-orm"
-import type { UserRole } from "@/types"
+import { Effect, Data }      from "effect"
+import { db, schema }        from "@repo/database"
+import { eq, desc, sql }     from "drizzle-orm"
+import type { UserRole }     from "@/types"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -16,6 +16,39 @@ const findById = (id: string) =>
   Effect.tryPromise({
     try:   () => db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1)
                    .then(r => r[0] ?? null),
+    catch: (e) => new DbError({ cause: e }),
+  })
+
+const findAll = (opts: { page: number; limit: number; role?: UserRole }) =>
+  Effect.tryPromise({
+    try: async () => {
+      const offset    = (opts.page - 1) * opts.limit
+      const condition = opts.role ? eq(schema.users.role, opts.role) : undefined
+
+      const [items, [countRow]] = await Promise.all([
+        db.select().from(schema.users)
+          .where(condition)
+          .orderBy(desc(schema.users.createdAt))
+          .limit(opts.limit)
+          .offset(offset),
+        db.select({ count: sql<number>`count(*)::int` })
+          .from(schema.users)
+          .where(condition),
+      ])
+
+      const total      = countRow?.count ?? 0
+      const totalPages = Math.ceil(total / opts.limit)
+
+      return {
+        items,
+        total,
+        page:       opts.page,
+        limit:      opts.limit,
+        totalPages,
+        hasNext: opts.page < totalPages,
+        hasPrev: opts.page > 1,
+      }
+    },
     catch: (e) => new DbError({ cause: e }),
   })
 
@@ -53,10 +86,8 @@ const update = (
 
 /**
  * Update a user's role.
- *
  * Intentionally separate from `update` so role mutations are explicit
- * and auditable — callers must consciously call this function rather
- * than slipping a `role` field into a general-purpose update.
+ * and auditable.
  */
 const updateRole = (id: string, role: UserRole) =>
   Effect.tryPromise({
@@ -70,9 +101,7 @@ const updateRole = (id: string, role: UserRole) =>
 
 /**
  * Atomically swap ownership: `fromId` → ADMIN, `toId` → OWNER.
- *
- * Both updates run inside a single Drizzle transaction — there is
- * never a moment where zero or two users hold the OWNER role.
+ * Both updates run inside a single Drizzle transaction.
  */
 const transferOwnership = (fromId: string, toId: string) =>
   Effect.tryPromise({
@@ -103,6 +132,7 @@ const transferOwnership = (fromId: string, toId: string) =>
 export const userRepository = {
   findByEmail,
   findById,
+  findAll,
   create,
   update,
   updatePasswordHash,

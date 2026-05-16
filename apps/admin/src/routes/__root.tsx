@@ -46,7 +46,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     return { session }
   },
 
-  component: RootDocument,
+  shellComponent: RootDocument,
 })
 
 // ── Full HTML document (required for SSR hydration) ────────────────────────

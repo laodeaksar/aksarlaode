@@ -1,7 +1,9 @@
 import { defineConfig }   from "vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
-import react              from "@vitejs/plugin-react"
-import path               from "path"
+import viteReact from "@vitejs/plugin-react"
+import viteTsConfigPaths from "vite-tsconfig-paths"
+import tailwindcss from "@tailwindcss/vite"
+import { nitro } from "nitro/vite"
 
 // ── TanStack Start Vite config ─────────────────────────────────────────────
 // `tanstackStart` replaces `@vitejs/plugin-react` for SSR-aware bundling.
@@ -10,6 +12,12 @@ import path               from "path"
 
 export default defineConfig({
   plugins: [
+    nitro(),
+    viteTsConfigPaths({
+      projects: ["./tsconfig.json"],
+    }),
+    tailwindcss(),
+    viteReact(),
     tanstackStart({
       // Route generation config
       tsr: {
@@ -27,14 +35,7 @@ export default defineConfig({
         entry: "./app/client.tsx",
       },
     }),
-    // Keep react plugin for JSX transform in files not covered by tanstackStart
-    react(),
   ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
   server: {
     host:         "0.0.0.0",
     port:         4322,

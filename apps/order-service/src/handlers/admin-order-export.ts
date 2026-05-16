@@ -4,7 +4,10 @@ import { exportOrders }    from "@/repository/order.repository"
 import type { OrderStatus } from "@/models/order.model"
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const MAX_EXPORT_ROWS = 50_000
+// FIX ORD-05: Reduced from 50 000 to 10 000 to limit memory pressure and
+// prevent admins from triggering multi-second DB scans accidentally.
+// Large historical exports should be handled via a background job / SFTP.
+const MAX_EXPORT_ROWS = 10_000
 
 const VALID_STATUSES = new Set<OrderStatus>([
   "PENDING_PAYMENT", "PAID", "PROCESSING",

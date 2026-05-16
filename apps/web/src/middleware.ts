@@ -22,6 +22,49 @@ const PROTECTED = ["/checkout", "/account/orders", "/orders"]
 // a separate CSRF token or double-submit cookie.
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 
+// FIX WEB-07: Content Security Policy and security response headers.
+//
+// Applied to every page/API response so that even if a future page introduces
+// an inline script or loads a resource from an unknown origin, the browser will
+// block it before execution.
+//
+// Header breakdown:
+//   default-src 'self'          — baseline: only load resources from this origin
+//   script-src  'self' midtrans — Snap.js is loaded from Midtrans CDN
+//   style-src   'self' 'unsafe-inline' — Tailwind generates runtime inline styles
+//   img-src     'self' data: https:    — product images may come from any CDN
+//   connect-src 'self' midtrans        — Snap makes XHR calls to Midtrans API
+//   frame-src   midtrans               — Snap opens in an iframe
+//   font-src    'self' data:           — local webfonts + base64-embedded fonts
+//   object-src  'none'                 — block <object>/<embed> (XSS vector)
+//   base-uri    'self'                 — prevent base tag hijacking
+//   form-action 'self'                 — prevent form phishing to external URLs
+const MIDTRANS_APP = "https://app.midtrans.com https://app.sandbox.midtrans.com"
+const MIDTRANS_API = "https://api.midtrans.com https://api.sandbox.midtrans.com"
+
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' ${MIDTRANS_APP}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  `connect-src 'self' ${MIDTRANS_API}`,
+  `frame-src ${MIDTRANS_APP}`,
+  "font-src 'self' data:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ")
+
+function applySecurityHeaders(response: Response): Response {
+  // Clone headers to avoid mutating a frozen Headers object on some runtimes.
+  const headers = new Headers(response.headers)
+  headers.set("Content-Security-Policy",   CSP)
+  headers.set("X-Content-Type-Options",    "nosniff")
+  headers.set("X-Frame-Options",           "SAMEORIGIN")
+  headers.set("Referrer-Policy",           "strict-origin-when-cross-origin")
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+}
+
 export const onRequest = defineMiddleware(async (ctx, next) => {
   // ── CSRF: Origin check for state-mutating API routes ──────────────────────
   if (
@@ -36,7 +79,11 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
         JSON.stringify({ error: "Forbidden", code: "CSRF_ORIGIN_MISMATCH" }),
         {
           status:  403,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type":              "application/json",
+            "Content-Security-Policy":   CSP,
+            "X-Content-Type-Options":    "nosniff",
+          },
         }
       )
     }
@@ -44,7 +91,10 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
 
   // ── Auth guard for protected pages ─────────────────────────────────────────
   const isProtected = PROTECTED.some(p => ctx.url.pathname.startsWith(p))
-  if (!isProtected) return next()
+  if (!isProtected) {
+    const response = await next()
+    return applySecurityHeaders(response)
+  }
 
   const cookie = ctx.request.headers.get("cookie") ?? ""
 
@@ -56,5 +106,6 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   }
 
   ctx.locals.user = exit.value
-  return next()
+  const response = await next()
+  return applySecurityHeaders(response)
 })

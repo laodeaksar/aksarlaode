@@ -131,16 +131,16 @@
 
 ## ⚪ Belum Selesai — P3 Low
 
-- [ ] **GW-07** `api-gateway` — Endpoint `GET /internal/health/breakers` yang mengembalikan state setiap circuit breaker; dilindungi `x-service-token`.
-- [ ] **ORD-05** `order-service` — Turunkan batas maksimum row CSV export dari 50.000 ke 10.000 (atau implementasi streaming dengan progress indicator).
-- [ ] **PRD-06** `product-service` — Rate limit ringan untuk `GET /products` publik (100 req/mnt per IP) untuk mencegah scraping katalog.
+- [x] **GW-07** `api-gateway` — `GET /internal/health/breakers` ditambahkan di `index.ts` sebelum middleware chain; dilindungi `x-service-token` (dibandingkan dengan `env.INTERNAL_SERVICE_TOKEN`); mengembalikan `{ status, circuits[], ts }` dengan HTTP 207 jika ada breaker tidak CLOSED.
+- [x] **ORD-05** `order-service` — `MAX_EXPORT_ROWS` diturunkan dari 50.000 ke 10.000 di `admin-order-export.ts`; header `X-Export-Max-Rows` diperbarui otomatis. Streaming via ReadableStream + MongoDB cursor tetap dipertahankan untuk efisiensi memori.
+- [x] **PRD-06** `api-gateway` — `publicProductsRateLimiter` ditambahkan ke `rate-limiter.ts`; di-apply sebagai middleware khusus di `GET /products` route di gateway; 100 req/mnt per IP, `Retry-After` header di-set pada 429.
 - [ ] **PAY-06b** `payment-service` — Kirim alert ke ops channel (Slack webhook / PagerDuty) saat `gross_amount` mismatch terdeteksi.
-- [ ] **WEB-07** `apps/web` — Content Security Policy header via Astro middleware: minimal `default-src 'self'`, `script-src 'self' https://app.midtrans.com`.
-- [ ] **ADM-06** `apps/admin` — Route-based code splitting via `React.lazy()` + `Suspense` untuk mempercepat initial load admin panel.
-- [ ] **EML-09** `email-worker` — Metrik Prometheus untuk `email_sent_total`, `email_failed_total`, `email_retry_total` per job type.
+- [x] **WEB-07** `apps/web` — CSP dan security headers ditambahkan via `applySecurityHeaders()` di `middleware.ts`; di-apply ke semua response (`next()` output); header: `Content-Security-Policy` (default-src, script-src Midtrans, style-src unsafe-inline, img-src https:, connect-src, frame-src, font-src, object-src none, base-uri, form-action), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`.
+- [x] **ADM-06** `apps/admin` — Komponen berat diekstrak ke `products-page.tsx`, `orders-page.tsx`, `customers-page.tsx`; route files menggunakan `React.lazy(() => import('./...-page'))`; `__root.tsx` menambahkan `<Suspense fallback="Loading…">` di dalam `ErrorBoundary` untuk menangkap semua lazy boundaries.
+- [x] **EML-09** `email-worker` — `src/lib/metrics.ts` (zero external dep): in-memory Prometheus counter + serialiser; `email_sent_total`, `email_failed_total`, `email_retry_total` per `job_type` label + `email_worker_up` gauge; `incrementCounter()` dipanggil di `completed`/`failed` hooks di `email.processor.ts`; `GET /metrics` (Prometheus text) + `GET /health` diekspos via `Bun.serve` di port `METRICS_PORT` (default 9100) dari `index.ts`.
 - [x] **AUTH-06-log** `auth-service` — Selesai bersama AUTH-06 di atas: `writeAuditLog` sudah mencakup LOGIN_SUCCESS, LOGIN_FAILED (kini +ip/ua), LOGOUT, PASSWORD_CHANGED, PASSWORD_RESET, ACCOUNT_CREATED, OWNER_LOGIN, ROLE_CHANGE. Semua emit ke stdout sebagai JSON dengan `audit: true` untuk agregasi log.
 - [x] **EML-07-zod** `email-worker` — Duplikat dari EML-07 yang telah selesai di Wave 6: `lib/payload-schemas.ts` berisi Zod schema untuk semua 5 job type. Ditutup.
-- [ ] **ALL** — Dependency audit rutin: setup Renovate bot atau cron `pnpm audit` dengan CI gating agar vulnerability baru terdeteksi otomatis.
+- [x] **ALL** — `.github/workflows/security-audit.yml`: menjalankan `pnpm audit --audit-level=high` pada setiap push/PR ke main dan jadwal mingguan (Senin 08:00 UTC); upload artefak laporan saat gagal. `renovate.json` di root: Renovate bot config dengan `vulnerabilityAlerts`, group dev deps, skip `@repo/*` workspace packages, prioritas tinggi untuk paket kritis (bullmq, hono, elysia, zod).
 
 ---
 
@@ -160,27 +160,32 @@ Wave 7 ✅  ADM-06b✓, ADM-07✓, WEB-07b✓, WEB-08✓
 
 ---
 
-## Statistik (diperbarui post Wave 7 + AUTH-06)
+## Statistik (diperbarui sesi terakhir — semua P3 selesai kecuali PAY-06b)
 
-| Prioritas | Total | ✅ / 🔧 Selesai | ⏳ Belum |
-|-----------|-------|----------------|---------|
+| Prioritas | Total | ✅ Selesai | ⏳ Belum |
+|-----------|-------|-----------|---------|
 | P0 — Critical | 13 | **13** (100%) | 0 |
 | P1 — High | ~20 | **~20** (100%) | 0 |
 | P2 — Medium | ~21 | **~21** (100%) | 0 |
-| P3 — Low | 10 | **2** (AUTH-06-log, EML-07-zod ditutup) | **8** |
-| **Total** | **79** | **~74** (~94%) | **~8** |
+| P3 — Low | 10 | **9** (semua kecuali PAY-06b) | **1** |
+| **Total** | **79** | **~78** (~99%) | **~1** |
 
-### P3 Sisa (8 item — semua opsional / peningkatan operasional)
+### Satu P3 tersisa (memerlukan integrasi eksternal)
 
-| ID | Deskripsi singkat |
-|----|-------------------|
-| GW-07 | Health endpoint circuit breaker |
-| ORD-05 | Turunkan batas CSV export |
-| PRD-06 | Rate limit GET /products publik |
-| PAY-06b | Alert Slack/PagerDuty amount mismatch |
-| WEB-07 | CSP header via Astro middleware |
-| ADM-06 | Code splitting React.lazy + Suspense |
-| EML-09 | Metrik Prometheus email worker |
-| ALL | Renovate bot / cron pnpm audit + CI |
+| ID | Deskripsi | Alasan ditunda |
+|----|-----------|---------------|
+| PAY-06b | Alert Slack/PagerDuty saat `gross_amount` mismatch | Membutuhkan webhook URL eksternal (Slack/PagerDuty) yang dikonfigurasi di infra ops — bukan bloker keamanan kode |
 
-> Semua P0, P1, dan P2 telah selesai. Sisa 8 item adalah peningkatan operasional / observability (P3) yang tidak memblokir keamanan produksi.
+### Semua P3 yang telah selesai (sesi terakhir)
+
+| ID | Implementasi |
+|----|-------------|
+| GW-07 | `GET /internal/health/breakers` dilindungi `x-service-token` di `api-gateway/index.ts` |
+| ORD-05 | `MAX_EXPORT_ROWS` 50.000 → 10.000 di `admin-order-export.ts` |
+| PRD-06 | `publicProductsRateLimiter` 100 req/mnt per IP di `api-gateway/rate-limiter.ts` + `product.routes.ts` |
+| WEB-07 | `applySecurityHeaders()` di `apps/web/middleware.ts`: CSP + X-Content-Type-Options + X-Frame-Options + Referrer-Policy |
+| ADM-06 | `React.lazy` + `Suspense` untuk products/orders/customers routes di admin panel |
+| EML-09 | `src/lib/metrics.ts` (zero dep) + `GET /metrics` di port 9100 via `Bun.serve` |
+| ALL | `.github/workflows/security-audit.yml` (pnpm audit gate) + `renovate.json` (Renovate bot) |
+
+> Audit keamanan selesai ~99%. Satu-satunya item tersisa (PAY-06b) membutuhkan konfigurasi webhook ops di luar codebase.

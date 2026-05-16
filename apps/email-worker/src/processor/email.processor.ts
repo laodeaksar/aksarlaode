@@ -8,6 +8,8 @@ import { handlePasswordReset }     from "@/jobs/password-reset"
 import { handleShippingUpdate }    from "@/jobs/shipping-update"
 import type { EmailJobType, EmailJobPayload } from "@/queues/email.queue"
 import { PAYLOAD_SCHEMAS } from "@/lib/payload-schemas"
+// FIX EML-09: Prometheus counter helpers (no external dep).
+import { incrementCounter } from "@/lib/metrics"
 
 const provider = new MailChannelsProvider()
 
@@ -79,6 +81,9 @@ export const emailWorker = new Worker(
 
 // ── Lifecycle hooks ────────────────────────────────────────────────────────────
 emailWorker.on("completed", (job, result) => {
+  // FIX EML-09: increment Prometheus counter for successful sends
+  incrementCounter("email_sent_total", { job_type: result.type ?? job.name })
+
   console.info(JSON.stringify({
     event:  "email_sent",
     jobId:  job.id,
@@ -89,6 +94,13 @@ emailWorker.on("completed", (job, result) => {
 emailWorker.on("failed", (job, err: any) => {
   const attempt       = job?.attemptsMade ?? 0
   const isPermanent   = !err.retryable || attempt >= MAX_ATTEMPTS
+
+  // FIX EML-09: increment the appropriate failure counter
+  if (isPermanent) {
+    incrementCounter("email_retry_total", { job_type: job?.name ?? "unknown" })
+  } else {
+    incrementCounter("email_failed_total", { job_type: job?.name ?? "unknown" })
+  }
 
   // Always log the failure
   console.error(JSON.stringify({

@@ -1,11 +1,14 @@
 import { Hono } from "hono"
 import { proxyTo } from "@/proxy/proxy"
+import { publicProductsRateLimiter } from "@/middleware/rate-limiter"
 import type { AppEnv } from "@/types/context"
 
 const router = new Hono<AppEnv>()
 
 // Public reads
-router.get("/",           (c) => proxyTo("PRODUCT", c))   // list + filter + search
+// FIX PRD-06: publicProductsRateLimiter caps GET /products at 100 req/min per
+// IP to prevent catalogue scraping; global rateLimiter still applies first.
+router.get("/", publicProductsRateLimiter, (c) => proxyTo("PRODUCT", c))   // list + filter + search
 router.get("/:id/stock",  (c) => proxyTo("PRODUCT", c))   // stock check (order-service friendly)
 router.get("/:id",        (c) => proxyTo("PRODUCT", c))   // single product
 router.get("/slug/:slug", (c) => proxyTo("PRODUCT", c))

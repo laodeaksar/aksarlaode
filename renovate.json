@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate bot config — automated dependency update PRs. Works alongside the security-audit CI workflow which gates merges on HIGH/CRITICAL advisories.",
+  "extends": [
+    "config:recommended",
+    "security:openssf-scorecard",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "packageManager": "pnpm",
+  "schedule": ["before 9am on Monday"],
+  "timezone": "Asia/Jakarta",
+  "labels": ["dependencies"],
+  "prCreation": "immediate",
+  "prHourlyLimit": 5,
+  "prConcurrentLimit": 10,
+  "automerge": false,
+  "vulnerabilityAlerts": {
+    "labels": ["security", "dependencies"],
+    "automerge": false,
+    "prPriority": 10
+  },
+  "packageRules": [
+    {
+      "description": "Group all non-major dev-dependency updates into one PR per week",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev dependencies (non-major)",
+      "schedule": ["before 9am on Monday"]
+    },
+    {
+      "description": "Monorepo workspace packages — skip (managed internally)",
+      "matchPackageNames": ["@repo/*"],
+      "enabled": false
+    },
+    {
+      "description": "Raise priority on security-related packages",
+      "matchPackageNames": [
+        "bullmq", "hono", "elysia", "zod", "drizzle-orm",
+        "jsonwebtoken", "bcrypt", "argon2", "@node-rs/argon2"
+      ],
+      "prPriority": 5
+    }
+  ]
+}

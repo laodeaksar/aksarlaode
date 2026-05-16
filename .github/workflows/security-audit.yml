@@ -1,0 +1,56 @@
+# FIX ALL (P3): Dependency vulnerability audit with CI gating.
+#
+# Runs on every push/PR to main and on a weekly schedule (Monday 08:00 UTC).
+# Fails the build if any HIGH or CRITICAL severity advisories are found.
+# pnpm audit --audit-level=high returns exit-code 1 when violations exist.
+#
+# Renovate bot (renovate.json at repo root) handles automated PR creation for
+# dependency updates; this workflow acts as the final gate that blocks merges
+# when an un-patched advisory is present.
+
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+
+jobs:
+  audit:
+    name: pnpm audit (high+critical)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        # --audit-level=high exits non-zero for HIGH and CRITICAL findings.
+        # Remove --audit-level flag to also gate on MODERATE advisories.
+        run: pnpm audit --audit-level=high
+
+      - name: Upload audit report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_id }}
+          path: audit-report.json
+          retention-days: 30

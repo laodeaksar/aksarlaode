@@ -1,4 +1,5 @@
 import { createRootRoute, Outlet, redirect } from "@tanstack/react-router"
+import { Suspense }  from "react"
 import { Sidebar }  from "@/components/layout/sidebar"
 import { Topbar }   from "@/components/layout/topbar"
 import { getSession } from "@/lib/auth"
@@ -24,10 +25,18 @@ export const Route = createRootRoute({
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
         {/* FIX ADM-07: ErrorBoundary wraps the entire page outlet so a crash
-            in one route renders an error card instead of a blank white page. */}
+            in one route renders an error card instead of a blank white page.
+            FIX ADM-06: Suspense catches React.lazy boundaries from
+            lazily-loaded route components (products, orders, customers). */}
         <main className="flex-1 overflow-y-auto p-6">
           <ErrorBoundary>
-            <Outlet />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+                Loading…
+              </div>
+            }>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>

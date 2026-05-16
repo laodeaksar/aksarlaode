@@ -43,7 +43,33 @@ function incrementWindow(
   })
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// FIX PRD-06: Dedicated per-IP rate limiter for the public product listing
+// endpoint.  Stricter than the global limit (100 req/min vs 200 req/min) to
+// prevent catalogue scraping without penalising normal browsing.
+const PRODUCT_LIST_LIMIT = 100  // max requests per minute per IP for GET /products
+
+export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const ip =
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const result = await Effect.runPromiseExit(
+    incrementWindow(ip, "products:1m", 60_000, PRODUCT_LIST_LIMIT)
+  )
+
+  if (result._tag === "Success" && !result.value.allowed) {
+    c.header("Retry-After", String(Math.ceil(result.value.resetIn / 1000)))
+    return c.json(
+      { error: "Too Many Requests", code: "RATE_LIMITED", requestId: c.var.requestId },
+      429
+    )
+  }
+
+  await next()
+}
+
+// ── Global rate limiter middleware ────────────────────────────────────────────
 export const rateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
   // Prefer Cloudflare real IP, fall back to forwarded IP or socket IP
   const ip =

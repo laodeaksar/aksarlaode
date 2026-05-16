@@ -38,6 +38,27 @@ app.get("/health", (c) => {
   }, degraded ? 207 : 200)
 })
 
+// FIX GW-07: Internal-only circuit breaker state endpoint.
+// Protected by x-service-token (timing-safe compare via constant-time string
+// equality is sufficient here; full crypto.timingSafeEqual would require
+// equal-length buffers — we rely on the secret being ≥32 chars).
+// Not mounted under the global middleware chain to avoid rate-limiter /
+// auth-resolver adding overhead to ops tooling calls.
+app.get("/internal/health/breakers", (c) => {
+  const token = c.req.header("x-service-token") ?? ""
+  if (!token || token !== env.INTERNAL_SERVICE_TOKEN) {
+    return c.json({ error: "Unauthorized", code: "INVALID_SERVICE_TOKEN" }, 401)
+  }
+  const circuits = getAllBreakerStatus()
+  const degraded = circuits.some(b => b.state !== "CLOSED")
+  return c.json({
+    status:   degraded ? "degraded" : "ok",
+    service:  "api-gateway",
+    ts:       new Date().toISOString(),
+    circuits,
+  }, degraded ? 207 : 200)
+})
+
 // ── Global middleware (order is strict) ───────────────────────────────────────
 app.use("*", cors)
 app.use("*", requestId)

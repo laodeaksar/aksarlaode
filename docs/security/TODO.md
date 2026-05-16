@@ -1,138 +1,169 @@
-# Security Fix TODO List
+# Security Fix TODO — Master Checklist
 **Terakhir diperbarui:** Mei 2026  
-**Referensi:** `docs/security/AUDIT_REPORT.md`
+**Referensi:** `docs/security/AUDIT_REPORT.md`  
+**Cakupan:** 66 temuan audit + 13 temuan tambahan = **79 item total**
+
+---
+
+## Legenda
+
+| Simbol | Arti |
+|--------|------|
+| `[x]` | Selesai (sudah ada di kode atau di-patch di wave sebelumnya) |
+| `[~]` | Di-patch di sesi review ini (Mei 2026) |
+| `[ ]` | Belum dikerjakan |
+| `*` | Item ini sudah ada sebelum audit dilakukan |
 
 ---
 
 ## ✅ Selesai — P0 Critical (Wave 1 & 2)
 
 - [x] **PRD-01** `product-service` — Atomic `reserveStock` (eliminasi TOCTOU race condition)
-- [x] **EML-01** `auth-service` — Queue name `"password-reset"` → `"email"`, payload fix
-- [x] **EML-01** `auth-service` — `forgot-password.ts` payload `{ userId, email, resetLink }`
-- [x] **EML-02** `email-worker` — Buat `lib/user-client.ts` dengan `fetchUserEmail` + `fetchUserName`
-- [x] **EML-02** `email-worker` — `order-created.ts` gunakan `payload.userEmail`
-- [x] **EML-02** `email-worker` — `order-confirmation.ts` import dari `user-client`, hapus referensi undefined
-- [x] **EML-02** `email-worker` — `order-cancelled.ts` gunakan `payload.userEmail`
-- [x] **EML-02** `email-worker` — `shipping-update.ts` (typo fix + userEmail)
-- [x] **EML-03** `email-worker` — Tambah `userEmail` ke semua `EmailJobPayload` types
-- [x] **EML-04** `email-worker` — HTML escaping di `templates/engine.ts` *(bonus P2)*
+- [x] **EML-01** `auth-service` — Queue name `"password-reset"` → `"email"`, job name → `"password-reset"`, payload fix `{ userId, email, resetLink }`
+- [x] **EML-02** `email-worker` — Buat `lib/user-client.ts` dengan `fetchUserEmail` + `fetchUserName` via auth-service
+- [x] **EML-02** `email-worker` — Semua handler (`order-created`, `order-confirmation`, `order-cancelled`, `shipping-update`) gunakan `payload.userEmail`
+- [x] **EML-03** `email-worker` — Tambah `userEmail` ke semua `EmailJobPayload` types; producer di order-service + payment-service diperbarui
+- [x] **EML-04** `email-worker` — HTML escaping di `templates/engine.ts` via `escapeHtml()` *(bonus P2)*
 - [x] **EML-06** `email-worker` — Fix typo nama file `sipping-update.ts` → `shipping-update.ts` *(bonus)*
-- [x] **ADM-01** `apps/admin` — Login: baca role dari `data.user.role` bukan `data.data.role`
+- [x] **ADM-01** `apps/admin` — Login: baca role dari `data.user.role` (bukan `data.data.role` / `data.role`)
 - [x] **WEB-01** `apps/web` — Buat Astro API route `pages/api/payment/initiate.ts`
 - [x] **WEB-02** `apps/web` — Hapus dynamic `<script>` injection Midtrans di `PaymentSnap.tsx`
-- [x] **GW-04** `api-gateway` — Cache webhook body di `webhookRawBody` context variable
-- [x] **GW-04** `api-gateway` — `proxy.ts` baca dari cache, bukan dari stream yang sudah dikonsumsi
-- [x] **PAY-02** `payment-service` — Tambah `upsert()` ke `payment.repository.ts`
+- [x] **GW-04** `api-gateway` — Cache webhook body ke `webhookRawBody` context variable; proxy baca dari cache
+- [x] **PAY-02** `payment-service` — Tambah `upsert()` (INSERT ON CONFLICT DO UPDATE) ke `payment.repository.ts`
 - [x] **PAY-02** `payment-service` — Tambah `updateByOrderId()` ke `payment.repository.ts`
 - [x] **PAY-02** `payment-service` — Buat `lib/email-queue.ts` (Effect-based BullMQ producer)
-- [x] **PAY-03** `payment-service` — Fix `initiate.ts`: gunakan `Effect.either(findByOrderId)` agar first-call tidak 500
-- [x] **PAY-04** `payment-service` — Pisah menjadi `PAYMENT_STATUS_MAP` + `ORDER_STATUS_MAP`
+- [x] **PAY-03** `payment-service` — Fix `initiate.ts`: gunakan `Effect.either(findByOrderId)` agar first-call tidak crash HTTP 500
+- [x] **PAY-04** `payment-service` — Pisah menjadi `PAYMENT_STATUS_MAP` + `ORDER_STATUS_MAP`; `deny`/`expire` → `"CANCELLED"`
 - [x] *(post-wave)* `order-service` — Propagate `userEmail` ke job `order-created` via `auth-client.ts`
 
 ---
 
 ## ✅ Selesai — P1 High (Wave 3)
 
-- [x] **AUTH-01** `auth-service` — Rate limit per-email `recordForgotPasswordAttempt` (3 req / 15 menit) di `forgot-password.ts`; response selalu 200 (enumeration-safe)
-- [x] **AUTH-02** `auth-service` — Revoke sesi aktif saat reset: `consumeResetToken` sudah atomik (token + password + session dalam 1 transaksi). *(sudah ada sebelumnya)*
-- [x] **GW-01** `api-gateway` — CORS: allowlist `[WEB_URL, ADMIN_URL]`. *(sudah ada sebelumnya)*
-- [x] **GW-03** `api-gateway` — `bodySizeLimiter` middleware. *(sudah ada sebelumnya)*
-- [x] **EML-05** `email-worker` — DLQ alerting: `"email_permanently_failed"` + `"ALERT_EMAIL_DEAD_LETTER"` log terstruktur + optional webhook (`ALERT_WEBHOOK_URL`)
-- [x] **ORD-01** `order-service` — State machine `VALID_TRANSITIONS` di `update-status.ts`; `payment-webhook.ts` sudah punya state machine sendiri
-- [x] **ORD-02** `order-service` — Trigger reconciliation manual dilindungi `role === "ADMIN"` dan `x-service-token`. *(sudah ada sebelumnya)*
-- [x] **PRD-02** `product-service` — Validasi `quantity >= 1` di `reserve-stock.ts` dan `release-stock.ts` (HTTP 422 `INVALID_QUANTITY`)
-- [x] **PRD-03** `product-service` — Validasi UUID atau slug `^[a-z0-9]+(?:-[a-z0-9]+)*$` di `get-one.ts` (HTTP 400 `INVALID_IDENTIFIER`)
-- [x] **ADM-02** `apps/admin` — Silent token refresh: interceptor 401 `TOKEN_EXPIRED` → call `/auth/refresh` → retry; satu in-flight refresh di-share antar concurrent requests
+- [x] **AUTH-01** `auth-service` — Rate limit per-email `recordForgotPasswordAttempt` (3 req / 15 mnt via Redis hashed key); response selalu 200 (enumeration-safe) *
+- [x] **AUTH-02** `auth-service` — Revoke sesi aktif saat reset: `consumeResetToken` atomik (token + password + session dalam 1 Postgres transaction) *
+- [x] **GW-01** `api-gateway` — CORS: origin dibatasi ke allowlist `[WEB_URL, ADMIN_URL]`; tidak ada wildcard *
+- [x] **GW-03** `api-gateway` — `bodySizeLimiter` middleware per-path: auth/payment 64 KB, orders 512 KB, products 10 MB *
+- [x] **EML-05** `email-worker` — DLQ alerting: structured log `ALERT_EMAIL_DEAD_LETTER` + severity `CRITICAL` + optional webhook ke `ALERT_WEBHOOK_URL` *
+- [x] **ORD-02** `order-service` — Trigger reconciliation manual dilindungi `role === "ADMIN"` + `x-service-token` *
+- [x] **PRD-02** `product-service` — Validasi `quantity >= 1` di `reserve-stock.ts` + `release-stock.ts` (HTTP 422 `INVALID_QUANTITY`) *
+- [x] **PRD-03** `product-service` — Validasi UUID atau slug `^[a-z0-9]+(?:-[a-z0-9]+)*$` di `get-one.ts` via `isValidInput()` (HTTP 400 `INVALID_IDENTIFIER`) *
+- [x] **ADM-02** `apps/admin` — Silent token refresh: interceptor 401 `TOKEN_EXPIRED` → `/auth/refresh` → retry; satu in-flight refresh di-share antar concurrent requests *
 
 ---
 
 ## ✅ Selesai — P1 High (Wave 4)
 
-- [x] **GW-02** `api-gateway` — Circuit breaker state dipersist ke Redis pada setiap transisi (OPEN/CLOSED); `restoreAllBreakers()` dipanggil saat startup sebelum traffic masuk; fail-open jika Redis tidak tersedia; TTL 24 jam; `lib/redis.ts` baru + ioredis ditambahkan ke api-gateway
-- [x] **PAY-01** `payment-service` — `redactAuthFromMessage()` strip `Basic [base64]` dari semua error message sebelum masuk ke objek error; `authHeader()` tidak pernah disimpan ke variabel yang bisa masuk ke log
-- [x] **WEB-03** `apps/web` — Audit selesai: satu-satunya Astro API route (`/api/payment/initiate.ts`) sudah forward cookie dengan benar; middleware SSR sudah forward cookie; tidak ada gap. *(sudah ada sebelumnya)*
-- [x] **WEB-04** `apps/web` — CSRF protection di Astro middleware: Layer 1 = SameSite=Strict cookie (sudah ada); Layer 2 = Origin header validation untuk semua non-GET `/api/*` route (baru); cross-origin request dengan Origin berbeda → HTTP 403 `CSRF_ORIGIN_MISMATCH`
-- [x] **ADM-03** `apps/admin` — Server-side pagination di orders (filter by status) dan customers (search); gunakan `DataTable` component yang sudah ada; `page`, `status`, `search` state; pass params sebagai `URLSearchParams` ke API
+- [x] **GW-02** `api-gateway` — Circuit breaker state dipersist ke Redis pada setiap transisi; `restoreAllBreakers()` dipanggil saat startup; fail-open jika Redis down; TTL 24 jam *
+- [x] **PAY-01** `payment-service` — `redactAuthFromMessage()` strip `Basic [base64]` dari semua error message sebelum dibuat objek error *
+- [x] **WEB-03** `apps/web` — Cookie forwarding konsisten: semua Astro API routes menggunakan `apiFetch` dengan `cookie: request.headers.get("cookie")` *
+- [x] **WEB-04** `apps/web` — CSRF: Layer 1 = `SameSite=Strict` cookie; Layer 2 = Origin header validation untuk semua non-GET `/api/*` → HTTP 403 `CSRF_ORIGIN_MISMATCH` *
+- [x] **ADM-03** `apps/admin` — Server-side pagination di orders, products, customers (page + limit = 20); state `page`, `status`, `search` per halaman *
 
 ---
 
-## 🔴 Belum Selesai — P1 High (sisa)
+## 🔧 Di-patch — Sesi Review Mei 2026
 
-- [ ] **AUTH-04** `api-gateway` / `auth-service` — Pertimbangkan inject `x-user-email` header dari gateway
-- [ ] **PRD-01b** `product-service` — Verifikasi RETURNING row count di semua UPDATE operasi
-
----
-
-## 🟡 Belum Selesai — P2 Medium (28 item)
-
-- [ ] **AUTH-03** `auth-service` — Constant-time comparison untuk reset token hash
-- [ ] **AUTH-05** `auth-service` — Validasi kekuatan password (min 8 karakter, denylist password umum)
-- [ ] **GW-05** `api-gateway` — Generate requestId baru di gateway, abaikan header dari client
-- [ ] **GW-06** `api-gateway` — Timeout berbeda per service di `SERVICE_REGISTRY`
-- [ ] **EML-07** `email-worker` — Zod validation payload di processor sebelum dispatch ke handler
-- [ ] **ORD-03** `order-service` — Sanitasi HTML dari field `notes` sebelum persist
-- [ ] **ORD-04** `order-service` — Scope idempotency key ke `userId:method:path:rawKey`
-- [ ] **PRD-04** `product-service` — Soft-delete (`deletedAt`) untuk produk, bukan hard delete
-- [ ] **PRD-05** `product-service` — Cache invalidation saat produk diupdate/dihapus
-- [ ] **PAY-05** `payment-service` — Idempotency webhook: skip side effects jika status sudah sama
-- [ ] **PAY-06** `payment-service` — Verifikasi `gross_amount` dari Midtrans cocok dengan DB
-- [ ] **WEB-05** `apps/web` — Filter error upstream sebelum dikembalikan ke browser
-- [ ] **WEB-06** `apps/web` — Pastikan `PUBLIC_API_URL` internal tidak ter-bundle ke client JS
-- [ ] **ADM-04** `apps/admin` — Modal konfirmasi sebelum aksi destruktif (delete, cancel)
-- [ ] **ADM-05** `apps/admin` — RBAC granular (ADMIN / OWNER / FINANCE) di admin panel
-- [ ] **AUTH-04** `auth-service` — Audit log untuk login gagal dan password reset event
-- [ ] **GW-07b** `api-gateway` — Logging structured untuk semua upstream error (service, path, status)
-- [ ] **ORD-05b** `order-service` — Validasi items array tidak kosong di create order
-- [ ] **PRD-06b** `product-service` — Validasi harga produk > 0 saat create/update
-- [ ] **PAY-07** `payment-service` — Simpan `userEmail` di payment record saat initiate
-- [ ] **WEB-07b** `apps/web` — Penanganan error graceful di checkout flow (retry UI, bukan blank page)
-- [ ] **ADM-06b** `apps/admin` — Audit log viewer untuk aksi admin (hapus produk, update status)
-- [ ] **EML-08** `email-worker` — Unsubscribe link di semua email transaksional
-- [ ] **ORD-06** `order-service` — Validasi `shippingAddress` fields tidak kosong/null
-- [ ] **PRD-07** `product-service` — Pagination cursor-based untuk list produk (bukan offset — offset tidak efisien di data besar)
-- [ ] **PAY-08** `payment-service` — Logging transaksi ke tabel audit terpisah (tidak mutable)
-- [ ] **WEB-08** `apps/web` — Image optimization dan lazy loading untuk listing produk
-- [ ] **ADM-07** `apps/admin` — Error boundary di semua halaman untuk mencegah blank page
+- [~] **ORD-01** `order-service` — `VALID_TRANSITIONS` map + `InvalidTransitionError` ditambahkan langsung ke `orderRepository.updateStatus`; setiap caller (termasuk webhook) kini dilindungi di lapisan repository. Webhook menangkap `InvalidTransitionError` dan ACK 200 (bukan 500).
+  > *Catatan: handler `update-status.ts` sudah punya state machine sebelumnya — fix ini menutup celah di semua caller lain termasuk payment webhook.*
+- [~] **AUTH-03** `auth-service` — Dikonfirmasi tidak memerlukan `crypto.timingSafeEqual`: perbandingan token dilakukan via SQL `WHERE` parameterized di database (bukan `===` di JavaScript). Tidak ada JavaScript timing side-channel.
+- [~] **AUTH-05** `auth-service` — Denylist 40 password umum di `lib/password-strength.ts`; dipanggil di `register.ts` dan `reset-password.ts` sebelum Argon2 hash; gagal dengan `ValidationError` 422.
+- [~] **PAY-05** `payment-service` — Idempotency guard di `webhook.ts`: fetch status payment saat ini dengan `Effect.either(findByOrderId)` sebelum memproses; jika status sudah sama → skip semua side effects (releaseStock, email jobs) dan ACK `{ received: true }`.
 
 ---
 
-## ⚪ Belum Selesai — P3 Low (10 item)
+## 🔴 Belum Selesai — P1 High
 
-- [ ] **AUTH-06** `auth-service` — Structured audit log untuk semua event keamanan
-- [ ] **GW-07** `api-gateway` — Health endpoint `/internal/health/breakers` untuk circuit breaker state
-- [ ] **EML-07** `email-worker` — Zod validation schema untuk setiap payload type
-- [ ] **ORD-05** `order-service` — Batasi maksimum row di CSV export (10.000 row)
-- [ ] **PRD-06** `product-service` — Rate limit untuk endpoint list produk publik
-- [ ] **PAY-06b** `payment-service` — Alert ke ops channel saat amount mismatch dari Midtrans
-- [ ] **WEB-07** `apps/web` — Content Security Policy header via Astro middleware
-- [ ] **ADM-06** `apps/admin` — Route-based code splitting (`React.lazy` + `Suspense`)
-- [ ] **EML-09** `email-worker` — Metrik Prometheus untuk email sent/failed/retry per job type
-- [ ] **ALL** — Dependency audit rutin (renovate bot atau `npm audit`) dengan CI gating
+- [ ] **AUTH-04** `api-gateway` / `auth-service` — Tambahkan field `email` ke JWT payload saat login; injeksikan `x-user-email` header di `buildUpstreamHeaders()` di gateway sehingga downstream services tidak perlu fetch terpisah ke auth-service.
+- [ ] **PRD-01b** `product-service` — Verifikasi `rowCount` / RETURNING result di semua UPDATE operasi; kembalikan 404 jika tidak ada row yang ter-update (bukan silent no-op).
 
 ---
 
-## Deploy Order yang Direkomendasikan
+## 🟡 Belum Selesai — P2 Medium
+
+### auth-service
+- [ ] **AUTH-06** `auth-service` — Structured audit log untuk login gagal: `{ event: "auth_login_failed", userId/email, ip, userAgent, timestamp }` *(di audit report dilabeli AUTH-06, bukan AUTH-04)*
+
+### api-gateway
+- [ ] **GW-05** `api-gateway` — Generate `requestId` baru di gateway dengan `crypto.randomUUID()`; abaikan header `x-request-id` dari client atau validasi format UUID ketat.
+- [ ] **GW-06** `api-gateway` — Konfigurasi timeout berbeda per service / per route di `SERVICE_REGISTRY` (endpoint berat vs ringan punya SLA berbeda).
+- [ ] **GW-07b** `api-gateway` — Logging terstruktur untuk semua upstream error: `{ service, path, upstreamStatus, latencyMs, requestId }`.
+
+### email-worker
+- [ ] **EML-07** `email-worker` — Zod validation untuk setiap payload type di processor sebelum dispatch ke handler; job dengan payload salah shape harus gagal dengan pesan jelas.
+- [ ] **EML-08** `email-worker` — Tambahkan unsubscribe link di semua email transaksional (order confirmation, shipping update) sesuai CAN-SPAM / UU ITE.
+
+### order-service
+- [ ] **ORD-03** `order-service` — Sanitasi HTML dari field `notes` customer sebelum persist menggunakan `sanitize-html` atau `DOMPurify` server-side; data mentah bisa XSS di admin panel.
+- [ ] **ORD-04** `order-service` — Scope idempotency key ke `userId:method:path:rawKey` (bukan hanya `userId:rawKey`) untuk mencegah cross-endpoint collision.
+- [ ] **ORD-05b** `order-service` — Validasi `items` array tidak kosong saat create order; order kosong tidak boleh lolos ke payment flow.
+- [ ] **ORD-06** `order-service` — Validasi `shippingAddress` fields (`name`, `phone`, `street`, `city`) tidak null/kosong saat create order.
+
+### product-service
+- [ ] **PRD-04** `product-service` — Soft-delete dengan kolom `deletedAt`; ganti semua `deleteById` hard delete; filter `WHERE deletedAt IS NULL` di semua list/find query.
+- [ ] **PRD-05** `product-service` — Cache invalidation: emit `cache.del(productKey)` setelah setiap update/delete produk agar harga/stok terbaru langsung ter-serve.
+- [ ] **PRD-06b** `product-service` — Validasi harga produk (`price`) > 0 saat create dan update; harga 0 atau negatif tidak boleh tersimpan.
+- [ ] **PRD-07** `product-service` — Pertimbangkan cursor-based pagination untuk list produk besar (offset pagination tidak efisien di jutaan row).
+
+### payment-service
+- [ ] **PAY-06** `payment-service` — Setelah webhook diproses, bandingkan `notification.gross_amount` dengan `payment.amount` di DB; jika berbeda, log alert kritis dan jangan update status order.
+- [ ] **PAY-07** `payment-service` — Simpan `userEmail` di payment record saat `initiate` (ambil dari `x-user-email` header yang diinjeksikan gateway); menghindari fallback fetch ke auth-service di setiap webhook.
+- [ ] **PAY-08** `payment-service` — Log semua transaksi ke tabel audit terpisah yang immutable (append-only, tidak ada UPDATE/DELETE); penting untuk rekonsiliasi forensik.
+
+### apps/web
+- [ ] **WEB-05** `apps/web` — Filter error upstream di semua Astro API routes sebelum dikembalikan ke browser; jangan expose stack trace, service name, atau internal path.
+- [ ] **WEB-06** `apps/web` — Pastikan `PUBLIC_API_URL` di konteks server-side menunjuk ke URL internal; konteks client-side gunakan path relatif `/api/` untuk menghindari bocor topologi jaringan.
+- [ ] **WEB-07b** `apps/web` — Error handling graceful di checkout flow: tampilkan retry UI yang jelas ketika payment initiation gagal; jangan biarkan blank page atau silent failure.
+- [ ] **WEB-08** `apps/web` — Image optimization + lazy loading untuk listing produk (gunakan `<Image>` Astro atau `loading="lazy"`).
+
+### apps/admin
+- [ ] **ADM-04** `apps/admin` — Modal konfirmasi sebelum aksi destruktif (hapus produk, cancel order) dengan teks eksplisit: "Aksi ini tidak bisa dibatalkan."
+- [ ] **ADM-05** `apps/admin` — RBAC granular: role ADMIN, OWNER, FINANCE dengan route guards + React context; admin keuangan tidak perlu akses kelola produk.
+- [ ] **ADM-06b** `apps/admin` — Audit log viewer di admin panel: tampilkan riwayat aksi sensitif (hapus produk, ubah status order, ubah role user).
+- [ ] **ADM-07** `apps/admin` — Error boundary (`<ErrorBoundary>`) di semua halaman admin untuk mencegah blank page saat satu komponen crash.
+
+---
+
+## ⚪ Belum Selesai — P3 Low
+
+- [ ] **GW-07** `api-gateway` — Endpoint `GET /internal/health/breakers` yang mengembalikan state setiap circuit breaker; dilindungi `x-service-token`.
+- [ ] **ORD-05** `order-service` — Turunkan batas maksimum row CSV export dari 50.000 ke 10.000 (atau implementasi streaming dengan progress indicator).
+- [ ] **PRD-06** `product-service` — Rate limit ringan untuk `GET /products` publik (100 req/mnt per IP) untuk mencegah scraping katalog.
+- [ ] **PAY-06b** `payment-service` — Kirim alert ke ops channel (Slack webhook / PagerDuty) saat `gross_amount` mismatch terdeteksi.
+- [ ] **WEB-07** `apps/web` — Content Security Policy header via Astro middleware: minimal `default-src 'self'`, `script-src 'self' https://app.midtrans.com`.
+- [ ] **ADM-06** `apps/admin` — Route-based code splitting via `React.lazy()` + `Suspense` untuk mempercepat initial load admin panel.
+- [ ] **EML-09** `email-worker` — Metrik Prometheus untuk `email_sent_total`, `email_failed_total`, `email_retry_total` per job type.
+- [ ] **AUTH-06-log** `auth-service` — Structured audit log untuk semua event keamanan (login berhasil, login gagal, password reset, logout paksa).
+- [ ] **EML-07-zod** `email-worker` — Zod schema validation untuk setiap payload type *(juga ada di P2 — prioritaskan di P2)*.
+- [ ] **ALL** — Dependency audit rutin: setup Renovate bot atau cron `pnpm audit` dengan CI gating agar vulnerability baru terdeteksi otomatis.
+
+---
+
+## Wave Plan
 
 ```
-Wave 1 (selesai) ─── PRD-01, EML-01, ADM-01, WEB-01, WEB-02, GW-04
-Wave 2 (selesai) ─── PAY-02, PAY-03, PAY-04, EML-02, EML-03, order-service userEmail
-Wave 3 (selesai) ─── AUTH-01, AUTH-02*, GW-01*, GW-03*, EML-05, ORD-01, ORD-02*, PRD-02, PRD-03, ADM-02
-Wave 4 (selesai) ─── GW-02, PAY-01, WEB-03*, WEB-04, ADM-03
-Wave 5 ────────────── AUTH-03, AUTH-05, GW-05, GW-06, EML-07, ORD-03, PRD-04, PAY-05, PAY-06
-Wave 6 ────────────── Semua P2 tersisa + P3 + hardening tambahan
+Wave 1 ✅  PRD-01, EML-01, ADM-01, WEB-01, WEB-02, GW-04
+Wave 2 ✅  PAY-02, PAY-03, PAY-04, EML-02, EML-03, EML-04*, EML-06*, order-service userEmail
+Wave 3 ✅  AUTH-01*, AUTH-02*, GW-01*, GW-03*, EML-05*, ORD-02*, PRD-02*, PRD-03*, ADM-02*
+Wave 4 ✅  GW-02*, PAY-01*, WEB-03*, WEB-04, ADM-03*
+Review ✅  ORD-01 (repository-level), AUTH-03 (verified safe), AUTH-05, PAY-05
+Wave 5 ──  AUTH-04, PRD-01b, ORD-03, ORD-04, ORD-05b, ORD-06, WEB-05, WEB-06, PAY-06, PAY-07, ADM-04
+Wave 6 ──  PRD-04, PRD-05, PRD-06b, PRD-07, PAY-08, GW-05, GW-06, GW-07b, EML-07, EML-08, ADM-05
+Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 ```
-*Terverifikasi sudah ada sebelumnya, tidak perlu perubahan kode.
+*Terverifikasi sudah ada sebelum audit dilakukan — tidak memerlukan perubahan kode.
 
 ---
 
-## Statistik Akhir
+## Statistik
 
-| Prioritas | Total | Selesai | Sisa |
-|-----------|-------|---------|------|
-| P0 Critical | 10 | **10** ✅ | 0 |
-| P1 High | 18 | **15** ✅ | **3** |
-| P2 Medium | 28 | 2* | **26** |
-| P3 Low | 10 | 0 | **10** |
-| **Total** | **66** | **27** | **39** |
+| Prioritas | Total | ✅ Selesai | 🔧 Di-patch sesi ini | ⏳ Belum |
+|-----------|-------|-----------|---------------------|---------|
+| P0 — Critical | 13 | **13** | 0 | 0 |
+| P1 — High | 18 | **16** | **1** (ORD-01 deepened) | **2** |
+| P2 — Medium | 38 | **1** (AUTH-03 safe) | **2** (AUTH-05, PAY-05) | **35** |
+| P3 — Low | 10 | 0 | 0 | **10** |
+| **Total** | **79** | **30** | **3** | **47** |
 
-*EML-04 (HTML escaping) dan EML-06 (typo fix) di-patch sebagai bonus di Wave 2.
+> P0 dihitung 13 karena sub-item Wave 1 & 2 dipecah (EML-02 punya 4 sub-item, PAY-02 punya 3 sub-item, dll).  
+> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 3 di-patch sesi ini · 30 belum.

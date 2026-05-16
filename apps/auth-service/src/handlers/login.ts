@@ -24,13 +24,28 @@ import { AuthError, toErrorResponse }                from "@repo/common/errors"
  */
 const MAX_SESSIONS_PER_USER = 5
 
+// FIX AUTH-06: Extract IP and User-Agent from request headers so they appear
+// in every LOGIN_FAILED and LOGIN_SUCCESS audit entry.  IP is read from
+// x-real-ip (injected by the gateway) with a fallback to x-forwarded-for.
+function extractClientIp(request: Request): string {
+  return (
+    request.headers.get("x-real-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+  )
+}
+
 export const loginHandler = async ({
   body,
   set,
+  request,
 }: {
-  body: { email: string; password: string }
-  set:  any
+  body:    { email: string; password: string }
+  set:     any
+  request: Request
 }) => {
+  const ip        = extractClientIp(request)
+  const userAgent = request.headers.get("user-agent") ?? "unknown"
   // ── Per-email account lockout ─────────────────────────────────────────────
   // Check and record this attempt BEFORE any DB query. Both successful and
   // failed attempts count so an attacker cannot work around the limit by
@@ -108,14 +123,18 @@ export const loginHandler = async ({
   const result = await Effect.runPromiseExit(program)
 
   if (result._tag === "Failure") {
-    // Audit failed login attempts. Email is masked (not plaintext) to protect
-    // PII in log aggregators. "anonymous" actorId is a sentinel for events
-    // where the actor's identity could not be verified.
+    // FIX AUTH-06: Include ip and userAgent so log aggregators can correlate
+    // failed attempts across IPs (credential stuffing detection).  Email is
+    // masked to protect PII; actorId "anonymous" signals unverified identity.
     writeAuditLog({
       event:    "LOGIN_FAILED",
       actorId:  "anonymous",
       targetId: "anonymous",
-      meta:     { emailMask: maskEmail(body.email) },
+      meta:     {
+        emailMask: maskEmail(body.email),
+        ip,
+        userAgent,
+      },
     })
 
     const { body: errBody, status } = toErrorResponse(result.cause.error)
@@ -125,13 +144,14 @@ export const loginHandler = async ({
 
   const { user, tokens } = result.value
 
-  // Email omitted from LOGIN_SUCCESS — actorId (userId) is sufficient for
-  // correlation and avoids storing PII in log aggregators.
+  // FIX AUTH-06: ip and userAgent added to LOGIN_SUCCESS as well so the same
+  // session can be traced across both success and failure events.  Email is
+  // still omitted — actorId (userId) is sufficient for correlation.
   writeAuditLog({
     event:    "LOGIN_SUCCESS",
     actorId:  user.id,
     targetId: user.id,
-    meta:     { role: user.role },
+    meta:     { role: user.role, ip, userAgent },
   })
 
   if (user.role === "OWNER") {

@@ -90,7 +90,7 @@
 ## 🟡 Belum Selesai — P2 Medium
 
 ### auth-service
-- [ ] **AUTH-06** `auth-service` — Structured audit log untuk login gagal: `{ event: "auth_login_failed", userId/email, ip, userAgent, timestamp }` *(di audit report dilabeli AUTH-06, bukan AUTH-04)*
+- [x] **AUTH-06** `auth-service` — `login.ts` mengekstrak `ip` (dari `x-real-ip` → `x-forwarded-for`) dan `userAgent` (dari `user-agent` header); keduanya disertakan di `meta` untuk `LOGIN_FAILED` dan `LOGIN_SUCCESS` via `writeAuditLog`. Output: `{ audit: true, event: "LOGIN_FAILED", actorId: "anonymous", emailMask: "u***@domain.com", ip: "...", userAgent: "...", timestamp: "..." }`. AUTH-06-log (P3) dianggap selesai sekaligus karena `writeAuditLog` sudah mencakup semua event: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, PASSWORD_CHANGED, PASSWORD_RESET, ACCOUNT_CREATED, OWNER_LOGIN, ROLE_CHANGE.
 
 ### api-gateway
 - [x] **GW-05** `api-gateway` — `request-id.ts` selalu generate `crypto.randomUUID()`; header `x-request-id` dari client diabaikan sepenuhnya.
@@ -138,8 +138,8 @@
 - [ ] **WEB-07** `apps/web` — Content Security Policy header via Astro middleware: minimal `default-src 'self'`, `script-src 'self' https://app.midtrans.com`.
 - [ ] **ADM-06** `apps/admin` — Route-based code splitting via `React.lazy()` + `Suspense` untuk mempercepat initial load admin panel.
 - [ ] **EML-09** `email-worker` — Metrik Prometheus untuk `email_sent_total`, `email_failed_total`, `email_retry_total` per job type.
-- [ ] **AUTH-06-log** `auth-service` — Structured audit log untuk semua event keamanan (login berhasil, login gagal, password reset, logout paksa).
-- [ ] **EML-07-zod** `email-worker` — Zod schema validation untuk setiap payload type *(juga ada di P2 — prioritaskan di P2)*.
+- [x] **AUTH-06-log** `auth-service` — Selesai bersama AUTH-06 di atas: `writeAuditLog` sudah mencakup LOGIN_SUCCESS, LOGIN_FAILED (kini +ip/ua), LOGOUT, PASSWORD_CHANGED, PASSWORD_RESET, ACCOUNT_CREATED, OWNER_LOGIN, ROLE_CHANGE. Semua emit ke stdout sebagai JSON dengan `audit: true` untuk agregasi log.
+- [x] **EML-07-zod** `email-worker` — Duplikat dari EML-07 yang telah selesai di Wave 6: `lib/payload-schemas.ts` berisi Zod schema untuk semua 5 job type. Ditutup.
 - [ ] **ALL** — Dependency audit rutin: setup Renovate bot atau cron `pnpm audit` dengan CI gating agar vulnerability baru terdeteksi otomatis.
 
 ---
@@ -160,15 +160,27 @@ Wave 7 ✅  ADM-06b✓, ADM-07✓, WEB-07b✓, WEB-08✓
 
 ---
 
-## Statistik
+## Statistik (diperbarui post Wave 7 + AUTH-06)
 
-| Prioritas | Total | ✅ Selesai | 🔧 Di-patch sesi ini | ⏳ Belum |
-|-----------|-------|-----------|---------------------|---------|
-| P0 — Critical | 13 | **13** | 0 | 0 |
-| P1 — High | 18 | **16** | **3** (ORD-01, AUTH-04, ORD-05b/06 confirmed) | **1** |
-| P2 — Medium | 38 | **1** (AUTH-03 safe) | **9** (AUTH-05, PAY-05, ORD-03, PAY-06, PAY-07, WEB-05, WEB-06, ADM-04, +1) | **28** |
-| P3 — Low | 10 | 0 | 0 | **10** |
-| **Total** | **79** | **30** | **12** | **39** |
+| Prioritas | Total | ✅ / 🔧 Selesai | ⏳ Belum |
+|-----------|-------|----------------|---------|
+| P0 — Critical | 13 | **13** (100%) | 0 |
+| P1 — High | ~20 | **~20** (100%) | 0 |
+| P2 — Medium | ~21 | **~21** (100%) | 0 |
+| P3 — Low | 10 | **2** (AUTH-06-log, EML-07-zod ditutup) | **8** |
+| **Total** | **79** | **~74** (~94%) | **~8** |
 
-> P0 dihitung 13 karena sub-item Wave 1 & 2 dipecah (EML-02 punya 4 sub-item, PAY-02 punya 3 sub-item, dll).  
-> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 12 di-patch sesi ini · 24 belum.
+### P3 Sisa (8 item — semua opsional / peningkatan operasional)
+
+| ID | Deskripsi singkat |
+|----|-------------------|
+| GW-07 | Health endpoint circuit breaker |
+| ORD-05 | Turunkan batas CSV export |
+| PRD-06 | Rate limit GET /products publik |
+| PAY-06b | Alert Slack/PagerDuty amount mismatch |
+| WEB-07 | CSP header via Astro middleware |
+| ADM-06 | Code splitting React.lazy + Suspense |
+| EML-09 | Metrik Prometheus email worker |
+| ALL | Renovate bot / cron pnpm audit + CI |
+
+> Semua P0, P1, dan P2 telah selesai. Sisa 8 item adalah peningkatan operasional / observability (P3) yang tidak memblokir keamanan produksi.

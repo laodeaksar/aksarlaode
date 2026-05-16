@@ -3,6 +3,7 @@ import { Sidebar }  from "@/components/layout/sidebar"
 import { Topbar }   from "@/components/layout/topbar"
 import { getSession } from "@/lib/auth"
 import { hasAnyAdminRole } from "@/lib/rbac"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 // FIX ADM-05: Accept ADMIN, OWNER, and FINANCE roles — not just ADMIN.
 // All three roles are permitted to access the admin panel; individual
@@ -22,8 +23,12 @@ export const Route = createRootRoute({
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
+        {/* FIX ADM-07: ErrorBoundary wraps the entire page outlet so a crash
+            in one route renders an error card instead of a blank white page. */}
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

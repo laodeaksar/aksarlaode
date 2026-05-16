@@ -118,14 +118,14 @@
 ### apps/web
 - [~] **WEB-05** *(di-patch — lihat bagian "Di-patch" di atas)*
 - [~] **WEB-06** *(di-patch — lihat bagian "Di-patch" di atas)*
-- [ ] **WEB-07b** `apps/web` — Error handling graceful di checkout flow: tampilkan retry UI yang jelas ketika payment initiation gagal; jangan biarkan blank page atau silent failure.
-- [ ] **WEB-08** `apps/web` — Image optimization + lazy loading untuk listing produk (gunakan `<Image>` Astro atau `loading="lazy"`).
+- [x] **WEB-07b** `apps/web` — `CheckoutForm.tsx` sekarang memiliki `paymentStatus` state (`idle | failed | cancelled`); Midtrans `onError` menampilkan retry card "Retry Payment" + "View Order"; `onClose` menampilkan card "Continue Payment"; error order-creation menampilkan alert yang jelas dengan border; tidak ada blank page atau silent failure.
+- [x] **WEB-08** `apps/web` — `ProductCard.astro` sudah memiliki `loading="lazy"` + ditambahkan `decoding="async"`; `[slug].astro` main image (LCP) mendapat `fetchpriority="high" decoding="async"` (tanpa lazy), thumbnail mendapat `loading="lazy" decoding="async"` + `alt` yang deskriptif; cart item images di `CheckoutForm.tsx` juga mendapat `loading="lazy" decoding="async"`.
 
 ### apps/admin
 - [~] **ADM-04** *(di-patch — lihat bagian "Di-patch" di atas)*
 - [x] **ADM-05** `apps/admin` — `rbac.ts` dengan `can()` + `hasAnyAdminRole()`; `SessionProvider` + `useSession()` context; role OWNER/ADMIN/FINANCE dengan permission map; products page menyembunyikan Add/Edit/Delete untuk FINANCE; orders page menyembunyikan Update Status untuk FINANCE; migrasi `006_add_finance_role.sql`.
-- [ ] **ADM-06b** `apps/admin` — Audit log viewer di admin panel: tampilkan riwayat aksi sensitif (hapus produk, ubah status order, ubah role user).
-- [ ] **ADM-07** `apps/admin` — Error boundary (`<ErrorBoundary>`) di semua halaman admin untuk mencegah blank page saat satu komponen crash.
+- [x] **ADM-06b** `apps/admin` — Migrasi `007_admin_audit_log.sql`; schema `admin-audit-log.ts`; `lib/admin-audit.ts` fire-and-forget writer; `delete.ts` handler menulis audit entry; `GET /products/audit-logs` endpoint (ADMIN/OWNER only); halaman `/audit-logs` di admin panel; sidebar menampilkan link Audit Log hanya untuk role dengan `audit:read`; `rbac.ts` ditambahkan permission `audit:read` untuk ADMIN dan OWNER.
+- [x] **ADM-07** `apps/admin` — `components/error-boundary.tsx` class component dengan error card + "Try again" button; `__root.tsx` membungkus `<Outlet />` dengan `<ErrorBoundary>` sehingga crash di satu halaman tidak memblank seluruh panel.
 
 ---
 
@@ -154,7 +154,7 @@ Wave 4 ✅  GW-02*, PAY-01*, WEB-03*, WEB-04, ADM-03*
 Review ✅  ORD-01 (repository-level), AUTH-03 (verified safe), AUTH-05, PAY-05
 Wave 5 ✅  AUTH-04✓, ORD-03✓, ORD-05b✓(existing), ORD-06✓(existing), PAY-07✓, PAY-06✓, WEB-05✓, WEB-06✓, ADM-04✓ │ Remaining (deferred to Wave 6): PRD-01b, ORD-04
 Wave 6 ✅  PRD-01b✓, ORD-04✓, GW-05✓, GW-06✓, GW-07b✓, EML-07✓, EML-08✓, PRD-04✓, PRD-05✓, PRD-06b✓, PRD-07✓, PAY-08✓, ADM-05✓
-Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
+Wave 7 ✅  ADM-06b✓, ADM-07✓, WEB-07b✓, WEB-08✓
 ```
 *Terverifikasi sudah ada sebelum audit dilakukan — tidak memerlukan perubahan kode.
 

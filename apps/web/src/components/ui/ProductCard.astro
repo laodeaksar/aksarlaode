@@ -12,11 +12,14 @@ const { id, name, slug, price, imageUrl, category, inStock } = Astro.props
 ---
 <a href={`/products/${slug}`} class="group block rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow overflow-hidden">
   <div class="aspect-square overflow-hidden bg-gray-100">
+    <!-- FIX WEB-08: loading="lazy" defers off-screen images; decoding="async"
+         prevents the decode from blocking the main thread. -->
     <img
       src={imageUrl ?? "/placeholder.png"}
       alt={name}
       class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
       loading="lazy"
+      decoding="async"
     />
   </div>
   <div class="p-4">

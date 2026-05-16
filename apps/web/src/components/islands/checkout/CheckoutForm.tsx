@@ -4,7 +4,6 @@ import { useState }          from "react"
 import { Effect, pipe }      from "effect"
 import { AppRuntime }        from "@/lib/effect/runtime"
 import { ordersApi }         from "@/lib/api/orders"
-import { productsApi }       from "@/lib/api/products"
 import { useCart }           from "@/lib/store/cart"
 import { HttpError, NetworkError } from "@/lib/effect/errors"
 import { checkoutSchema, type CheckoutInput } from "@/lib/schemas/forms"
@@ -15,12 +14,19 @@ type Props = {
 
 type CheckoutStep = "address" | "review" | "payment"
 
+// FIX WEB-07b: Distinguish between server errors (order/payment initiation)
+// and Snap errors (user interaction with Midtrans modal).  The payment step
+// now shows a dedicated retry card so the user is never left with a blank
+// screen or a silent failure.
+type PaymentStatus = "idle" | "failed" | "cancelled"
+
 export function CheckoutForm({ userId }: Props) {
   const { items, totalAmount, clearCart } = useCart()
-  const [step,        setStep]        = useState<CheckoutStep>("address")
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [orderId,     setOrderId]     = useState<string | null>(null)
-  const [snapToken,   setSnapToken]   = useState<string | null>(null)
+  const [step,           setStep]           = useState<CheckoutStep>("address")
+  const [serverError,    setServerError]    = useState<string | null>(null)
+  const [paymentStatus,  setPaymentStatus]  = useState<PaymentStatus>("idle")
+  const [orderId,        setOrderId]        = useState<string | null>(null)
+  const [snapToken,      setSnapToken]      = useState<string | null>(null)
 
   const {
     register,
@@ -105,18 +111,21 @@ export function CheckoutForm({ userId }: Props) {
         setServerError("Some items are out of stock. Please update your cart.")
         return
       }
-      setServerError("Failed to create order. Please try again.")
+      // FIX WEB-07b: surface a clear, retry-able error message.
+      setServerError("We couldn't complete your order. Please try again.")
       return
     }
 
     setOrderId(exit.value.orderId)
     setSnapToken(exit.value.snapToken)
+    setPaymentStatus("idle")
     setStep("payment")
   }
 
   // Step 3: open Midtrans Snap
   const openSnap = () => {
     if (!snapToken) return
+    setPaymentStatus("idle")
 
     // @ts-ignore — Midtrans Snap global
     window.snap.pay(snapToken, {
@@ -127,12 +136,13 @@ export function CheckoutForm({ userId }: Props) {
       onPending: () => {
         window.location.href = `/orders/${orderId}?status=pending`
       },
+      // FIX WEB-07b: set paymentStatus so the payment step renders a retry card
+      // instead of silently going back to the review step.
       onError: () => {
-        setServerError("Payment failed. Please try again.")
-        setStep("review")
+        setPaymentStatus("failed")
       },
       onClose: () => {
-        setServerError("Payment cancelled.")
+        setPaymentStatus("cancelled")
       },
     })
   }
@@ -143,7 +153,9 @@ export function CheckoutForm({ userId }: Props) {
       <StepIndicator current={step} />
 
       {serverError && (
-        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{serverError}</div>
+        <div role="alert" className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+          {serverError}
+        </div>
       )}
 
       {/* ── Step 1: Address ───────────────────────────── */}
@@ -206,7 +218,13 @@ export function CheckoutForm({ userId }: Props) {
           <div className="divide-y rounded-lg border">
             {items.map(item => (
               <div key={item.productId} className="flex items-center gap-3 p-4">
-                <img src={item.imageUrl} className="h-14 w-14 rounded object-cover" alt={item.name} />
+                <img
+                  src={item.imageUrl}
+                  className="h-14 w-14 rounded object-cover"
+                  alt={item.name}
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="flex-1 text-sm">
                   <p className="font-medium">{item.name}</p>
                   <p className="text-gray-500">x{item.quantity}</p>
@@ -236,22 +254,64 @@ export function CheckoutForm({ userId }: Props) {
 
       {/* ── Step 3: Payment ───────────────────────────── */}
       {step === "payment" && snapToken && (
-        <div className="space-y-4 text-center">
-          <div className="rounded-lg bg-green-50 p-4">
-            <p className="font-medium text-green-800">Order <strong>{orderId}</strong> created!</p>
-            <p className="text-sm text-green-600">Complete payment to confirm your order.</p>
-          </div>
+        <div className="space-y-4">
+          {/* FIX WEB-07b: dedicated error/cancel states with explicit retry UI */}
+          {paymentStatus === "failed" && (
+            <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-5 text-center space-y-3">
+              <p className="font-semibold text-red-700">Payment unsuccessful</p>
+              <p className="text-sm text-red-600">
+                Your order has been saved. You can retry payment now or come back later.
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={openSnap}
+                  className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  Retry Payment
+                </button>
+                <a
+                  href={`/orders/${orderId}`}
+                  className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  View Order
+                </a>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={openSnap}
-            className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white hover:bg-blue-700"
-          >
-            Pay Now
-          </button>
+          {paymentStatus === "cancelled" && (
+            <div role="alert" className="rounded-lg border border-yellow-200 bg-yellow-50 p-5 text-center space-y-3">
+              <p className="font-semibold text-yellow-800">Payment window closed</p>
+              <p className="text-sm text-yellow-700">
+                Your order is reserved. Complete payment within 60 minutes to confirm it.
+              </p>
+              <button
+                onClick={openSnap}
+                className="rounded-lg bg-yellow-600 px-5 py-2 text-sm font-medium text-white hover:bg-yellow-700 transition-colors"
+              >
+                Continue Payment
+              </button>
+            </div>
+          )}
 
-          <p className="text-xs text-gray-500">
-            Secure payment powered by Midtrans.
-            Payment link expires in 60 minutes.
+          {paymentStatus === "idle" && (
+            <div className="rounded-lg bg-green-50 p-4 text-center">
+              <p className="font-medium text-green-800">Order <strong>{orderId}</strong> created!</p>
+              <p className="text-sm text-green-600">Complete payment to confirm your order.</p>
+            </div>
+          )}
+
+          {paymentStatus === "idle" && (
+            <button
+              onClick={openSnap}
+              className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white hover:bg-blue-700"
+            >
+              Pay Now
+            </button>
+          )}
+
+          <p className="text-center text-xs text-gray-500">
+            Secure payment powered by Midtrans. Payment link expires in 60 minutes.
           </p>
         </div>
       )}
@@ -282,5 +342,28 @@ function StepIndicator({ current }: { current: CheckoutStep }) {
         </li>
       ))}
     </ol>
+  )
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function inputCls(hasError: boolean) {
+  return `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors
+    ${hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+      : "border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+    }`
+}
+
+function Field({
+  label, error, children, className = "",
+}: {
+  label: string; error?: string; children: React.ReactNode; className?: string
+}) {
+  return (
+    <div className={className}>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+      {children}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
   )
 }

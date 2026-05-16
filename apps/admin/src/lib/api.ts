@@ -115,7 +115,30 @@ export const dashboardApi = {
   stats: () => request<DashboardStats>("/admin/dashboard/stats"),
 }
 
+// ── Audit logs ────────────────────────────────────────────
+// FIX ADM-06b: Reads the immutable admin audit log via the product-service
+// endpoint proxied through the gateway at /products/audit-logs.
+export const auditLogsApi = {
+  list: (page = 1) =>
+    request<{ items: AuditLogEntry[]; total: number; page: number; limit: number }>(
+      `/products/audit-logs?page=${page}`
+    ),
+}
+
 // ── Types ─────────────────────────────────────────────────
+export type AuditLogEntry = {
+  id:         string
+  actorId:    string
+  actorRole:  string
+  action:     string
+  resource:   string
+  resourceId: string
+  oldValue:   Record<string, unknown> | null
+  newValue:   Record<string, unknown> | null
+  metadata:   Record<string, unknown> | null
+  createdAt:  string
+}
+
 export type DashboardStats = {
   totalRevenue:   number
   totalOrders:    number

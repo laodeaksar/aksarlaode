@@ -2,7 +2,7 @@
 //
 // Role hierarchy (most privileged first):
 //   OWNER   — full access including user management and billing
-//   ADMIN   — full product and order management
+//   ADMIN   — full product and order management, plus audit log access
 //   FINANCE — read-only access to orders and revenue; no product management
 //
 // Usage:
@@ -19,6 +19,7 @@ export type Permission =
   | "customers:read"
   | "dashboard:read"
   | "users:manage"
+  | "audit:read"       // FIX ADM-06b: audit log viewer access
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OWNER: [
@@ -29,6 +30,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "customers:read",
     "dashboard:read",
     "users:manage",
+    "audit:read",
   ],
   ADMIN: [
     "products:read",
@@ -37,6 +39,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "orders:write",
     "customers:read",
     "dashboard:read",
+    "audit:read",
   ],
   FINANCE: [
     "orders:read",

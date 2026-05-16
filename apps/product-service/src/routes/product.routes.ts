@@ -7,6 +7,7 @@ import { reserveStockHandler }  from "@/handlers/reserve-stock"
 import { releaseStockHandler }  from "@/handlers/release-stock"
 import { updateHandler }        from "@/handlers/update"
 import { deleteHandler }        from "@/handlers/delete"
+import { auditLogHandler }      from "@/handlers/audit-log"
 import {
   ProductSchema,
   ProductListResponseSchema,
@@ -134,5 +135,33 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     detail: {
       summary:     "Delete product",
       description: `Permanently deletes a product by ID. ${AdminDescription}`,
+    },
+  })
+
+  // FIX ADM-06b: Read-only audit log endpoint for admin panel viewer.
+  .get("/audit-logs", auditLogHandler, {
+    response: {
+      200: t.Object({
+        items: t.Array(t.Object({
+          id:         t.String(),
+          actorId:    t.String(),
+          actorRole:  t.String(),
+          action:     t.String(),
+          resource:   t.String(),
+          resourceId: t.String(),
+          oldValue:   t.Optional(t.Unknown()),
+          newValue:   t.Optional(t.Unknown()),
+          metadata:   t.Optional(t.Unknown()),
+          createdAt:  t.Union([t.String(), t.Date()]),
+        })),
+        total: t.Number(),
+        page:  t.Number(),
+        limit: t.Number(),
+      }),
+      403: ForbiddenSchema,
+    },
+    detail: {
+      summary:     "List admin audit log",
+      description: `Returns recent sensitive admin actions. ${AdminDescription} OWNER also permitted.`,
     },
   })

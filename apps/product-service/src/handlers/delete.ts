@@ -1,6 +1,7 @@
 import { Effect, Cause } from "effect"
 import type { Context } from "elysia"
 import { productRepository, ProductNotFoundError } from "@/repository/product.repository"
+import { writeAuditLog } from "@/lib/admin-audit"
 import type { DerivedContext } from "@/types"
 
 export const deleteHandler = async ({ params, set, userRole, userId, requestId }: Context & DerivedContext) => {
@@ -30,6 +31,17 @@ export const deleteHandler = async ({ params, set, userRole, userId, requestId }
     userId,
     requestId,
   }))
+
+  // FIX ADM-06b: append an immutable audit entry so admins can review
+  // product delete history in the admin panel audit log viewer.
+  writeAuditLog({
+    actorId:    userId ?? "unknown",
+    actorRole:  userRole ?? "ADMIN",
+    action:     "product_deleted",
+    resource:   "product",
+    resourceId: id,
+    metadata:   { requestId },
+  })
 
   return { message: "Deleted" }
 }

@@ -22,18 +22,30 @@ const product = exit.value
   <div class="max-w-5xl mx-auto px-4 py-10 grid gap-10 lg:grid-cols-2">
 
     <!-- Image gallery -->
+    <!-- FIX WEB-08: Main product image is the Largest Contentful Paint (LCP)
+         element — use fetchpriority="high" + eager loading so the browser
+         fetches it immediately.  Thumbnails are below-the-fold and get
+         loading="lazy" decoding="async" to keep the page fast. -->
     <div class="space-y-3">
       <div class="aspect-square overflow-hidden rounded-xl bg-gray-100">
         <img
           src={product.imageUrls?.[0] ?? "/placeholder.png"}
           alt={product.name}
           class="h-full w-full object-cover"
+          fetchpriority="high"
+          decoding="async"
         />
       </div>
       {product.imageUrls && product.imageUrls.length > 1 && (
         <div class="grid grid-cols-4 gap-2">
-          {product.imageUrls.slice(1).map(url => (
-            <img src={url} class="aspect-square rounded object-cover cursor-pointer border-2 border-transparent hover:border-blue-500" />
+          {product.imageUrls.slice(1).map((url, i) => (
+            <img
+              src={url}
+              alt={`${product.name} — view ${i + 2}`}
+              class="aspect-square rounded object-cover cursor-pointer border-2 border-transparent hover:border-blue-500"
+              loading="lazy"
+              decoding="async"
+            />
           ))}
         </div>
       )}

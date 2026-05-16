@@ -10,7 +10,7 @@ import {
   ValidationError,
   NotFoundError,
 } from "@/effect/Errors"
-import { runServerEffect }  from "@/effect/ServerContext"
+import { effectMiddleware } from "@/effect/Middleware"
 
 // ── Input schemas ──────────────────────────────────────────────────────────
 
@@ -54,38 +54,42 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
 // ── GET /products — list with pagination & search ─────────────────────────
 //
 // Example usage in a route loader:
-//   loader: () => listProductsFn({ data: { page: 1, search: "" } })
+//   loader: () => listProductsFn({ data: { page: 1, search: "sneaker" } })
 //
-// Runs Effect.gen → ApiClientService.products.list entirely server-side.
-// On the client TanStack Start replays the call via an internal HTTP endpoint
-// so no fetch logic bleeds into the client bundle.
+// Runs Effect.gen → ApiClientService.products.list entirely server-side via
+// the shared AppRuntime injected by effectMiddleware.
+// On the client, TanStack Start replays the call over an internal HTTP endpoint
+// so no fetch logic bleeds into the browser bundle.
 
 export const listProductsFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(ListParamsSchema, raw as Schema.Schema.Encoded<typeof ListParamsSchema>)
   )
-  .handler(async ({ data }) =>
-    runServerEffect(
+  .handler(async ({ data, context }) => {
+    const params: { page: number; limit: number; search?: string } = {
+      page:  data.page,
+      limit: data.limit,
+    }
+    if (data.search !== undefined) params.search = data.search
+
+    return context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService
-        const params: { page: number; limit: number; search?: string } = {
-          page:  data.page,
-          limit: data.limit,
-        }
-        if (data.search !== undefined) params.search = data.search
         return yield* api.products.list(params)
       }),
     )
-  )
+  })
 
 // ── GET /products/:id — fetch single product ──────────────────────────────
 
 export const getProductFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(ProductIdSchema, raw as Schema.Schema.Encoded<typeof ProductIdSchema>)
   )
-  .handler(async ({ data }) =>
-    runServerEffect(
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
       Effect.gen(function* () {
         const api     = yield* ApiClientService
         const product = yield* api.products.getOne(data.id)
@@ -119,11 +123,12 @@ export const getProductFn = createServerFn({ method: "GET" })
 //   })
 
 export const createProductFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(NewProductSchema, raw as Schema.Schema.Encoded<typeof NewProductSchema>)
   )
-  .handler(async ({ data }) =>
-    runServerEffect(
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService
         // stripUndefined: schema partial produces `x?: T | undefined`;
@@ -143,11 +148,12 @@ const UpdateParamsSchema = Schema.Struct({
 })
 
 export const updateProductFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(UpdateParamsSchema, raw as Schema.Schema.Encoded<typeof UpdateParamsSchema>)
   )
-  .handler(async ({ data }) =>
-    runServerEffect(
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService
         return yield* api.products.update(
@@ -161,11 +167,12 @@ export const updateProductFn = createServerFn({ method: "POST" })
 // ── DELETE /products/:id ──────────────────────────────────────────────────
 
 export const deleteProductFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(ProductIdSchema, raw as Schema.Schema.Encoded<typeof ProductIdSchema>)
   )
-  .handler(async ({ data }) =>
-    runServerEffect(
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService
         return yield* api.products.delete(data.id)

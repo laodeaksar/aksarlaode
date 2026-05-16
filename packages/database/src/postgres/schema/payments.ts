@@ -13,6 +13,9 @@ export const payments = pgTable("payments", {
   status:      paymentStatusEnum("status").default("PENDING").notNull(),
   snapToken:   text("snap_token"),
   paymentType: text("payment_type"),                   // "bank_transfer", "gopay", etc.
+  // FIX PAY-07: store user email at initiation time so webhook never needs a
+  // round-trip to auth-service to populate email jobs.
+  userEmail:   text("user_email"),
   paidAt:      timestamp("paid_at"),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),

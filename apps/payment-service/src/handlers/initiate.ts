@@ -6,8 +6,12 @@ import { InitiatePaymentSchema } from "@repo/common"
 import type { AppEnv } from "@/types"
 
 export const initiateHandler = async (c: Context<AppEnv>) => {
-  const userId = c.req.header("x-user-id")!
-  const body   = await c.req.json()
+  const userId    = c.req.header("x-user-id")!
+  // FIX PAY-07: read email injected by api-gateway (AUTH-04) so it can be
+  // stored on the payment record; webhook then reads it directly without a
+  // round-trip to auth-service.
+  const userEmail = c.req.header("x-user-email") ?? undefined
+  const body      = await c.req.json()
 
   const program = Effect.gen(function* () {
     // 1. Validate input
@@ -52,6 +56,7 @@ export const initiateHandler = async (c: Context<AppEnv>) => {
       amount:    input.amount,
       snapToken: snap.token,
       status:    "PENDING",
+      userEmail,
     })
 
     return { snapToken: snap.token, redirectUrl: snap.redirectUrl, paymentId: payment.id }

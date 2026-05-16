@@ -53,12 +53,15 @@ const updateStatus = (orderId: string, status: string) =>
 
 // FIX PAY-02: upsert — create payment record on first initiation, refresh the
 // snapToken on subsequent calls for the same order (idempotent).
+// FIX PAY-07: accept userEmail so it is stored at initiation time; the webhook
+// handler can then read it directly without calling auth-service.
 const upsert = (data: {
   orderId:   string
   userId:    string
   amount:    number
   snapToken: string
   status:    string
+  userEmail?: string
 }) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
@@ -69,9 +72,9 @@ const upsert = (data: {
             orderId:   data.orderId,
             userId:    data.userId,
             snapToken: data.snapToken,
-            snapUrl:   "",
             amount:    data.amount,
             status:    data.status,
+            ...(data.userEmail ? { userEmail: data.userEmail } : {}),
           })
           .onConflictDoUpdate({
             target: schema.payments.orderId,
@@ -79,6 +82,7 @@ const upsert = (data: {
               snapToken:  data.snapToken,
               status:     data.status,
               updatedAt:  new Date(),
+              ...(data.userEmail ? { userEmail: data.userEmail } : {}),
             },
           })
           .returning(),

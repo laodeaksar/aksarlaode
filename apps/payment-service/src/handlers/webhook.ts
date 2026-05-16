@@ -93,7 +93,7 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     //    userEmail comes from the payment record's associated user.
     //    If the user email is not stored on the payment, the email-worker will
     //    fall back to fetching it from auth-service using the userId.
-    const userEmail = (payment as any).userEmail ?? ""
+    const userEmail = payment.userEmail ?? ""
 
     if (paymentStatus === "PAID") {
       yield* emailQueue.add("order-confirmation", {

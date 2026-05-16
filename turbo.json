@@ -6,7 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs":    ["src/**", "tsconfig.json", "package.json"],
-      "outputs":   [".next/**", "dist/**", ".astro/**", ".wrangler/**"],
+      "outputs":   [".next/**", "dist/**", ".astro/**", ".wrangler/**", ".output/**", ".vinxi/**"],
       "env": [
         "NODE_ENV",
         "DATABASE_URL", "MONGODB_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",

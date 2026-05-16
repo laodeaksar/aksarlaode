@@ -1,7 +1,15 @@
 import { Link }  from "@tanstack/react-router"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { useState }        from "react"
-import { productsApi }     from "@/lib/api"
+import { Route }           from "./index"
+import {
+  listProductsFn,
+  deleteProductFn,
+}                          from "@/server/products"
 import { DataTable }       from "@/components/data-table/data-table"
 import { Button }          from "@repo/ui/components/button"
 import { Badge }           from "@repo/ui/components/badge"
@@ -19,16 +27,17 @@ export default function ProductsPage() {
   const [page,   setPage]   = useState(1)
   const [search, setSearch] = useState("")
   const { session } = useSession()
-  const role        = session?.role ?? "CUSTOMER"
-  const canWrite    = can(role, "products:write")
+  const role     = session?.role ?? "CUSTOMER"
+  const canWrite = can(role, "products:write")
+
+  // Seed the query cache with SSR loader data on first render
+  const loaderData = Route.useLoaderData()
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", page, search],
-    queryFn:  () => productsApi.list(new URLSearchParams({
-      page:   String(page),
-      limit:  "20",
-      search,
-    }).toString()),
+    queryFn:  () => listProductsFn({ data: { page, limit: 20, search } }),
+    // Use SSR data as initial value for the first page
+    initialData: page === 1 && !search ? loaderData : undefined,
   })
 
   const columns: ColumnDef<Product>[] = [
@@ -38,7 +47,11 @@ export default function ProductsPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           {row.original.imageUrls?.[0] && (
-            <img src={row.original.imageUrls[0]} className="h-10 w-10 rounded object-cover" />
+            <img
+              src={row.original.imageUrls[0]}
+              className="h-10 w-10 rounded object-cover"
+              alt={row.original.name}
+            />
           )}
           <div>
             <p className="font-medium">{row.original.name}</p>
@@ -50,7 +63,8 @@ export default function ProductsPage() {
     {
       accessorKey: "price",
       header:      "Price",
-      cell: ({ getValue }) => `Rp ${(getValue() as number).toLocaleString("id-ID")}`,
+      cell: ({ getValue }) =>
+        `Rp ${(getValue() as number).toLocaleString("id-ID")}`,
     },
     {
       accessorKey: "stock",
@@ -58,7 +72,11 @@ export default function ProductsPage() {
       cell: ({ getValue }) => {
         const stock = getValue() as number
         return (
-          <Badge variant={stock === 0 ? "destructive" : stock < 10 ? "secondary" : "default"}>
+          <Badge
+            variant={
+              stock === 0 ? "destructive" : stock < 10 ? "secondary" : "default"
+            }
+          >
             {stock}
           </Badge>
         )
@@ -68,22 +86,39 @@ export default function ProductsPage() {
       accessorKey: "status",
       header:      "Status",
       cell: ({ getValue }) => {
-        const status = getValue() as string
-        const variants = { ACTIVE: "default", DRAFT: "secondary", ARCHIVED: "outline" } as const
-        return <Badge variant={variants[status as keyof typeof variants] ?? "outline"}>{status}</Badge>
+        const status   = getValue() as string
+        const variants = {
+          ACTIVE:   "default",
+          DRAFT:    "secondary",
+          ARCHIVED: "outline",
+        } as const
+        return (
+          <Badge variant={variants[status as keyof typeof variants] ?? "outline"}>
+            {status}
+          </Badge>
+        )
       },
     },
-    ...(canWrite ? [{
-      id:   "actions",
-      cell: ({ row }: { row: { original: Product } }) => (
-        <div className="flex gap-2">
-          <Link to="/products/$productId" params={{ productId: row.original.id }}>
-            <Button size="sm" variant="outline">Edit</Button>
-          </Link>
-          <DeleteButton productId={row.original.id} />
-        </div>
-      ),
-    }] : []),
+    ...(canWrite
+      ? [
+          {
+            id:   "actions",
+            cell: ({ row }: { row: { original: Product } }) => (
+              <div className="flex gap-2">
+                <Link
+                  to="/products/$productId"
+                  params={{ productId: row.original.id }}
+                >
+                  <Button size="sm" variant="outline">
+                    Edit
+                  </Button>
+                </Link>
+                <DeleteButton productId={row.original.id} />
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -101,14 +136,17 @@ export default function ProductsPage() {
         className="w-64 rounded border px-3 py-2 text-sm"
         placeholder="Search products..."
         value={search}
-        onChange={e => { setSearch(e.target.value); setPage(1) }}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setPage(1)
+        }}
       />
 
       <DataTable
         columns={columns}
-        data={data?.data?.items ?? []}
+        data={data?.items ?? []}
         isLoading={isLoading}
-        total={data?.data?.total ?? 0}
+        total={data?.total ?? 0}
         page={page}
         onPageChange={setPage}
       />
@@ -116,11 +154,40 @@ export default function ProductsPage() {
   )
 }
 
+// ── Delete button with optimistic removal ─────────────────────────────────
 function DeleteButton({ productId }: { productId: string }) {
   const queryClient = useQueryClient()
+
   const { mutate, isPending } = useMutation({
-    mutationFn: () => productsApi.delete(productId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    mutationFn: () => deleteProductFn({ data: { id: productId } }),
+
+    // Optimistic: remove the product from every cached page immediately
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["products"] })
+      const snapshots = queryClient.getQueriesData<{ items: Product[]; total: number }>({
+        queryKey: ["products"],
+      })
+      queryClient.setQueriesData<{ items: Product[]; total: number }>(
+        { queryKey: ["products"] },
+        (old) =>
+          old
+            ? {
+                items: old.items.filter((p) => p.id !== productId),
+                total: old.total - 1,
+              }
+            : old,
+      )
+      return { snapshots }
+    },
+
+    // Roll back on error
+    onError: (_err, _vars, ctx) => {
+      ctx?.snapshots.forEach(([key, data]) =>
+        queryClient.setQueryData(key, data),
+      )
+    },
+
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
   })
 
   return (
@@ -134,7 +201,8 @@ function DeleteButton({ productId }: { productId: string }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
           <AlertDialogDescription>
-            Aksi ini tidak bisa dibatalkan. Produk akan dihapus secara permanen dari sistem.
+            Aksi ini tidak bisa dibatalkan. Produk akan dihapus secara permanen
+            dari sistem.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

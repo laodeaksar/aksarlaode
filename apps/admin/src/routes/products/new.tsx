@@ -1,31 +1,80 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQueryClient }  from "@tanstack/react-query"
 import { ProductForm }                  from "@/components/forms/product-form"
-import { productsApi }                  from "@/lib/api"
+import { createProductFn }              from "@/server/products"
+import type { NewProductInput }         from "@/effect/Services"
 
 export const Route = createFileRoute("/products/new")({
+  head: () => ({
+    meta: [{ title: "New Product — Admin" }],
+  }),
   component: NewProductPage,
 })
 
 function NewProductPage() {
-  const navigate     = useNavigate()
-  const queryClient  = useQueryClient()
+  const navigate    = useNavigate()
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (data: any) => productsApi.create(data),
+    mutationFn: (input: NewProductInput) =>
+      createProductFn({ data: input }),
+
+    // Optimistic: add a placeholder row to the first page immediately
+    onMutate: async (newProduct) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] })
+
+      const previousData = queryClient.getQueryData<{
+        items: { id: string; name: string }[]
+        total: number
+      }>(["products", 1, ""])
+
+      queryClient.setQueryData(["products", 1, ""], (old: typeof previousData) =>
+        old
+          ? {
+              items: [
+                {
+                  ...newProduct,
+                  id:        `optimistic-${Date.now()}`,
+                  status:    newProduct.status ?? "ACTIVE",
+                  imageUrls: newProduct.imageUrls ?? [],
+                  createdAt: new Date().toISOString(),
+                },
+                ...old.items,
+              ],
+              total: old.total + 1,
+            }
+          : old,
+      )
+
+      return { previousData }
+    },
+
+    // Roll back on error
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previousData) {
+        queryClient.setQueryData(["products", 1, ""], ctx.previousData)
+      }
+    },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] })
       navigate({ to: "/products" })
     },
   })
 
+  const errorMessage = mutation.error
+    ? mutation.error instanceof Error
+      ? mutation.error.message
+      : "Gagal membuat produk. Silakan coba lagi."
+    : null
+
   return (
     <div className="space-y-4 max-w-xl">
       <h1 className="text-2xl font-semibold text-gray-900">New Product</h1>
       <ProductForm
-        onSubmit={(data) => mutation.mutate(data)}
+        onSubmit={(data) => mutation.mutate(data as NewProductInput)}
         isLoading={mutation.isPending}
-        error={mutation.error ? "Failed to create product" : null}
+        error={errorMessage}
       />
     </div>
   )

@@ -1,25 +1,33 @@
-// FIX ADM-07: Generic React error boundary that prevents a single crashed
-// component from blanking the entire admin panel.  Renders a dismissible
-// error card so the user can see what went wrong and try to recover.
 import { Component, type ErrorInfo, type ReactNode } from "react"
 
 type Props  = { children: ReactNode; fallback?: ReactNode }
 type State  = { error: Error | null }
 
-export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+// ── Global Error Boundary ──────────────────────────────────────────────────
+// FIX ADM-07: Prevents a single crashed component from blanking the entire
+// admin panel. Renders a dismissible error card so the user can see what
+// went wrong and try to recover.
+// Also catches errors thrown from Effect-powered server functions —
+// the `_tag` property on tagged errors is displayed in the message.
 
+export class ErrorBoundary extends Component<Props, State> {
+  // `state` IS declared as `state: Readonly<S>` in Component — needs override.
+  override state: State = { error: null }
+
+  // getDerivedStateFromError lives on ComponentClass interface, not Component class —
+  // TypeScript treats it as not-in-base, so omit `override`.
   static getDerivedStateFromError(error: Error): State {
     return { error }
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  // componentDidCatch IS declared in the ComponentLifecycle interface.
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack)
   }
 
   reset = () => this.setState({ error: null })
 
-  render() {
+  override render() {
     const { error } = this.state
 
     if (error) {

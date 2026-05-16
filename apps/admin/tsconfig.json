@@ -1,13 +1,25 @@
 {
   "extends": "@repo/typescript-config/react.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "baseUrl": ".",
+    "outDir":   "dist",
+    "baseUrl":  ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "jsx":              "react-jsx",
+    "strict":           true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "module":           "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "skipLibCheck":     true,
+    "types":            ["node", "vite/client"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "app",
+    "src",
+    "app.config.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".output", ".vinxi"]
 }

@@ -1,12 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { lazy }            from "react"
+import { listProductsFn }  from "@/server/products"
 
-// FIX ADM-06: Route-based code splitting — the heavy ProductsPage component
-// (DataTable, AlertDialog, @tanstack/react-table) is extracted to a separate
-// chunk and only loaded when the user navigates to /products/.
-// The Suspense fallback is provided by the global boundary in __root.tsx.
-const ProductsPage = lazy(() => import("./products-page"))
+// ── Route — GET /products/ ─────────────────────────────────────────────────
+// loader: runs on the SERVER during SSR (via TanStack Start server function).
+// The result is serialized and streamed to the client for hydration.
+// On client-side navigation, TanStack Start calls the server fn via HTTP.
+//
+// ProductsPage consumes the loader data via Route.useLoaderData() AND
+// useQuery() for subsequent re-fetches / optimistic updates.
 
 export const Route = createFileRoute("/products/")({
-  component: ProductsPage,
+  // Server-side loader: fetch initial product list using Effect + ApiClientService
+  loader: () =>
+    listProductsFn({
+      data: { page: 1, limit: 20 },
+    }),
+
+  // FIX ADM-06: Code-split — heavy DataTable is only loaded on navigation
+  component: lazy(() => import("./products-page")),
 })

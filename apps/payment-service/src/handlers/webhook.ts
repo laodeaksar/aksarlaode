@@ -77,6 +77,34 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── FIX PAY-06: Amount integrity check ───────────────────────────────────
+    // Midtrans sends gross_amount as a decimal string (e.g. "150000.00").
+    // Compare it against the amount stored in the DB at initiation time.
+    // A mismatch signals a tampered notification or a mis-routed event from a
+    // different transaction — reject all side effects and ACK 200 so Midtrans
+    // stops retrying.  Only checked when a payment record already exists; a
+    // missing record (Left) means initiate has not run yet, so there is no
+    // authoritative amount to compare against.
+    if (existingResult._tag === "Right") {
+      const notificationAmount = Math.round(parseFloat(notification.gross_amount ?? "0"))
+      const dbAmount           = existingResult.right.amount
+
+      if (notificationAmount !== dbAmount) {
+        console.error(JSON.stringify({
+          event:              "ALERT_PAYMENT_AMOUNT_MISMATCH",
+          severity:           "CRITICAL",
+          orderId:            notification.order_id,
+          dbAmount,
+          notificationAmount,
+          grossAmountRaw:     notification.gross_amount,
+          txStatus,
+          note:               "Rejecting webhook — gross_amount does not match stored payment amount. Possible tampered notification.",
+        }))
+        return { received: true }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // 1. Update payment record (status + paymentType + paidAt)
     const payment = yield* paymentRepository.updateByOrderId(notification.order_id, {
       status:      paymentStatus,

@@ -75,6 +75,8 @@
 - [~] **ORD-06** `order-service` — Dikonfirmasi sudah ada: `shippingAddress` schema memvalidasi semua field wajib (`recipientName`, `phone`, `street`, `city`, `province`, `postalCode`) sebagai `t.String()` non-opsional. Tidak memerlukan perubahan kode.
 - [~] **PAY-07** `payment-service` — Field `userEmail` ditambahkan ke tabel `payments` (kolom `user_email` nullable, migration `0002_add_payment_user_email.sql`); `initiateHandler` membaca header `x-user-email` (diinjeksikan AUTH-04) dan menyimpannya via `paymentRepository.upsert`; `webhookHandler` kini membaca `payment.userEmail` langsung tanpa fallback ke auth-service (cast `as any` dihapus).
 - [~] **PAY-06** `payment-service` — Amount integrity check di `webhookHandler`: `notification.gross_amount` (string Midtrans) di-parse + round lalu dibandingkan dengan `existingResult.right.amount` (integer DB). Jika beda → log `ALERT_PAYMENT_AMOUNT_MISMATCH` severity CRITICAL + return `{ received: true }` tanpa update order/email jobs. Check hanya dilakukan jika payment record sudah ada (skip jika `Left` — initiate belum jalan).
+- [~] **WEB-05** `apps/web` — Fungsi `sanitizeUpstreamError()` ditambahkan di `initiate.ts`; dispatch berdasarkan `_tag` error: `NetworkError` → 503 + "Payment service temporarily unavailable" (bukan `String(fetchError)` yang bisa berisi URL internal), `ParseError` → 502 + "Upstream returned an invalid response", `NotFoundError` → 404 tanpa `resource` path, `HttpError` → forward message gateway (controlled), default → 500. Import `NetworkError` lama dihapus, ganti ke `ApiError` union.
+- [~] **WEB-06** `apps/web` — `layers.ts` diperbarui: impor `@repo/env` yang broken (barrel tidak export `env`) diganti dengan `import.meta.env` Astro native. Prioritas URL: `INTERNAL_API_URL` (server-only, tanpa prefix PUBLIC_) → `PUBLIC_API_URL` (fallback dev). Client-side tidak pernah memanggil `apiFetch` langsung — semua browser requests ke path relatif `/api/*` yang diproxy oleh Astro server-side.
 
 ---
 
@@ -113,8 +115,8 @@
 - [ ] **PAY-08** `payment-service` — Log semua transaksi ke tabel audit terpisah yang immutable (append-only, tidak ada UPDATE/DELETE); penting untuk rekonsiliasi forensik.
 
 ### apps/web
-- [ ] **WEB-05** `apps/web` — Filter error upstream di semua Astro API routes sebelum dikembalikan ke browser; jangan expose stack trace, service name, atau internal path.
-- [ ] **WEB-06** `apps/web` — Pastikan `PUBLIC_API_URL` di konteks server-side menunjuk ke URL internal; konteks client-side gunakan path relatif `/api/` untuk menghindari bocor topologi jaringan.
+- [~] **WEB-05** *(di-patch — lihat bagian "Di-patch" di atas)*
+- [~] **WEB-06** *(di-patch — lihat bagian "Di-patch" di atas)*
 - [ ] **WEB-07b** `apps/web` — Error handling graceful di checkout flow: tampilkan retry UI yang jelas ketika payment initiation gagal; jangan biarkan blank page atau silent failure.
 - [ ] **WEB-08** `apps/web` — Image optimization + lazy loading untuk listing produk (gunakan `<Image>` Astro atau `loading="lazy"`).
 
@@ -149,7 +151,7 @@ Wave 2 ✅  PAY-02, PAY-03, PAY-04, EML-02, EML-03, EML-04*, EML-06*, order-serv
 Wave 3 ✅  AUTH-01*, AUTH-02*, GW-01*, GW-03*, EML-05*, ORD-02*, PRD-02*, PRD-03*, ADM-02*
 Wave 4 ✅  GW-02*, PAY-01*, WEB-03*, WEB-04, ADM-03*
 Review ✅  ORD-01 (repository-level), AUTH-03 (verified safe), AUTH-05, PAY-05
-Wave 5 🔧  AUTH-04✓, ORD-03✓, ORD-05b✓(existing), ORD-06✓(existing), PAY-07✓, PAY-06✓ │ Remaining: PRD-01b, ORD-04, WEB-05, WEB-06, ADM-04
+Wave 5 🔧  AUTH-04✓, ORD-03✓, ORD-05b✓(existing), ORD-06✓(existing), PAY-07✓, PAY-06✓, WEB-05✓, WEB-06✓ │ Remaining: PRD-01b, ORD-04, ADM-04
 Wave 6 ──  PRD-04, PRD-05, PRD-06b, PRD-07, PAY-08, GW-05, GW-06, GW-07b, EML-07, EML-08, ADM-05
 Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 ```
@@ -163,9 +165,9 @@ Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 |-----------|-------|-----------|---------------------|---------|
 | P0 — Critical | 13 | **13** | 0 | 0 |
 | P1 — High | 18 | **16** | **3** (ORD-01, AUTH-04, ORD-05b/06 confirmed) | **1** |
-| P2 — Medium | 38 | **1** (AUTH-03 safe) | **6** (AUTH-05, PAY-05, ORD-03, PAY-06, PAY-07, +1) | **31** |
+| P2 — Medium | 38 | **1** (AUTH-03 safe) | **8** (AUTH-05, PAY-05, ORD-03, PAY-06, PAY-07, WEB-05, WEB-06, +1) | **29** |
 | P3 — Low | 10 | 0 | 0 | **10** |
-| **Total** | **79** | **30** | **9** | **42** |
+| **Total** | **79** | **30** | **11** | **40** |
 
 > P0 dihitung 13 karena sub-item Wave 1 & 2 dipecah (EML-02 punya 4 sub-item, PAY-02 punya 3 sub-item, dll).  
-> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 9 di-patch sesi ini · 27 belum.
+> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 11 di-patch sesi ini · 25 belum.

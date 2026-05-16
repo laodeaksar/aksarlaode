@@ -41,9 +41,12 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     }
   }
 
-  // ── Idempotency check — key scoped to userId to prevent cross-user collisions ─
+  // FIX ORD-04: Scope the key to userId + method + path + rawKey.
+  // Without the method+path component, the same Idempotency-Key header value
+  // sent to two different endpoints by the same user would collide and one
+  // endpoint would incorrectly return the other's cached response.
   const rawKey         = headers["idempotency-key"] as string
-  const idempotencyKey = `${userId}:${rawKey}`
+  const idempotencyKey = `${userId}:POST:/orders:${rawKey}`
 
   const check = await idempotency.getOrLock(idempotencyKey)
 

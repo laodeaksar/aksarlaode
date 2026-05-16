@@ -9,13 +9,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "bullmq":    "^5.49.0",
-    "@repo/env": "workspace:*"
+    "@repo/env": "workspace:*",
+    "bullmq": "^5.49.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "^20.0.0",
-    "typescript":  "^5.4.0"
+    "typescript": "^5.4.0"
   }
 }

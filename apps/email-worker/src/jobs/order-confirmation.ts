@@ -4,13 +4,13 @@ import type { BaseProvider }         from "@/providers/base.provider"
 import type { EmailJobPayload }      from "@/queues/email.queue"
 import { fetchUserEmail, fetchUserName } from "@/lib/user-client"
 
-// FIX EML-02: fetchUserEmail and fetchUserName were called but never defined
-// anywhere in the codebase → ReferenceError on every job execution.
-// They are now imported from @/lib/user-client which calls auth-service
-// using the internal service token.
-//
-// FIX EML-03: uses payload.userEmail when present (set by updated producers)
-// and falls back to fetchUserEmail(payload.userId) for older enqueued jobs.
+// FIX EML-02: fetchUserEmail and fetchUserName are imported from @/lib/user-client.
+// FIX EML-03: uses payload.userEmail when present, falls back to auth-service lookup.
+// FIX EML-08: passes unsubscribeUrl to template for CAN-SPAM / UU ITE compliance.
+
+const STORE_NAME    = process.env["STORE_NAME"]    ?? "My Ecommerce"
+const STORE_ADDRESS = process.env["STORE_ADDRESS"] ?? "Jakarta, Indonesia"
+const STORE_URL     = process.env["STORE_URL"]     ?? "https://example.com"
 
 export async function handleOrderConfirmation(
   payload:  EmailJobPayload["order-confirmation"],
@@ -26,12 +26,15 @@ export async function handleOrderConfirmation(
     return { success: false, error: "No email address resolved", retryable: false }
   }
 
+  const unsubscribeUrl = `${STORE_URL}/unsubscribe?email=${encodeURIComponent(to)}`
+
   const html = render(orderConfirmationTemplate, {
-    orderId:      payload.orderId,
+    orderId:       payload.orderId,
     customerName,
-    grandTotal:   payload.amount.toLocaleString("id-ID"),
-    storeName:    "My Ecommerce",
-    storeAddress: "Jakarta, Indonesia",
+    grandTotal:    payload.amount.toLocaleString("id-ID"),
+    storeName:     STORE_NAME,
+    storeAddress:  STORE_ADDRESS,
+    unsubscribeUrl,
   })
 
   return provider.send({

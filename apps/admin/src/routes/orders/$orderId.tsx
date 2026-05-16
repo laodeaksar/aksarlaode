@@ -8,6 +8,8 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@repo/ui/components/alert-dialog"
+import { useSession } from "@/lib/session-context"
+import { can }        from "@/lib/rbac"
 
 export const Route = createFileRoute("/orders/$orderId")({
   component: OrderDetailPage,
@@ -31,8 +33,12 @@ function OrderDetailPage() {
   const queryClient   = useQueryClient()
   const [note, setNote]               = useState("")
   const [nextStatus, setNextStatus]   = useState("")
-  // FIX ADM-04: confirmation dialog state for irreversible CANCELLED transition
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // FIX ADM-05: read current user's role for permission checks
+  const { session } = useSession()
+  const role        = session?.role ?? "CUSTOMER"
+  const canWrite    = can(role, "orders:write")
 
   const { data, isLoading } = useQuery({
     queryKey: ["order", orderId],
@@ -114,45 +120,47 @@ function OrderDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Update status */}
-        <Card>
-          <CardHeader><CardTitle>Update Status</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <select
-              className="w-full rounded border px-3 py-2 text-sm"
-              value={nextStatus}
-              onChange={e => setNextStatus(e.target.value)}
-            >
-              <option value="">Select new status...</option>
-              {ORDER_STATUSES.filter(s => s !== order.status).map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+        {/* Update status — only shown for roles with orders:write */}
+        {canWrite && (
+          <Card>
+            <CardHeader><CardTitle>Update Status</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <select
+                className="w-full rounded border px-3 py-2 text-sm"
+                value={nextStatus}
+                onChange={e => setNextStatus(e.target.value)}
+              >
+                <option value="">Select new status...</option>
+                {ORDER_STATUSES.filter(s => s !== order.status).map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
 
-            <textarea
-              className="w-full rounded border px-3 py-2 text-sm"
-              rows={2}
-              placeholder="Optional note (e.g. tracking number)"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-            />
+              <textarea
+                className="w-full rounded border px-3 py-2 text-sm"
+                rows={2}
+                placeholder="Optional note (e.g. tracking number)"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
 
-            {/* FIX ADM-04: CANCELLED is irreversible — require explicit confirmation */}
-            <Button
-              className="w-full"
-              disabled={!nextStatus || isPending}
-              onClick={() => {
-                if (nextStatus === "CANCELLED") {
-                  setConfirmOpen(true)
-                } else {
-                  updateStatus()
-                }
-              }}
-            >
-              {isPending ? "Updating..." : "Update Status"}
-            </Button>
-          </CardContent>
-        </Card>
+              {/* FIX ADM-04: CANCELLED is irreversible — require explicit confirmation */}
+              <Button
+                className="w-full"
+                disabled={!nextStatus || isPending}
+                onClick={() => {
+                  if (nextStatus === "CANCELLED") {
+                    setConfirmOpen(true)
+                  } else {
+                    updateStatus()
+                  }
+                }}
+              >
+                {isPending ? "Updating..." : "Update Status"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Confirmation dialog — only shown when transitioning to CANCELLED */}

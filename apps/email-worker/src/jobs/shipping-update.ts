@@ -1,15 +1,17 @@
+import { render }                 from "@/templates/engine"
+import { shippingUpdateTemplate } from "@/templates/shipping-update.html"
 import type { MailChannelsProvider } from "@/providers/mailchannels.provider"
-import { fetchUserEmail }             from "@/lib/user-client"
+import { fetchUserEmail, fetchUserName } from "@/lib/user-client"
 import type { EmailJobPayload }       from "@/queues/email.queue"
 
-// FIX: File was incorrectly named "sipping-update.ts" (typo).
-// email.processor.ts imports from "@/jobs/shipping-update" — the old filename
-// caused a module-not-found error at startup, making the entire email-worker
-// crash before processing any job.
-//
-// FIX EML-02: previous version sent to payload.userId (a UUID) — not an email
-// address.  Now uses payload.userEmail (set by EML-03 producer update).
-// Falls back to fetchUserEmail from auth-service for older enqueued jobs.
+// FIX EML-08: Uses the shared HTML template (with unsubscribe footer) instead
+// of ad-hoc string interpolation.  Template variables are HTML-escaped by the
+// template engine (EML-04 fix) so attacker-controlled tracking numbers etc.
+// cannot inject HTML.
+
+const STORE_NAME    = process.env["STORE_NAME"]    ?? "My Ecommerce"
+const STORE_ADDRESS = process.env["STORE_ADDRESS"] ?? "Jakarta, Indonesia"
+const STORE_URL     = process.env["STORE_URL"]     ?? "https://example.com"
 
 export async function handleShippingUpdate(
   payload:  EmailJobPayload["shipping-update"],
@@ -24,15 +26,25 @@ export async function handleShippingUpdate(
       return { success: false, error: "No email address resolved", retryable: false }
     }
 
-    await provider.send({
-      to,
-      subject: `Your order ${payload.orderId} has shipped!`,
-      html: `<p>Great news! Your order <strong>${payload.orderId}</strong> is on its way.</p>
-             <p>Courier: <strong>${payload.courierName}</strong><br />
-                Tracking: <strong>${payload.trackingNumber}</strong><br />
-                Estimated delivery: <strong>${payload.estimatedDate}</strong></p>`,
+    const customerName   = await fetchUserName(userId)
+    const unsubscribeUrl = `${STORE_URL}/unsubscribe?email=${encodeURIComponent(to)}`
+
+    const html = render(shippingUpdateTemplate, {
+      orderId:        payload.orderId,
+      customerName,
+      courierName:    payload.courierName,
+      trackingNumber: payload.trackingNumber,
+      estimatedDate:  payload.estimatedDate,
+      storeName:      STORE_NAME,
+      storeAddress:   STORE_ADDRESS,
+      unsubscribeUrl,
     })
-    return { success: true }
+
+    return provider.send({
+      to,
+      subject: `🚚 Your order ${payload.orderId} has shipped!`,
+      html,
+    })
   } catch (e) {
     return { success: false, error: String(e), retryable: true }
   }

@@ -7,6 +7,7 @@ import { handleOrderCreated }      from "@/jobs/order-created"
 import { handlePasswordReset }     from "@/jobs/password-reset"
 import { handleShippingUpdate }    from "@/jobs/shipping-update"
 import type { EmailJobType, EmailJobPayload } from "@/queues/email.queue"
+import { PAYLOAD_SCHEMAS } from "@/lib/payload-schemas"
 
 const provider = new MailChannelsProvider()
 
@@ -39,6 +40,22 @@ export const emailWorker = new Worker(
         new Error(`Unknown job type: ${type}`),
         { retryable: false }
       )
+    }
+
+    // FIX EML-07: Validate payload shape before dispatching to the handler.
+    // A job enqueued with a missing or wrong-type field (e.g. userEmail is a
+    // UUID instead of an address) will now fail immediately with a clear
+    // ZodError message rather than crashing deep inside the template renderer.
+    const schema = PAYLOAD_SCHEMAS[type]
+    if (schema) {
+      const parsed = schema.safeParse(job.data)
+      if (!parsed.success) {
+        const message = parsed.error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join("; ")
+        throw Object.assign(
+          new Error(`Invalid payload for job type "${type}": ${message}`),
+          { retryable: false }
+        )
+      }
     }
 
     const result = await handler(job.data as any, provider)

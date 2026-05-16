@@ -1,10 +1,14 @@
 import { env } from "@repo/env"
 
+// FIX ADM-05: Expanded role type to include OWNER and FINANCE
+// (FINANCE was added via migration 006; OWNER via migration 002).
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
+
 export type Session = {
   id:    string
   email: string
   name:  string
-  role:  "CUSTOMER" | "ADMIN"
+  role:  UserRole
 }
 
 export async function getSession(): Promise<Session | null> {

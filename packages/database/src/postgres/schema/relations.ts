@@ -5,6 +5,7 @@ import { passwordResetTokens }  from "./password-reset-tokens"
 import { products }             from "./products"
 import { categories }           from "./categories"
 import { payments }             from "./payments"
+import { paymentAuditLog }      from "./payment-audit-log"
 
 export const usersRelations = relations(users, ({ many }) => ({
   sessions:            many(sessions),
@@ -25,6 +26,12 @@ export const categoriesRelations = relations(categories, ({ many, one }) => ({
   parent:   one(categories, { fields: [categories.parentId], references: [categories.id] }),
 }))
 
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  user: one(users, { fields: [payments.userId], references: [users.id] }),
+export const paymentsRelations = relations(payments, ({ one, many }) => ({
+  user:      one(users,  { fields: [payments.userId],  references: [users.id]    }),
+  auditLogs: many(paymentAuditLog),
+}))
+
+export const paymentAuditLogRelations = relations(paymentAuditLog, ({ one }) => ({
+  payment: one(payments, { fields: [paymentAuditLog.paymentId], references: [payments.id] }),
+  user:    one(users,    { fields: [paymentAuditLog.userId],    references: [users.id]    }),
 }))

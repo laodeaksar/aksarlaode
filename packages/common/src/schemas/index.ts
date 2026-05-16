@@ -83,6 +83,10 @@ export const ProductFiltersSchema = z.object({
   sortBy:     z.enum(["price_asc","price_desc","newest","popular"]).optional(),
   page:       z.number().int().positive().optional(),
   limit:      z.number().int().positive().max(100).optional(),
+  // FIX PRD-07: optional cursor for cursor-based pagination.
+  // When provided, `page` is ignored and the result set starts after the
+  // item represented by the cursor (base64url-encoded createdAt + id).
+  cursor:     z.string().optional(),
 })
 
 // ── Create order ───────────────────────────────────────────────────────────

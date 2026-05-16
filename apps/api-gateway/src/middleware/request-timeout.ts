@@ -1,22 +1,14 @@
 import type { MiddlewareHandler } from "hono"
 import type { AppEnv }          from "@/types/context"
+import { SERVICE_REGISTRY, WEBHOOK_TIMEOUT_MS, DEFAULT_TIMEOUT_MS } from "@/proxy/service-registry"
 
-// ── Per-prefix timeouts ───────────────────────────────────────────────────────
-// Payment routes are generous because Midtrans (external gateway) can be slow.
-// Auth routes are tight — they only hit the local DB.
-const TIMEOUTS: ReadonlyArray<{ prefix: string; ms: number }> = [
-  { prefix: "/auth",     ms: 10_000 },   // 10 s
-  { prefix: "/products", ms: 15_000 },   // 15 s
-  { prefix: "/orders",   ms: 20_000 },   // 20 s
-  { prefix: "/payments", ms: 30_000 },   // 30 s — external payment gateway
-  { prefix: "/webhooks", ms: 30_000 },   // 30 s — webhook processing
-]
-const DEFAULT_TIMEOUT_MS = 15_000        // 15 s
-
+// FIX GW-06: Timeout values now live in SERVICE_REGISTRY as the single source
+// of truth. This middleware reads from there instead of duplicating the numbers.
 function timeoutForPath(path: string): number {
-  for (const { prefix, ms } of TIMEOUTS) {
-    if (path.startsWith(prefix)) return ms
+  for (const { prefix, timeoutMs } of Object.values(SERVICE_REGISTRY)) {
+    if (path.startsWith(prefix)) return timeoutMs
   }
+  if (path.startsWith("/webhooks")) return WEBHOOK_TIMEOUT_MS
   return DEFAULT_TIMEOUT_MS
 }
 

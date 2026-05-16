@@ -59,25 +59,40 @@ export async function proxyTo(
   const signal = c.var.abortSignal
 
   // ── Proxy call ────────────────────────────────────────────────────────────
+  const proxyStart = Date.now()
+
   try {
     const response = await fetch(upstreamRequest, { signal })
+    const latencyMs = Date.now() - proxyStart
 
     if (response.status >= 500) {
       breaker.failure()
+      // FIX GW-07b: structured log for all upstream 5xx errors
+      console.error(JSON.stringify({
+        event:          "upstream_error",
+        service,
+        path:           strippedPath,
+        upstreamStatus: response.status,
+        latencyMs,
+        requestId:      c.var.requestId,
+      }))
     } else {
       breaker.success()
     }
 
     return response
   } catch (e) {
+    const latencyMs = Date.now() - proxyStart
     breaker.failure()
 
     if (e instanceof Error && e.name === "AbortError") throw e
 
+    // FIX GW-07b: structured log for network-level upstream failures
     console.error(JSON.stringify({
-      event:     "upstream_error",
+      event:     "upstream_network_error",
       service,
-      target:    targetUrl.toString(),
+      path:      strippedPath,
+      latencyMs,
       requestId: c.var.requestId,
       error:     String(e),
     }))

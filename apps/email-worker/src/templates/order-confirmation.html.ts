@@ -1,3 +1,5 @@
+// FIX EML-08: Added unsubscribe link footer to comply with CAN-SPAM / UU ITE.
+// The {{ unsubscribeUrl }} placeholder is populated by the template engine.
 export const orderConfirmationTemplate = `
 <!DOCTYPE html>
 <html>
@@ -23,6 +25,11 @@ export const orderConfirmationTemplate = `
   <p>We'll notify you when your order ships.</p>
   <hr>
   <p style="color:#6b7280;font-size:12px">{{ storeName }} · {{ storeAddress }}</p>
+  <p style="color:#9ca3af;font-size:11px;margin-top:8px">
+    You received this email because you placed an order on {{ storeName }}.
+    To stop receiving transactional emails,
+    <a href="{{ unsubscribeUrl }}" style="color:#9ca3af">unsubscribe here</a>.
+  </p>
 </body>
 </html>
 `

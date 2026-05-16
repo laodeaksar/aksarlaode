@@ -26,6 +26,9 @@ export const products = pgTable("products", {
   salesCount:  integer("sales_count").default(0),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
+  // FIX PRD-04: soft-delete; NULL = active, non-NULL = deleted.
+  // Never hard-delete a product — order line items reference products by ID.
+  deletedAt:   timestamp("deleted_at"),
 })
 
 export type Product    = typeof products.$inferSelect

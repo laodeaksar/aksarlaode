@@ -30,10 +30,13 @@ export const ProductSchema = t.Object({
 
 // ── Paginated list response ────────────────────────────────────────────────
 export const ProductListResponseSchema = t.Object({
-  items: t.Array(ProductSchema),
-  total: t.Integer(),
-  page:  t.Integer(),
-  limit: t.Integer(),
+  items:      t.Array(ProductSchema),
+  total:      t.Integer(),
+  page:       t.Integer(),
+  limit:      t.Integer(),
+  // FIX PRD-07: nextCursor is null for offset pagination or last pages;
+  // non-null signals the client can fetch the next page with cursor=<value>.
+  nextCursor: t.Union([t.String(), t.Null()]),
 })
 
 // ── Query params for GET / (list) ──────────────────────────────────────────
@@ -49,8 +52,10 @@ export const ProductListQuerySchema = t.Object({
     t.Literal("newest"),
     t.Literal("popular"),
   ], { description: "Sort order" })),
-  page:       t.Optional(t.String({ description: "Page number (default: 1)" })),
+  page:       t.Optional(t.String({ description: "Page number for offset pagination (default: 1)" })),
   limit:      t.Optional(t.String({ description: "Items per page, max 100 (default: 20)" })),
+  // FIX PRD-07: cursor for cursor-based pagination (mutually exclusive with page)
+  cursor:     t.Optional(t.String({ description: "Cursor from previous page's nextCursor for efficient deep pagination" })),
 })
 
 // ── Path params ────────────────────────────────────────────────────────────

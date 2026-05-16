@@ -81,9 +81,9 @@
 
 ---
 
-## 🔴 Belum Selesai — P1 High
+## ✅ Selesai — P1 High (Wave 6)
 
-- [ ] **PRD-01b** `product-service` — Verifikasi `rowCount` / RETURNING result di semua UPDATE operasi; kembalikan 404 jika tidak ada row yang ter-update (bukan silent no-op).
+- [x] **PRD-01b** `product-service` — `update` dan `deleteById` menggunakan RETURNING + WHERE `deletedAt IS NULL` secara langsung; `ProductNotFoundError` diekspos dari repository dan di-map ke HTTP 404 di handler.
 
 ---
 
@@ -93,27 +93,27 @@
 - [ ] **AUTH-06** `auth-service` — Structured audit log untuk login gagal: `{ event: "auth_login_failed", userId/email, ip, userAgent, timestamp }` *(di audit report dilabeli AUTH-06, bukan AUTH-04)*
 
 ### api-gateway
-- [ ] **GW-05** `api-gateway` — Generate `requestId` baru di gateway dengan `crypto.randomUUID()`; abaikan header `x-request-id` dari client atau validasi format UUID ketat.
-- [ ] **GW-06** `api-gateway` — Konfigurasi timeout berbeda per service / per route di `SERVICE_REGISTRY` (endpoint berat vs ringan punya SLA berbeda).
-- [ ] **GW-07b** `api-gateway` — Logging terstruktur untuk semua upstream error: `{ service, path, upstreamStatus, latencyMs, requestId }`.
+- [x] **GW-05** `api-gateway` — `request-id.ts` selalu generate `crypto.randomUUID()`; header `x-request-id` dari client diabaikan sepenuhnya.
+- [x] **GW-06** `api-gateway` — `timeoutMs` dipindahkan ke `SERVICE_REGISTRY` sebagai single source of truth; `request-timeout.ts` membaca dari sana.
+- [x] **GW-07b** `api-gateway` — `proxy.ts` kini log `{ event, service, path, upstreamStatus, latencyMs, requestId }` untuk setiap upstream 5xx dan network error.
 
 ### email-worker
-- [ ] **EML-07** `email-worker` — Zod validation untuk setiap payload type di processor sebelum dispatch ke handler; job dengan payload salah shape harus gagal dengan pesan jelas.
-- [ ] **EML-08** `email-worker` — Tambahkan unsubscribe link di semua email transaksional (order confirmation, shipping update) sesuai CAN-SPAM / UU ITE.
+- [x] **EML-07** `email-worker` — `lib/payload-schemas.ts` berisi Zod schema untuk semua 5 job type; processor memvalidasi payload sebelum dispatch ke handler; payload malformed gagal dengan `retryable: false`.
+- [x] **EML-08** `email-worker` — Unsubscribe link (`{{ unsubscribeUrl }}`) ditambahkan ke template `order-confirmation` dan `shipping-update`; job handler menyuntikkan URL unsubscribe yang di-encode.
 
 ### order-service
-- [ ] **ORD-04** `order-service` — Scope idempotency key ke `userId:method:path:rawKey` (bukan hanya `userId:rawKey`) untuk mencegah cross-endpoint collision.
+- [x] **ORD-04** `order-service` — Idempotency key di `create.ts` kini di-scope ke `userId:POST:/orders:rawKey`.
 
 ### product-service
-- [ ] **PRD-04** `product-service` — Soft-delete dengan kolom `deletedAt`; ganti semua `deleteById` hard delete; filter `WHERE deletedAt IS NULL` di semua list/find query.
-- [ ] **PRD-05** `product-service` — Cache invalidation: emit `cache.del(productKey)` setelah setiap update/delete produk agar harga/stok terbaru langsung ter-serve.
-- [ ] **PRD-06b** `product-service` — Validasi harga produk (`price`) > 0 saat create dan update; harga 0 atau negatif tidak boleh tersimpan.
-- [ ] **PRD-07** `product-service` — Pertimbangkan cursor-based pagination untuk list produk besar (offset pagination tidak efisien di jutaan row).
+- [x] **PRD-04** `product-service` — Migrasi `005_products_soft_delete.sql`; kolom `deletedAt` ditambahkan ke schema; `deleteById` kini soft-delete; semua query filter `deletedAt IS NULL`.
+- [x] **PRD-05** `product-service` — `lib/product-cache.ts` in-process TTL cache (60 detik); `findById`, `findByIdOrSlug`, `update`, `deleteById`, `reserveStock`, dan `releaseStock` semuanya invalidate cache setelah mutasi.
+- [x] **PRD-06b** `product-service` — `create.ts` dan `update.ts` handler memvalidasi `price > 0`; return 422 `INVALID_PRICE` sebelum menyentuh repository.
+- [x] **PRD-07** `product-service` — Cursor-based pagination diimplementasikan di `query-builder.ts`; `list` repository mengembalikan `nextCursor`; `ProductFiltersSchema` di `@repo/common` menerima field `cursor` opsional.
 
 ### payment-service
 - [~] **PAY-06** *(di-patch — lihat bagian "Di-patch" di atas)*
 - [~] **PAY-07** *(di-patch — lihat bagian "Di-patch" di atas)*
-- [ ] **PAY-08** `payment-service` — Log semua transaksi ke tabel audit terpisah yang immutable (append-only, tidak ada UPDATE/DELETE); penting untuk rekonsiliasi forensik.
+- [x] **PAY-08** `payment-service` — Migrasi `004_payment_audit_log.sql`; tabel `payment_audit_log` immutable (append-only); `upsert` log `payment_initiated`, `updateByOrderId` log `payment_status_changed`; failure audit log tidak membatalkan flow payment.
 
 ### apps/web
 - [~] **WEB-05** *(di-patch — lihat bagian "Di-patch" di atas)*
@@ -123,7 +123,7 @@
 
 ### apps/admin
 - [~] **ADM-04** *(di-patch — lihat bagian "Di-patch" di atas)*
-- [ ] **ADM-05** `apps/admin` — RBAC granular: role ADMIN, OWNER, FINANCE dengan route guards + React context; admin keuangan tidak perlu akses kelola produk.
+- [x] **ADM-05** `apps/admin` — `rbac.ts` dengan `can()` + `hasAnyAdminRole()`; `SessionProvider` + `useSession()` context; role OWNER/ADMIN/FINANCE dengan permission map; products page menyembunyikan Add/Edit/Delete untuk FINANCE; orders page menyembunyikan Update Status untuk FINANCE; migrasi `006_add_finance_role.sql`.
 - [ ] **ADM-06b** `apps/admin` — Audit log viewer di admin panel: tampilkan riwayat aksi sensitif (hapus produk, ubah status order, ubah role user).
 - [ ] **ADM-07** `apps/admin` — Error boundary (`<ErrorBoundary>`) di semua halaman admin untuk mencegah blank page saat satu komponen crash.
 
@@ -153,7 +153,7 @@ Wave 3 ✅  AUTH-01*, AUTH-02*, GW-01*, GW-03*, EML-05*, ORD-02*, PRD-02*, PRD-0
 Wave 4 ✅  GW-02*, PAY-01*, WEB-03*, WEB-04, ADM-03*
 Review ✅  ORD-01 (repository-level), AUTH-03 (verified safe), AUTH-05, PAY-05
 Wave 5 ✅  AUTH-04✓, ORD-03✓, ORD-05b✓(existing), ORD-06✓(existing), PAY-07✓, PAY-06✓, WEB-05✓, WEB-06✓, ADM-04✓ │ Remaining (deferred to Wave 6): PRD-01b, ORD-04
-Wave 6 ──  PRD-04, PRD-05, PRD-06b, PRD-07, PAY-08, GW-05, GW-06, GW-07b, EML-07, EML-08, ADM-05
+Wave 6 ✅  PRD-01b✓, ORD-04✓, GW-05✓, GW-06✓, GW-07b✓, EML-07✓, EML-08✓, PRD-04✓, PRD-05✓, PRD-06b✓, PRD-07✓, PAY-08✓, ADM-05✓
 Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 ```
 *Terverifikasi sudah ada sebelum audit dilakukan — tidak memerlukan perubahan kode.

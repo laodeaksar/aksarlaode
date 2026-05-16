@@ -2,9 +2,22 @@ import { Effect, Cause } from "effect"
 import type { Context }  from "elysia"
 import { productRepository } from "@/repository/product.repository"
 
+// Slug format: lowercase letters, digits, and hyphens only.
+// Matches the slug generation logic in the product creation handler.
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 export const reserveStockHandler = async ({ params, body, set }: Context) => {
   const { id }       = params
   const { quantity } = body as { quantity: number }
+
+  // FIX PRD-02: reject zero/negative quantities before touching the DB.
+  // Without this guard, UPDATE stock = stock - 0 silently succeeds (no-op),
+  // and UPDATE stock = stock - (-5) would silently ADD stock — both corrupt
+  // inventory without raising an error.
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    set.status = 422
+    return { error: "quantity must be a positive integer", code: "INVALID_QUANTITY" }
+  }
 
   const result = await Effect.runPromiseExit(
     productRepository.reserveStock(id, quantity)

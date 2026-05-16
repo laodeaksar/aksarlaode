@@ -9,19 +9,69 @@ type ApiResponse<T> =
   | { data: T;    error: null  }
   | { data: null; error: string }
 
+// FIX ADM-02: token refresh state — one in-flight refresh at a time.
+// If multiple requests 401 simultaneously, only one refresh call is made;
+// the others wait for the same promise.
+let refreshPromise: Promise<boolean> | null = null
+
+async function silentRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${env.PUBLIC_API_URL}/auth/refresh`, {
+        method:      "POST",
+        credentials: "include",
+      })
+      return res.ok
+    } catch {
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
 async function request<T>(
   path:    string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry  = false,
 ): Promise<ApiResponse<T>> {
   try {
     const res = await fetch(`${env.PUBLIC_API_URL}${path}`, {
       ...options,
-      credentials: "include",              // sends httpOnly cookie
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...options.headers,
       },
     })
+
+    // FIX ADM-02: intercept TOKEN_EXPIRED 401 — attempt a silent refresh once.
+    // If the refresh succeeds, retry the original request automatically.
+    // If the refresh fails (e.g. refresh token also expired), redirect to login.
+    if (res.status === 401 && !isRetry) {
+      let errorCode = ""
+      try {
+        const body = await res.clone().json()
+        errorCode  = body?.code ?? ""
+      } catch { /* ignore parse errors */ }
+
+      if (errorCode === "TOKEN_EXPIRED" || errorCode === "UNAUTHORIZED") {
+        const refreshed = await silentRefresh()
+
+        if (refreshed) {
+          // Retry the original request with the new access token in the cookie
+          return request<T>(path, options, true)
+        }
+
+        // Refresh failed — session is dead, redirect to login
+        window.location.href = "/login"
+        return { data: null, error: "Session expired" }
+      }
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }))

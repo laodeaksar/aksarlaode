@@ -6,6 +6,13 @@ export const releaseStockHandler = async ({ params, body, set }: Context) => {
   const { id }       = params
   const { quantity } = body as { quantity: number }
 
+  // FIX PRD-02: reject zero/negative quantities — releasing 0 is a no-op that
+  // hides bugs, and releasing a negative value would silently reduce stock.
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    set.status = 422
+    return { error: "quantity must be a positive integer", code: "INVALID_QUANTITY" }
+  }
+
   // Verify product exists before releasing
   const productResult = await Effect.runPromiseExit(productRepository.findById(id))
 

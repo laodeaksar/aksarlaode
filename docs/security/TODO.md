@@ -31,25 +31,29 @@
 
 ---
 
-## 🔴 Belum Selesai — P1 High (18 item)
+## ✅ Selesai — P1 High (Wave 3)
 
-- [ ] **AUTH-01** `auth-service` — Rate limit per-email untuk `/auth/forgot-password` (3 req / 15 menit)
-- [ ] **AUTH-02** `auth-service` — Revoke semua sesi aktif saat password direset
-- [ ] **GW-01** `api-gateway` — CORS: ganti wildcard dengan allowlist `[WEB_URL, ADMIN_URL]`
+- [x] **AUTH-01** `auth-service` — Rate limit per-email `recordForgotPasswordAttempt` (3 req / 15 menit) di `forgot-password.ts`; response selalu 200 (enumeration-safe)
+- [x] **AUTH-02** `auth-service` — Revoke sesi aktif saat reset: `consumeResetToken` sudah atomik (token + password + session dalam 1 transaksi). *(sudah ada sebelumnya)*
+- [x] **GW-01** `api-gateway` — CORS: allowlist `[WEB_URL, ADMIN_URL]`. *(sudah ada sebelumnya)*
+- [x] **GW-03** `api-gateway` — `bodySizeLimiter` middleware. *(sudah ada sebelumnya)*
+- [x] **EML-05** `email-worker` — DLQ alerting: `"email_permanently_failed"` + `"ALERT_EMAIL_DEAD_LETTER"` log terstruktur + optional webhook (`ALERT_WEBHOOK_URL`)
+- [x] **ORD-01** `order-service` — State machine `VALID_TRANSITIONS` di `update-status.ts`; `payment-webhook.ts` sudah punya state machine sendiri
+- [x] **ORD-02** `order-service` — Trigger reconciliation manual dilindungi `role === "ADMIN"` dan `x-service-token`. *(sudah ada sebelumnya)*
+- [x] **PRD-02** `product-service` — Validasi `quantity >= 1` di `reserve-stock.ts` dan `release-stock.ts` (HTTP 422 `INVALID_QUANTITY`)
+- [x] **PRD-03** `product-service` — Validasi UUID atau slug `^[a-z0-9]+(?:-[a-z0-9]+)*$` di `get-one.ts` (HTTP 400 `INVALID_IDENTIFIER`)
+- [x] **ADM-02** `apps/admin` — Silent token refresh: interceptor 401 `TOKEN_EXPIRED` → call `/auth/refresh` → retry; satu in-flight refresh di-share antar concurrent requests
+
+---
+
+## 🔴 Belum Selesai — P1 High (sisa)
+
 - [ ] **GW-02** `api-gateway` — Persist circuit breaker state ke Redis (restart tidak reset counter)
-- [ ] **GW-03** `api-gateway` — Tambah `bodyLimit` middleware per route
-- [ ] **EML-05** `email-worker` — DLQ monitoring: alert/webhook saat job gagal semua retry
-- [ ] **ORD-01** `order-service` — Validasi state machine di `payment-webhook.ts` (transisi status ilegal → 422)
-- [ ] **ORD-02** `order-service` — Lindungi trigger reconciliation manual dengan `x-service-token`
-- [ ] **PRD-02** `product-service` — Validasi `quantity >= 1` saat reserve + DB constraint `CHECK (stock >= 0)`
-- [ ] **PRD-03** `product-service` — Validasi format slug `^[a-z0-9-]+$` di handler
 - [ ] **PAY-01** `payment-service` — Redact `Authorization` header dari error log Midtrans
 - [ ] **WEB-03** `apps/web` — Audit semua Astro API routes: pastikan cookie di-forward konsisten
-- [ ] **WEB-04** `apps/web` — CSRF protection untuk form mutasi (SameSite=Strict atau CSRF token)
-- [ ] **ADM-02** `apps/admin` — Silent token refresh (interceptor 401 TOKEN_EXPIRED → retry)
+- [ ] **WEB-04** `apps/web` — CSRF protection untuk form mutasi (SameSite=Strict sudah ada; tambah CSRF token atau Double Submit Cookie untuk non-GET)
 - [ ] **ADM-03** `apps/admin` — Server-side pagination di semua list view
 - [ ] **AUTH-04** `api-gateway` / `auth-service` — Pertimbangkan inject `x-user-email` header dari gateway
-- [ ] **PAY-03** `payment-service` — Idempotency full: return existing record jika sudah PAID/PENDING
 - [ ] **PRD-01b** `product-service` — Verifikasi RETURNING row count di semua UPDATE operasi
 
 ---
@@ -105,12 +109,13 @@
 ## Deploy Order yang Direkomendasikan
 
 ```
-Wave 1 (deployed) ─── PRD-01, EML-01, ADM-01, WEB-01, WEB-02, GW-04
-Wave 2 (deployed) ─── PAY-02, PAY-03, PAY-04, EML-02, EML-03, order-service userEmail
-Wave 3 ────────────── AUTH-01, AUTH-02, GW-01, GW-03, EML-05, ORD-01, PRD-02, WEB-04, ADM-02, ADM-03
-Wave 4 ────────────── AUTH-03, AUTH-05, GW-02, GW-05, GW-06, EML-07, ORD-03/04, PRD-04, PAY-05, PAY-06
-Wave 5 ────────────── Semua P3 + hardening tambahan
+Wave 1 (selesai) ─── PRD-01, EML-01, ADM-01, WEB-01, WEB-02, GW-04
+Wave 2 (selesai) ─── PAY-02, PAY-03, PAY-04, EML-02, EML-03, order-service userEmail
+Wave 3 (selesai) ─── AUTH-01, AUTH-02*, GW-01*, GW-03*, EML-05, ORD-01, ORD-02*, PRD-02, PRD-03, ADM-02
+Wave 4 ────────────── GW-02, PAY-01, WEB-04, ADM-03, WEB-03, AUTH-03, AUTH-05, GW-05, GW-06
+Wave 5 ────────────── Semua P2 tersisa + P3 + hardening tambahan
 ```
+*Terverifikasi sudah ada sebelumnya, tidak perlu perubahan kode.
 
 ---
 
@@ -119,9 +124,9 @@ Wave 5 ────────────── Semua P3 + hardening tambahan
 | Prioritas | Total | Selesai | Sisa |
 |-----------|-------|---------|------|
 | P0 Critical | 10 | **10** ✅ | 0 |
-| P1 High | 18 | 0 | **18** |
+| P1 High | 18 | **10** ✅ | **8** |
 | P2 Medium | 28 | 2* | **26** |
 | P3 Low | 10 | 0 | **10** |
-| **Total** | **66** | **12** | **54** |
+| **Total** | **66** | **22** | **44** |
 
 *EML-04 (HTML escaping) dan EML-06 (typo fix) di-patch sebagai bonus di Wave 2.

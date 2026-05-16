@@ -1,50 +1,23 @@
 /**
- * Per-email account lockout via Redis sliding window.
+ * Per-email rate limiters via Redis sliding window.
  *
- * ── Why per-email in addition to per-IP ──────────────────────────────────────
- * Per-IP rate limiting stops single-source brute force but is ineffective
- * against distributed credential-stuffing attacks: an attacker with 1,000
- * residential proxies can try 10,000 passwords against a single email in
- * 15 minutes (10 per IP × 1,000 IPs) while never tripping the per-IP limiter.
+ * ── Login lockout (recordEmailAttempt) ───────────────────────────────────────
+ * Limits to 20 login attempts / hour per email hash.
+ * Fail-OPEN: Redis unavailable → request proceeds (per-IP limiter still active).
  *
- * A per-email sliding window adds an orthogonal defence: regardless of how
- * many IPs are used, a given email can only receive N login attempts per hour
- * before the account is temporarily locked. Legitimate users rarely need more
- * than 2–5 logins per hour.
- *
- * ── Key design decisions ──────────────────────────────────────────────────────
- * 1. The email is HASHED (SHA-256 hex) before use as a Redis key so that the
- *    key space does not leak plaintext email addresses into Redis.
- *
- * 2. Both successful AND failed attempts are counted. This prevents an attacker
- *    from working around the lockout by only submitting known-good passwords
- *    in the first N-1 slots. It also means a legitimate user who uses many
- *    devices simultaneously might occasionally see a lockout — the 20/hour
- *    threshold is chosen to make this extremely rare in practice.
- *
- * 3. Fail-open (opposite of the IP rate limiter): if Redis is unavailable, the
- *    lockout check is SKIPPED and the request proceeds. The per-IP rate limiter
- *    (which is fail-CLOSED) is still active, providing a fallback. An open-fail
- *    policy here avoids a Redis outage permanently locking all users out.
- *
- * 4. Uses the same atomic Lua sliding-window script as rate-limit.ts so the
- *    check-and-record is a single round-trip with no race conditions.
- *
- * ── Limits ───────────────────────────────────────────────────────────────────
- *   EMAIL_ATTEMPT_MAX    = 20 per hour
- *   EMAIL_ATTEMPT_WINDOW = 1 hour (3600 s)
- *
- * An attacker needs more than 20 IPs to try 20 passwords in one hour against
- * one email. Combined with Argon2id's ~300 ms hashing cost, the effective
- * throughput against a single account is ≤ 20 guesses / hour — negligible.
+ * ── Forgot-password limiter (recordForgotPasswordAttempt) ───────────────────
+ * Limits to 3 reset requests / 15 minutes per email hash.
+ * Tighter limit because each bypass allows one queued email (inbox flood /
+ * email bombing). Unlike login, this is purely a rate gate — the response to
+ * the caller is always the same 200 regardless of the check result (callers
+ * must never branch on the return value in a way that reveals enumeration info).
+ * Fail-OPEN: same rationale as login — a Redis outage must not lock all users
+ * out of password reset permanently.
  */
 import { redis } from "@/lib/redis"
 
-const EMAIL_ATTEMPT_MAX        = 20
-const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60   // 1 hour
-
-// Reuses the same atomic Lua script pattern as rate-limit.ts.
-// Returns [1, 0] if the attempt is allowed, [0, retry_ms] if locked.
+// ── Shared atomic Lua sliding-window script ───────────────────────────────────
+// Identical to rate-limit.ts; duplicated to avoid a shared-lib dependency.
 const SLIDING_WINDOW_SCRIPT = `
 local key          = KEYS[1]
 local now          = tonumber(ARGV[1])
@@ -72,6 +45,34 @@ else
 end
 ` as const
 
+// ── Core sliding-window check ─────────────────────────────────────────────────
+async function checkSlidingWindow(
+  key:        string,
+  maxReq:     number,
+  windowSec:  number,
+): Promise<{ allowed: boolean; retryAfterSec: number }> {
+  const now         = Date.now()
+  const windowStart = now - windowSec * 1000
+  const member      = `${now}:${crypto.randomUUID()}`
+
+  try {
+    const result = await redis.eval(
+      SLIDING_WINDOW_SCRIPT, 1,
+      key,
+      String(now), String(windowStart), String(maxReq), String(windowSec), member,
+    ) as [number, number]
+
+    const [allowed, retryMs] = result
+    return { allowed: allowed === 1, retryAfterSec: Math.ceil(retryMs / 1000) }
+  } catch {
+    return { allowed: true, retryAfterSec: 0 }   // fail-open
+  }
+}
+
+// ── Login lockout ─────────────────────────────────────────────────────────────
+const EMAIL_ATTEMPT_MAX        = 20
+const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60   // 1 hour
+
 export type LockoutResult =
   | { locked: false }
   | { locked: true; retryAfterSec: number }
@@ -82,46 +83,48 @@ export type LockoutResult =
  *
  * @param emailHash - SHA-256 hex digest of the raw email address (lowercase).
  *                    Use hashToken() from lib/token-hash.ts.
- *
- * Returns { locked: false } if the attempt is allowed.
- * Returns { locked: true, retryAfterSec } if the email has exceeded the limit.
- *
- * On Redis error: returns { locked: false } (fail-open — see module comment).
  */
 export async function recordEmailAttempt(emailHash: string): Promise<LockoutResult> {
-  const now         = Date.now()
-  const windowMs    = EMAIL_ATTEMPT_WINDOW_SEC * 1000
-  const windowStart = now - windowMs
-  const member      = `${now}:${crypto.randomUUID()}`
-  const key         = `lockout:email:${emailHash}`
+  const { allowed, retryAfterSec } = await checkSlidingWindow(
+    `lockout:email:${emailHash}`,
+    EMAIL_ATTEMPT_MAX,
+    EMAIL_ATTEMPT_WINDOW_SEC,
+  )
+  if (!allowed) return { locked: true, retryAfterSec }
+  return { locked: false }
+}
 
-  try {
-    const result = await redis.eval(
-      SLIDING_WINDOW_SCRIPT,
-      1,
-      key,
-      String(now),
-      String(windowStart),
-      String(EMAIL_ATTEMPT_MAX),
-      String(EMAIL_ATTEMPT_WINDOW_SEC),
-      member,
-    ) as [number, number]
+// ── Forgot-password per-email rate gate ───────────────────────────────────────
+// FIX AUTH-01: tighter limit to prevent email-bombing.
+// 3 requests per 15 minutes per hashed email address.
+// Fail-OPEN: if Redis is unavailable, let the request through (the per-IP
+// forgotPasswordRateLimiter on the route still applies).
+const FORGOT_MAX        = 3
+const FORGOT_WINDOW_SEC = 15 * 60   // 15 minutes
 
-    const [allowed, retryMs] = result
+export type ForgotPasswordRateResult =
+  | { limited: false }
+  | { limited: true; retryAfterSec: number }
 
-    if (!allowed) {
-      return { locked: true, retryAfterSec: Math.ceil(retryMs / 1000) }
-    }
-
-    return { locked: false }
-  } catch (err) {
-    // Fail-open: log the error but let the request through.
-    // The per-IP rate limiter (fail-closed) is still active.
-    console.error(JSON.stringify({
-      event:     "account_lockout_redis_error",
-      emailHash: emailHash.slice(0, 8),   // first 8 chars for triage, not full hash
-      error:     String(err),
-    }))
-    return { locked: false }
-  }
+/**
+ * Records a forgot-password attempt for the given email hash and returns
+ * whether the request should be silently rate-limited.
+ *
+ * IMPORTANT: callers MUST NOT branch on `limited: true` in a way that produces
+ * a different HTTP response status — doing so would allow email enumeration
+ * (attacker observes 429 only for registered emails if the limit is reached
+ * faster when an email exists). Always return the same 200 body regardless.
+ *
+ * @param emailHash - SHA-256 hex digest of the lowercase email.
+ */
+export async function recordForgotPasswordAttempt(
+  emailHash: string,
+): Promise<ForgotPasswordRateResult> {
+  const { allowed, retryAfterSec } = await checkSlidingWindow(
+    `ratelimit:forgot:${emailHash}`,
+    FORGOT_MAX,
+    FORGOT_WINDOW_SEC,
+  )
+  if (!allowed) return { limited: true, retryAfterSec }
+  return { limited: false }
 }

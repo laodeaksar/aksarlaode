@@ -23,6 +23,10 @@ const HANDLERS: {
   "shipping-update":     handleShippingUpdate,
 }
 
+// FIX EML-05: total retry attempts configured here — must match defaultJobOptions
+// in email.queue.ts so the "permanently failed" check is accurate.
+const MAX_ATTEMPTS = 3
+
 export const emailWorker = new Worker(
   "email",
   async (job: Job<EmailJobPayload[EmailJobType]>) => {
@@ -56,18 +60,65 @@ export const emailWorker = new Worker(
   }
 )
 
-// ── Lifecycle hooks ────────────────────────────────────────
+// ── Lifecycle hooks ────────────────────────────────────────────────────────────
 emailWorker.on("completed", (job, result) => {
-  console.info(JSON.stringify({ event: "email_sent", jobId: job.id, type: result.type }))
+  console.info(JSON.stringify({
+    event:  "email_sent",
+    jobId:  job.id,
+    type:   result.type,
+  }))
 })
 
 emailWorker.on("failed", (job, err: any) => {
+  const attempt       = job?.attemptsMade ?? 0
+  const isPermanent   = !err.retryable || attempt >= MAX_ATTEMPTS
+
+  // Always log the failure
   console.error(JSON.stringify({
-    event:       "email_failed",
-    jobId:       job?.id,
-    type:        job?.name,
-    attempt:     job?.attemptsMade,
-    retryable:   err.retryable ?? true,
-    error:       err.message,
+    event:     isPermanent ? "email_permanently_failed" : "email_failed",
+    jobId:     job?.id,
+    type:      job?.name,
+    attempt,
+    maxAttempts: MAX_ATTEMPTS,
+    retryable: err.retryable ?? true,
+    error:     err.message,
+    payload:   job?.data ? {
+      orderId:   (job.data as any).orderId,
+      userEmail: (job.data as any).userEmail ?? (job.data as any).email,
+    } : null,
   }))
+
+  // FIX EML-05: emit a distinct CRITICAL log when a job is permanently dead.
+  // This structured entry is designed to be picked up by log-based alerting
+  // (CloudWatch Metric Filter, Datadog Log Monitor, Loki alert rule, etc.)
+  // matching on: event = "email_permanently_failed"
+  if (isPermanent) {
+    console.error(JSON.stringify({
+      event:    "ALERT_EMAIL_DEAD_LETTER",
+      severity: "CRITICAL",
+      jobId:    job?.id,
+      type:     job?.name,
+      message:  `Email job permanently failed after ${attempt} attempt(s) — manual intervention required`,
+      runbook:  "Check BullMQ dashboard / Redis for job details. Re-queue via admin panel or CLI.",
+    }))
+
+    // Optional: fire a webhook alert if ALERT_WEBHOOK_URL is configured.
+    // Non-blocking — do not await or crash the worker on webhook failure.
+    if (env.ALERT_WEBHOOK_URL) {
+      fetch(env.ALERT_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text:    `🚨 Email permanently failed: \`${job?.name}\` (jobId: ${job?.id})`,
+          jobId:   job?.id,
+          type:    job?.name,
+          attempt,
+          error:   err.message,
+        }),
+        signal: AbortSignal.timeout(5_000),
+      }).catch(e =>
+        console.warn(JSON.stringify({ event: "alert_webhook_failed", error: String(e) }))
+      )
+    }
+  }
 })

@@ -4,6 +4,7 @@ import { env }                          from "@repo/env/order"
 import { orderRepository }              from "@/repository/order.repository"
 import { productClient }                from "@/lib/product-client"
 import { emailQueue }                   from "@/lib/email-queue"
+import { authClient }                  from "@/lib/auth-client"
 import { generateOrderId }              from "@/lib/order-id"
 import { idempotency }                  from "@/lib/idempotency"
 import { checkOrderCreateRateLimit }    from "@/lib/rate-limiter"
@@ -121,9 +122,20 @@ export const createHandler = async ({ body, headers, set }: Context) => {
       notes:           input.notes,
     })
 
-    // Non-blocking — fire and forget; failure does not abort order creation
-    emailQueue
-      .add("order-created", { orderId: order.orderId, userId, grandTotal })
+    // Non-blocking — fire and forget; failure does not abort order creation.
+    // Resolve userEmail first (also non-blocking): if auth-service is down
+    // userEmail falls back to "" and email-worker's user-client handles it.
+    authClient
+      .fetchUserEmail(userId)
+      .catch(() => "")
+      .then(userEmail =>
+        emailQueue.add("order-created", {
+          orderId:    order.orderId,
+          userId,
+          userEmail,
+          grandTotal,
+        })
+      )
       .catch(err =>
         console.error(JSON.stringify({ event: "email_queue_error", error: String(err) }))
       )

@@ -7,4 +7,21 @@ const connection = {
   password: env.REDIS_PASSWORD || undefined,
 }
 
-export const emailQueue = new Queue("email", { connection })
+// Payload types kept in sync with email-worker's EmailJobPayload contract.
+type OrderCreatedPayload = {
+  orderId:    string
+  userId:     string
+  userEmail:  string   // FIX EML-03: required so email-worker skips auth-service round-trip
+  grandTotal: number
+}
+
+const queue = new Queue("email", { connection })
+
+export const emailQueue = {
+  /**
+   * Enqueue an "order-created" notification email.
+   * Returns the BullMQ Job Promise so callers can .catch() it independently.
+   */
+  add: (type: "order-created", payload: OrderCreatedPayload) =>
+    queue.add(type, payload),
+}

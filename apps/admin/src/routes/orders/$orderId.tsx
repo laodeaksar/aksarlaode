@@ -3,6 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState }         from "react"
 import { ordersApi }        from "@/lib/api"
 import { Button, Badge, Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
+import {
+  AlertDialog, AlertDialogContent,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@repo/ui/components/alert-dialog"
 
 export const Route = createFileRoute("/orders/$orderId")({
   component: OrderDetailPage,
@@ -24,8 +29,10 @@ const STATUS_COLOR: Record<string, "default"|"secondary"|"destructive"|"outline"
 function OrderDetailPage() {
   const { orderId }   = Route.useParams()
   const queryClient   = useQueryClient()
-  const [note, setNote] = useState("")
-  const [nextStatus, setNextStatus] = useState("")
+  const [note, setNote]               = useState("")
+  const [nextStatus, setNextStatus]   = useState("")
+  // FIX ADM-04: confirmation dialog state for irreversible CANCELLED transition
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ["order", orderId],
@@ -130,16 +137,45 @@ function OrderDetailPage() {
               onChange={e => setNote(e.target.value)}
             />
 
+            {/* FIX ADM-04: CANCELLED is irreversible — require explicit confirmation */}
             <Button
               className="w-full"
               disabled={!nextStatus || isPending}
-              onClick={() => updateStatus()}
+              onClick={() => {
+                if (nextStatus === "CANCELLED") {
+                  setConfirmOpen(true)
+                } else {
+                  updateStatus()
+                }
+              }}
             >
               {isPending ? "Updating..." : "Update Status"}
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* Confirmation dialog — only shown when transitioning to CANCELLED */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Batalkan Pesanan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Aksi ini tidak bisa dibatalkan. Pesanan akan berpindah ke status CANCELLED
+              dan stok akan dibebaskan kembali.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Kembali</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => { setConfirmOpen(false); updateStatus() }}
+            >
+              Ya, Batalkan Pesanan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -3,8 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState }        from "react"
 import { productsApi }     from "@/lib/api"
 import { DataTable }       from "@/components/data-table/data-table"
-import { Button }   from "@repo/ui/components/button"
-import { Badge }   from "@repo/ui/components/badge"
+import { Button }          from "@repo/ui/components/button"
+import { Badge }           from "@repo/ui/components/badge"
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@repo/ui/components/alert-dialog"
 import type { ColumnDef }  from "@tanstack/react-table"
 import type { Product }    from "@repo/common"
 
@@ -108,6 +113,8 @@ function ProductsPage() {
   )
 }
 
+// FIX ADM-04: Replace native confirm() with accessible AlertDialog so the
+// user sees an explicit irreversibility warning before deleting a product.
 function DeleteButton({ productId }: { productId: string }) {
   const queryClient = useQueryClient()
   const { mutate, isPending } = useMutation({
@@ -116,13 +123,26 @@ function DeleteButton({ productId }: { productId: string }) {
   })
 
   return (
-    <Button
-      size="sm"
-      variant="destructive"
-      disabled={isPending}
-      onClick={() => { if (confirm("Delete this product?")) mutate() }}
-    >
-      {isPending ? "..." : "Delete"}
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="destructive" disabled={isPending}>
+          {isPending ? "..." : "Delete"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
+          <AlertDialogDescription>
+            Aksi ini tidak bisa dibatalkan. Produk akan dihapus secara permanen dari sistem.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={() => mutate()}>
+            Ya, Hapus Permanen
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

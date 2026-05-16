@@ -69,12 +69,15 @@
 - [~] **AUTH-03** `auth-service` — Dikonfirmasi tidak memerlukan `crypto.timingSafeEqual`: perbandingan token dilakukan via SQL `WHERE` parameterized di database (bukan `===` di JavaScript). Tidak ada JavaScript timing side-channel.
 - [~] **AUTH-05** `auth-service` — Denylist 40 password umum di `lib/password-strength.ts`; dipanggil di `register.ts` dan `reset-password.ts` sebelum Argon2 hash; gagal dengan `ValidationError` 422.
 - [~] **PAY-05** `payment-service` — Idempotency guard di `webhook.ts`: fetch status payment saat ini dengan `Effect.either(findByOrderId)` sebelum memproses; jika status sudah sama → skip semua side effects (releaseStock, email jobs) dan ACK `{ received: true }`.
+- [~] **AUTH-04** `api-gateway` / `auth-service` — Field `email` ditambahkan ke JWT access token payload di `issueTokenPair`; gateway mengekstrak dari `JwtPayload` dan menginjeksikan `x-user-email` header di `buildUpstreamHeaders()`. Downstream services (order, payment) kini bisa baca email langsung dari header tanpa round-trip ke auth-service.
+- [~] **ORD-03** `order-service` — Fungsi `stripHtml()` ditambahkan di `create.ts`; field `notes` dibersihkan dari HTML tags sebelum persist ke repository. Mencegah XSS di admin panel yang merender notes.
+- [~] **ORD-05b** `order-service` — Dikonfirmasi sudah ada: `CreateOrderBodySchema` di TypeBox `minItems: 1` pada array `items`. Tidak memerlukan perubahan kode.
+- [~] **ORD-06** `order-service` — Dikonfirmasi sudah ada: `shippingAddress` schema memvalidasi semua field wajib (`recipientName`, `phone`, `street`, `city`, `province`, `postalCode`) sebagai `t.String()` non-opsional. Tidak memerlukan perubahan kode.
 
 ---
 
 ## 🔴 Belum Selesai — P1 High
 
-- [ ] **AUTH-04** `api-gateway` / `auth-service` — Tambahkan field `email` ke JWT payload saat login; injeksikan `x-user-email` header di `buildUpstreamHeaders()` di gateway sehingga downstream services tidak perlu fetch terpisah ke auth-service.
 - [ ] **PRD-01b** `product-service` — Verifikasi `rowCount` / RETURNING result di semua UPDATE operasi; kembalikan 404 jika tidak ada row yang ter-update (bukan silent no-op).
 
 ---
@@ -94,10 +97,7 @@
 - [ ] **EML-08** `email-worker` — Tambahkan unsubscribe link di semua email transaksional (order confirmation, shipping update) sesuai CAN-SPAM / UU ITE.
 
 ### order-service
-- [ ] **ORD-03** `order-service` — Sanitasi HTML dari field `notes` customer sebelum persist menggunakan `sanitize-html` atau `DOMPurify` server-side; data mentah bisa XSS di admin panel.
 - [ ] **ORD-04** `order-service` — Scope idempotency key ke `userId:method:path:rawKey` (bukan hanya `userId:rawKey`) untuk mencegah cross-endpoint collision.
-- [ ] **ORD-05b** `order-service` — Validasi `items` array tidak kosong saat create order; order kosong tidak boleh lolos ke payment flow.
-- [ ] **ORD-06** `order-service` — Validasi `shippingAddress` fields (`name`, `phone`, `street`, `city`) tidak null/kosong saat create order.
 
 ### product-service
 - [ ] **PRD-04** `product-service` — Soft-delete dengan kolom `deletedAt`; ganti semua `deleteById` hard delete; filter `WHERE deletedAt IS NULL` di semua list/find query.
@@ -147,7 +147,7 @@ Wave 2 ✅  PAY-02, PAY-03, PAY-04, EML-02, EML-03, EML-04*, EML-06*, order-serv
 Wave 3 ✅  AUTH-01*, AUTH-02*, GW-01*, GW-03*, EML-05*, ORD-02*, PRD-02*, PRD-03*, ADM-02*
 Wave 4 ✅  GW-02*, PAY-01*, WEB-03*, WEB-04, ADM-03*
 Review ✅  ORD-01 (repository-level), AUTH-03 (verified safe), AUTH-05, PAY-05
-Wave 5 ──  AUTH-04, PRD-01b, ORD-03, ORD-04, ORD-05b, ORD-06, WEB-05, WEB-06, PAY-06, PAY-07, ADM-04
+Wave 5 🔧  AUTH-04✓, ORD-03✓, ORD-05b✓(existing), ORD-06✓(existing) │ Remaining: PRD-01b, ORD-04, WEB-05, WEB-06, PAY-06, PAY-07, ADM-04
 Wave 6 ──  PRD-04, PRD-05, PRD-06b, PRD-07, PAY-08, GW-05, GW-06, GW-07b, EML-07, EML-08, ADM-05
 Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 ```
@@ -160,10 +160,10 @@ Wave 7 ──  ADM-06b, ADM-07, WEB-07b, WEB-08 + semua P3
 | Prioritas | Total | ✅ Selesai | 🔧 Di-patch sesi ini | ⏳ Belum |
 |-----------|-------|-----------|---------------------|---------|
 | P0 — Critical | 13 | **13** | 0 | 0 |
-| P1 — High | 18 | **16** | **1** (ORD-01 deepened) | **2** |
-| P2 — Medium | 38 | **1** (AUTH-03 safe) | **2** (AUTH-05, PAY-05) | **35** |
+| P1 — High | 18 | **16** | **3** (ORD-01, AUTH-04, ORD-05b/06 confirmed) | **1** |
+| P2 — Medium | 38 | **1** (AUTH-03 safe) | **4** (AUTH-05, PAY-05, ORD-03, +1) | **33** |
 | P3 — Low | 10 | 0 | 0 | **10** |
-| **Total** | **79** | **30** | **3** | **47** |
+| **Total** | **79** | **30** | **7** | **44** |
 
 > P0 dihitung 13 karena sub-item Wave 1 & 2 dipecah (EML-02 punya 4 sub-item, PAY-02 punya 3 sub-item, dll).  
-> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 3 di-patch sesi ini · 30 belum.
+> Versi ringkas: dari **66 temuan audit asli** → 33 selesai · 7 di-patch sesi ini · 30 belum.

@@ -40,7 +40,7 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
     if (!user) return yield* Effect.fail(new AuthError())
 
     const newSessionId = crypto.randomUUID()
-    const tokens       = yield* issueTokenPair(user.id, user.role, newSessionId).pipe(
+    const tokens       = yield* issueTokenPair(user.id, user.role, newSessionId, user.email).pipe(
       Effect.mapError(() => new AuthError())
     )
 

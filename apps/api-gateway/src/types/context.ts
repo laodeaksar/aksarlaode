@@ -2,6 +2,7 @@ export type User = {
   id:        string
   role:      "CUSTOMER" | "ADMIN" | "OWNER" | "SERVICE"
   sessionId: string
+  email?:    string   // injected from JWT claim; absent on tokens issued before this change
 }
 
 // Hono's typed context variables

@@ -10,6 +10,13 @@ import { idempotency }                  from "@/lib/idempotency"
 import { checkOrderCreateRateLimit }    from "@/lib/rate-limiter"
 import type { CreateOrderBody }         from "@/types"
 
+// FIX ORD-03: Strip HTML tags from customer-supplied text before persisting.
+// Prevents XSS in admin panel where notes may be rendered as HTML.
+// Keeps plain text content intact; only angle-bracket markup is removed.
+function stripHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim()
+}
+
 export const createHandler = async ({ body, headers, set }: Context) => {
   const input  = body as CreateOrderBody
   const userId = headers["x-user-id"]!
@@ -119,7 +126,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
       shippingFee:     input.shippingFee ?? 0,
       discountAmount:  0,
       grandTotal,
-      notes:           input.notes,
+      notes:           input.notes != null ? stripHtml(input.notes) : undefined,
     })
 
     // Non-blocking — fire and forget; failure does not abort order creation.

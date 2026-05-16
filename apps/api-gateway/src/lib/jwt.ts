@@ -70,6 +70,7 @@ export const verifyJwt = (
       id:        payload.sub,
       role:      payload.role,
       sessionId: payload.sessionId,
+      ...(payload.email ? { email: payload.email } : {}),
     } satisfies User
   })
 
@@ -78,6 +79,7 @@ type JwtPayload = {
   sub:       string
   role:      User["role"]
   sessionId: string
+  email?:    string   // added in AUTH-04; optional for backwards compat with old tokens
   iat:       number
   exp:       number
 }

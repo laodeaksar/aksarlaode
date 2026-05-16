@@ -91,7 +91,7 @@ export const loginHandler = async ({
 
     // ── 4. Issue tokens and create new session ───────────────────────────────
     const sessionId = crypto.randomUUID()
-    const tokens    = yield* issueTokenPair(user.id, user.role, sessionId)
+    const tokens    = yield* issueTokenPair(user.id, user.role, sessionId, user.email)
 
     const refreshTokenHash = yield* Effect.tryPromise({
       try:   () => hashToken(tokens.refreshToken),

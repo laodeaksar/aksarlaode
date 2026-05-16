@@ -112,6 +112,7 @@ function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
     headers.set("x-user-id",    user.id)
     headers.set("x-user-role",  user.role)
     headers.set("x-session-id", user.sessionId)
+    if (user.email) headers.set("x-user-email", user.email)
   }
 
   headers.set("x-request-id",    c.var.requestId)

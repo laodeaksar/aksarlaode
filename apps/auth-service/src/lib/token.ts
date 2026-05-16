@@ -20,11 +20,12 @@ export type TokenPair = { accessToken: string; refreshToken: string }
 export const issueTokenPair = (
   userId:    string,
   role:      string,
-  sessionId: string
+  sessionId: string,
+  email:     string
 ): Effect.Effect<TokenPair, TokenError> =>
   Effect.gen(function* () {
     const accessToken  = yield* signToken(
-      { sub: userId, role, sessionId, type: "access" },
+      { sub: userId, role, sessionId, email, type: "access" },
       60 * 5,    // 5 min — reduced from 15 min to shorten the post-logout revocation window
       env.JWT_ACCESS_PRIVATE_KEY
     )

@@ -38,7 +38,7 @@ export const registerHandler = async ({
     // userId+sessionId pair.
     const userId    = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
-    const tokens    = yield* issueTokenPair(userId, "CUSTOMER", sessionId)
+    const tokens    = yield* issueTokenPair(userId, "CUSTOMER", sessionId, body.email)
 
     const refreshTokenHash = yield* Effect.tryPromise({
       try:   () => hashToken(tokens.refreshToken),

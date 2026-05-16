@@ -1,4 +1,4 @@
-export type UserRole = "CUSTOMER" | "ADMIN"
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
 
 /**
  * Values injected by the withUserContext plugin via `.derive({ as: "global" })`.

@@ -7,7 +7,11 @@ import { reserveStockHandler }  from "@/handlers/reserve-stock"
 import { releaseStockHandler }  from "@/handlers/release-stock"
 import { updateHandler }        from "@/handlers/update"
 import { deleteHandler }        from "@/handlers/delete"
-import { auditLogHandler }      from "@/handlers/audit-log"
+import { auditLogHandler }       from "@/handlers/audit-log"
+import {
+  writeAuditLogHandler,
+  type WriteAuditLogBody,
+}                               from "@/handlers/write-audit-log"
 import {
   ProductSchema,
   ProductListResponseSchema,
@@ -135,6 +139,29 @@ export const productRoutes = new Elysia({ prefix: "/products", tags: ["Products"
     detail: {
       summary:     "Delete product",
       description: `Permanently deletes a product by ID. ${AdminDescription}`,
+    },
+  })
+
+  // Write endpoint: admin app's auditMiddleware POSTs here fire-and-forget.
+  // Protected by x-service-token (checked in index.ts) + actorRole validation.
+  .post("/audit-logs", writeAuditLogHandler, {
+    body: t.Object({
+      actorId:    t.String(),
+      actorRole:  t.String(),
+      action:     t.String(),
+      resource:   t.String(),
+      resourceId: t.String(),
+      oldValue:   t.Optional(t.Unknown()),
+      newValue:   t.Optional(t.Unknown()),
+      metadata:   t.Optional(t.Unknown()),
+    }),
+    response: {
+      202: t.Object({ message: t.Literal("Accepted") }),
+      403: ForbiddenSchema,
+    },
+    detail: {
+      summary:     "Write admin audit log entry",
+      description: "Called internally by the admin SSR layer. Requires x-service-token.",
     },
   })
 

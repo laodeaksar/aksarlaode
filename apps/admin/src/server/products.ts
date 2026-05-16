@@ -11,6 +11,7 @@ import {
   NotFoundError,
 } from "@/effect/Errors"
 import { effectMiddleware } from "@/effect/Middleware"
+import { auditMiddleware }  from "@/effect/AuditMiddleware"
 
 // ── Input schemas ──────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ export const getProductFn = createServerFn({ method: "GET" })
 //   })
 
 export const createProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(NewProductSchema, raw as Schema.Schema.Encoded<typeof NewProductSchema>)
   )
@@ -148,7 +149,7 @@ const UpdateParamsSchema = Schema.Struct({
 })
 
 export const updateProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(UpdateParamsSchema, raw as Schema.Schema.Encoded<typeof UpdateParamsSchema>)
   )
@@ -167,7 +168,7 @@ export const updateProductFn = createServerFn({ method: "POST" })
 // ── DELETE /products/:id ──────────────────────────────────────────────────
 
 export const deleteProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(ProductIdSchema, raw as Schema.Schema.Encoded<typeof ProductIdSchema>)
   )

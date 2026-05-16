@@ -1,10 +1,24 @@
 import { Effect, Data }  from "effect"
 import { OrderModel, type OrderStatus, type OrderDocument } from "@/models/order.model"
 
-class OrderNotFoundError  extends Data.TaggedError("OrderNotFoundError")<{ id: string }> {}
-class OrderConflictError  extends Data.TaggedError("OrderConflictError")<{ reason: string }> {}
-class DbError             extends Data.TaggedError("DbError")<{ cause: unknown }> {}
-class DuplicateOrderError extends Data.TaggedError("DuplicateOrderError")<{ orderId: string }> {}
+class OrderNotFoundError    extends Data.TaggedError("OrderNotFoundError")<{ id: string }> {}
+class OrderConflictError    extends Data.TaggedError("OrderConflictError")<{ reason: string }> {}
+class DbError               extends Data.TaggedError("DbError")<{ cause: unknown }> {}
+class DuplicateOrderError   extends Data.TaggedError("DuplicateOrderError")<{ orderId: string }> {}
+class InvalidTransitionError extends Data.TaggedError("InvalidTransitionError")<{
+  orderId: string
+  from: string
+  to: string
+}> {}
+
+// Valid status transitions — terminal states (CANCELLED, REFUNDED) have no outgoing edges
+const VALID_TRANSITIONS: Partial<Record<OrderStatus, Set<OrderStatus>>> = {
+  PENDING_PAYMENT: new Set(["PAID", "CANCELLED"]),
+  PAID:            new Set(["PROCESSING", "CANCELLED", "REFUNDED"]),
+  PROCESSING:      new Set(["SHIPPED", "CANCELLED"]),
+  SHIPPED:         new Set(["DELIVERED", "CANCELLED"]),
+  DELIVERED:       new Set(["REFUNDED"]),
+}
 
 const create = (data: Omit<OrderDocument, keyof Document>) =>
   Effect.tryPromise({
@@ -39,9 +53,34 @@ const findByUser = (userId: string, page = 1, limit = 20) =>
     catch: (e) => new DbError({ cause: e }),
   })
 
-// Append to statusHistory + update top-level status field
+// Append to statusHistory + update top-level status field.
+// Enforces state machine — rejects transitions not in VALID_TRANSITIONS.
 const updateStatus = (orderId: string, status: OrderStatus, note?: string, changedBy = "system") =>
   Effect.gen(function* () {
+    // 1. Fetch current document to validate the transition
+    const current = yield* Effect.tryPromise({
+      try:   () => OrderModel.findOne({ orderId }).select("status").lean(),
+      catch: (e) => new DbError({ cause: e }),
+    })
+
+    if (!current) return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
+
+    const currentStatus = current.status as OrderStatus
+    const allowed       = VALID_TRANSITIONS[currentStatus]
+
+    // Terminal states have no outgoing edges; all other invalid jumps are rejected
+    if (!allowed || !allowed.has(status)) {
+      console.warn(JSON.stringify({
+        event:   "order_invalid_transition",
+        orderId,
+        from:    currentStatus,
+        to:      status,
+        changedBy,
+      }))
+      return yield* Effect.fail(new InvalidTransitionError({ orderId, from: currentStatus, to: status }))
+    }
+
+    // 2. Perform the update (current status already validated above)
     const timestampField: Partial<Record<string, Date>> = {
       PAID:      new Date(),
       SHIPPED:   new Date(),
@@ -412,6 +451,8 @@ const addNote = (orderId: string, note: string, changedBy: string) =>
     if (!doc) return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
     return doc
   })
+
+export { InvalidTransitionError }
 
 export const orderRepository = {
   create, findByOrderId, findByUser, findAll, summarize, updateStatus,

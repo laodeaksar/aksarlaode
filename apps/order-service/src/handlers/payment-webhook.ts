@@ -1,11 +1,11 @@
-import { createHash }            from "crypto"
-import { Effect }               from "effect"
-import type { Context }         from "elysia"
-import { env }                  from "@repo/env/order"
-import { redis }                from "@/lib/redis"
-import { orderRepository }      from "@/repository/order.repository"
-import { productClient }        from "@/lib/product-client"
-import { checkWebhookRateLimit } from "@/lib/rate-limiter"
+import { createHash }                              from "crypto"
+import { Effect }                                 from "effect"
+import type { Context }                           from "elysia"
+import { env }                                    from "@repo/env/order"
+import { redis }                                  from "@/lib/redis"
+import { orderRepository, InvalidTransitionError } from "@/repository/order.repository"
+import { productClient }                          from "@/lib/product-client"
+import { checkWebhookRateLimit }                  from "@/lib/rate-limiter"
 
 // ── Midtrans notification body (partial — only fields we use) ───────────────
 type MidtransNotification = {
@@ -188,6 +188,19 @@ export const paymentWebhookHandler = async ({ body, request, set }: Context) => 
     if (err._tag === "OrderNotFoundError") {
       console.error(JSON.stringify({ event: "webhook_order_not_found", orderId, transactionId }))
       // Return 200 so Midtrans doesn't keep retrying for genuinely missing orders
+      return { ok: true }
+    }
+    if (err._tag === "InvalidTransitionError") {
+      const te = err as InstanceType<typeof InvalidTransitionError>
+      console.warn(JSON.stringify({
+        event:         "webhook_transition_rejected",
+        orderId,
+        transactionId,
+        from:          te.from,
+        to:            te.to,
+        note:          "Order already in a terminal or incompatible state — skipping update",
+      }))
+      // ACK with 200 — Midtrans should not retry; order is in a valid terminal state
       return { ok: true }
     }
     console.error(JSON.stringify({ event: "webhook_update_failed", orderId, transactionId }))

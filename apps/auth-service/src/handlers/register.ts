@@ -5,7 +5,8 @@ import { hashToken }               from "@/lib/token-hash"
 import { userRepository }          from "@/repository/user.repository"
 import { createUserWithSession }   from "@/repository/auth.repository"
 import { writeAuditLog }           from "@/lib/audit-log"
-import { AuthError, ConflictError, toErrorResponse } from "@repo/common/errors"
+import { checkPasswordStrength }   from "@/lib/password-strength"
+import { AuthError, ConflictError, ValidationError, toErrorResponse } from "@repo/common/errors"
 
 export const registerHandler = async ({
   body,
@@ -21,6 +22,11 @@ export const registerHandler = async ({
     // is handled by the 23505 catch in createUserWithSession.
     const existing = yield* userRepository.findByEmail(body.email)
     if (existing) return yield* Effect.fail(new ConflictError("email"))
+
+    // ── 1b. Common-password denylist ─────────────────────────────────────────
+    // Checked before Argon2 — no point hashing a trivially guessable password.
+    const weakMsg = checkPasswordStrength(body.password)
+    if (weakMsg) return yield* Effect.fail(new ValidationError(undefined, weakMsg))
 
     // ── 2. Hash password ─────────────────────────────────────────────────────
     const passwordHash = yield* hashPassword(body.password)

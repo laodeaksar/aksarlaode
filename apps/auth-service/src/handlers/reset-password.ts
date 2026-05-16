@@ -5,7 +5,8 @@ import { userRepository }       from "@/repository/user.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
 import { consumeResetToken }    from "@/repository/auth.repository"
 import { writeAuditLog }        from "@/lib/audit-log"
-import { AuthError, GoneError, NotFoundError, ConflictError, toErrorResponse } from "@repo/common/errors"
+import { checkPasswordStrength } from "@/lib/password-strength"
+import { AuthError, GoneError, NotFoundError, ConflictError, ValidationError, toErrorResponse } from "@repo/common/errors"
 import { message }              from "@repo/common/response"
 
 export const resetPasswordHandler = async ({
@@ -35,6 +36,10 @@ export const resetPasswordHandler = async ({
 
     const user = yield* userRepository.findById(record.userId)
     if (!user) return yield* Effect.fail(new NotFoundError("User"))
+
+    // ── Common-password denylist ─────────────────────────────────────────────
+    const weakMsg = checkPasswordStrength(body.newPassword)
+    if (weakMsg) return yield* Effect.fail(new ValidationError(undefined, weakMsg))
 
     const newHash = yield* hashPassword(body.newPassword)
 

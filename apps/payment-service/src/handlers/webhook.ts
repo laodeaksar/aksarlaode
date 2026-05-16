@@ -44,9 +44,38 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
   const notification = await c.req.json<MidtransNotification>()
 
   const program = Effect.gen(function* () {
-    const txStatus     = notification.transaction_status ?? ""
+    const txStatus      = notification.transaction_status ?? ""
     const paymentStatus = PAYMENT_STATUS_MAP[txStatus] ?? "UNKNOWN"
     const orderStatus   = ORDER_STATUS_MAP[txStatus]    // null = skip
+
+    // ── FIX PAY-05: Idempotency guard ────────────────────────────────────────
+    // Midtrans may deliver the same notification more than once. Fetch the
+    // current payment record before applying any changes. If the record already
+    // has the same target status, skip all side-effects (stock release, email
+    // jobs) and ACK immediately — the event was already processed.
+    //
+    // We use Effect.either so that PaymentNotFoundError (first-time webhook
+    // before initiate has run) is treated as "not yet processed" rather than
+    // crashing the flow.
+    const existingResult = yield* paymentRepository.findByOrderId(notification.order_id).pipe(
+      Effect.either
+    )
+
+    const existingStatus = existingResult._tag === "Right"
+      ? existingResult.right.status
+      : null
+
+    if (existingStatus === paymentStatus) {
+      console.info(JSON.stringify({
+        event:      "webhook_duplicate_skipped",
+        orderId:    notification.order_id,
+        txStatus,
+        paymentStatus,
+        note:       "Status already matches — skipping side effects",
+      }))
+      return { received: true }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // 1. Update payment record (status + paymentType + paidAt)
     const payment = yield* paymentRepository.updateByOrderId(notification.order_id, {

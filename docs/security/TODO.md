@@ -46,13 +46,18 @@
 
 ---
 
+## ✅ Selesai — P1 High (Wave 4)
+
+- [x] **GW-02** `api-gateway` — Circuit breaker state dipersist ke Redis pada setiap transisi (OPEN/CLOSED); `restoreAllBreakers()` dipanggil saat startup sebelum traffic masuk; fail-open jika Redis tidak tersedia; TTL 24 jam; `lib/redis.ts` baru + ioredis ditambahkan ke api-gateway
+- [x] **PAY-01** `payment-service` — `redactAuthFromMessage()` strip `Basic [base64]` dari semua error message sebelum masuk ke objek error; `authHeader()` tidak pernah disimpan ke variabel yang bisa masuk ke log
+- [x] **WEB-03** `apps/web` — Audit selesai: satu-satunya Astro API route (`/api/payment/initiate.ts`) sudah forward cookie dengan benar; middleware SSR sudah forward cookie; tidak ada gap. *(sudah ada sebelumnya)*
+- [x] **WEB-04** `apps/web` — CSRF protection di Astro middleware: Layer 1 = SameSite=Strict cookie (sudah ada); Layer 2 = Origin header validation untuk semua non-GET `/api/*` route (baru); cross-origin request dengan Origin berbeda → HTTP 403 `CSRF_ORIGIN_MISMATCH`
+- [x] **ADM-03** `apps/admin` — Server-side pagination di orders (filter by status) dan customers (search); gunakan `DataTable` component yang sudah ada; `page`, `status`, `search` state; pass params sebagai `URLSearchParams` ke API
+
+---
+
 ## 🔴 Belum Selesai — P1 High (sisa)
 
-- [ ] **GW-02** `api-gateway` — Persist circuit breaker state ke Redis (restart tidak reset counter)
-- [ ] **PAY-01** `payment-service` — Redact `Authorization` header dari error log Midtrans
-- [ ] **WEB-03** `apps/web` — Audit semua Astro API routes: pastikan cookie di-forward konsisten
-- [ ] **WEB-04** `apps/web` — CSRF protection untuk form mutasi (SameSite=Strict sudah ada; tambah CSRF token atau Double Submit Cookie untuk non-GET)
-- [ ] **ADM-03** `apps/admin` — Server-side pagination di semua list view
 - [ ] **AUTH-04** `api-gateway` / `auth-service` — Pertimbangkan inject `x-user-email` header dari gateway
 - [ ] **PRD-01b** `product-service` — Verifikasi RETURNING row count di semua UPDATE operasi
 
@@ -112,8 +117,9 @@
 Wave 1 (selesai) ─── PRD-01, EML-01, ADM-01, WEB-01, WEB-02, GW-04
 Wave 2 (selesai) ─── PAY-02, PAY-03, PAY-04, EML-02, EML-03, order-service userEmail
 Wave 3 (selesai) ─── AUTH-01, AUTH-02*, GW-01*, GW-03*, EML-05, ORD-01, ORD-02*, PRD-02, PRD-03, ADM-02
-Wave 4 ────────────── GW-02, PAY-01, WEB-04, ADM-03, WEB-03, AUTH-03, AUTH-05, GW-05, GW-06
-Wave 5 ────────────── Semua P2 tersisa + P3 + hardening tambahan
+Wave 4 (selesai) ─── GW-02, PAY-01, WEB-03*, WEB-04, ADM-03
+Wave 5 ────────────── AUTH-03, AUTH-05, GW-05, GW-06, EML-07, ORD-03, PRD-04, PAY-05, PAY-06
+Wave 6 ────────────── Semua P2 tersisa + P3 + hardening tambahan
 ```
 *Terverifikasi sudah ada sebelumnya, tidak perlu perubahan kode.
 
@@ -124,9 +130,9 @@ Wave 5 ────────────── Semua P2 tersisa + P3 + harden
 | Prioritas | Total | Selesai | Sisa |
 |-----------|-------|---------|------|
 | P0 Critical | 10 | **10** ✅ | 0 |
-| P1 High | 18 | **10** ✅ | **8** |
+| P1 High | 18 | **15** ✅ | **3** |
 | P2 Medium | 28 | 2* | **26** |
 | P3 Low | 10 | 0 | **10** |
-| **Total** | **66** | **22** | **44** |
+| **Total** | **66** | **27** | **39** |
 
 *EML-04 (HTML escaping) dan EML-06 (typo fix) di-patch sebagai bonus di Wave 2.

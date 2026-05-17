@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { deleteProductFn, listProductsFn } from "@/server/products"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import type { Product } from "@repo/common"
@@ -26,37 +26,53 @@ import { DataTable } from "@/components/data-table/data-table"
 import { Route } from "./products.route"
 
 export default function ProductsPage() {
-  const [page, setPage] = useState(1)
-  // `search` drives the visible input value (instant).
-  // `debouncedSearch` drives the query key — updated 300ms after typing stops.
-  // This prevents a server function call on every keystroke.
-  const [search, setSearch] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const navigate = useNavigate()
+  const { page, search } = Route.useSearch()
+  const loaderData = Route.useLoaderData()
+
+  // Local input state for immediate feedback — URL param updates after 300ms.
+  const [inputValue, setInputValue] = useState(search)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync input value when URL changes externally (back/forward navigation).
+  useEffect(() => {
+    setInputValue(search)
+  }, [search])
 
   const { session } = useSession()
   const role = session?.role ?? "CUSTOMER"
   const canWrite = can(role, "products:write")
 
-  const handleSearch = useCallback((value: string) => {
-    setSearch(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(value)
-      setPage(1)
-    }, 300)
-  }, [])
-
-  // Seed the query cache with SSR loader data on first render
-  const loaderData = Route.useLoaderData()
-
   const { data, isLoading } = useQuery({
-    queryKey: ["products", page, debouncedSearch],
+    queryKey: ["products", page, search],
     queryFn: () =>
-      listProductsFn({ data: { page, limit: 20, search: debouncedSearch } }),
-    // Use SSR data as initial value for the first page
-    initialData: page === 1 && !debouncedSearch ? loaderData : undefined,
+      listProductsFn({ data: { page, limit: 20, search } }),
+    initialData: loaderData,
   })
+
+  const handleSearch = useCallback(
+    (value: string) => {
+      setInputValue(value)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        navigate({
+          to: "/products",
+          search: (prev) => ({ ...prev, search: value, page: 1 }),
+        })
+      }, 300)
+    },
+    [navigate],
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      navigate({
+        to: "/products",
+        search: (prev) => ({ ...prev, page: newPage }),
+      })
+    },
+    [navigate],
+  )
 
   // Memoized: only rebuilds when canWrite changes (role switch), not on every
   // page/search state change. Prevents TanStack Table from re-initializing.
@@ -154,7 +170,7 @@ export default function ProductsPage() {
           ]
         : []),
     ],
-    [canWrite]
+    [canWrite],
   )
 
   return (
@@ -172,7 +188,7 @@ export default function ProductsPage() {
         className="w-64 rounded border px-3 py-2 text-sm"
         placeholder="Search products..."
         aria-label="Search products"
-        value={search}
+        value={inputValue}
         onChange={(e) => handleSearch(e.target.value)}
       />
 
@@ -182,7 +198,7 @@ export default function ProductsPage() {
         isLoading={isLoading}
         total={data?.total ?? 0}
         page={page}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
       />
     </div>
   )
@@ -212,7 +228,7 @@ function DeleteButton({ productId }: { productId: string }) {
                 items: old.items.filter((p) => p.id !== productId),
                 total: old.total - 1,
               }
-            : old
+            : old,
       )
       return { snapshots }
     },
@@ -220,7 +236,7 @@ function DeleteButton({ productId }: { productId: string }) {
     // Roll back on error
     onError: (_err, _vars, ctx) => {
       ctx?.snapshots.forEach(([key, data]) =>
-        queryClient.setQueryData(key, data)
+        queryClient.setQueryData(key, data),
       )
     },
 

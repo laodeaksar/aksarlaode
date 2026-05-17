@@ -1,6 +1,6 @@
-import { useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import type { User } from "@repo/common"
@@ -56,12 +56,18 @@ const columns: ColumnDef<User>[] = [
 ]
 
 export default function CustomersPage() {
-  const [page, setPage] = useState(1)
-  const [inputValue, setInputValue] = useState("")
-  const [search, setSearch] = useState("")
+  const navigate = useNavigate()
+  const { page, search } = Route.useSearch()
+  const loaderData = Route.useLoaderData()
+
+  // Local input state for immediate feedback — URL param updates after 300ms.
+  const [inputValue, setInputValue] = useState(search)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const loaderData = Route.useLoaderData()
+  // Sync input when URL changes externally (back/forward navigation).
+  useEffect(() => {
+    setInputValue(search)
+  }, [search])
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", page, search],
@@ -69,18 +75,33 @@ export default function CustomersPage() {
       listCustomersFn({
         data: { page, ...(search ? { search } : {}) },
       }),
-    initialData: page === 1 && !search ? loaderData : undefined,
+    initialData: loaderData,
   })
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setInputValue(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      setSearch(value)
-      setPage(1)
-    }, 300)
-  }
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
+      setInputValue(value)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        navigate({
+          to: "/customers",
+          search: (prev) => ({ ...prev, search: value, page: 1 }),
+        })
+      }, 300)
+    },
+    [navigate],
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      navigate({
+        to: "/customers",
+        search: (prev) => ({ ...prev, page: newPage }),
+      })
+    },
+    [navigate],
+  )
 
   return (
     <div className="space-y-4">
@@ -100,7 +121,7 @@ export default function CustomersPage() {
         isLoading={isLoading}
         total={data?.total ?? 0}
         page={page}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
       />
     </div>
   )

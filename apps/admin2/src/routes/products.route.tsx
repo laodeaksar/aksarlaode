@@ -13,9 +13,19 @@ export const Route = createFileRoute("/products")({
     }
   },
 
-  loader: () =>
+  validateSearch: (search: Record<string, unknown>) => ({
+    page: Math.max(1, Number(search.page) || 1),
+    search: typeof search.search === "string" ? search.search : "",
+  }),
+
+  loaderDeps: ({ search }) => ({
+    page: search.page,
+    search: search.search,
+  }),
+
+  loader: ({ deps }) =>
     listProductsFn({
-      data: { page: 1, limit: 20 },
+      data: { page: deps.page, limit: 20, search: deps.search },
     }),
 
   component: () => <Outlet />,

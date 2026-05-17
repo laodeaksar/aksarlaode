@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo } from "react"
 import type { OrderSummary } from "@/effect/Services"
 import { listOrdersFn } from "@/server/orders"
 import { useQuery } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@repo/ui/components/badge"
@@ -85,10 +85,8 @@ const columns: ColumnDef<OrderSummary>[] = [
 ]
 
 export default function OrdersPage() {
-  const [page, setPage] = useState(1)
-  const [status, setStatus] = useState("")
-
-  // Seed first-page data from the SSR loader — no skeleton on initial load
+  const navigate = useNavigate()
+  const { page, status } = Route.useSearch()
   const loaderData = Route.useLoaderData()
 
   const { data, isLoading } = useQuery({
@@ -97,9 +95,28 @@ export default function OrdersPage() {
       listOrdersFn({
         data: { page, ...(status ? { status } : {}) },
       }),
-    // Use SSR data only for the first page with no filter applied
-    initialData: page === 1 && !status ? loaderData : undefined,
+    initialData: loaderData,
   })
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      navigate({
+        to: "/orders",
+        search: (prev) => ({ ...prev, status: value, page: 1 }),
+      })
+    },
+    [navigate],
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      navigate({
+        to: "/orders",
+        search: (prev) => ({ ...prev, page: newPage }),
+      })
+    },
+    [navigate],
+  )
 
   return (
     <div className="space-y-4">
@@ -109,10 +126,7 @@ export default function OrdersPage() {
         <select
           className="rounded border px-3 py-2 text-sm bg-white"
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value)
-            setPage(1)
-          }}
+          onChange={(e) => handleStatusChange(e.target.value)}
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>
@@ -130,7 +144,7 @@ export default function OrdersPage() {
         isLoading={isLoading}
         total={data?.total ?? 0}
         page={page}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
       />
     </div>
   )

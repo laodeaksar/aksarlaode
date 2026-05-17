@@ -5,16 +5,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { env } from "@repo/env/admin"
 
 import { hasAnyAdminRole } from "@/lib/rbac"
+import { effectResolver } from "@/lib/effect-resolver"
 import type { UserRole } from "@/lib/auth"
+import { LoginSchema, type LoginFields } from "@/schemas/forms"
 
 export const Route = createFileRoute("/login/")({
   component: LoginPage,
 })
-
-type LoginFields = {
-  email: string
-  password: string
-}
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -23,8 +20,10 @@ function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<LoginFields>()
+    formState: { isSubmitting, errors },
+  } = useForm<LoginFields>({
+    resolver: effectResolver(LoginSchema),
+  })
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setServerError(null)
@@ -77,8 +76,13 @@ function LoginPage() {
               type="email"
               autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-              {...register("email", { required: true })}
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -93,8 +97,13 @@ function LoginPage() {
               type="password"
               autoComplete="current-password"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-              {...register("password", { required: true })}
+              {...register("password")}
             />
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           <button

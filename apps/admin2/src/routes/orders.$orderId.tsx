@@ -18,9 +18,11 @@ import {
 } from "@repo/ui/components/alert-dialog"
 
 import { ordersApi } from "@/lib/api"
+import { effectResolver } from "@/lib/effect-resolver"
 import { can } from "@/lib/rbac"
 import { useSession } from "@/lib/session-context"
 import { getOrderFn } from "@/server/orders"
+import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
 
 export const Route = createFileRoute("/orders/$orderId")({
   loader: ({ params }) => getOrderFn({ data: { id: params.orderId } }),
@@ -48,11 +50,6 @@ const STATUS_COLOR: Record<
   CANCELLED: "destructive",
 }
 
-type StatusFormFields = {
-  nextStatus: string
-  note: string
-}
-
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
   const loaderData = Route.useLoaderData()
@@ -74,8 +71,9 @@ function OrderDetailPage() {
     handleSubmit,
     watch,
     reset,
-    formState: { isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<StatusFormFields>({
+    resolver: effectResolver(StatusUpdateSchema),
     defaultValues: { nextStatus: "", note: "" },
   })
 
@@ -191,10 +189,7 @@ function OrderDetailPage() {
             <CardContent>
               <form onSubmit={onStatusSubmit} className="space-y-3">
                 <div>
-                  <label
-                    htmlFor="order-next-status"
-                    className="sr-only"
-                  >
+                  <label htmlFor="order-next-status" className="sr-only">
                     New status
                   </label>
                   <select
@@ -209,16 +204,18 @@ function OrderDetailPage() {
                         <option key={s} value={s}>
                           {s.replace(/_/g, " ")}
                         </option>
-                      )
+                      ),
                     )}
                   </select>
+                  {errors.nextStatus && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.nextStatus.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="order-note"
-                    className="sr-only"
-                  >
+                  <label htmlFor="order-note" className="sr-only">
                     Note
                   </label>
                   <textarea

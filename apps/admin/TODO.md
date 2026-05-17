@@ -52,10 +52,11 @@ Generated from deep audit (2026-05-17). Ordered by priority.
   - Fix: `width={40} height={40} loading="lazy"` sudah ditambahkan saat P0-B refactor
   - File: `src/routes/products/products-page.tsx`
 
-- [ ] **P1-E** Header name tidak konsisten antara `Services.ts` dan `AuditMiddleware.ts`
-  - `Services.ts` mengirim `x-internal-token`, `AuditMiddleware.ts` menggunakan `INTERNAL_SERVICE_TOKEN` untuk header yang belum diverifikasi namanya
-  - Fix: verifikasi header yang di-expect product-service, seragamkan ke satu nama (`x-service-token`)
-  - File: `src/effect/Services.ts:126`, `src/effect/AuditMiddleware.ts:84`, `src/effect/Audit.ts`
+- [x] **P1-E** Header name tidak konsisten antara `Services.ts` dan `AuditMiddleware.ts` ✓
+  - `Services.ts` mengirim `x-internal-token` — product-service mengecek `x-service-token` → semua API call dari server functions gagal 401 diam-diam
+  - `Audit.ts` dan product-service sudah konsisten (`x-service-token`); hanya `Services.ts` yang salah
+  - Fix: ubah `"x-internal-token"` → `"x-service-token"` di `ApiClientService` request helper
+  - File: `src/effect/Services.ts`
 
 ---
 

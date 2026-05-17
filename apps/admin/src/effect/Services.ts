@@ -123,7 +123,7 @@ export class ApiClientService extends Effect.Service<ApiClientService>()("admin/
             headers: {
               "Content-Type": "application/json",
               ...(config.internalToken
-                ? { "x-internal-token": config.internalToken }
+                ? { "x-service-token": config.internalToken }
                 : {}),
               ...(init.headers ?? {}),
             },

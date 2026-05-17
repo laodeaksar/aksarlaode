@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState }                      from "react"
-import { env }                           from "@repo/env"
+import { env }                           from "@repo/env/admin"
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,

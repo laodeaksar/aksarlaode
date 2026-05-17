@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import {
   createRootRouteWithContext,
   Outlet,
@@ -8,12 +9,14 @@ import {
   ScrollRestoration,
 } from "@tanstack/react-router"
 import { QueryClient }     from "@tanstack/react-query"
-import { Suspense }        from "react"
+import { Suspense,type ReactNode }        from "react"
 import { Sidebar }         from "@/components/layout/sidebar"
 import { Topbar }          from "@/components/layout/topbar"
 import { getSession }      from "@/lib/auth"
 import { hasAnyAdminRole } from "@/lib/rbac"
 import { ErrorBoundary }   from "@/components/error-boundary"
+
+import appCss from "@repo/ui/globals.css?url"
 
 // ── Root route — SSR document shell ───────────────────────────────────────
 // With TanStack Start the root component renders the full HTML document.
@@ -27,6 +30,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Admin — MyEcommerce" },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
     ],
   }),
 
@@ -45,28 +54,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
     return { session }
   },
-
-  shellComponent: RootDocument,
+errorComponent: ()=>{
+  return(
+  <RootDocument>
+<ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+                  Loading…
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
+        </RootDocument>
+)},
+  shellComponent: RootComponent,
 })
 
 // ── Full HTML document (required for SSR hydration) ────────────────────────
-function RootDocument() {
+function RootComponent() {
   return (
-    <html lang="id">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <AdminShell />
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
-  )
+       <RootDocument>
+<Outlet/>
+</RootDocument>
+      )
 }
 
 // ── Admin shell — conditional layout for authenticated vs login pages ─────
-function AdminShell() {
+function RootDocument({children}:{children: ReactNode}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   if (pathname === "/login") {
@@ -78,26 +95,23 @@ function AdminShell() {
   }
 
   return (
+     <html lang="id">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
-        {/* FIX ADM-07: ErrorBoundary catches crashes in any child route.
-            FIX ADM-06: Suspense handles React.lazy code-split boundaries. */}
         <main className="flex-1 overflow-y-auto p-6">
-          <ErrorBoundary>
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-                  Loading…
-                </div>
-              }
-            >
-              <Outlet />
-            </Suspense>
-          </ErrorBoundary>
-        </main>
+        {children}
+          </main>
       </div>
     </div>
+  <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
   )
 }

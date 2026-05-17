@@ -1,5 +1,6 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
 import { QueryClient }                           from "@tanstack/react-query"
+import { setupRouterSsrQueryIntegration }                           from "@tanstack/react-query-ssr-query"
 import { routeTree }                             from "../src/routeTree.gen"
 
 // ── QueryClient factory (shared config) ───────────────────────────────────
@@ -23,13 +24,19 @@ export function makeQueryClient() {
 export function createRouter() {
   const queryClient = makeQueryClient()
 
-  return createTanStackRouter({
+  const router = createTanStackRouter({
     routeTree,
     context:                 { queryClient },
     defaultPreload:          "intent",
     defaultPreloadStaleTime: 0,
     scrollRestoration:       true,
   })
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+  })
+
+  return router
 }
 
 declare module "@tanstack/react-router" {

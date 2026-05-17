@@ -1,4 +1,4 @@
-import { env } from "@repo/env"
+import { env } from "@repo/env/admin"
 
 // FIX ADM-05: Expanded role type to include OWNER and FINANCE
 // (FINANCE was added via migration 006; OWNER via migration 002).

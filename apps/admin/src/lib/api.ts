@@ -1,4 +1,4 @@
-import { env }   from "@repo/env"
+import { env }   from "@repo/env/admin"
 import type {
   Product, NewProduct,
   Payment,

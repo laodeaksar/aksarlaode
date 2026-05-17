@@ -42,15 +42,15 @@ Generated from deep audit (2026-05-17). Ordered by priority.
   - Fix: resolved bersama P0-A — `SessionProvider` dihapus, context di-seed dari `beforeLoad`
   - File: `src/lib/session-context.tsx`, `src/routes/__root.tsx`
 
-- [ ] **P1-C** Dashboard, Orders, Customers, Audit Logs tidak punya SSR loader
+- [x] **P1-C** Dashboard, Orders, Customers, Audit Logs tidak punya SSR loader ✓
   - Semua data di-fetch client-side setelah hydration → blank → skeleton → data (client waterfall)
-  - Fix: tambah `loader:` di masing-masing route yang memanggil server function atau `queryClient.prefetchQuery`
-  - File: `src/routes/dashboard/index.tsx`, `src/routes/orders/index.tsx`, `src/routes/audit-logs/index.tsx`
+  - Fix: `getDashboardStatsFn`, `listOrdersFn`, `listAuditLogsFn` server functions baru; `loader:` di ketiga route; `initialData` di setiap `useQuery`; juga buat `src/server/_utils.ts` untuk shared `decodeOrThrow` + `stripUndefined`
+  - File: `src/server/dashboard.ts`, `src/server/orders.ts`, `src/server/audit-logs.ts`, `src/server/_utils.ts`, ketiga route
 
-- [ ] **P1-D** Product thumbnail tanpa `width`, `height`, dan `loading="lazy"`
+- [x] **P1-D** Product thumbnail tanpa `width`, `height`, dan `loading="lazy"` ✓
   - Menyebabkan CLS (layout shift) saat gambar load di products table
-  - Fix: tambah `width={40} height={40} loading="lazy"` pada `<img>` di kolom product
-  - File: `src/routes/products/products-page.tsx:50–54`
+  - Fix: `width={40} height={40} loading="lazy"` sudah ditambahkan saat P0-B refactor
+  - File: `src/routes/products/products-page.tsx`
 
 - [ ] **P1-E** Header name tidak konsisten antara `Services.ts` dan `AuditMiddleware.ts`
   - `Services.ts` mengirim `x-internal-token`, `AuditMiddleware.ts` menggunakan `INTERNAL_SERVICE_TOKEN` untuk header yang belum diverifikasi namanya

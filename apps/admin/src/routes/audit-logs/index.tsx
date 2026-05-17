@@ -3,12 +3,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useQuery }                  from "@tanstack/react-query"
 import { useState }                  from "react"
-import { auditLogsApi, type AuditLogEntry } from "@/lib/api"
 import { DataTable }                 from "@/components/data-table/data-table"
 import { Badge }                     from "@repo/ui/components/badge"
 import type { ColumnDef }            from "@tanstack/react-table"
 import { can }                       from "@/lib/rbac"
 import type { Session }              from "@/lib/auth"
+import type { AuditLogEntry }        from "@/effect/Services"
+import { listAuditLogsFn }           from "@/server/audit-logs"
 
 export const Route = createFileRoute("/audit-logs/")({
   // Route-level RBAC: audit:read is granted to ADMIN and OWNER only.
@@ -20,6 +21,9 @@ export const Route = createFileRoute("/audit-logs/")({
       throw redirect({ to: "/dashboard" as any })
     }
   },
+
+  // SSR loader: first page fetched server-side so the table renders immediately.
+  loader: () => listAuditLogsFn({ data: { page: 1 } }),
 
   component: AuditLogsPage,
 })
@@ -87,9 +91,13 @@ const columns: ColumnDef<AuditLogEntry>[] = [
 function AuditLogsPage() {
   const [page, setPage] = useState(1)
 
+  // Seed first page from SSR loader — table renders without a loading spinner
+  const loaderData = Route.useLoaderData()
+
   const { data, isLoading } = useQuery({
     queryKey: ["audit-logs", page],
-    queryFn:  () => auditLogsApi.list(page),
+    queryFn:  () => listAuditLogsFn({ data: { page } }),
+    initialData: page === 1 ? loaderData : undefined,
   })
 
   return (
@@ -105,9 +113,9 @@ function AuditLogsPage() {
 
       <DataTable
         columns={columns}
-        data={data?.data?.items ?? []}
+        data={data?.items ?? []}
         isLoading={isLoading}
-        total={data?.data?.total ?? 0}
+        total={data?.total ?? 0}
         page={page}
         onPageChange={setPage}
       />

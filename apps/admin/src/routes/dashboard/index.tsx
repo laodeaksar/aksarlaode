@@ -1,23 +1,31 @@
-import { createFileRoute }  from "@tanstack/react-router"
-import { useQuery }         from "@tanstack/react-query"
-import { dashboardApi }     from "@/lib/api"
+import { createFileRoute }    from "@tanstack/react-router"
+import { useQuery }           from "@tanstack/react-query"
+import { getDashboardStatsFn } from "@/server/dashboard"
+import type { DashboardStats, OrderSummary } from "@/effect/Services"
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
 
 export const Route = createFileRoute("/dashboard/")({
+  // SSR loader: stats are fetched server-side on first load.
+  // useQuery below seeds from loaderData so the skeleton never shows on SSR.
+  loader: () => getDashboardStatsFn({}),
+
   component: DashboardPage,
 })
 
 function DashboardPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn:  () => dashboardApi.stats(),
-    refetchInterval: 30_000,    // live refresh every 30s
+  const loaderData = Route.useLoaderData()
+
+  const { data } = useQuery({
+    queryKey:        ["dashboard-stats"],
+    queryFn:         () => getDashboardStatsFn({}),
+    // Seed from SSR — no skeleton flash on first load
+    initialData:     loaderData,
+    // Keep dashboard live without a full page refresh
+    refetchInterval: 30_000,
   })
 
-  if (isLoading) return <DashboardSkeleton />
-  if (!data?.data) return <p>Failed to load stats.</p>
-
-  const stats = data.data
+  // `initialData` guarantees `data` is always defined here
+  const stats: DashboardStats = data
 
   return (
     <div className="space-y-6">
@@ -52,6 +60,8 @@ function DashboardPage() {
   )
 }
 
+// ── Sub-components ─────────────────────────────────────────────────────────
+
 function StatCard({ title, value }: { title: string; value: string | number }) {
   return (
     <Card>
@@ -62,6 +72,54 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
         <p className="text-2xl font-bold text-gray-900">{value}</p>
       </CardContent>
     </Card>
+  )
+}
+
+function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
+  if (orders.length === 0) {
+    return <p className="text-sm text-gray-500">Belum ada pesanan terbaru.</p>
+  }
+  return (
+    <div className="space-y-2">
+      {orders.map((order) => (
+        <div key={order.orderId} className="flex items-center justify-between text-sm">
+          <span className="font-mono text-xs text-gray-600">
+            {order.orderId.slice(0, 12)}…
+          </span>
+          <span
+            className={
+              order.status === "CANCELLED"
+                ? "font-medium text-red-600"
+                : "font-medium text-green-700"
+            }
+          >
+            Rp {order.grandTotal.toLocaleString("id-ID")}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TopProductsList({
+  items,
+}: {
+  items: Array<{ id: string; name: string; salesCount: number }>
+}) {
+  if (items.length === 0) {
+    return <p className="text-sm text-gray-500">Belum ada data produk.</p>
+  }
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={item.id} className="flex items-center justify-between text-sm">
+          <span className="text-gray-700">
+            {i + 1}. {item.name}
+          </span>
+          <span className="text-gray-500">{item.salesCount} terjual</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -77,3 +135,6 @@ function DashboardSkeleton() {
     </div>
   )
 }
+
+// Keep skeleton available for Suspense fallback in __root.tsx
+export { DashboardSkeleton }

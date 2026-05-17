@@ -1,9 +1,9 @@
 import { defineConfig } from "astro/config"
 import react            from "@astrojs/react"
-import tailwind         from "@astrojs/tailwind"
+import tailwindcss         from "@tailwindcss/vite"
 
 export default defineConfig({
-  integrations: [react(), tailwind()],
+  integrations: [react()],
   output: "server",
   server: {
     host: "0.0.0.0",
@@ -14,5 +14,6 @@ export default defineConfig({
     server: {
       allowedHosts: true,
     },
+    plugins: [tailwindcss()],
   },
 })

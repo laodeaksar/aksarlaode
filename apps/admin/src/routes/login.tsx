@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useForm }         from "react-hook-form"
+import { effecTsResolver }     from "@hookform/resolvers/effect-ts"
 import { useState }                      from "react"
 import { env }                           from "@repo/env/admin"
 
@@ -12,6 +14,15 @@ function LoginPage() {
   const [password, setPassword] = useState("")
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    // provide generic if TS has issues inferring types
+  } = useForm({
+    resolver: effectTsResolver(),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,17 +1,28 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router"
 import {
   useQuery,
   useMutation,
   useQueryClient,
-}                                       from "@tanstack/react-query"
-import { ProductForm }             from "@/components/forms/product-form"
+}                                                 from "@tanstack/react-query"
+import { ProductForm }                            from "@/components/forms/product-form"
 import {
   getProductFn,
   updateProductFn,
-}                                  from "@/server/products"
-import type { UpdateProductInput } from "@/effect/Services"
+}                                                 from "@/server/products"
+import type { UpdateProductInput }                from "@/effect/Services"
+import { can }                                    from "@/lib/rbac"
+import type { Session }                           from "@/lib/auth"
 
 export const Route = createFileRoute("/products/$productId")({
+  // Route-level RBAC: editing requires products:write (ADMIN / OWNER only).
+  // A FINANCE user who navigates here directly is sent back to the list.
+  beforeLoad: ({ context }) => {
+    const { session } = context as { session?: Session }
+    if (!session || !can(session.role, "products:write")) {
+      throw redirect({ to: "/products" as any })
+    }
+  },
+
   // SSR loader: fetch the product server-side so the page is fully rendered
   // on first load — no client-visible loading spinner on navigation.
   loader: ({ params }) =>

@@ -31,15 +31,16 @@ Generated from deep audit (2026-05-17). Ordered by priority.
 
 ## P1 — High (dalam sprint ini)
 
-- [ ] **P1-A** Route-level RBAC tidak di-enforce
+- [x] **P1-A** Route-level RBAC tidak di-enforce ✓
   - Hanya sidebar link yang disembunyikan; FINANCE role bisa buka `/audit-logs` via URL langsung
-  - Fix: tambah `beforeLoad` per route yang butuh permission check (`can(session.role, "audit:read")`)
-  - File: `src/routes/audit-logs/index.tsx`, `src/routes/products/new.tsx`
+  - Fix: `beforeLoad` guard di 4 route: `/products/`, `/products/new`, `/products/$productId`, `/audit-logs/`
+  - FINANCE → redirect `/dashboard`; non-write roles di product edit → redirect `/products`
+  - File: semua 4 route file di atas
 
-- [ ] **P1-B** Session di-fetch dua kali per navigation
+- [x] **P1-B** Session di-fetch dua kali per navigation ✓
   - `beforeLoad` memanggil `getSession()` (SSR), lalu `SessionProvider.useEffect` memanggil lagi (client)
-  - Fix: resolved otomatis setelah P0-A (seed context dari `beforeLoad`, hapus `useEffect` fetch)
-  - File: `src/lib/session-context.tsx:22`, `src/routes/__root.tsx:47`
+  - Fix: resolved bersama P0-A — `SessionProvider` dihapus, context di-seed dari `beforeLoad`
+  - File: `src/lib/session-context.tsx`, `src/routes/__root.tsx`
 
 - [ ] **P1-C** Dashboard, Orders, Customers, Audit Logs tidak punya SSR loader
   - Semua data di-fetch client-side setelah hydration → blank → skeleton → data (client waterfall)

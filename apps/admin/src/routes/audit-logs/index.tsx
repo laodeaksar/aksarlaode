@@ -1,14 +1,26 @@
 // FIX ADM-06b: Audit log viewer — shows a chronological list of sensitive
 // admin actions (product deletes, order status changes, role changes).
-import { createFileRoute } from "@tanstack/react-router"
-import { useQuery }        from "@tanstack/react-query"
-import { useState }        from "react"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { useQuery }                  from "@tanstack/react-query"
+import { useState }                  from "react"
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api"
-import { DataTable }       from "@/components/data-table/data-table"
-import { Badge }           from "@repo/ui/components/badge"
-import type { ColumnDef }  from "@tanstack/react-table"
+import { DataTable }                 from "@/components/data-table/data-table"
+import { Badge }                     from "@repo/ui/components/badge"
+import type { ColumnDef }            from "@tanstack/react-table"
+import { can }                       from "@/lib/rbac"
+import type { Session }              from "@/lib/auth"
 
 export const Route = createFileRoute("/audit-logs/")({
+  // Route-level RBAC: audit:read is granted to ADMIN and OWNER only.
+  // FINANCE role is redirected to dashboard — sidebar link is already hidden
+  // for them, but a direct URL must also be blocked here.
+  beforeLoad: ({ context }) => {
+    const { session } = context as { session?: Session }
+    if (!session || !can(session.role, "audit:read")) {
+      throw redirect({ to: "/dashboard" as any })
+    }
+  },
+
   component: AuditLogsPage,
 })
 

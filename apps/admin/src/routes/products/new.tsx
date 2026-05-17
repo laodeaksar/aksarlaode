@@ -1,10 +1,21 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useMutation, useQueryClient }  from "@tanstack/react-query"
-import { ProductForm }          from "@/components/forms/product-form"
-import { createProductFn }     from "@/server/products"
-import type { NewProductInput } from "@/effect/Services"
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router"
+import { useMutation, useQueryClient }            from "@tanstack/react-query"
+import { ProductForm }                            from "@/components/forms/product-form"
+import { createProductFn }                        from "@/server/products"
+import type { NewProductInput }                   from "@/effect/Services"
+import { can }                                    from "@/lib/rbac"
+import type { Session }                           from "@/lib/auth"
 
 export const Route = createFileRoute("/products/new")({
+  // Route-level RBAC: only ADMIN and OWNER can create products.
+  // FINANCE is redirected back to the product list (read-only).
+  beforeLoad: ({ context }) => {
+    const { session } = context as { session?: Session }
+    if (!session || !can(session.role, "products:write")) {
+      throw redirect({ to: "/products" as any })
+    }
+  },
+
   head: () => ({
     meta: [{ title: "New Product — Admin" }],
   }),

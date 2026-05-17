@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { lazy }            from "react"
-import { listProductsFn }  from "@/server/products"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { lazy }                      from "react"
+import { listProductsFn }            from "@/server/products"
+import { can }                       from "@/lib/rbac"
+import type { Session }              from "@/lib/auth"
 
 // ── Route — GET /products/ ─────────────────────────────────────────────────
 // loader: runs on the SERVER during SSR (via TanStack Start server function).
@@ -11,6 +13,15 @@ import { listProductsFn }  from "@/server/products"
 // useQuery() for subsequent re-fetches / optimistic updates.
 
 export const Route = createFileRoute("/products/")({
+  // Route-level RBAC: FINANCE role does not have products:read.
+  // Redirect to dashboard rather than showing an empty/broken page.
+  beforeLoad: ({ context }) => {
+    const { session } = context as { session?: Session }
+    if (!session || !can(session.role, "products:read")) {
+      throw redirect({ to: "/dashboard" as any })
+    }
+  },
+
   // Server-side loader: fetch initial product list using Effect + ApiClientService
   loader: () =>
     listProductsFn({

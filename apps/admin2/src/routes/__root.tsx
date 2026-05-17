@@ -10,61 +10,66 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
-import { DefaultCatchBoundary } from '~/components/DefaultCatchBoundary'
-import { NotFound } from '~/components/NotFound'
-import appCss from '~/styles/app.css?url'
-import { seo } from '~/utils/seo'
+
+import appCss from "@repo/ui/globals.css?url"
+
+import { getSession } from "@/lib/auth"
+import type { Session } from "@/lib/auth"
+import { hasAnyAdminRole } from "@/lib/rbac"
+import { SessionContext } from "@/lib/session-context"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { Sidebar } from "@/components/layout/sidebar"
+import { Topbar } from "@/components/layout/topbar"
+
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      ...seo({
-        title:
-          'TanStack Start | Type-Safe, Client-First, Full-Stack React Framework',
-        description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
-      }),
-    ],
-    links: [
-      { rel: 'stylesheet', href: appCss },
-      {
-        rel: 'apple-touch-icon',
-        sizes: '180x180',
-        href: '/apple-touch-icon.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        href: '/favicon-32x32.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        href: '/favicon-16x16.png',
-      },
-      { rel: 'manifest', href: '/site.webmanifest', color: '#fffff' },
-      { rel: 'icon', href: '/favicon.ico' },
-    ],
-  }),
-  errorComponent: (props) => {
+   head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "Admin — MyEcommerce" },
+      ],
+      links: [
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+      ],
+    }),
+ beforeLoad: async ({ location }) => {
+      if (location.pathname === "/login") return
+
+      const session = await getSession()
+      if (!session || !hasAnyAdminRole(session.role)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        throw redirect({ to: "/login" as any })
+      }
+
+      return { session }
+    },
+
+
+ errorComponent: (props) => {
     return (
       <RootDocument>
-        <DefaultCatchBoundary {...props} />
+         <ErrorBoundary>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+                Loading…
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </RootDocument>
     )
   },
-  notFoundComponent: () => <NotFound />,
-  component: RootComponent,
+  // notFoundComponent: () => <NotFound />,
+  shellComponent: RootComponent,
 })
 
 function RootComponent() {
@@ -76,70 +81,37 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  // Route context is populated by beforeLoad's `return { session }`.
+  // On the /login page beforeLoad returns early (no session), so we cast
+  // safely and fall back to null.
+  const routeCtx = Route.useRouteContext() as { session?: Session }
+  const session = routeCtx.session ?? null
+
+  if (pathname === "/login") {
+    return <div className="min-h-screen bg-gray-50">{children}</div>
+  }
+
   return (
+    <SessionContext.Provider value={{ session, loading: false }}>
     <html>
       <head>
         <HeadContent />
       </head>
       <body>
-        <div className="p-2 flex gap-2 text-lg">
-          <Link
-            to="/"
-            activeProps={{
-              className: 'font-bold',
-            }}
-            activeOptions={{ exact: true }}
-          >
-            Home
-          </Link>{' '}
-          <Link
-            to="/posts"
-            activeProps={{
-              className: 'font-bold',
-            }}
-          >
-            Posts
-          </Link>{' '}
-          <Link
-            to="/users"
-            activeProps={{
-              className: 'font-bold',
-            }}
-          >
-            Users
-          </Link>{' '}
-          <Link
-            to="/route-a"
-            activeProps={{
-              className: 'font-bold',
-            }}
-          >
-            Pathless Layout
-          </Link>{' '}
-          <Link
-            to="/deferred"
-            activeProps={{
-              className: 'font-bold',
-            }}
-          >
-            Deferred
-          </Link>{' '}
-          <Link
-            // @ts-expect-error
-            to="/this-route-does-not-exist"
-            activeProps={{
-              className: 'font-bold',
-            }}
-          >
-            This Route Does Not Exist
-          </Link>
-        </div>
-        <hr />
-        {children}
-        <TanStackRouterDevtools position="bottom-right" />
+         <div className="flex h-screen bg-gray-50">
+            <Sidebar />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <Topbar />
+              <main className="flex-1 overflow-y-auto p-6">{children}</main>
+            </div>
+          </div>
+         <TanStackRouterDevtools position="bottom-right" />
         <ReactQueryDevtools buttonPosition="bottom-left" />
         <Scripts />
       </body>
     </html>
+    </SessionContext.Provider>
   )
 }

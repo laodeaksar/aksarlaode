@@ -74,15 +74,15 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
   - File dikosongkan dengan komentar penjelasan mengapa singleton berbahaya di SSR
   - File: `src/lib/query-client.ts`
 
-- [ ] **[P1-5] Tambah SSR loader + debounce search di `customers-page.tsx`**
-  - Tidak ada `loader` di customers route → selalu ada skeleton flash pada first render
-  - Search input tidak punya debounce → API call setiap keystroke
-  - Implementasi: debounce 300ms dengan `useRef` (sama seperti `products-page.tsx`)
-  - File: `src/routes/customers.route.tsx`, `src/routes/customers-page.tsx`
+- [x] **[P1-5] Tambah SSR loader + debounce search di `customers-page.tsx`**
+  - Buat `src/server/customers.ts` dengan `listCustomersFn` (Effect pattern, sama dengan orders.ts)
+  - `customers.route.tsx` — tambah `loader: () => listCustomersFn({ data: { page: 1 } })`
+  - `customers-page.tsx` — pisahkan `inputValue` (display) vs `search` (debounced query)
+  - Debounce 300ms pakai `useRef<setTimeout>`, `initialData` dari `Route.useLoaderData()`
+  - File: `src/server/customers.ts`, `src/routes/customers.route.tsx`, `src/routes/customers-page.tsx`
 
-- [ ] **[P1-6] Fix unsafe type cast `(row.original as any).id` di `customers-page.tsx`**
-  - `User` type dari `@repo/common` sudah punya `id: string` — tidak perlu cast `any`
-  - Ganti dengan `row.original.id`
+- [x] **[P1-6] Fix unsafe type cast `(row.original as any).id` di `customers-page.tsx`**
+  - Diganti dengan `row.original.id` — `User` dari `@repo/common` punya `id: string`
   - File: `src/routes/customers-page.tsx`
 
 ---
@@ -111,8 +111,8 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
   - `<button onClick={handleLogout}>Logout</button>` — tidak ada aria-label eksplisit
   - File: `src/components/layout/topbar.tsx`
 
-- [ ] **[P2-6] Tambah `aria-label` di customers search input**
-  - `<input placeholder="Search by name or email...">` tanpa `aria-label`
+- [x] **[P2-6] Tambah `aria-label` di customers search input**
+  - Ditambahkan sekaligus saat P1-5: `aria-label="Search customers by name or email"`
   - File: `src/routes/customers-page.tsx`
 
 - [ ] **[P2-7] Migrasi `ProductForm` ke `react-hook-form`**

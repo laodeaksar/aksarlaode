@@ -2,7 +2,9 @@ import { createFileRoute }  from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState }         from "react"
 import { ordersApi }        from "@/lib/api"
-import { Button, Badge, Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
+import { Badge } from "@repo/ui/badge"
+import { Button } from "@repo/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card"
 import {
   AlertDialog, AlertDialogContent,
   AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,

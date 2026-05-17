@@ -1,0 +1,43 @@
+import { QueryClient } from '@tanstack/react-query'
+import { createRouter } from '@tanstack/react-router'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
+import { routeTree } from './routeTree.gen'
+// import { ErrorBoundary } from './components/error-boundary'
+// import { NotFound } from './components/NotFound'
+
+// ── QueryClient factory (shared config) ───────────────────────────────────
+export function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1_000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  })
+}
+
+export function getRouter() {
+  const queryClient = makeQueryClient()
+
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: 'intent',
+    // defaultErrorComponent: DefaultCatchBoundary,
+    // defaultNotFoundComponent: () => <NotFound />,
+  })
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+  })
+
+  return router
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>
+  }
+}

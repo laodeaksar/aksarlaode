@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
+import viteTsConfigPaths from "vite-tsconfig-paths"
 import { nitro } from "nitro/vite"
 import { defineConfig } from "vite"
 
@@ -12,33 +13,19 @@ import { defineConfig } from "vite"
 export default defineConfig({
   plugins: [
     nitro(),
+    // @ts-ignore
     tailwindcss(),
     viteReact(),
-    tanstackStart({
-      // Route generation config
-      tsr: {
-        routesDirectory: "./src/routes",
-        generatedRouteTree: "./src/routeTree.gen.ts",
-        quoteStyle: "double",
-        semicolons: false,
-      },
-      // SSR entry point
-      server: {
-        entry: "./app/ssr.tsx",
-      },
-      // Client hydration entry point
-      client: {
-        entry: "./app/client.tsx",
-      },
+    // @ts-ignore
+    viteTsConfigPaths({
+      projects: ["./tsconfig.json"],
     }),
+    tanstackStart()
   ],
   server: {
     host: "0.0.0.0",
     port: 4322,
     allowedHosts: true,
-  },
-  resolve: {
-    tsconfigPaths: true,
   },
   optimizeDeps: {
     include: ["effect"],

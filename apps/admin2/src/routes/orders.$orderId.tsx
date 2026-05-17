@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useForm } from "react-hook-form"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
@@ -47,12 +48,15 @@ const STATUS_COLOR: Record<
   CANCELLED: "destructive",
 }
 
+type StatusFormFields = {
+  nextStatus: string
+  note: string
+}
+
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
   const loaderData = Route.useLoaderData()
   const queryClient = useQueryClient()
-  const [note, setNote] = useState("")
-  const [nextStatus, setNextStatus] = useState("")
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const { session } = useSession()
@@ -65,13 +69,34 @@ function OrderDetailPage() {
     initialData: loaderData,
   })
 
-  const { mutate: updateStatus, isPending } = useMutation({
-    mutationFn: () => ordersApi.updateStatus(orderId, nextStatus, note),
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<StatusFormFields>({
+    defaultValues: { nextStatus: "", note: "" },
+  })
+
+  const watchedNextStatus = watch("nextStatus")
+
+  const { mutate: executeUpdate, isPending } = useMutation({
+    mutationFn: ({ nextStatus, note }: StatusFormFields) =>
+      ordersApi.updateStatus(orderId, nextStatus, note || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] })
-      setNote("")
-      setNextStatus("")
+      reset()
+      setConfirmOpen(false)
     },
+  })
+
+  const onStatusSubmit = handleSubmit((data) => {
+    if (data.nextStatus === "CANCELLED") {
+      setConfirmOpen(true)
+    } else {
+      executeUpdate(data)
+    }
   })
 
   return (
@@ -163,44 +188,57 @@ function OrderDetailPage() {
             <CardHeader>
               <CardTitle>Update Status</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <select
-                aria-label="Select new order status"
-                className="w-full rounded border px-3 py-2 text-sm"
-                value={nextStatus}
-                onChange={(e) => setNextStatus(e.target.value)}
-              >
-                <option value="">Select new status...</option>
-                {ORDER_STATUSES.filter((s) => s !== order.status).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+            <CardContent>
+              <form onSubmit={onStatusSubmit} className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="order-next-status"
+                    className="sr-only"
+                  >
+                    New status
+                  </label>
+                  <select
+                    id="order-next-status"
+                    aria-label="Select new order status"
+                    className="w-full rounded border px-3 py-2 text-sm"
+                    {...register("nextStatus")}
+                  >
+                    <option value="">Select new status...</option>
+                    {ORDER_STATUSES.filter((s) => s !== order.status).map(
+                      (s) => (
+                        <option key={s} value={s}>
+                          {s.replace(/_/g, " ")}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
 
-              <textarea
-                aria-label="Status update note"
-                className="w-full rounded border px-3 py-2 text-sm"
-                rows={2}
-                placeholder="Optional note (e.g. tracking number)"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
+                <div>
+                  <label
+                    htmlFor="order-note"
+                    className="sr-only"
+                  >
+                    Note
+                  </label>
+                  <textarea
+                    id="order-note"
+                    aria-label="Status update note"
+                    className="w-full rounded border px-3 py-2 text-sm"
+                    rows={2}
+                    placeholder="Optional note (e.g. tracking number)"
+                    {...register("note")}
+                  />
+                </div>
 
-              {/* FIX ADM-04: CANCELLED is irreversible — require explicit confirmation */}
-              <Button
-                className="w-full"
-                disabled={!nextStatus || isPending}
-                onClick={() => {
-                  if (nextStatus === "CANCELLED") {
-                    setConfirmOpen(true)
-                  } else {
-                    updateStatus()
-                  }
-                }}
-              >
-                {isPending ? "Updating..." : "Update Status"}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!watchedNextStatus || isPending || isSubmitting}
+                >
+                  {isPending || isSubmitting ? "Updating..." : "Update Status"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         )}
@@ -221,8 +259,8 @@ function OrderDetailPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                setConfirmOpen(false)
-                updateStatus()
+                const { nextStatus, note } = watch()
+                executeUpdate({ nextStatus, note })
               }}
             >
               Ya, Batalkan Pesanan

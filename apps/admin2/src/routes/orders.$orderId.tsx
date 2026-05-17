@@ -19,8 +19,10 @@ import {
 import { ordersApi } from "@/lib/api"
 import { can } from "@/lib/rbac"
 import { useSession } from "@/lib/session-context"
+import { getOrderFn } from "@/server/orders"
 
 export const Route = createFileRoute("/orders/$orderId")({
+  loader: ({ params }) => getOrderFn({ data: { id: params.orderId } }),
   component: OrderDetailPage,
 })
 
@@ -47,19 +49,20 @@ const STATUS_COLOR: Record<
 
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
+  const loaderData = Route.useLoaderData()
   const queryClient = useQueryClient()
   const [note, setNote] = useState("")
   const [nextStatus, setNextStatus] = useState("")
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  // FIX ADM-05: read current user's role for permission checks
   const { session } = useSession()
   const role = session?.role ?? "CUSTOMER"
   const canWrite = can(role, "orders:write")
 
-  const { data, isLoading } = useQuery({
+  const { data: order } = useQuery({
     queryKey: ["order", orderId],
-    queryFn: () => ordersApi.getOne(orderId),
+    queryFn: () => getOrderFn({ data: { id: orderId } }),
+    initialData: loaderData,
   })
 
   const { mutate: updateStatus, isPending } = useMutation({
@@ -70,11 +73,6 @@ function OrderDetailPage() {
       setNextStatus("")
     },
   })
-
-  if (isLoading) return <p className="animate-pulse">Loading order...</p>
-
-  const order = data?.data
-  if (!order) return <p>Order not found.</p>
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -167,6 +165,7 @@ function OrderDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <select
+                aria-label="Select new order status"
                 className="w-full rounded border px-3 py-2 text-sm"
                 value={nextStatus}
                 onChange={(e) => setNextStatus(e.target.value)}
@@ -180,6 +179,7 @@ function OrderDetailPage() {
               </select>
 
               <textarea
+                aria-label="Status update note"
                 className="w-full rounded border px-3 py-2 text-sm"
                 rows={2}
                 placeholder="Optional note (e.g. tracking number)"

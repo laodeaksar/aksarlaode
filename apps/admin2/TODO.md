@@ -89,10 +89,13 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
 
 ## 🟡 P2 — Nice to Have (Backlog)
 
-- [ ] **[P2-1] Tambah SSR loader di `orders.$orderId.tsx`**
-  - Detail order selalu fetch client-side — tidak ada SSR, tidak ada `initialData`
-  - Tambah `loader: ({ params }) => getOrderFn({ data: { id: params.orderId } })`
-  - File: `src/routes/orders.$orderId.tsx`
+- [x] **[P2-1] Tambah SSR loader di `orders.$orderId.tsx`**
+  - Tambah `getOrderFn` ke `src/server/orders.ts` (Effect pattern, sama dengan listOrdersFn)
+  - Route sekarang punya `loader: ({ params }) => getOrderFn({ data: { id: params.orderId } })`
+  - Komponen pakai `Route.useLoaderData()` sebagai `initialData` di `useQuery`
+  - Hapus `isLoading` guard karena data selalu tersedia dari loader
+  - Tambahkan `aria-label` ke select status dan textarea note sekalian
+  - File: `src/server/orders.ts`, `src/routes/orders.$orderId.tsx`
 
 - [x] **[P2-2] Dashboard — stop polling saat tab tidak aktif**
   - `refetchIntervalInBackground: false` sudah ditambahkan di `dashboard-page.tsx`
@@ -107,23 +110,25 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
   - `TanStackRouterDevtools` dan `ReactQueryDevtools` sekarang dibungkus `import.meta.env.DEV`
   - File: `src/routes/__root.tsx`
 
-- [ ] **[P2-5] Tambah `aria-label` di Topbar logout button**
-  - `<button onClick={handleLogout}>Logout</button>` — tidak ada aria-label eksplisit
+- [x] **[P2-5] Tambah `aria-label` di Topbar logout button**
+  - Tambah `aria-label="Logout"` ke button
   - File: `src/components/layout/topbar.tsx`
 
 - [x] **[P2-6] Tambah `aria-label` di customers search input**
   - Ditambahkan sekaligus saat P1-5: `aria-label="Search customers by name or email"`
   - File: `src/routes/customers-page.tsx`
 
-- [ ] **[P2-7] Migrasi `ProductForm` ke `react-hook-form`**
-  - Form saat ini pakai 5 `useState` terpisah per field — verbose dan rawan re-render
-  - `react-hook-form` sudah terpasang sebagai dependency
+- [x] **[P2-7] Migrasi `ProductForm` ke `react-hook-form`**
+  - Hapus 6 `useState` (name, price, stock, sku, description, formError)
+  - Pakai `useForm<ProductFormValues>` dengan `defaultValues`
+  - Validasi inline di `register()` — error tampil per-field di bawah input
+  - `valueAsNumber: true` untuk price dan stock — tidak perlu `Number()` manual
+  - Tambah `htmlFor` + `id` ke semua label-input pairs
   - File: `src/components/forms/product-form.tsx`
 
-- [ ] **[P2-8] Konsistensi pattern code splitting antara products dan orders**
-  - `products.index.tsx`: `const ProductsPage = lazy(...)` kemudian `component: ProductsPage`
-  - `orders.index.tsx`: sama
-  - Pola sudah konsisten setelah P0 fix
+- [x] **[P2-8] Konsistensi pattern code splitting antara products dan orders**
+  - Semua `*.index.tsx` sekarang pakai pola yang sama: `const XPage = lazy(...)` kemudian `component: XPage`
+  - Selesai sebagai bagian dari P0 fix
 
 - [ ] **[P2-9] Tambah test coverage**
   - Tidak ada unit test, integration test, atau e2e test sama sekali
@@ -142,11 +147,11 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
 | Prioritas | Total | Selesai | Sisa |
 |-----------|-------|---------|------|
 | 🔴 P0 Critical | 6 (+4 bonus) | ✅ 10 | 0 |
-| 🟠 P1 High | 6 | ✅ 1 | 5 |
-| 🟡 P2 Nice to Have | 10 | ✅ 2 | 8 |
-| **Total** | **22** | **13** | **9** |
+| 🟠 P1 High | 6 | ✅ 6 | 0 |
+| 🟡 P2 Nice to Have | 10 | ✅ 8 | 2 |
+| **Total** | **22** | **24** | **2** |
 
 ---
 
 *Generated: 2026-05-17 — audit by principal frontend engineer*
-*Last updated: 2026-05-17 — P0 fixes applied*
+*Last updated: 2026-05-17 — P0 + P1 + P2 (sebagian besar) selesai*

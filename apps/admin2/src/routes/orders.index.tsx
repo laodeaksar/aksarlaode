@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { lazy } from "react"
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/orders/')({
-  component: OrdersIndexComponent,
+const OrdersPage = lazy(() => import("./orders-page"))
+
+export const Route = createFileRoute("/orders/")({
+  component: OrdersPage,
 })
-
-function OrdersIndexComponent() {
-  return <div>Select a orders.</div>
-}

@@ -6,61 +6,72 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
 
 ## 🔴 P0 — Critical (App tidak bisa jalan, harus fix sekarang)
 
-- [ ] **[P0-1] Fix missing imports di `__root.tsx`**
+- [x] **[P0-1] Fix missing imports di `__root.tsx`**
   - Tambah `redirect` dan `useRouterState` ke import dari `@tanstack/react-router`
   - Tambah `import { Suspense } from 'react'`
   - File: `src/routes/__root.tsx`
 
-- [ ] **[P0-2] Hapus stray `e` di `dashboard.route.tsx` line 156**
+- [x] **[P0-2] Hapus stray `e` di `dashboard.route.tsx` line 156**
   - Ganti `e` dengan `export { DashboardSkeleton }` atau hapus jika tidak dibutuhkan
-  - File: `src/routes/dashboard.route.tsx`
+  - File: `src/routes/dashboard.route.tsx` → komponen dipindah ke `dashboard-page.tsx`
 
-- [ ] **[P0-3] Fix broken login form — triple bug**
+- [x] **[P0-3] Fix broken login form — triple bug**
   - Hapus `useForm` setup yang tidak dipakai (inputs sudah pakai `useState`)
   - Fix typo resolver: `effectTsResolver` → `effecTsResolver` (atau hapus seluruh `useForm`)
   - Hapus `const handleSubmit` yang meng-shadow `handleSubmit` dari `useForm`
-  - File: `src/routes/login.route.tsx`
+  - File: `src/routes/login.index.tsx` (komponen dipindah ke sini)
 
-- [ ] **[P0-4] Fix login role check — OWNER & FINANCE tidak bisa masuk**
+- [x] **[P0-4] Fix login role check — OWNER & FINANCE tidak bisa masuk**
   - Ubah `if (role !== "ADMIN")` menjadi `if (!role || !hasAnyAdminRole(role))`
   - Import `hasAnyAdminRole` dari `@/lib/rbac`
-  - File: `src/routes/login.route.tsx`
+  - File: `src/routes/login.index.tsx`
 
-- [ ] **[P0-5] Fix route conflict — `products.route.tsx` vs `products.index.tsx`**
-  - Keduanya mendefinisikan `createFileRoute('/products/')` — TanStack Router hanya ambil satu
-  - Pindahkan `loader` + `beforeLoad` + `component: lazy(...)` ke `products.route.tsx` sebagai parent layout
-  - `products.index.tsx` jadikan actual page component
+- [x] **[P0-5] Fix route conflict — `products.route.tsx` vs `products.index.tsx`**
+  - `products.route.tsx` → parent layout `/products` dengan `<Outlet />`, loader, RBAC
+  - `products.index.tsx` → actual page `/products/` lazy import ProductsPage
   - File: `src/routes/products.route.tsx`, `src/routes/products.index.tsx`
 
-- [ ] **[P0-6] Fix route conflict — `audit-logs.route.tsx` vs `audit-logs.index.tsx`**
-  - Pola sama dengan P0-5: keduanya define `createFileRoute('/audit-logs/')`
-  - `AuditLogsPage` di `audit-logs.route.tsx` tidak pernah render karena di-override stub
-  - File: `src/routes/audit-logs.route.tsx`, `src/routes/audit-logs.index.tsx`
+- [x] **[P0-6] Fix route conflict — `audit-logs.route.tsx` vs `audit-logs.index.tsx`**
+  - `audit-logs.route.tsx` → parent layout `/audit-logs` dengan `<Outlet />`, loader, RBAC
+  - `audit-logs.index.tsx` → actual page `/audit-logs/` lazy import AuditLogsPage
+  - `audit-logs-page.tsx` → file baru berisi komponen AuditLogsPage
+  - File: `src/routes/audit-logs.route.tsx`, `src/routes/audit-logs.index.tsx`, `src/routes/audit-logs-page.tsx`
+
+- [x] **[BONUS] Fix semua route conflicts lainnya (dashboard, orders, customers, login)**
+  - Semua `*.route.tsx` diubah ke parent layout pattern (`/path` tanpa trailing slash, `<Outlet />`)
+  - Semua `*.index.tsx` diubah ke actual page dengan lazy import
+  - `dashboard-page.tsx` → file baru berisi DashboardPage
+
+- [x] **[BONUS] Rewrite `routeTree.gen.ts`**
+  - File lama masih berisi route template lama (`posts`, `users`, `deferred`) yang filenya tidak ada
+  - Ditulis ulang dengan semua admin routes yang benar
+  - File: `src/routeTree.gen.ts`
+
+- [x] **[BONUS] Fix errorComponent di `__root.tsx`**
+  - Render `error.message` dengan UI informatif + link ke dashboard
+  - Pindahkan `<ErrorBoundary>` + `<Suspense>` ke layout utama
+  - Guard devtools dengan `import.meta.env.DEV`
+
+- [x] **[BONUS] Fix missing `redirect` import di `src/routes/index.tsx`**
 
 ---
 
 ## 🟠 P1 — High (Harus fix sprint ini)
 
-- [ ] **[P1-1] Fix `errorComponent` di `__root.tsx` — render Outlet saat error**
-  - `errorComponent` sekarang render `<Outlet />` alih-alih menampilkan error message
-  - Parameter `props` (berisi `props.error`) tidak digunakan sama sekali
-  - Ganti dengan UI error yang informatif dan tombol "Go to dashboard"
-  - File: `src/routes/__root.tsx`
+- [x] **[P1-1] Fix `errorComponent` di `__root.tsx` — render Outlet saat error**
+  - Selesai sebagai bagian dari P0-1 fix
 
-- [ ] **[P1-2] Hapus `src/types/index.ts` — dead code**
+- [x] **[P1-2] Hapus `src/types/index.ts` — dead code**
   - `UserRole` di sini hanya `"CUSTOMER" | "ADMIN"` — sudah ketinggalan (hilang `OWNER`, `FINANCE`)
-  - Semua bagian kode sudah pakai tipe dari `src/lib/auth.ts`
+  - File dikosongkan dengan komentar pengarahan ke `src/lib/auth.ts`
   - File: `src/types/index.ts`
 
-- [ ] **[P1-3] Hapus duplikasi `decodeOrThrow` dan `stripUndefined` di `products.ts`**
-  - Kedua fungsi sudah ada di `src/server/_utils.ts` dan dipakai oleh `orders.ts` + `audit-logs.ts`
-  - `products.ts` punya versi lokalnya sendiri → potensi drift
-  - Ganti dengan `import { decodeOrThrow, stripUndefined } from './_utils'`
+- [x] **[P1-3] Hapus duplikasi `decodeOrThrow` dan `stripUndefined` di `products.ts`**
+  - Fungsi lokal dihapus, diganti dengan `import { decodeOrThrow, stripUndefined } from './_utils'`
   - File: `src/server/products.ts`
 
-- [ ] **[P1-4] Hapus singleton `QueryClient` di `src/lib/query-client.ts`**
-  - File ini membuat instance `QueryClient` yang tidak pernah di-import di mana pun
-  - `router.tsx` sudah punya `makeQueryClient()` yang dipakai SSR
+- [x] **[P1-4] Hapus singleton `QueryClient` di `src/lib/query-client.ts`**
+  - File dikosongkan dengan komentar penjelasan mengapa singleton berbahaya di SSR
   - File: `src/lib/query-client.ts`
 
 - [ ] **[P1-5] Tambah SSR loader + debounce search di `customers-page.tsx`**
@@ -83,18 +94,17 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
   - Tambah `loader: ({ params }) => getOrderFn({ data: { id: params.orderId } })`
   - File: `src/routes/orders.$orderId.tsx`
 
-- [ ] **[P2-2] Dashboard — stop polling saat tab tidak aktif**
-  - Tambah `refetchIntervalInBackground: false` di query config dashboard
-  - File: `src/routes/dashboard.route.tsx`
+- [x] **[P2-2] Dashboard — stop polling saat tab tidak aktif**
+  - `refetchIntervalInBackground: false` sudah ditambahkan di `dashboard-page.tsx`
+  - File: `src/routes/dashboard-page.tsx`
 
 - [ ] **[P2-3] Hapus duplikasi tipe di `effect/Services.ts`**
   - `Product`, `User`, dll didefinisikan ulang di `Services.ts` "untuk menghindari cross-package resolution"
   - Padahal `@repo/common` sudah ada di dependencies — import langsung lebih aman
   - File: `src/effect/Services.ts`
 
-- [ ] **[P2-4] Guard devtools agar tidak masuk production bundle**
-  - `TanStackRouterDevtools` dan `ReactQueryDevtools` di-render tanpa kondisi
-  - Bungkus dengan `import.meta.env.DEV && <DevTools />`
+- [x] **[P2-4] Guard devtools agar tidak masuk production bundle**
+  - `TanStackRouterDevtools` dan `ReactQueryDevtools` sekarang dibungkus `import.meta.env.DEV`
   - File: `src/routes/__root.tsx`
 
 - [ ] **[P2-5] Tambah `aria-label` di Topbar logout button**
@@ -111,10 +121,9 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
   - File: `src/components/forms/product-form.tsx`
 
 - [ ] **[P2-8] Konsistensi pattern code splitting antara products dan orders**
-  - `products.route.tsx`: `component: lazy(() => import('./products-page'))`
-  - `orders.route.tsx`: `const OrdersPage = lazy(...)` kemudian `component: OrdersPage`
-  - Pilih satu pola dan terapkan konsisten
-  - File: `src/routes/products.route.tsx`, `src/routes/orders.route.tsx`
+  - `products.index.tsx`: `const ProductsPage = lazy(...)` kemudian `component: ProductsPage`
+  - `orders.index.tsx`: sama
+  - Pola sudah konsisten setelah P0 fix
 
 - [ ] **[P2-9] Tambah test coverage**
   - Tidak ada unit test, integration test, atau e2e test sama sekali
@@ -130,13 +139,14 @@ Hasil analisa mendalam pada `apps/admin2`. Diurutkan berdasarkan prioritas.
 
 ## Ringkasan Jumlah Temuan
 
-| Prioritas | Jumlah | Status |
-|-----------|--------|--------|
-| 🔴 P0 Critical | 6 | ⬜ Open |
-| 🟠 P1 High | 6 | ⬜ Open |
-| 🟡 P2 Nice to Have | 10 | ⬜ Open |
-| **Total** | **22** | |
+| Prioritas | Total | Selesai | Sisa |
+|-----------|-------|---------|------|
+| 🔴 P0 Critical | 6 (+4 bonus) | ✅ 10 | 0 |
+| 🟠 P1 High | 6 | ✅ 1 | 5 |
+| 🟡 P2 Nice to Have | 10 | ✅ 2 | 8 |
+| **Total** | **22** | **13** | **9** |
 
 ---
 
 *Generated: 2026-05-17 — audit by principal frontend engineer*
+*Last updated: 2026-05-17 — P0 fixes applied*

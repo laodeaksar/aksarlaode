@@ -9,253 +9,254 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RedirectRouteImport } from './routes/redirect'
-import { Route as DeferredRouteImport } from './routes/deferred'
-import { Route as PathlessLayoutRouteImport } from './routes/_pathlessLayout'
-import { Route as UsersRouteRouteImport } from './routes/users.route'
-import { Route as PostsRouteRouteImport } from './routes/posts.route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UsersIndexRouteImport } from './routes/users.index'
-import { Route as PostsIndexRouteImport } from './routes/posts.index'
-import { Route as UsersUserIdRouteImport } from './routes/users.$userId'
-import { Route as PostsPostIdRouteImport } from './routes/posts.$postId'
-import { Route as ApiUsersRouteImport } from './routes/api/users'
-import { Route as PathlessLayoutNestedLayoutRouteImport } from './routes/_pathlessLayout/_nested-layout'
-import { Route as PostsPostIdDeepRouteImport } from './routes/posts_.$postId.deep'
-import { Route as ApiUsersIdRouteImport } from './routes/api/users.$id'
-import { Route as PathlessLayoutNestedLayoutRouteBRouteImport } from './routes/_pathlessLayout/_nested-layout/route-b'
-import { Route as PathlessLayoutNestedLayoutRouteARouteImport } from './routes/_pathlessLayout/_nested-layout/route-a'
+import { Route as LoginRouteImport } from './routes/login.route'
+import { Route as LoginIndexRouteImport } from './routes/login.index'
+import { Route as DashboardRouteImport } from './routes/dashboard.route'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as ProductsRouteImport } from './routes/products.route'
+import { Route as ProductsIndexRouteImport } from './routes/products.index'
+import { Route as ProductsNewRouteImport } from './routes/products.new'
+import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
+import { Route as OrdersRouteImport } from './routes/orders.route'
+import { Route as OrdersIndexRouteImport } from './routes/orders.index'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
+import { Route as CustomersRouteImport } from './routes/customers.route'
+import { Route as CustomersIndexRouteImport } from './routes/customers.index'
+import { Route as CustomersUserIdRouteImport } from './routes/customers.$userId'
+import { Route as AuditLogsRouteImport } from './routes/audit-logs.route'
+import { Route as AuditLogsIndexRouteImport } from './routes/audit-logs.index'
 
-const RedirectRoute = RedirectRouteImport.update({
-  id: '/redirect',
-  path: '/redirect',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DeferredRoute = DeferredRouteImport.update({
-  id: '/deferred',
-  path: '/deferred',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PathlessLayoutRoute = PathlessLayoutRouteImport.update({
-  id: '/_pathlessLayout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersRouteRoute = UsersRouteRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PostsRouteRoute = PostsRouteRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => rootRouteImport,
-} as any)
+// ── Route instances ─────────────────────────────────────────────────────────
+
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersIndexRoute = UsersIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => UsersRouteRoute,
+
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const PostsIndexRoute = PostsIndexRouteImport.update({
-  id: '/',
+
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/login/',
   path: '/',
-  getParentRoute: () => PostsRouteRoute,
+  getParentRoute: () => LoginRoute,
 } as any)
-const UsersUserIdRoute = UsersUserIdRouteImport.update({
-  id: '/$userId',
+
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const ProductsIndexRoute = ProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/',
+  getParentRoute: () => ProductsRoute,
+} as any)
+
+const ProductsNewRoute = ProductsNewRouteImport.update({
+  id: '/products/new',
+  path: '/new',
+  getParentRoute: () => ProductsRoute,
+} as any)
+
+const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
+  id: '/products/$productId',
+  path: '/$productId',
+  getParentRoute: () => ProductsRoute,
+} as any)
+
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const OrdersIndexRoute = OrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/',
+  getParentRoute: () => OrdersRoute,
+} as any)
+
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => OrdersRoute,
+} as any)
+
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const CustomersIndexRoute = CustomersIndexRouteImport.update({
+  id: '/customers/',
+  path: '/',
+  getParentRoute: () => CustomersRoute,
+} as any)
+
+const CustomersUserIdRoute = CustomersUserIdRouteImport.update({
+  id: '/customers/$userId',
   path: '/$userId',
-  getParentRoute: () => UsersRouteRoute,
+  getParentRoute: () => CustomersRoute,
 } as any)
-const PostsPostIdRoute = PostsPostIdRouteImport.update({
-  id: '/$postId',
-  path: '/$postId',
-  getParentRoute: () => PostsRouteRoute,
-} as any)
-const ApiUsersRoute = ApiUsersRouteImport.update({
-  id: '/api/users',
-  path: '/api/users',
+
+const AuditLogsRoute = AuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PathlessLayoutNestedLayoutRoute =
-  PathlessLayoutNestedLayoutRouteImport.update({
-    id: '/_nested-layout',
-    getParentRoute: () => PathlessLayoutRoute,
-  } as any)
-const PostsPostIdDeepRoute = PostsPostIdDeepRouteImport.update({
-  id: '/posts_/$postId/deep',
-  path: '/posts/$postId/deep',
-  getParentRoute: () => rootRouteImport,
+
+const AuditLogsIndexRoute = AuditLogsIndexRouteImport.update({
+  id: '/audit-logs/',
+  path: '/',
+  getParentRoute: () => AuditLogsRoute,
 } as any)
-const ApiUsersIdRoute = ApiUsersIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiUsersRoute,
-} as any)
-const PathlessLayoutNestedLayoutRouteBRoute =
-  PathlessLayoutNestedLayoutRouteBRouteImport.update({
-    id: '/route-b',
-    path: '/route-b',
-    getParentRoute: () => PathlessLayoutNestedLayoutRoute,
-  } as any)
-const PathlessLayoutNestedLayoutRouteARoute =
-  PathlessLayoutNestedLayoutRouteARouteImport.update({
-    id: '/route-a',
-    path: '/route-a',
-    getParentRoute: () => PathlessLayoutNestedLayoutRoute,
-  } as any)
+
+// ── Type declarations ────────────────────────────────────────────────────────
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/posts': typeof PostsRouteRouteWithChildren
-  '/users': typeof UsersRouteRouteWithChildren
-  '/deferred': typeof DeferredRoute
-  '/redirect': typeof RedirectRoute
-  '/api/users': typeof ApiUsersRouteWithChildren
-  '/posts/$postId': typeof PostsPostIdRoute
-  '/users/$userId': typeof UsersUserIdRoute
-  '/posts/': typeof PostsIndexRoute
-  '/users/': typeof UsersIndexRoute
-  '/route-a': typeof PathlessLayoutNestedLayoutRouteARoute
-  '/route-b': typeof PathlessLayoutNestedLayoutRouteBRoute
-  '/api/users/$id': typeof ApiUsersIdRoute
-  '/posts/$postId/deep': typeof PostsPostIdDeepRoute
+  '/login': typeof LoginRouteWithChildren
+  '/login/': typeof LoginIndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/products': typeof ProductsRouteWithChildren
+  '/products/': typeof ProductsIndexRoute
+  '/products/new': typeof ProductsNewRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/orders': typeof OrdersRouteWithChildren
+  '/orders/': typeof OrdersIndexRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/customers': typeof CustomersRouteWithChildren
+  '/customers/': typeof CustomersIndexRoute
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/audit-logs': typeof AuditLogsRouteWithChildren
+  '/audit-logs/': typeof AuditLogsIndexRoute
 }
+
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/deferred': typeof DeferredRoute
-  '/redirect': typeof RedirectRoute
-  '/api/users': typeof ApiUsersRouteWithChildren
-  '/posts/$postId': typeof PostsPostIdRoute
-  '/users/$userId': typeof UsersUserIdRoute
-  '/posts': typeof PostsIndexRoute
-  '/users': typeof UsersIndexRoute
-  '/route-a': typeof PathlessLayoutNestedLayoutRouteARoute
-  '/route-b': typeof PathlessLayoutNestedLayoutRouteBRoute
-  '/api/users/$id': typeof ApiUsersIdRoute
-  '/posts/$postId/deep': typeof PostsPostIdDeepRoute
+  '/login': typeof LoginIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/products': typeof ProductsIndexRoute
+  '/products/new': typeof ProductsNewRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/orders': typeof OrdersIndexRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/customers': typeof CustomersIndexRoute
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/audit-logs': typeof AuditLogsIndexRoute
 }
+
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/posts': typeof PostsRouteRouteWithChildren
-  '/users': typeof UsersRouteRouteWithChildren
-  '/_pathlessLayout': typeof PathlessLayoutRouteWithChildren
-  '/deferred': typeof DeferredRoute
-  '/redirect': typeof RedirectRoute
-  '/_pathlessLayout/_nested-layout': typeof PathlessLayoutNestedLayoutRouteWithChildren
-  '/api/users': typeof ApiUsersRouteWithChildren
-  '/posts/$postId': typeof PostsPostIdRoute
-  '/users/$userId': typeof UsersUserIdRoute
-  '/posts/': typeof PostsIndexRoute
-  '/users/': typeof UsersIndexRoute
-  '/_pathlessLayout/_nested-layout/route-a': typeof PathlessLayoutNestedLayoutRouteARoute
-  '/_pathlessLayout/_nested-layout/route-b': typeof PathlessLayoutNestedLayoutRouteBRoute
-  '/api/users/$id': typeof ApiUsersIdRoute
-  '/posts_/$postId/deep': typeof PostsPostIdDeepRoute
+  '/login': typeof LoginRouteWithChildren
+  '/login/': typeof LoginIndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/products': typeof ProductsRouteWithChildren
+  '/products/': typeof ProductsIndexRoute
+  '/products/new': typeof ProductsNewRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/orders': typeof OrdersRouteWithChildren
+  '/orders/': typeof OrdersIndexRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/customers': typeof CustomersRouteWithChildren
+  '/customers/': typeof CustomersIndexRoute
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/audit-logs': typeof AuditLogsRouteWithChildren
+  '/audit-logs/': typeof AuditLogsIndexRoute
 }
+
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/posts'
-    | '/users'
-    | '/deferred'
-    | '/redirect'
-    | '/api/users'
-    | '/posts/$postId'
-    | '/users/$userId'
-    | '/posts/'
-    | '/users/'
-    | '/route-a'
-    | '/route-b'
-    | '/api/users/$id'
-    | '/posts/$postId/deep'
+    | '/login'
+    | '/login/'
+    | '/dashboard'
+    | '/dashboard/'
+    | '/products'
+    | '/products/'
+    | '/products/new'
+    | '/products/$productId'
+    | '/orders'
+    | '/orders/'
+    | '/orders/$orderId'
+    | '/customers'
+    | '/customers/'
+    | '/customers/$userId'
+    | '/audit-logs'
+    | '/audit-logs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/deferred'
-    | '/redirect'
-    | '/api/users'
-    | '/posts/$postId'
-    | '/users/$userId'
-    | '/posts'
-    | '/users'
-    | '/route-a'
-    | '/route-b'
-    | '/api/users/$id'
-    | '/posts/$postId/deep'
+    | '/login'
+    | '/dashboard'
+    | '/products'
+    | '/products/new'
+    | '/products/$productId'
+    | '/orders'
+    | '/orders/$orderId'
+    | '/customers'
+    | '/customers/$userId'
+    | '/audit-logs'
   id:
     | '__root__'
     | '/'
-    | '/posts'
-    | '/users'
-    | '/_pathlessLayout'
-    | '/deferred'
-    | '/redirect'
-    | '/_pathlessLayout/_nested-layout'
-    | '/api/users'
-    | '/posts/$postId'
-    | '/users/$userId'
-    | '/posts/'
-    | '/users/'
-    | '/_pathlessLayout/_nested-layout/route-a'
-    | '/_pathlessLayout/_nested-layout/route-b'
-    | '/api/users/$id'
-    | '/posts_/$postId/deep'
+    | '/login'
+    | '/login/'
+    | '/dashboard'
+    | '/dashboard/'
+    | '/products'
+    | '/products/'
+    | '/products/new'
+    | '/products/$productId'
+    | '/orders'
+    | '/orders/'
+    | '/orders/$orderId'
+    | '/customers'
+    | '/customers/'
+    | '/customers/$userId'
+    | '/audit-logs'
+    | '/audit-logs/'
   fileRoutesById: FileRoutesById
 }
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  PostsRouteRoute: typeof PostsRouteRouteWithChildren
-  UsersRouteRoute: typeof UsersRouteRouteWithChildren
-  PathlessLayoutRoute: typeof PathlessLayoutRouteWithChildren
-  DeferredRoute: typeof DeferredRoute
-  RedirectRoute: typeof RedirectRoute
-  ApiUsersRoute: typeof ApiUsersRouteWithChildren
-  PostsPostIdDeepRoute: typeof PostsPostIdDeepRoute
+  LoginRoute: typeof LoginRouteWithChildren
+  DashboardRoute: typeof DashboardRouteWithChildren
+  ProductsRoute: typeof ProductsRouteWithChildren
+  OrdersRoute: typeof OrdersRouteWithChildren
+  CustomersRoute: typeof CustomersRouteWithChildren
+  AuditLogsRoute: typeof AuditLogsRouteWithChildren
 }
+
+// ── Module augmentation ─────────────────────────────────────────────────────
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/redirect': {
-      id: '/redirect'
-      path: '/redirect'
-      fullPath: '/redirect'
-      preLoaderRoute: typeof RedirectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/deferred': {
-      id: '/deferred'
-      path: '/deferred'
-      fullPath: '/deferred'
-      preLoaderRoute: typeof DeferredRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_pathlessLayout': {
-      id: '/_pathlessLayout'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PathlessLayoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/posts': {
-      id: '/posts'
-      path: '/posts'
-      fullPath: '/posts'
-      preLoaderRoute: typeof PostsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -263,159 +264,199 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users/': {
-      id: '/users/'
-      path: '/'
-      fullPath: '/users/'
-      preLoaderRoute: typeof UsersIndexRouteImport
-      parentRoute: typeof UsersRouteRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/posts/': {
-      id: '/posts/'
+    '/login/': {
+      id: '/login/'
       path: '/'
-      fullPath: '/posts/'
-      preLoaderRoute: typeof PostsIndexRouteImport
-      parentRoute: typeof PostsRouteRoute
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof LoginRoute
     }
-    '/users/$userId': {
-      id: '/users/$userId'
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products/': {
+      id: '/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof ProductsIndexRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/products/new': {
+      id: '/products/new'
+      path: '/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof ProductsNewRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/products/$productId': {
+      id: '/products/$productId'
+      path: '/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof ProductsProductIdRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders/': {
+      id: '/orders/'
+      path: '/'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof OrdersIndexRouteImport
+      parentRoute: typeof OrdersRoute
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof OrdersRoute
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers/': {
+      id: '/customers/'
+      path: '/'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof CustomersIndexRouteImport
+      parentRoute: typeof CustomersRoute
+    }
+    '/customers/$userId': {
+      id: '/customers/$userId'
       path: '/$userId'
-      fullPath: '/users/$userId'
-      preLoaderRoute: typeof UsersUserIdRouteImport
-      parentRoute: typeof UsersRouteRoute
+      fullPath: '/customers/$userId'
+      preLoaderRoute: typeof CustomersUserIdRouteImport
+      parentRoute: typeof CustomersRoute
     }
-    '/posts/$postId': {
-      id: '/posts/$postId'
-      path: '/$postId'
-      fullPath: '/posts/$postId'
-      preLoaderRoute: typeof PostsPostIdRouteImport
-      parentRoute: typeof PostsRouteRoute
-    }
-    '/api/users': {
-      id: '/api/users'
-      path: '/api/users'
-      fullPath: '/api/users'
-      preLoaderRoute: typeof ApiUsersRouteImport
+    '/audit-logs': {
+      id: '/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuditLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_pathlessLayout/_nested-layout': {
-      id: '/_pathlessLayout/_nested-layout'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PathlessLayoutNestedLayoutRouteImport
-      parentRoute: typeof PathlessLayoutRoute
-    }
-    '/posts_/$postId/deep': {
-      id: '/posts_/$postId/deep'
-      path: '/posts/$postId/deep'
-      fullPath: '/posts/$postId/deep'
-      preLoaderRoute: typeof PostsPostIdDeepRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/users/$id': {
-      id: '/api/users/$id'
-      path: '/$id'
-      fullPath: '/api/users/$id'
-      preLoaderRoute: typeof ApiUsersIdRouteImport
-      parentRoute: typeof ApiUsersRoute
-    }
-    '/_pathlessLayout/_nested-layout/route-b': {
-      id: '/_pathlessLayout/_nested-layout/route-b'
-      path: '/route-b'
-      fullPath: '/route-b'
-      preLoaderRoute: typeof PathlessLayoutNestedLayoutRouteBRouteImport
-      parentRoute: typeof PathlessLayoutNestedLayoutRoute
-    }
-    '/_pathlessLayout/_nested-layout/route-a': {
-      id: '/_pathlessLayout/_nested-layout/route-a'
-      path: '/route-a'
-      fullPath: '/route-a'
-      preLoaderRoute: typeof PathlessLayoutNestedLayoutRouteARouteImport
-      parentRoute: typeof PathlessLayoutNestedLayoutRoute
+    '/audit-logs/': {
+      id: '/audit-logs/'
+      path: '/'
+      fullPath: '/audit-logs/'
+      preLoaderRoute: typeof AuditLogsIndexRouteImport
+      parentRoute: typeof AuditLogsRoute
     }
   }
 }
 
-interface PostsRouteRouteChildren {
-  PostsPostIdRoute: typeof PostsPostIdRoute
-  PostsIndexRoute: typeof PostsIndexRoute
-}
+// ── Children wiring ─────────────────────────────────────────────────────────
 
-const PostsRouteRouteChildren: PostsRouteRouteChildren = {
-  PostsPostIdRoute: PostsPostIdRoute,
-  PostsIndexRoute: PostsIndexRoute,
+interface LoginRouteChildren {
+  LoginIndexRoute: typeof LoginIndexRoute
 }
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginIndexRoute: LoginIndexRoute,
+}
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
 
-const PostsRouteRouteWithChildren = PostsRouteRoute._addFileChildren(
-  PostsRouteRouteChildren,
+interface DashboardRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
 )
 
-interface UsersRouteRouteChildren {
-  UsersUserIdRoute: typeof UsersUserIdRoute
-  UsersIndexRoute: typeof UsersIndexRoute
+interface ProductsRouteChildren {
+  ProductsIndexRoute: typeof ProductsIndexRoute
+  ProductsNewRoute: typeof ProductsNewRoute
+  ProductsProductIdRoute: typeof ProductsProductIdRoute
 }
-
-const UsersRouteRouteChildren: UsersRouteRouteChildren = {
-  UsersUserIdRoute: UsersUserIdRoute,
-  UsersIndexRoute: UsersIndexRoute,
+const ProductsRouteChildren: ProductsRouteChildren = {
+  ProductsIndexRoute: ProductsIndexRoute,
+  ProductsNewRoute: ProductsNewRoute,
+  ProductsProductIdRoute: ProductsProductIdRoute,
 }
-
-const UsersRouteRouteWithChildren = UsersRouteRoute._addFileChildren(
-  UsersRouteRouteChildren,
+const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
+  ProductsRouteChildren,
 )
 
-interface PathlessLayoutNestedLayoutRouteChildren {
-  PathlessLayoutNestedLayoutRouteARoute: typeof PathlessLayoutNestedLayoutRouteARoute
-  PathlessLayoutNestedLayoutRouteBRoute: typeof PathlessLayoutNestedLayoutRouteBRoute
+interface OrdersRouteChildren {
+  OrdersIndexRoute: typeof OrdersIndexRoute
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
 }
-
-const PathlessLayoutNestedLayoutRouteChildren: PathlessLayoutNestedLayoutRouteChildren =
-  {
-    PathlessLayoutNestedLayoutRouteARoute:
-      PathlessLayoutNestedLayoutRouteARoute,
-    PathlessLayoutNestedLayoutRouteBRoute:
-      PathlessLayoutNestedLayoutRouteBRoute,
-  }
-
-const PathlessLayoutNestedLayoutRouteWithChildren =
-  PathlessLayoutNestedLayoutRoute._addFileChildren(
-    PathlessLayoutNestedLayoutRouteChildren,
-  )
-
-interface PathlessLayoutRouteChildren {
-  PathlessLayoutNestedLayoutRoute: typeof PathlessLayoutNestedLayoutRouteWithChildren
+const OrdersRouteChildren: OrdersRouteChildren = {
+  OrdersIndexRoute: OrdersIndexRoute,
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
 }
+const OrdersRouteWithChildren = OrdersRoute._addFileChildren(OrdersRouteChildren)
 
-const PathlessLayoutRouteChildren: PathlessLayoutRouteChildren = {
-  PathlessLayoutNestedLayoutRoute: PathlessLayoutNestedLayoutRouteWithChildren,
+interface CustomersRouteChildren {
+  CustomersIndexRoute: typeof CustomersIndexRoute
+  CustomersUserIdRoute: typeof CustomersUserIdRoute
 }
-
-const PathlessLayoutRouteWithChildren = PathlessLayoutRoute._addFileChildren(
-  PathlessLayoutRouteChildren,
+const CustomersRouteChildren: CustomersRouteChildren = {
+  CustomersIndexRoute: CustomersIndexRoute,
+  CustomersUserIdRoute: CustomersUserIdRoute,
+}
+const CustomersRouteWithChildren = CustomersRoute._addFileChildren(
+  CustomersRouteChildren,
 )
 
-interface ApiUsersRouteChildren {
-  ApiUsersIdRoute: typeof ApiUsersIdRoute
+interface AuditLogsRouteChildren {
+  AuditLogsIndexRoute: typeof AuditLogsIndexRoute
 }
-
-const ApiUsersRouteChildren: ApiUsersRouteChildren = {
-  ApiUsersIdRoute: ApiUsersIdRoute,
+const AuditLogsRouteChildren: AuditLogsRouteChildren = {
+  AuditLogsIndexRoute: AuditLogsIndexRoute,
 }
-
-const ApiUsersRouteWithChildren = ApiUsersRoute._addFileChildren(
-  ApiUsersRouteChildren,
+const AuditLogsRouteWithChildren = AuditLogsRoute._addFileChildren(
+  AuditLogsRouteChildren,
 )
+
+// ── Root tree assembly ───────────────────────────────────────────────────────
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  PostsRouteRoute: PostsRouteRouteWithChildren,
-  UsersRouteRoute: UsersRouteRouteWithChildren,
-  PathlessLayoutRoute: PathlessLayoutRouteWithChildren,
-  DeferredRoute: DeferredRoute,
-  RedirectRoute: RedirectRoute,
-  ApiUsersRoute: ApiUsersRouteWithChildren,
-  PostsPostIdDeepRoute: PostsPostIdDeepRoute,
+  LoginRoute: LoginRouteWithChildren,
+  DashboardRoute: DashboardRouteWithChildren,
+  ProductsRoute: ProductsRouteWithChildren,
+  OrdersRoute: OrdersRouteWithChildren,
+  CustomersRoute: CustomersRouteWithChildren,
+  AuditLogsRoute: AuditLogsRouteWithChildren,
 }
+
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()

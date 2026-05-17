@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { lazy } from "react"
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/audit-logs/')({
-  component: AuditLogsIndexComponent,
+const AuditLogsPage = lazy(() => import("./audit-logs-page"))
+
+export const Route = createFileRoute("/audit-logs/")({
+  component: AuditLogsPage,
 })
-
-function AuditLogsIndexComponent() {
-  return <div>Dashboard page.</div>
-}

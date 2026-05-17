@@ -1,8 +1,4 @@
-export type UserRole = "CUSTOMER" | "ADMIN"
-
-export type Session = {
-  id: string
-  email: string
-  name: string
-  role: UserRole
-}
+// This file is intentionally left empty.
+// All session and role types are defined in src/lib/auth.ts.
+// Import from there instead: import type { Session, UserRole } from "@/lib/auth"
+export {}

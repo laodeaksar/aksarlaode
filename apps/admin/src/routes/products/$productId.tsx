@@ -4,12 +4,12 @@ import {
   useMutation,
   useQueryClient,
 }                                       from "@tanstack/react-query"
-import { ProductForm }                  from "@/components/forms/product-form"
+import { ProductForm }             from "@/components/forms/product-form"
 import {
   getProductFn,
   updateProductFn,
-}                                       from "@/server/products"
-import type { UpdateProductInput }      from "@/effect/Services"
+}                                  from "@/server/products"
+import type { UpdateProductInput } from "@/effect/Services"
 
 export const Route = createFileRoute("/products/$productId")({
   // SSR loader: fetch the product server-side so the page is fully rendered
@@ -99,7 +99,7 @@ function EditProductPage() {
           // `description: string | undefined` vs `description?: string` mismatch.
           ...(product.description !== undefined && { description: product.description }),
         }}
-        onSubmit={(data) => mutation.mutate(data as UpdateProductInput)}
+        onSubmit={(data) => mutation.mutate(data satisfies UpdateProductInput)}
         isLoading={mutation.isPending}
         error={errorMessage}
       />

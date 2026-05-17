@@ -9,12 +9,14 @@ import {
   ScrollRestoration,
 } from "@tanstack/react-router"
 import { QueryClient }     from "@tanstack/react-query"
-import { Suspense,type ReactNode }        from "react"
+import { Suspense, type ReactNode } from "react"
 import { Sidebar }         from "@/components/layout/sidebar"
 import { Topbar }          from "@/components/layout/topbar"
 import { getSession }      from "@/lib/auth"
 import { hasAnyAdminRole } from "@/lib/rbac"
 import { ErrorBoundary }   from "@/components/error-boundary"
+import { SessionContext }  from "@/lib/session-context"
+import type { Session }    from "@/lib/auth"
 
 import appCss from "@repo/ui/globals.css?url"
 
@@ -40,7 +42,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
 
   // Auth guard: runs on SSR and every client-side navigation.
-  // FIX ADM-05: Accept ADMIN, OWNER, and FINANCE roles.
+  // Returns { session } which is merged into route context and consumed by
+  // RootDocument via Route.useRouteContext() — zero client-side /auth/me call.
   beforeLoad: async ({ location }) => {
     if (location.pathname === "/login") return
 
@@ -54,64 +57,76 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
     return { session }
   },
-errorComponent: ()=>{
-  return(
-  <RootDocument>
-<ErrorBoundary>
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-                  Loading…
-                </div>
-              }
-            >
-              <Outlet />
-            </Suspense>
-          </ErrorBoundary>
-        </RootDocument>
-)},
+
+  errorComponent: () => (
+    <RootDocument>
+      <ErrorBoundary>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+              Loading…
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
+      </ErrorBoundary>
+    </RootDocument>
+  ),
+
   shellComponent: RootComponent,
 })
 
 // ── Full HTML document (required for SSR hydration) ────────────────────────
 function RootComponent() {
   return (
-       <RootDocument>
-<Outlet/>
-</RootDocument>
-      )
+    <RootDocument>
+      <Outlet />
+    </RootDocument>
+  )
 }
 
-// ── Admin shell — conditional layout for authenticated vs login pages ─────
-function RootDocument({children}:{children: ReactNode}) {
+// ── Admin shell — provides session context + conditional layout ───────────
+// Session is read from route context (set by beforeLoad) — NOT re-fetched
+// on the client. This eliminates the double /auth/me call and ensures that
+// useSession() returns the correct value on the very first render.
+function RootDocument({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  // Route context is populated by beforeLoad's `return { session }`.
+  // On the /login page beforeLoad returns early (no session), so we cast
+  // safely and fall back to null.
+  const routeCtx = Route.useRouteContext() as { session?: Session }
+  const session  = routeCtx.session ?? null
 
   if (pathname === "/login") {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Outlet />
+        {children}
       </div>
     )
   }
 
   return (
-     <html lang="id">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto p-6">
-        {children}
-          </main>
-      </div>
-    </div>
-  <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
+    <SessionContext.Provider value={{ session, loading: false }}>
+      <html lang="id">
+        <head>
+          <HeadContent />
+        </head>
+        <body>
+          <div className="flex h-screen bg-gray-50">
+            <Sidebar />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <Topbar />
+              <main className="flex-1 overflow-y-auto p-6">
+                {children}
+              </main>
+            </div>
+          </div>
+          <ScrollRestoration />
+          <Scripts />
+        </body>
+      </html>
+    </SessionContext.Provider>
   )
 }

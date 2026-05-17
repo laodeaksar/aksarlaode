@@ -4,7 +4,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query"
-import { useState }        from "react"
+import { useState, useMemo, useRef, useCallback } from "react"
 import { Route }           from "./index"
 import {
   listProductsFn,
@@ -24,23 +24,40 @@ import { useSession }      from "@/lib/session-context"
 import { can }             from "@/lib/rbac"
 
 export default function ProductsPage() {
-  const [page,   setPage]   = useState(1)
-  const [search, setSearch] = useState("")
+  const [page,           setPage]           = useState(1)
+  // `search` drives the visible input value (instant).
+  // `debouncedSearch` drives the query key — updated 300ms after typing stops.
+  // This prevents a server function call on every keystroke.
+  const [search,         setSearch]         = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const { session } = useSession()
   const role     = session?.role ?? "CUSTOMER"
   const canWrite = can(role, "products:write")
+
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(value)
+      setPage(1)
+    }, 300)
+  }, [])
 
   // Seed the query cache with SSR loader data on first render
   const loaderData = Route.useLoaderData()
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", page, search],
-    queryFn:  () => listProductsFn({ data: { page, limit: 20, search } }),
+    queryKey: ["products", page, debouncedSearch],
+    queryFn:  () => listProductsFn({ data: { page, limit: 20, search: debouncedSearch } }),
     // Use SSR data as initial value for the first page
-    initialData: page === 1 && !search ? loaderData : undefined,
+    initialData: page === 1 && !debouncedSearch ? loaderData : undefined,
   })
 
-  const columns: ColumnDef<Product>[] = [
+  // Memoized: only rebuilds when canWrite changes (role switch), not on every
+  // page/search state change. Prevents TanStack Table from re-initializing.
+  const columns = useMemo<ColumnDef<Product>[]>(() => [
     {
       accessorKey: "name",
       header:      "Product",
@@ -49,6 +66,9 @@ export default function ProductsPage() {
           {row.original.imageUrls?.[0] && (
             <img
               src={row.original.imageUrls[0]}
+              width={40}
+              height={40}
+              loading="lazy"
               className="h-10 w-10 rounded object-cover"
               alt={row.original.name}
             />
@@ -109,7 +129,7 @@ export default function ProductsPage() {
                   to="/products/$productId"
                   params={{ productId: row.original.id }}
                 >
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" aria-label="Edit product">
                     Edit
                   </Button>
                 </Link>
@@ -119,7 +139,7 @@ export default function ProductsPage() {
           },
         ]
       : []),
-  ]
+  ], [canWrite])
 
   return (
     <div className="space-y-4">
@@ -135,11 +155,9 @@ export default function ProductsPage() {
       <input
         className="w-64 rounded border px-3 py-2 text-sm"
         placeholder="Search products..."
+        aria-label="Search products"
         value={search}
-        onChange={(e) => {
-          setSearch(e.target.value)
-          setPage(1)
-        }}
+        onChange={(e) => handleSearch(e.target.value)}
       />
 
       <DataTable
@@ -193,7 +211,7 @@ function DeleteButton({ productId }: { productId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button size="sm" variant="destructive" disabled={isPending}>
+        <Button size="sm" variant="destructive" disabled={isPending} aria-label="Delete product">
           {isPending ? "..." : "Delete"}
         </Button>
       </AlertDialogTrigger>

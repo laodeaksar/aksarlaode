@@ -6,26 +6,26 @@ Generated from deep audit (2026-05-17). Ordered by priority.
 
 ## P0 — Critical (fix sebelum deploy)
 
-- [ ] **P0-A** `SessionProvider` tidak di-mount di `__root.tsx`
+- [x] **P0-A** `SessionProvider` tidak di-mount di `__root.tsx` ✓
   - `useSession()` selalu mengembalikan `{ session: null }` → semua RBAC check `false`
   - Akibat: tombol Edit/Delete tidak pernah muncul untuk siapapun
-  - Fix: hapus `session-context.tsx`, seed `SessionContext` dari `beforeLoad` result via `Route.useRouteContext()`
+  - Fix: hapus `SessionProvider` + `useEffect`, seed `SessionContext` dari `beforeLoad` via `Route.useRouteContext()` di `RootDocument`
   - File: `src/routes/__root.tsx`, `src/lib/session-context.tsx`
 
-- [ ] **P0-B** `columns: ColumnDef[]` didefinisikan di body komponen tanpa `useMemo`
+- [x] **P0-B** `columns: ColumnDef[]` didefinisikan di body komponen tanpa `useMemo` ✓
   - Dibuat ulang setiap render → TanStack Table re-initialize saat page/search berubah
-  - Fix: wrap dengan `useMemo(() => [...], [canWrite])`
-  - File: `src/routes/products/products-page.tsx:43`
+  - Fix: `useMemo(() => [...], [canWrite])`
+  - File: `src/routes/products/products-page.tsx`
 
-- [ ] **P0-C** Search input tanpa debounce
+- [x] **P0-C** Search input tanpa debounce ✓
   - Setiap keystroke langsung trigger `queryKey` baru → server function call → HTTP request
-  - Fix: debounce 300ms dengan `useRef` + `setTimeout`, pisahkan `search` (display) dan `debouncedSearch` (query key)
-  - File: `src/routes/products/products-page.tsx:135`
+  - Fix: debounce 300ms dengan `useRef` + `useCallback`, pisahkan `search` (display) dan `debouncedSearch` (query key)
+  - File: `src/routes/products/products-page.tsx`
 
-- [ ] **P0-D** `onSubmit: (data: any)` di `ProductForm`
+- [x] **P0-D** `onSubmit: (data: any)` di `ProductForm` ✓
   - Caller melakukan `data as NewProductInput` — unsafe cast, tidak ada validasi di form
-  - Fix: ganti dengan `(data: ProductFormValues) => void`, tambah client-side guard sebelum submit
-  - File: `src/components/forms/product-form.tsx:12`
+  - Fix: ganti dengan `(data: ProductFormValues) => void`, tambah 4 client-side guard, caller pakai `satisfies`
+  - File: `src/components/forms/product-form.tsx`, `products/new.tsx`, `products/$productId.tsx`
 
 ---
 

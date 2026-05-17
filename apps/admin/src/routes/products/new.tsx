@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQueryClient }  from "@tanstack/react-query"
-import { ProductForm }                  from "@/components/forms/product-form"
-import { createProductFn }              from "@/server/products"
-import type { NewProductInput }         from "@/effect/Services"
+import { ProductForm }          from "@/components/forms/product-form"
+import { createProductFn }     from "@/server/products"
+import type { NewProductInput } from "@/effect/Services"
 
 export const Route = createFileRoute("/products/new")({
   head: () => ({
@@ -72,7 +72,10 @@ function NewProductPage() {
     <div className="space-y-4 max-w-xl">
       <h1 className="text-2xl font-semibold text-gray-900">New Product</h1>
       <ProductForm
-        onSubmit={(data) => mutation.mutate(data as NewProductInput)}
+        onSubmit={(data) => mutation.mutate({
+          ...data,
+          // imageUrls and status are not in the form — NewProductInput has them optional
+        } satisfies NewProductInput)}
         isLoading={mutation.isPending}
         error={errorMessage}
       />

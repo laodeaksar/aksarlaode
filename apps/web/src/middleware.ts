@@ -1,6 +1,7 @@
 import { defineMiddleware } from "astro:middleware"
-import { AppRuntime }       from "./lib/effect/runtime"
-import { authApi }          from "./lib/api/auth"
+
+import { authApi } from "./lib/api/auth"
+import { AppRuntime } from "./lib/effect/runtime"
 
 const PROTECTED = ["/checkout", "/account/orders", "/orders"]
 
@@ -58,11 +59,15 @@ const CSP = [
 function applySecurityHeaders(response: Response): Response {
   // Clone headers to avoid mutating a frozen Headers object on some runtimes.
   const headers = new Headers(response.headers)
-  headers.set("Content-Security-Policy",   CSP)
-  headers.set("X-Content-Type-Options",    "nosniff")
-  headers.set("X-Frame-Options",           "SAMEORIGIN")
-  headers.set("Referrer-Policy",           "strict-origin-when-cross-origin")
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+  headers.set("Content-Security-Policy", CSP)
+  headers.set("X-Content-Type-Options", "nosniff")
+  headers.set("X-Frame-Options", "SAMEORIGIN")
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
 }
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
@@ -71,18 +76,18 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     !SAFE_METHODS.has(ctx.request.method) &&
     ctx.url.pathname.startsWith("/api/")
   ) {
-    const origin       = ctx.request.headers.get("origin")
-    const serverOrigin = ctx.url.origin   // e.g. "https://mysite.com"
+    const origin = ctx.request.headers.get("origin")
+    const serverOrigin = ctx.url.origin // e.g. "https://mysite.com"
 
     if (origin && origin !== serverOrigin) {
       return new Response(
         JSON.stringify({ error: "Forbidden", code: "CSRF_ORIGIN_MISMATCH" }),
         {
-          status:  403,
+          status: 403,
           headers: {
-            "Content-Type":              "application/json",
-            "Content-Security-Policy":   CSP,
-            "X-Content-Type-Options":    "nosniff",
+            "Content-Type": "application/json",
+            "Content-Security-Policy": CSP,
+            "X-Content-Type-Options": "nosniff",
           },
         }
       )
@@ -90,7 +95,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   }
 
   // ── Auth guard for protected pages ─────────────────────────────────────────
-  const isProtected = PROTECTED.some(p => ctx.url.pathname.startsWith(p))
+  const isProtected = PROTECTED.some((p) => ctx.url.pathname.startsWith(p))
   if (!isProtected) {
     const response = await next()
     return applySecurityHeaders(response)

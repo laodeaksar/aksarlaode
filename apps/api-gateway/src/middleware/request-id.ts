@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono"
+
 import type { AppEnv } from "@/types/context"
 
 // FIX GW-05: Always generate a fresh UUID — never trust client-supplied

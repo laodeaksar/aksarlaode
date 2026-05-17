@@ -1,19 +1,26 @@
-import { Effect }                  from "effect"
-import { hashPassword }            from "@/lib/password"
-import { issueTokenPair }          from "@/lib/token"
-import { hashToken }               from "@/lib/token-hash"
-import { userRepository }          from "@/repository/user.repository"
-import { createUserWithSession }   from "@/repository/auth.repository"
-import { writeAuditLog }           from "@/lib/audit-log"
-import { checkPasswordStrength }   from "@/lib/password-strength"
-import { AuthError, ConflictError, ValidationError, toErrorResponse } from "@repo/common/errors"
+import { createUserWithSession } from "@/repository/auth.repository"
+import { userRepository } from "@/repository/user.repository"
+import { Effect } from "effect"
+
+import {
+  AuthError,
+  ConflictError,
+  toErrorResponse,
+  ValidationError,
+} from "@repo/common/errors"
+
+import { writeAuditLog } from "@/lib/audit-log"
+import { hashPassword } from "@/lib/password"
+import { checkPasswordStrength } from "@/lib/password-strength"
+import { issueTokenPair } from "@/lib/token"
+import { hashToken } from "@/lib/token-hash"
 
 export const registerHandler = async ({
   body,
   set,
 }: {
   body: { email: string; name: string; password: string }
-  set:  any
+  set: any
 }) => {
   const program = Effect.gen(function* () {
     // ── 1. Fast-path duplicate check ─────────────────────────────────────────
@@ -26,7 +33,8 @@ export const registerHandler = async ({
     // ── 1b. Common-password denylist ─────────────────────────────────────────
     // Checked before Argon2 — no point hashing a trivially guessable password.
     const weakMsg = checkPasswordStrength(body.password)
-    if (weakMsg) return yield* Effect.fail(new ValidationError(undefined, weakMsg))
+    if (weakMsg)
+      return yield* Effect.fail(new ValidationError(undefined, weakMsg))
 
     // ── 2. Hash password ─────────────────────────────────────────────────────
     const passwordHash = yield* hashPassword(body.password)
@@ -36,12 +44,17 @@ export const registerHandler = async ({
     // before the DB write. If the transaction rolls back, these tokens are
     // worthless — the gateway rejects any session lookup for a non-existent
     // userId+sessionId pair.
-    const userId    = crypto.randomUUID()
+    const userId = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
-    const tokens    = yield* issueTokenPair(userId, "CUSTOMER", sessionId, body.email)
+    const tokens = yield* issueTokenPair(
+      userId,
+      "CUSTOMER",
+      sessionId,
+      body.email
+    )
 
     const refreshTokenHash = yield* Effect.tryPromise({
-      try:   () => hashToken(tokens.refreshToken),
+      try: () => hashToken(tokens.refreshToken),
       catch: () => new AuthError("Internal error"),
     })
 
@@ -52,8 +65,14 @@ export const registerHandler = async ({
     // session INSERT fails. On Postgres 23505 (concurrent duplicate email),
     // createUserWithSession returns ConflictError → 409.
     const { user } = yield* createUserWithSession(
-      { id: userId, email: body.email, name: body.name, passwordHash, role: "CUSTOMER" },
-      { id: sessionId, userId, token: refreshTokenHash, expiresAt },
+      {
+        id: userId,
+        email: body.email,
+        name: body.name,
+        passwordHash,
+        role: "CUSTOMER",
+      },
+      { id: sessionId, userId, token: refreshTokenHash, expiresAt }
     )
 
     return { user: { id: user.id, email: user.email, name: user.name }, tokens }
@@ -72,10 +91,10 @@ export const registerHandler = async ({
   // F-04: Audit account creation — important for detecting mass-registration
   // attacks and for forensic trail after a breach.
   writeAuditLog({
-    event:    "ACCOUNT_CREATED",
-    actorId:  user.id,
+    event: "ACCOUNT_CREATED",
+    actorId: user.id,
     targetId: user.id,
-    meta:     { email: user.email },
+    meta: { email: user.email },
   })
 
   set.status = 201

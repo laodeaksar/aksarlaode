@@ -1,10 +1,13 @@
-import { Effect, Data } from "effect"
-import { env }          from "@repo/env"
+import { Data, Effect } from "effect"
 
-class OrderClientError extends Data.TaggedError("OrderClientError")<{ status: number }> {}
+import { env } from "@repo/env"
+
+class OrderClientError extends Data.TaggedError("OrderClientError")<{
+  status: number
+}> {}
 
 const headers = () => ({
-  "Content-Type":   "application/json",
+  "Content-Type": "application/json",
   "x-service-token": env.INTERNAL_SERVICE_TOKEN,
 })
 
@@ -14,7 +17,11 @@ export const orderClient = {
       try: async () => {
         const res = await fetch(
           `${env.ORDER_SERVICE_URL}/orders/${orderId}/status`,
-          { method: "PATCH", headers: headers(), body: JSON.stringify({ status }) }
+          {
+            method: "PATCH",
+            headers: headers(),
+            body: JSON.stringify({ status }),
+          }
         )
         if (!res.ok) throw { status: res.status }
       },

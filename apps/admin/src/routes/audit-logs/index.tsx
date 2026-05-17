@@ -1,15 +1,17 @@
 // FIX ADM-06b: Audit log viewer — shows a chronological list of sensitive
 // admin actions (product deletes, order status changes, role changes).
+import { useState } from "react"
+import type { AuditLogEntry } from "@/effect/Services"
+import { listAuditLogsFn } from "@/server/audit-logs"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { useQuery }                  from "@tanstack/react-query"
-import { useState }                  from "react"
-import { DataTable }                 from "@/components/data-table/data-table"
-import { Badge }                     from "@repo/ui/components/badge"
-import type { ColumnDef }            from "@tanstack/react-table"
-import { can }                       from "@/lib/rbac"
-import type { Session }              from "@/lib/auth"
-import type { AuditLogEntry }        from "@/effect/Services"
-import { listAuditLogsFn }           from "@/server/audit-logs"
+import type { ColumnDef } from "@tanstack/react-table"
+
+import { Badge } from "@repo/ui/components/badge"
+
+import type { Session } from "@/lib/auth"
+import { can } from "@/lib/rbac"
+import { DataTable } from "@/components/data-table/data-table"
 
 export const Route = createFileRoute("/audit-logs/")({
   // Route-level RBAC: audit:read is granted to ADMIN and OWNER only.
@@ -28,22 +30,28 @@ export const Route = createFileRoute("/audit-logs/")({
   component: AuditLogsPage,
 })
 
-const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  product_deleted:       "destructive",
-  order_status_changed:  "secondary",
-  user_role_changed:     "default",
+const ACTION_COLORS: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  product_deleted: "destructive",
+  order_status_changed: "secondary",
+  user_role_changed: "default",
 }
 
 const columns: ColumnDef<AuditLogEntry>[] = [
   {
     accessorKey: "createdAt",
-    header:      "Time",
+    header: "Time",
     cell: ({ getValue }) =>
-      new Date(getValue() as string).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "medium" }),
+      new Date(getValue() as string).toLocaleString("id-ID", {
+        dateStyle: "short",
+        timeStyle: "medium",
+      }),
   },
   {
     accessorKey: "actorId",
-    header:      "Actor",
+    header: "Actor",
     cell: ({ row }) => (
       <div>
         <p className="font-mono text-xs">{row.original.actorId.slice(0, 8)}…</p>
@@ -53,7 +61,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
   },
   {
     accessorKey: "action",
-    header:      "Action",
+    header: "Action",
     cell: ({ getValue }) => {
       const action = getValue() as string
       return (
@@ -65,17 +73,19 @@ const columns: ColumnDef<AuditLogEntry>[] = [
   },
   {
     accessorKey: "resource",
-    header:      "Resource",
+    header: "Resource",
     cell: ({ row }) => (
       <div>
         <p className="text-xs capitalize">{row.original.resource}</p>
-        <p className="font-mono text-xs text-gray-500">{row.original.resourceId.slice(0, 8)}…</p>
+        <p className="font-mono text-xs text-gray-500">
+          {row.original.resourceId.slice(0, 8)}…
+        </p>
       </div>
     ),
   },
   {
     accessorKey: "metadata",
-    header:      "Metadata",
+    header: "Metadata",
     cell: ({ getValue }) => {
       const meta = getValue() as Record<string, unknown> | null
       if (!meta) return <span className="text-gray-400 text-xs">—</span>
@@ -96,7 +106,7 @@ function AuditLogsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["audit-logs", page],
-    queryFn:  () => listAuditLogsFn({ data: { page } }),
+    queryFn: () => listAuditLogsFn({ data: { page } }),
     initialData: page === 1 ? loaderData : undefined,
   })
 
@@ -106,7 +116,8 @@ function AuditLogsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Audit Log</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Sensitive admin actions — product deletes, order status changes, role changes.
+            Sensitive admin actions — product deletes, order status changes,
+            role changes.
           </p>
         </div>
       </div>

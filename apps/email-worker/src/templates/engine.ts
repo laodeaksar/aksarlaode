@@ -14,7 +14,7 @@ function escapeHtml(raw: string): string {
 
 export function render(
   template: string,
-  data:     Record<string, string | number | undefined>
+  data: Record<string, string | number | undefined>
 ): string {
   return template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
     const value = data[key]

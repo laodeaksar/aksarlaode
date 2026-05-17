@@ -6,7 +6,7 @@ export class NetworkError extends Data.TaggedError("NetworkError")<{
 }> {}
 
 export class HttpError extends Data.TaggedError("HttpError")<{
-  status:  number
+  status: number
   message: string
 }> {}
 

@@ -1,11 +1,13 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv }          from "@/types/context"
+
+import type { AppEnv } from "@/types/context"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const TTL_MS = 24 * 60 * 60 * 1000   // 24 h — matches Stripe / Braintree standard
+const TTL_MS = 24 * 60 * 60 * 1000 // 24 h — matches Stripe / Braintree standard
 
 // UUID v4 only — rejects arbitrary strings that could be used as cache-poisoning vectors
-const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 // ── In-memory store ───────────────────────────────────────────────────────────
 // For multi-instance deployments, replace with an Upstash Redis SET/GET/EXPIRE
@@ -13,13 +15,13 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 type RecordStatus = "processing" | "complete"
 
 interface CachedResponse {
-  status:      number
-  body:        string
+  status: number
+  body: string
   contentType: string
 }
 
 interface IdempotencyRecord {
-  status:    RecordStatus
+  status: RecordStatus
   response?: CachedResponse
   expiresAt: number
 }
@@ -27,12 +29,15 @@ interface IdempotencyRecord {
 const store = new Map<string, IdempotencyRecord>()
 
 // Evict expired entries every 10 minutes to prevent unbounded memory growth
-setInterval(() => {
-  const now = Date.now()
-  for (const [k, r] of store) {
-    if (now > r.expiresAt) store.delete(k)
-  }
-}, 10 * 60 * 1000)
+setInterval(
+  () => {
+    const now = Date.now()
+    for (const [k, r] of store) {
+      if (now > r.expiresAt) store.delete(k)
+    }
+  },
+  10 * 60 * 1000
+)
 
 // ── Key scoping ───────────────────────────────────────────────────────────────
 // Scope by authenticated user ID so that two different users cannot share or
@@ -56,19 +61,18 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!UUID_V4_RE.test(rawKey)) {
     return c.json(
       {
-        error:     "Idempotency-Key must be a valid UUID v4",
-        code:      "INVALID_IDEMPOTENCY_KEY",
+        error: "Idempotency-Key must be a valid UUID v4",
+        code: "INVALID_IDEMPOTENCY_KEY",
         requestId: c.var.requestId,
       },
       400
     )
   }
 
-  const ip  = (
+  const ip =
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
     "unknown"
-  )
   const key = scopedKey(rawKey, c.var.user?.id ?? null, ip)
   const now = Date.now()
 
@@ -79,8 +83,9 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (existing.status === "processing") {
       return c.json(
         {
-          error:     "A request with this Idempotency-Key is already being processed",
-          code:      "IDEMPOTENCY_CONFLICT",
+          error:
+            "A request with this Idempotency-Key is already being processed",
+          code: "IDEMPOTENCY_CONFLICT",
           requestId: c.var.requestId,
         },
         409
@@ -90,18 +95,20 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
     // ── Replay the cached response ────────────────────────────────────────
     if (existing.status === "complete" && existing.response) {
       const cached = existing.response
-      console.info(JSON.stringify({
-        event:     "idempotency_replay",
-        requestId: c.var.requestId,
-        key:       rawKey,
-        status:    cached.status,
-      }))
+      console.info(
+        JSON.stringify({
+          event: "idempotency_replay",
+          requestId: c.var.requestId,
+          key: rawKey,
+          status: cached.status,
+        })
+      )
       return new Response(cached.body, {
-        status:  cached.status,
+        status: cached.status,
         headers: {
-          "Content-Type":        cached.contentType,
+          "Content-Type": cached.contentType,
           "Idempotency-Replayed": "true",
-          "X-Request-Id":        c.var.requestId,
+          "X-Request-Id": c.var.requestId,
         },
       })
     }
@@ -119,10 +126,10 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
   const res = c.res
   if (res.status < 500) {
     try {
-      const body        = await res.clone().text()
+      const body = await res.clone().text()
       const contentType = res.headers.get("content-type") ?? "application/json"
       store.set(key, {
-        status:   "complete",
+        status: "complete",
         response: { status: res.status, body, contentType },
         expiresAt: now + TTL_MS,
       })

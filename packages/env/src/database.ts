@@ -1,4 +1,5 @@
-import { z }        from "zod/v4"
+import { z } from "zod/v4"
+
 import { parseEnv } from "./utils"
 
 /**
@@ -7,7 +8,9 @@ import { parseEnv } from "./utils"
  */
 export const env = parseEnv(
   {
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
 
     // PostgreSQL — accepts postgres://, postgresql://
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),

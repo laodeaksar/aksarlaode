@@ -1,6 +1,6 @@
+import { lazy } from "react"
+import { listOrdersFn } from "@/server/orders"
 import { createFileRoute } from "@tanstack/react-router"
-import { lazy }            from "react"
-import { listOrdersFn }    from "@/server/orders"
 
 // FIX ADM-06: Route-based code splitting — OrdersPage (DataTable, badge
 // mapping, @tanstack/react-table) loaded in its own chunk on first navigation.

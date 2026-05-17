@@ -1,29 +1,30 @@
-import Elysia, { t }                 from "elysia"
-import { env }                        from "@repo/env/order"
+import { adminOrderExportHandler } from "@/handlers/admin-order-export"
+import { adminOrderNoteHandler } from "@/handlers/admin-order-note"
+import { adminOrderTimelineHandler } from "@/handlers/admin-order-timeline"
+import { adminListOrdersHandler } from "@/handlers/admin-orders"
+import { adminOrdersSummaryHandler } from "@/handlers/admin-orders-summary"
 import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
-import { adminListOrdersHandler }     from "@/handlers/admin-orders"
-import { adminOrdersSummaryHandler }  from "@/handlers/admin-orders-summary"
-import { adminOrderTimelineHandler }  from "@/handlers/admin-order-timeline"
-import { adminOrderNoteHandler }      from "@/handlers/admin-order-note"
-import { adminOrderExportHandler }    from "@/handlers/admin-order-export"
+import Elysia, { t } from "elysia"
+
+import { env } from "@repo/env/order"
 
 const ErrorSchema = t.Object({
   error: t.String(),
-  code:  t.Optional(t.String()),
+  code: t.Optional(t.String()),
 })
 
 const SweepResultSchema = t.Object({
-  triggeredBy:    t.String(),
-  startedAt:      t.String(),
-  completedAt:    t.String(),
-  durationMs:     t.Number(),
-  expiryMins:     t.Number(),
-  total:          t.Integer(),
-  cancelled:      t.Integer(),
-  stockReleased:  t.Integer(),
-  stockFailed:    t.Integer(),
+  triggeredBy: t.String(),
+  startedAt: t.String(),
+  completedAt: t.String(),
+  durationMs: t.Number(),
+  expiryMins: t.Number(),
+  total: t.Integer(),
+  cancelled: t.Integer(),
+  stockReleased: t.Integer(),
+  stockFailed: t.Integer(),
   alreadyHandled: t.Integer(),
-  skipped:        t.Integer(),
+  skipped: t.Integer(),
 })
 
 export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
@@ -40,75 +41,92 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   // ── GET /admin/orders ──────────────────────────────────────────────────────
   .get("/orders", adminListOrdersHandler, {
     query: t.Object({
-      page:     t.Optional(t.String({ description: "Page number (default: 1)" })),
-      limit:    t.Optional(t.String({ description: "Items per page, max 100 (default: 20)" })),
-      userId:   t.Optional(t.String({ description: "Filter by exact userId" })),
-      status:   t.Optional(t.String({
-        description: "Comma-separated status values. Valid: PENDING_PAYMENT, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED",
-        examples:    ["PAID,PROCESSING", "CANCELLED"],
-      })),
-      dateFrom: t.Optional(t.String({
-        description: "ISO 8601 start date (inclusive). Orders created on or after this date.",
-        examples:    ["2024-01-01", "2024-05-13T00:00:00.000Z"],
-      })),
-      dateTo:   t.Optional(t.String({
-        description: "ISO 8601 end date (inclusive, extended to end of day 23:59:59). Orders created on or before this date.",
-        examples:    ["2024-12-31", "2024-05-13T23:59:59.999Z"],
-      })),
+      page: t.Optional(t.String({ description: "Page number (default: 1)" })),
+      limit: t.Optional(
+        t.String({ description: "Items per page, max 100 (default: 20)" })
+      ),
+      userId: t.Optional(t.String({ description: "Filter by exact userId" })),
+      status: t.Optional(
+        t.String({
+          description:
+            "Comma-separated status values. Valid: PENDING_PAYMENT, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED",
+          examples: ["PAID,PROCESSING", "CANCELLED"],
+        })
+      ),
+      dateFrom: t.Optional(
+        t.String({
+          description:
+            "ISO 8601 start date (inclusive). Orders created on or after this date.",
+          examples: ["2024-01-01", "2024-05-13T00:00:00.000Z"],
+        })
+      ),
+      dateTo: t.Optional(
+        t.String({
+          description:
+            "ISO 8601 end date (inclusive, extended to end of day 23:59:59). Orders created on or before this date.",
+          examples: ["2024-12-31", "2024-05-13T23:59:59.999Z"],
+        })
+      ),
     }),
     response: {
       200: t.Object({
-        items: t.Array(t.Object({
-          orderId:  t.String(),
-          userId:   t.String(),
-          status:   t.String(),
-          items: t.Array(t.Object({
-            productId:   t.String(),
-            productName: t.String(),
-            sku:         t.String(),
-            imageUrl:    t.Union([t.String(), t.Null()]),
-            price:       t.Number(),
-            quantity:    t.Integer(),
-            subtotal:    t.Number(),
-          })),
-          shippingAddress: t.Object({
-            recipientName: t.String(),
-            phone:         t.String(),
-            street:        t.String(),
-            city:          t.String(),
-            province:      t.String(),
-            postalCode:    t.String(),
-            country:       t.String(),
-          }),
-          totalAmount:    t.Number(),
-          shippingFee:    t.Number(),
-          discountAmount: t.Number(),
-          grandTotal:     t.Number(),
-          notes:          t.Union([t.String(), t.Null()]),
-          statusHistory: t.Array(t.Object({
-            status:    t.String(),
-            note:      t.Union([t.String(), t.Null()]),
-            changedBy: t.String(),
-            timestamp: t.String(),
-          })),
-          createdAt:   t.Union([t.String(), t.Null()]),
-          updatedAt:   t.Union([t.String(), t.Null()]),
-          paidAt:      t.Union([t.String(), t.Null()]),
-          shippedAt:   t.Union([t.String(), t.Null()]),
-          deliveredAt: t.Union([t.String(), t.Null()]),
-          cancelledAt: t.Union([t.String(), t.Null()]),
-        })),
-        total:      t.Integer(),
-        page:       t.Integer(),
-        limit:      t.Integer(),
+        items: t.Array(
+          t.Object({
+            orderId: t.String(),
+            userId: t.String(),
+            status: t.String(),
+            items: t.Array(
+              t.Object({
+                productId: t.String(),
+                productName: t.String(),
+                sku: t.String(),
+                imageUrl: t.Union([t.String(), t.Null()]),
+                price: t.Number(),
+                quantity: t.Integer(),
+                subtotal: t.Number(),
+              })
+            ),
+            shippingAddress: t.Object({
+              recipientName: t.String(),
+              phone: t.String(),
+              street: t.String(),
+              city: t.String(),
+              province: t.String(),
+              postalCode: t.String(),
+              country: t.String(),
+            }),
+            totalAmount: t.Number(),
+            shippingFee: t.Number(),
+            discountAmount: t.Number(),
+            grandTotal: t.Number(),
+            notes: t.Union([t.String(), t.Null()]),
+            statusHistory: t.Array(
+              t.Object({
+                status: t.String(),
+                note: t.Union([t.String(), t.Null()]),
+                changedBy: t.String(),
+                timestamp: t.String(),
+              })
+            ),
+            createdAt: t.Union([t.String(), t.Null()]),
+            updatedAt: t.Union([t.String(), t.Null()]),
+            paidAt: t.Union([t.String(), t.Null()]),
+            shippedAt: t.Union([t.String(), t.Null()]),
+            deliveredAt: t.Union([t.String(), t.Null()]),
+            cancelledAt: t.Union([t.String(), t.Null()]),
+          })
+        ),
+        total: t.Integer(),
+        page: t.Integer(),
+        limit: t.Integer(),
         totalPages: t.Integer(),
-        hasNext:    t.Boolean(),
-        hasPrev:    t.Boolean(),
-        filters:    t.Object({
-          userId:   t.Union([t.String(), t.Null()]),
-          status:   t.Union([t.Array(t.String()), t.Null()]),
+        hasNext: t.Boolean(),
+        hasPrev: t.Boolean(),
+        filters: t.Object({
+          userId: t.Union([t.String(), t.Null()]),
+          status: t.Union([t.Array(t.String()), t.Null()]),
           dateFrom: t.Union([t.String(), t.Null()]),
-          dateTo:   t.Union([t.String(), t.Null()]),
+          dateTo: t.Union([t.String(), t.Null()]),
         }),
       }),
       403: ErrorSchema,
@@ -132,23 +150,32 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   // ── GET /admin/orders/export ──────────────────────────────────────────────
   .get("/orders/export", adminOrderExportHandler, {
     query: t.Object({
-      userId:   t.Optional(t.String({ description: "Scope to a single user" })),
-      status:   t.Optional(t.String({
-        description: "Comma-separated status filter (e.g. PAID,DELIVERED)",
-        examples:    ["PAID,DELIVERED", "CANCELLED"],
-      })),
-      dateFrom: t.Optional(t.String({
-        description: "ISO 8601 start date (inclusive)",
-        examples:    ["2024-01-01"],
-      })),
-      dateTo: t.Optional(t.String({
-        description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
-        examples:    ["2024-12-31"],
-      })),
-      filename: t.Optional(t.String({
-        description: "Override the default filename (without .csv extension, max 80 chars)",
-        examples:    ["may_2024_orders"],
-      })),
+      userId: t.Optional(t.String({ description: "Scope to a single user" })),
+      status: t.Optional(
+        t.String({
+          description: "Comma-separated status filter (e.g. PAID,DELIVERED)",
+          examples: ["PAID,DELIVERED", "CANCELLED"],
+        })
+      ),
+      dateFrom: t.Optional(
+        t.String({
+          description: "ISO 8601 start date (inclusive)",
+          examples: ["2024-01-01"],
+        })
+      ),
+      dateTo: t.Optional(
+        t.String({
+          description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
+          examples: ["2024-12-31"],
+        })
+      ),
+      filename: t.Optional(
+        t.String({
+          description:
+            "Override the default filename (without .csv extension, max 80 chars)",
+          examples: ["may_2024_orders"],
+        })
+      ),
     }),
     detail: {
       summary: "Export orders to CSV (admin)",
@@ -166,46 +193,54 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   // ── GET /admin/orders/summary ─────────────────────────────────────────────
   .get("/orders/summary", adminOrdersSummaryHandler, {
     query: t.Object({
-      userId:   t.Optional(t.String({ description: "Scope to a single user" })),
-      dateFrom: t.Optional(t.String({
-        description: "ISO 8601 start date (inclusive)",
-        examples:    ["2024-01-01", "2024-05-01T00:00:00.000Z"],
-      })),
-      dateTo: t.Optional(t.String({
-        description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
-        examples:    ["2024-12-31", "2024-05-31T23:59:59.999Z"],
-      })),
+      userId: t.Optional(t.String({ description: "Scope to a single user" })),
+      dateFrom: t.Optional(
+        t.String({
+          description: "ISO 8601 start date (inclusive)",
+          examples: ["2024-01-01", "2024-05-01T00:00:00.000Z"],
+        })
+      ),
+      dateTo: t.Optional(
+        t.String({
+          description: "ISO 8601 end date (inclusive, extended to 23:59:59)",
+          examples: ["2024-12-31", "2024-05-31T23:59:59.999Z"],
+        })
+      ),
     }),
     response: {
       200: t.Object({
         period: t.Object({
           dateFrom: t.Union([t.String(), t.Null()]),
-          dateTo:   t.Union([t.String(), t.Null()]),
-          userId:   t.Union([t.String(), t.Null()]),
+          dateTo: t.Union([t.String(), t.Null()]),
+          userId: t.Union([t.String(), t.Null()]),
         }),
         overall: t.Object({
-          totalOrders:      t.Integer(),
-          totalRevenue:     t.Number(),
-          paidRevenue:      t.Number(),
-          avgOrderValue:    t.Number(),
-          cancelledCount:   t.Integer(),
-          cancellationRate: t.Number(),
-          refundedCount:    t.Integer(),
-          refundedRevenue:  t.Number(),
-        }),
-        byStatus: t.Array(t.Object({
-          status:        t.String(),
-          orderCount:    t.Integer(),
-          totalRevenue:  t.Number(),
+          totalOrders: t.Integer(),
+          totalRevenue: t.Number(),
+          paidRevenue: t.Number(),
           avgOrderValue: t.Number(),
-          minOrderValue: t.Number(),
-          maxOrderValue: t.Number(),
-        })),
-        dailyTrend: t.Array(t.Object({
-          date:       t.String(),
-          orderCount: t.Integer(),
-          revenue:    t.Number(),
-        })),
+          cancelledCount: t.Integer(),
+          cancellationRate: t.Number(),
+          refundedCount: t.Integer(),
+          refundedRevenue: t.Number(),
+        }),
+        byStatus: t.Array(
+          t.Object({
+            status: t.String(),
+            orderCount: t.Integer(),
+            totalRevenue: t.Number(),
+            avgOrderValue: t.Number(),
+            minOrderValue: t.Number(),
+            maxOrderValue: t.Number(),
+          })
+        ),
+        dailyTrend: t.Array(
+          t.Object({
+            date: t.String(),
+            orderCount: t.Integer(),
+            revenue: t.Number(),
+          })
+        ),
       }),
       403: ErrorSchema,
       422: ErrorSchema,
@@ -226,33 +261,37 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   // ── GET /admin/orders/:orderId/timeline ──────────────────────────────────
   .get("/orders/:orderId/timeline", adminOrderTimelineHandler, {
     params: t.Object({
-      orderId: t.String({ description: "Order ID (e.g. ORD-20240513-A3F9B2C1)" }),
+      orderId: t.String({
+        description: "Order ID (e.g. ORD-20240513-A3F9B2C1)",
+      }),
     }),
     response: {
       200: t.Object({
-        orderId:       t.String(),
-        userId:        t.String(),
+        orderId: t.String(),
+        userId: t.String(),
         currentStatus: t.String(),
-        grandTotal:    t.Number(),
-        createdAt:     t.Union([t.String(), t.Null()]),
-        isTerminal:    t.Boolean(),
+        grandTotal: t.Number(),
+        createdAt: t.Union([t.String(), t.Null()]),
+        isTerminal: t.Boolean(),
         summary: t.Object({
-          eventCount:         t.Integer(),
-          totalDurationMs:    t.Number(),
+          eventCount: t.Integer(),
+          totalDurationMs: t.Number(),
           totalDurationHuman: t.String(),
-          openedAt:           t.Union([t.String(), t.Null()]),
-          closedAt:           t.Union([t.String(), t.Null()]),
+          openedAt: t.Union([t.String(), t.Null()]),
+          closedAt: t.Union([t.String(), t.Null()]),
         }),
-        timeline: t.Array(t.Object({
-          index:          t.Integer(),
-          status:         t.String(),
-          note:           t.Union([t.String(), t.Null()]),
-          changedBy:      t.String(),
-          timestamp:      t.String(),
-          durationSince:  t.Union([t.Number(), t.Null()]),
-          durationHuman:  t.Union([t.String(), t.Null()]),
-          isCurrentState: t.Boolean(),
-        })),
+        timeline: t.Array(
+          t.Object({
+            index: t.Integer(),
+            status: t.String(),
+            note: t.Union([t.String(), t.Null()]),
+            changedBy: t.String(),
+            timestamp: t.String(),
+            durationSince: t.Union([t.Number(), t.Null()]),
+            durationHuman: t.Union([t.String(), t.Null()]),
+            isCurrentState: t.Boolean(),
+          })
+        ),
       }),
       403: ErrorSchema,
       404: ErrorSchema,
@@ -273,21 +312,24 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   // ── POST /admin/orders/:orderId/note ─────────────────────────────────────
   .post("/orders/:orderId/note", adminOrderNoteHandler, {
     params: t.Object({
-      orderId: t.String({ description: "Order ID (e.g. ORD-20240513-A3F9B2C1)" }),
+      orderId: t.String({
+        description: "Order ID (e.g. ORD-20240513-A3F9B2C1)",
+      }),
     }),
     body: t.Object({
       note: t.String({
         minLength: 1,
         maxLength: 1000,
-        description: "Internal note text visible only to admins (max 1000 chars)",
+        description:
+          "Internal note text visible only to admins (max 1000 chars)",
       }),
     }),
     response: {
       201: t.Object({
         orderId: t.String(),
         entry: t.Object({
-          status:    t.String(),
-          note:      t.String(),
+          status: t.String(),
+          note: t.String(),
           changedBy: t.String(),
           timestamp: t.String(),
         }),
@@ -329,22 +371,27 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   })
 
   // ── GET /admin/reconciliation/status ──────────────────────────────────────
-  .get("/reconciliation/status", async () => {
-    const { redis } = await import("@/lib/redis")
-    const lockHolder = await redis.get("reconciliation:sweep:lock")
-    return {
-      sweepInProgress: lockHolder !== null,
-      lockedBy:        lockHolder ?? null,
+  .get(
+    "/reconciliation/status",
+    async () => {
+      const { redis } = await import("@/lib/redis")
+      const lockHolder = await redis.get("reconciliation:sweep:lock")
+      return {
+        sweepInProgress: lockHolder !== null,
+        lockedBy: lockHolder ?? null,
+      }
+    },
+    {
+      response: {
+        200: t.Object({
+          sweepInProgress: t.Boolean(),
+          lockedBy: t.Union([t.String(), t.Null()]),
+        }),
+      },
+      detail: {
+        summary: "Reconciliation sweep status",
+        description:
+          "Returns whether a sweep is currently in progress and who triggered it.",
+      },
     }
-  }, {
-    response: {
-      200: t.Object({
-        sweepInProgress: t.Boolean(),
-        lockedBy:        t.Union([t.String(), t.Null()]),
-      }),
-    },
-    detail: {
-      summary:     "Reconciliation sweep status",
-      description: "Returns whether a sweep is currently in progress and who triggered it.",
-    },
-  })
+  )

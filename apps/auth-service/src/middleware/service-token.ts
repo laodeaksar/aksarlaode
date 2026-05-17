@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto"
+
 import { env } from "@repo/env/auth"
 
 /**
@@ -20,14 +21,13 @@ export const serviceTokenMiddleware = ({
   set,
 }: {
   headers: Record<string, string | undefined>
-  set:     { status?: number; headers: Record<string, string> }
+  set: { status?: number; headers: Record<string, string> }
 }) => {
   const provided = Buffer.from(headers["x-service-token"] ?? "", "utf8")
-  const expected = Buffer.from(env.INTERNAL_SERVICE_TOKEN,       "utf8")
+  const expected = Buffer.from(env.INTERNAL_SERVICE_TOKEN, "utf8")
 
   const valid =
-    provided.length === expected.length &&
-    timingSafeEqual(provided, expected)
+    provided.length === expected.length && timingSafeEqual(provided, expected)
 
   if (!valid) {
     set.status = 403

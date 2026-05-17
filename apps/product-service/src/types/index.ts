@@ -7,7 +7,7 @@ export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
  *   async ({ body, set, userRole }: Context & DerivedContext) => { ... }
  */
 export type DerivedContext = {
-  userId:    string | null
-  userRole:  UserRole | null
+  userId: string | null
+  userRole: UserRole | null
   requestId: string | null
 }

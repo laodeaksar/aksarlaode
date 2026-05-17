@@ -1,24 +1,33 @@
-import { Effect }               from "effect"
-import { hashPassword }         from "@/lib/password"
-import { hashToken }            from "@/lib/token-hash"
-import { userRepository }       from "@/repository/user.repository"
+import { consumeResetToken } from "@/repository/auth.repository"
 import { resetTokenRepository } from "@/repository/reset-token.repository"
-import { consumeResetToken }    from "@/repository/auth.repository"
-import { writeAuditLog }        from "@/lib/audit-log"
+import { userRepository } from "@/repository/user.repository"
+import { Effect } from "effect"
+
+import {
+  AuthError,
+  ConflictError,
+  GoneError,
+  NotFoundError,
+  toErrorResponse,
+  ValidationError,
+} from "@repo/common/errors"
+import { message } from "@repo/common/response"
+
+import { writeAuditLog } from "@/lib/audit-log"
+import { hashPassword } from "@/lib/password"
 import { checkPasswordStrength } from "@/lib/password-strength"
-import { AuthError, GoneError, NotFoundError, ConflictError, ValidationError, toErrorResponse } from "@repo/common/errors"
-import { message }              from "@repo/common/response"
+import { hashToken } from "@/lib/token-hash"
 
 export const resetPasswordHandler = async ({
   body,
   set,
 }: {
   body: { token: string; newPassword: string }
-  set:  any
+  set: any
 }) => {
   const program = Effect.gen(function* () {
     const tokenHash = yield* Effect.tryPromise({
-      try:   () => hashToken(body.token),
+      try: () => hashToken(body.token),
       catch: () => new AuthError("Invalid reset token"),
     })
 
@@ -30,7 +39,9 @@ export const resetPasswordHandler = async ({
     if (record.expiresAt < new Date()) {
       // Best-effort cleanup of the expired token. orElse: a DB hiccup here
       // must not mask the real error returned to the client.
-      yield* resetTokenRepository.deleteByToken(tokenHash).pipe(Effect.orElse(() => Effect.void))
+      yield* resetTokenRepository
+        .deleteByToken(tokenHash)
+        .pipe(Effect.orElse(() => Effect.void))
       return yield* Effect.fail(new GoneError("Reset token has expired"))
     }
 
@@ -39,7 +50,8 @@ export const resetPasswordHandler = async ({
 
     // ── Common-password denylist ─────────────────────────────────────────────
     const weakMsg = checkPasswordStrength(body.newPassword)
-    if (weakMsg) return yield* Effect.fail(new ValidationError(undefined, weakMsg))
+    if (weakMsg)
+      return yield* Effect.fail(new ValidationError(undefined, weakMsg))
 
     const newHash = yield* hashPassword(body.newPassword)
 
@@ -70,13 +82,15 @@ export const resetPasswordHandler = async ({
   }
 
   writeAuditLog({
-    event:    "PASSWORD_RESET",
-    actorId:  result.value.userId,
+    event: "PASSWORD_RESET",
+    actorId: result.value.userId,
     targetId: result.value.userId,
   })
 
   set.headers["Set-Cookie"] =
     `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
 
-  return message("Password reset successful. Please log in with your new password.")
+  return message(
+    "Password reset successful. Please log in with your new password."
+  )
 }

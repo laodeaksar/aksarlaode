@@ -1,56 +1,69 @@
-import { Effect, Data }        from "effect"
-import { db, schema }          from "@repo/database"
-import { eq, and, sql, inArray, asc } from "drizzle-orm"
+import { and, asc, eq, inArray, sql } from "drizzle-orm"
+import { Data, Effect } from "effect"
+
+import { db, schema } from "@repo/database"
 
 export type NewSessionData = {
-  id:        string
-  userId:    string
-  token:     string
+  id: string
+  userId: string
+  token: string
   expiresAt: Date
 }
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
 const create = (data: {
-  id:        string
-  userId:    string
-  token:     string
+  id: string
+  userId: string
+  token: string
   expiresAt: Date
 }) =>
   Effect.tryPromise({
-    try:   () => db.insert(schema.sessions).values(data).returning().then(r => r[0]!),
+    try: () =>
+      db
+        .insert(schema.sessions)
+        .values(data)
+        .returning()
+        .then((r) => r[0]!),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const findByToken = (token: string) =>
   Effect.tryPromise({
-    try:   () => db.select().from(schema.sessions)
-                   .where(eq(schema.sessions.token, token)).limit(1)
-                   .then(r => r[0] ?? null),
+    try: () =>
+      db
+        .select()
+        .from(schema.sessions)
+        .where(eq(schema.sessions.token, token))
+        .limit(1)
+        .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const deleteByToken = (token: string) =>
   Effect.tryPromise({
-    try:   () => db.delete(schema.sessions).where(eq(schema.sessions.token, token)),
+    try: () =>
+      db.delete(schema.sessions).where(eq(schema.sessions.token, token)),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const deleteAllByUserId = (userId: string) =>
   Effect.tryPromise({
-    try:   () => db.delete(schema.sessions).where(eq(schema.sessions.userId, userId)),
+    try: () =>
+      db.delete(schema.sessions).where(eq(schema.sessions.userId, userId)),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const findPageByUserId = (
   userId: string,
-  opts: { limit: number; offset: number },
+  opts: { limit: number; offset: number }
 ) =>
   Effect.tryPromise({
     try: async () => {
       const [items, [countRow]] = await Promise.all([
-        db.select({
-            id:        schema.sessions.id,
+        db
+          .select({
+            id: schema.sessions.id,
             createdAt: schema.sessions.createdAt,
             expiresAt: schema.sessions.expiresAt,
           })
@@ -59,7 +72,8 @@ const findPageByUserId = (
           .orderBy(schema.sessions.createdAt)
           .limit(opts.limit)
           .offset(opts.offset),
-        db.select({ count: sql<number>`count(*)::int` })
+        db
+          .select({ count: sql<number>`count(*)::int` })
           .from(schema.sessions)
           .where(eq(schema.sessions.userId, userId)),
       ])
@@ -70,17 +84,26 @@ const findPageByUserId = (
 
 const findByIdAndUserId = (id: string, userId: string) =>
   Effect.tryPromise({
-    try:   () => db.select().from(schema.sessions)
-                   .where(and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId)))
-                   .limit(1)
-                   .then(r => r[0] ?? null),
+    try: () =>
+      db
+        .select()
+        .from(schema.sessions)
+        .where(
+          and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId))
+        )
+        .limit(1)
+        .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
   })
 
 const deleteByIdAndUserId = (id: string, userId: string) =>
   Effect.tryPromise({
-    try:   () => db.delete(schema.sessions)
-                   .where(and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId))),
+    try: () =>
+      db
+        .delete(schema.sessions)
+        .where(
+          and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId))
+        ),
     catch: (e) => new DbError({ cause: e }),
   })
 
@@ -91,10 +114,11 @@ const deleteByIdAndUserId = (id: string, userId: string) =>
 const countByUserId = (userId: string) =>
   Effect.tryPromise({
     try: () =>
-      db.select({ count: sql<number>`count(*)::int` })
+      db
+        .select({ count: sql<number>`count(*)::int` })
         .from(schema.sessions)
         .where(eq(schema.sessions.userId, userId))
-        .then(r => r[0]?.count ?? 0),
+        .then((r) => r[0]?.count ?? 0),
     catch: (e) => new DbError({ cause: e }),
   })
 
@@ -122,7 +146,7 @@ const deleteOldestByUserId = (userId: string, count: number) =>
 
       if (oldest.length === 0) return
 
-      const ids = oldest.map(r => r.id)
+      const ids = oldest.map((r) => r.id)
       await db.delete(schema.sessions).where(inArray(schema.sessions.id, ids))
     },
     catch: (e) => new DbError({ cause: e }),

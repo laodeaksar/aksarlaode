@@ -11,21 +11,22 @@
 // The response is 202 Accepted; the actual DB insert is fire-and-forget inside
 // writeAuditLog() so the admin app never blocks on audit persistence.
 
-import type { Context } from "elysia"
 import type { DerivedContext } from "@/types"
-import { writeAuditLog }        from "@/lib/admin-audit"
+import type { Context } from "elysia"
+
+import { writeAuditLog } from "@/lib/admin-audit"
 
 // ── Body type (mirrors NewAdminAuditLog without id / createdAt) ───────────
 
 export type WriteAuditLogBody = {
-  actorId:    string
-  actorRole:  string
-  action:     string
-  resource:   string
+  actorId: string
+  actorRole: string
+  action: string
+  resource: string
   resourceId: string
-  oldValue?:  Record<string, unknown> | null
-  newValue?:  Record<string, unknown> | null
-  metadata?:  Record<string, unknown> | null
+  oldValue?: Record<string, unknown> | null
+  newValue?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
 }
 
 const ALLOWED_ROLES = new Set(["ADMIN", "OWNER", "FINANCE"])
@@ -36,18 +37,21 @@ export const writeAuditLogHandler = async ({
 }: Context & DerivedContext & { body: WriteAuditLogBody }) => {
   if (!ALLOWED_ROLES.has(body.actorRole)) {
     set.status = 403
-    return { error: "Forbidden: actorRole must be ADMIN, OWNER, or FINANCE", code: "FORBIDDEN" }
+    return {
+      error: "Forbidden: actorRole must be ADMIN, OWNER, or FINANCE",
+      code: "FORBIDDEN",
+    }
   }
 
   writeAuditLog({
-    actorId:    body.actorId,
-    actorRole:  body.actorRole,
-    action:     body.action,
-    resource:   body.resource,
+    actorId: body.actorId,
+    actorRole: body.actorRole,
+    action: body.action,
+    resource: body.resource,
     resourceId: body.resourceId,
-    oldValue:   body.oldValue   ?? undefined,
-    newValue:   body.newValue   ?? undefined,
-    metadata:   body.metadata   ?? undefined,
+    oldValue: body.oldValue ?? undefined,
+    newValue: body.newValue ?? undefined,
+    metadata: body.metadata ?? undefined,
   })
 
   set.status = 202

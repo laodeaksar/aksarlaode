@@ -1,13 +1,14 @@
 import Redis from "ioredis"
+
 import { env } from "@repo/env/auth"
 
 export const redis = new Redis({
-  host:                 env.REDIS_HOST,
-  port:                 env.REDIS_PORT,
-  password:             env.REDIS_PASSWORD || undefined,
-  lazyConnect:          true,
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD || undefined,
+  lazyConnect: true,
   maxRetriesPerRequest: 3,
-  enableReadyCheck:     false,
+  enableReadyCheck: false,
 })
 
 redis.on("error", (err) =>

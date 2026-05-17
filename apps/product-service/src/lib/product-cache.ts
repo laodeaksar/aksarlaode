@@ -8,7 +8,7 @@
 // invalidation is per-process.  This is acceptable for a small
 // catalogue; for large-scale use, replace with a Redis SETEX + DEL.
 
-const CACHE_TTL_MS = 60_000  // 60 seconds
+const CACHE_TTL_MS = 60_000 // 60 seconds
 
 type CacheEntry<T> = { value: T; expiresAt: number }
 
@@ -44,6 +44,6 @@ class ProductCache {
 export const productCache = new ProductCache()
 
 export const cacheKey = {
-  byId:   (id:   string) => `product:id:${id}`,
+  byId: (id: string) => `product:id:${id}`,
   bySlug: (slug: string) => `product:slug:${slug}`,
 }

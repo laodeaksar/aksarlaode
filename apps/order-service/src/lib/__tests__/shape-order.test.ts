@@ -1,30 +1,31 @@
-import { describe, it, expect } from "bun:test"
+import { describe, expect, it } from "bun:test"
+
 import { shapeOrder } from "../shape-order"
 
 // ── Minimal valid raw Mongoose doc fixture ─────────────────────────────────
 
-const now   = new Date("2024-05-13T10:00:00.000Z")
-const paid  = new Date("2024-05-13T10:05:00.000Z")
+const now = new Date("2024-05-13T10:00:00.000Z")
+const paid = new Date("2024-05-13T10:05:00.000Z")
 
 const RAW_DOC = {
   // Mongoose internals — must NEVER appear in output
-  _id:  "664f1234abcd1234abcd1234",
-  __v:  3,
+  _id: "664f1234abcd1234abcd1234",
+  __v: 3,
 
   // Business fields
-  orderId:  "ORD-20240513-A3F9B2C1",
-  userId:   "user-uuid-001",
-  status:   "PAID",
+  orderId: "ORD-20240513-A3F9B2C1",
+  userId: "user-uuid-001",
+  status: "PAID",
 
   items: [
     {
-      productId:   "prod-uuid-001",
+      productId: "prod-uuid-001",
       productName: "Sepatu Running",
-      sku:         "SKU-RUN-001",
-      imageUrl:    "https://cdn.example.com/shoes.jpg",
-      price:       350_000,
-      quantity:    2,
-      subtotal:    700_000,
+      sku: "SKU-RUN-001",
+      imageUrl: "https://cdn.example.com/shoes.jpg",
+      price: 350_000,
+      quantity: 2,
+      subtotal: 700_000,
       // extra Mongoose internal on sub-doc
       _id: "664f0001abcd0001abcd0001",
     },
@@ -32,50 +33,50 @@ const RAW_DOC = {
 
   shippingAddress: {
     recipientName: "Budi Santoso",
-    phone:         "08123456789",
-    street:        "Jl. Merdeka No. 1",
-    city:          "Jakarta",
-    province:      "DKI Jakarta",
-    postalCode:    "10110",
-    country:       "ID",
-    _id:           "664f0002abcd0002abcd0002",
+    phone: "08123456789",
+    street: "Jl. Merdeka No. 1",
+    city: "Jakarta",
+    province: "DKI Jakarta",
+    postalCode: "10110",
+    country: "ID",
+    _id: "664f0002abcd0002abcd0002",
   },
 
-  totalAmount:    700_000,
-  shippingFee:    15_000,
+  totalAmount: 700_000,
+  shippingFee: 15_000,
   discountAmount: 0,
-  grandTotal:     715_000,
-  notes:          "Tolong dibungkus rapi",
+  grandTotal: 715_000,
+  notes: "Tolong dibungkus rapi",
 
   statusHistory: [
     {
-      status:    "PENDING_PAYMENT",
-      note:      null,
+      status: "PENDING_PAYMENT",
+      note: null,
       changedBy: "system",
       timestamp: now,
-      _id:       "664f0003abcd0003abcd0003",
+      _id: "664f0003abcd0003abcd0003",
     },
     // ── Admin-only note — must be stripped from customer view ─────────────
     {
-      status:    "__NOTE__",
-      note:      "Dicurigai fraud, sedang diinvestigasi",
+      status: "__NOTE__",
+      note: "Dicurigai fraud, sedang diinvestigasi",
       changedBy: "admin-007",
       timestamp: now,
-      _id:       "664f0004abcd0004abcd0004",
+      _id: "664f0004abcd0004abcd0004",
     },
     {
-      status:    "PAID",
-      note:      null,
+      status: "PAID",
+      note: null,
       changedBy: "service:midtrans",
       timestamp: paid,
-      _id:       "664f0005abcd0005abcd0005",
+      _id: "664f0005abcd0005abcd0005",
     },
   ],
 
-  createdAt:   now,
-  updatedAt:   paid,
-  paidAt:      paid,
-  shippedAt:   null,
+  createdAt: now,
+  updatedAt: paid,
+  paidAt: paid,
+  shippedAt: null,
   deliveredAt: null,
   cancelledAt: null,
 
@@ -128,13 +129,13 @@ describe("shapeOrder — Mongoose internals", () => {
 describe("shapeOrder — __NOTE__ sentinel filtering", () => {
   it("strips __NOTE__ entries from statusHistory", () => {
     const out = shapeOrder(RAW_DOC)
-    const hasNote = out.statusHistory.some(e => e.status === "__NOTE__")
+    const hasNote = out.statusHistory.some((e) => e.status === "__NOTE__")
     expect(hasNote).toBe(false)
   })
 
   it("preserves legitimate status entries", () => {
     const out = shapeOrder(RAW_DOC)
-    const statuses = out.statusHistory.map(e => e.status)
+    const statuses = out.statusHistory.map((e) => e.status)
     expect(statuses).toContain("PENDING_PAYMENT")
     expect(statuses).toContain("PAID")
   })
@@ -207,10 +208,23 @@ describe("shapeOrder — allowlist field coverage", () => {
     const out = shapeOrder(RAW_DOC)
     const keys = Object.keys(out)
     const expected = [
-      "orderId", "userId", "status", "items", "shippingAddress",
-      "totalAmount", "shippingFee", "discountAmount", "grandTotal",
-      "notes", "statusHistory",
-      "createdAt", "updatedAt", "paidAt", "shippedAt", "deliveredAt", "cancelledAt",
+      "orderId",
+      "userId",
+      "status",
+      "items",
+      "shippingAddress",
+      "totalAmount",
+      "shippingFee",
+      "discountAmount",
+      "grandTotal",
+      "notes",
+      "statusHistory",
+      "createdAt",
+      "updatedAt",
+      "paidAt",
+      "shippedAt",
+      "deliveredAt",
+      "cancelledAt",
     ]
     for (const key of expected) {
       expect(keys).toContain(key)

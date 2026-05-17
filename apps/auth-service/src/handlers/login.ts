@@ -1,13 +1,15 @@
-import { Effect }                                    from "effect"
-import { verifyPassword, hashPassword, needsRehash } from "@/lib/password"
-import { issueTokenPair }                            from "@/lib/token"
-import { hashToken }                                 from "@/lib/token-hash"
-import { userRepository }                            from "@/repository/user.repository"
-import { sessionRepository }                         from "@/repository/session.repository"
-import { writeAuditLog }                             from "@/lib/audit-log"
-import { recordEmailAttempt }                        from "@/lib/account-lockout"
-import { maskEmail }                                 from "@/lib/pii"
-import { AuthError, toErrorResponse }                from "@repo/common/errors"
+import { sessionRepository } from "@/repository/session.repository"
+import { userRepository } from "@/repository/user.repository"
+import { Effect } from "effect"
+
+import { AuthError, toErrorResponse } from "@repo/common/errors"
+
+import { recordEmailAttempt } from "@/lib/account-lockout"
+import { writeAuditLog } from "@/lib/audit-log"
+import { hashPassword, needsRehash, verifyPassword } from "@/lib/password"
+import { maskEmail } from "@/lib/pii"
+import { issueTokenPair } from "@/lib/token"
+import { hashToken } from "@/lib/token-hash"
 
 /**
  * Maximum number of concurrent sessions allowed per user.
@@ -40,11 +42,11 @@ export const loginHandler = async ({
   set,
   request,
 }: {
-  body:    { email: string; password: string }
-  set:     any
+  body: { email: string; password: string }
+  set: any
   request: Request
 }) => {
-  const ip        = extractClientIp(request)
+  const ip = extractClientIp(request)
   const userAgent = request.headers.get("user-agent") ?? "unknown"
   // ── Per-email account lockout ─────────────────────────────────────────────
   // Check and record this attempt BEFORE any DB query. Both successful and
@@ -54,13 +56,16 @@ export const loginHandler = async ({
   //
   // This is orthogonal to the per-IP rate limiter: an attacker using 1,000
   // IPs is still bounded to 20 attempts per hour against this specific email.
-  const emailHash    = await hashToken(body.email.toLowerCase().trim())
+  const emailHash = await hashToken(body.email.toLowerCase().trim())
   const lockoutCheck = await recordEmailAttempt(emailHash)
 
   if (lockoutCheck.locked) {
     set.status = 429
     set.headers["Retry-After"] = String(lockoutCheck.retryAfterSec)
-    return { error: "Too many login attempts. Please try again later.", code: "ACCOUNT_LOCKED" }
+    return {
+      error: "Too many login attempts. Please try again later.",
+      code: "ACCOUNT_LOCKED",
+    }
   }
 
   const program = Effect.gen(function* () {
@@ -77,7 +82,9 @@ export const loginHandler = async ({
     // never blocks login.
     if (needsRehash(user.passwordHash)) {
       yield* hashPassword(body.password).pipe(
-        Effect.flatMap(newHash => userRepository.updatePasswordHash(user.id, newHash)),
+        Effect.flatMap((newHash) =>
+          userRepository.updatePasswordHash(user.id, newHash)
+        ),
         Effect.orElse(() => Effect.void)
       )
     }
@@ -86,38 +93,56 @@ export const loginHandler = async ({
     // Count active sessions. If at or above the limit, evict the oldest
     // session(s) to make room. orElse means a DB hiccup here never blocks
     // login — worst case the user briefly exceeds the cap by 1.
-    const sessionCount = yield* sessionRepository.countByUserId(user.id).pipe(
-      Effect.orElse(() => Effect.succeed(0))
-    )
+    const sessionCount = yield* sessionRepository
+      .countByUserId(user.id)
+      .pipe(Effect.orElse(() => Effect.succeed(0)))
 
     if (sessionCount >= MAX_SESSIONS_PER_USER) {
-      const excess = sessionCount - MAX_SESSIONS_PER_USER + 1   // +1 for the session we're about to create
-      yield* sessionRepository.deleteOldestByUserId(user.id, excess).pipe(
-        Effect.orElse(() => Effect.void)
-      )
+      const excess = sessionCount - MAX_SESSIONS_PER_USER + 1 // +1 for the session we're about to create
+      yield* sessionRepository
+        .deleteOldestByUserId(user.id, excess)
+        .pipe(Effect.orElse(() => Effect.void))
 
-      console.info(JSON.stringify({
-        event:    "session_cap_eviction",
-        userId:   user.id,
-        evicted:  excess,
-        cap:      MAX_SESSIONS_PER_USER,
-      }))
+      console.info(
+        JSON.stringify({
+          event: "session_cap_eviction",
+          userId: user.id,
+          evicted: excess,
+          cap: MAX_SESSIONS_PER_USER,
+        })
+      )
     }
 
     // ── 4. Issue tokens and create new session ───────────────────────────────
     const sessionId = crypto.randomUUID()
-    const tokens    = yield* issueTokenPair(user.id, user.role, sessionId, user.email)
+    const tokens = yield* issueTokenPair(
+      user.id,
+      user.role,
+      sessionId,
+      user.email
+    )
 
     const refreshTokenHash = yield* Effect.tryPromise({
-      try:   () => hashToken(tokens.refreshToken),
+      try: () => hashToken(tokens.refreshToken),
       catch: () => new AuthError("Internal error"),
     })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     yield* sessionRepository.create({
-      id: sessionId, userId: user.id, token: refreshTokenHash, expiresAt,
+      id: sessionId,
+      userId: user.id,
+      token: refreshTokenHash,
+      expiresAt,
     })
 
-    return { user: { id: user.id, email: user.email, name: user.name, role: user.role }, tokens }
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      tokens,
+    }
   })
 
   const result = await Effect.runPromiseExit(program)
@@ -127,10 +152,10 @@ export const loginHandler = async ({
     // failed attempts across IPs (credential stuffing detection).  Email is
     // masked to protect PII; actorId "anonymous" signals unverified identity.
     writeAuditLog({
-      event:    "LOGIN_FAILED",
-      actorId:  "anonymous",
+      event: "LOGIN_FAILED",
+      actorId: "anonymous",
       targetId: "anonymous",
-      meta:     {
+      meta: {
         emailMask: maskEmail(body.email),
         ip,
         userAgent,
@@ -148,16 +173,16 @@ export const loginHandler = async ({
   // session can be traced across both success and failure events.  Email is
   // still omitted — actorId (userId) is sufficient for correlation.
   writeAuditLog({
-    event:    "LOGIN_SUCCESS",
-    actorId:  user.id,
+    event: "LOGIN_SUCCESS",
+    actorId: user.id,
     targetId: user.id,
-    meta:     { role: user.role, ip, userAgent },
+    meta: { role: user.role, ip, userAgent },
   })
 
   if (user.role === "OWNER") {
     writeAuditLog({
-      event:    "OWNER_LOGIN",
-      actorId:  user.id,
+      event: "OWNER_LOGIN",
+      actorId: user.id,
       targetId: user.id,
     })
   }

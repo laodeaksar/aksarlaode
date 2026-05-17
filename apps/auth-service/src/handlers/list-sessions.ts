@@ -1,7 +1,8 @@
-import { Effect }            from "effect"
 import { sessionRepository } from "@/repository/session.repository"
+import { Effect } from "effect"
+
 import { AuthError, toErrorResponse } from "@repo/common/errors"
-import { paginated }         from "@repo/common/response"
+import { paginated } from "@repo/common/response"
 
 export const listSessionsHandler = async ({
   headers,
@@ -9,8 +10,8 @@ export const listSessionsHandler = async ({
   set,
 }: {
   headers: Record<string, string | undefined>
-  query:   { page?: number; limit?: number }
-  set:     any
+  query: { page?: number; limit?: number }
+  set: any
 }) => {
   const userId = headers["x-user-id"]
 
@@ -20,8 +21,8 @@ export const listSessionsHandler = async ({
     return body
   }
 
-  const page   = Math.max(1, query.page  ?? 1)
-  const limit  = Math.min(50, Math.max(1, query.limit ?? 20))
+  const page = Math.max(1, query.page ?? 1)
+  const limit = Math.min(50, Math.max(1, query.limit ?? 20))
   const offset = (page - 1) * limit
 
   const result = await Effect.runPromiseExit(

@@ -1,13 +1,7 @@
-import { env }   from "@repo/env/admin"
-import type {
-  Product, NewProduct,
-  Payment,
-  User
-} from "@repo/common"
+import type { NewProduct, Payment, Product, User } from "@repo/common"
+import { env } from "@repo/env/admin"
 
-type ApiResponse<T> =
-  | { data: T;    error: null  }
-  | { data: null; error: string }
+type ApiResponse<T> = { data: T; error: null } | { data: null; error: string }
 
 // FIX ADM-02: token refresh state — one in-flight refresh at a time.
 // If multiple requests 401 simultaneously, only one refresh call is made;
@@ -20,7 +14,7 @@ async function silentRefresh(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const res = await fetch(`${env.PUBLIC_API_URL}/auth/refresh`, {
-        method:      "POST",
+        method: "POST",
         credentials: "include",
       })
       return res.ok
@@ -35,9 +29,9 @@ async function silentRefresh(): Promise<boolean> {
 }
 
 async function request<T>(
-  path:    string,
+  path: string,
   options: RequestInit = {},
-  isRetry  = false,
+  isRetry = false
 ): Promise<ApiResponse<T>> {
   try {
     const res = await fetch(`${env.PUBLIC_API_URL}${path}`, {
@@ -56,8 +50,10 @@ async function request<T>(
       let errorCode = ""
       try {
         const body = await res.clone().json()
-        errorCode  = body?.code ?? ""
-      } catch { /* ignore parse errors */ }
+        errorCode = body?.code ?? ""
+      } catch {
+        /* ignore parse errors */
+      }
 
       if (errorCode === "TOKEN_EXPIRED" || errorCode === "UNAUTHORIZED") {
         const refreshed = await silentRefresh()
@@ -78,9 +74,8 @@ async function request<T>(
       return { data: null, error: err.error ?? "Request failed" }
     }
 
-    const data = await res.json() as T
+    const data = (await res.json()) as T
     return { data, error: null }
-
   } catch (e) {
     return { data: null, error: String(e) }
   }
@@ -88,26 +83,44 @@ async function request<T>(
 
 // ── Products ──────────────────────────────────────────────
 export const productsApi = {
-  list:   (params?: string)       => request<{ items: Product[]; total: number }>(`/products?${params ?? ""}`),
-  getOne: (id: string)            => request<Product>(`/products/${id}`),
-  create: (body: NewProduct)      => request<Product>("/products", { method: "POST", body: JSON.stringify(body) }),
+  list: (params?: string) =>
+    request<{ items: Product[]; total: number }>(`/products?${params ?? ""}`),
+  getOne: (id: string) => request<Product>(`/products/${id}`),
+  create: (body: NewProduct) =>
+    request<Product>("/products", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   update: (id: string, body: Partial<NewProduct>) =>
-    request<Product>(`/products/${id}`, { method: "PUT", body: JSON.stringify(body) }),
-  delete: (id: string)            => request<void>(`/products/${id}`, { method: "DELETE" }),
+    request<Product>(`/products/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/products/${id}`, { method: "DELETE" }),
 }
 
 // ── Orders ────────────────────────────────────────────────
 export const ordersApi = {
-  list:         (params?: string)                    => request<{ items: OrderSummary[]; total: number }>(`/orders?${params ?? ""}`),
-  getOne:       (id: string)                         => request<OrderDetail>(`/orders/${id}`),
+  list: (params?: string) =>
+    request<{ items: OrderSummary[]; total: number }>(
+      `/orders?${params ?? ""}`
+    ),
+  getOne: (id: string) => request<OrderDetail>(`/orders/${id}`),
   updateStatus: (id: string, status: string, note?: string) =>
-    request<void>(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, note }) }),
+    request<void>(`/orders/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, note }),
+    }),
 }
 
 // ── Customers ─────────────────────────────────────────────
 export const customersApi = {
-  list:   (params?: string) => request<{ items: User[]; total: number }>(`/admin/customers?${params ?? ""}`),
-  getOne: (id: string)      => request<User>(`/admin/customers/${id}`),
+  list: (params?: string) =>
+    request<{ items: User[]; total: number }>(
+      `/admin/customers?${params ?? ""}`
+    ),
+  getOne: (id: string) => request<User>(`/admin/customers/${id}`),
 }
 
 // ── Dashboard ─────────────────────────────────────────────
@@ -120,46 +133,55 @@ export const dashboardApi = {
 // endpoint proxied through the gateway at /products/audit-logs.
 export const auditLogsApi = {
   list: (page = 1) =>
-    request<{ items: AuditLogEntry[]; total: number; page: number; limit: number }>(
-      `/products/audit-logs?page=${page}`
-    ),
+    request<{
+      items: AuditLogEntry[]
+      total: number
+      page: number
+      limit: number
+    }>(`/products/audit-logs?page=${page}`),
 }
 
 // ── Types ─────────────────────────────────────────────────
 export type AuditLogEntry = {
-  id:         string
-  actorId:    string
-  actorRole:  string
-  action:     string
-  resource:   string
+  id: string
+  actorId: string
+  actorRole: string
+  action: string
+  resource: string
   resourceId: string
-  oldValue:   Record<string, unknown> | null
-  newValue:   Record<string, unknown> | null
-  metadata:   Record<string, unknown> | null
-  createdAt:  string
+  oldValue: Record<string, unknown> | null
+  newValue: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
 }
 
 export type DashboardStats = {
-  totalRevenue:   number
-  totalOrders:    number
+  totalRevenue: number
+  totalOrders: number
   totalCustomers: number
-  totalProducts:  number
-  revenueToday:   number
-  ordersToday:    number
-  recentOrders:   OrderSummary[]
-  topProducts:    Array<{ id: string; name: string; salesCount: number }>
+  totalProducts: number
+  revenueToday: number
+  ordersToday: number
+  recentOrders: OrderSummary[]
+  topProducts: Array<{ id: string; name: string; salesCount: number }>
 }
 
 export type OrderSummary = {
-  orderId:     string
-  userId:      string
-  status:      string
-  grandTotal:  number
-  createdAt:   string
+  orderId: string
+  userId: string
+  status: string
+  grandTotal: number
+  createdAt: string
 }
 
 export type OrderDetail = OrderSummary & {
-  items:           Array<{ productId: string; productName: string; quantity: number; price: number; subtotal: number }>
+  items: Array<{
+    productId: string
+    productName: string
+    quantity: number
+    price: number
+    subtotal: number
+  }>
   shippingAddress: Record<string, string>
-  statusHistory:   Array<{ status: string; note?: string; timestamp: string }>
+  statusHistory: Array<{ status: string; note?: string; timestamp: string }>
 }

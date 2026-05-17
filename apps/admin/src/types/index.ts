@@ -1,8 +1,8 @@
 export type UserRole = "CUSTOMER" | "ADMIN"
 
 export type Session = {
-  id:    string
+  id: string
   email: string
-  name:  string
-  role:  UserRole
+  name: string
+  role: UserRole
 }

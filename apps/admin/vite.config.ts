@@ -1,8 +1,8 @@
-import { defineConfig }   from "vite"
+import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
-import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
+import { defineConfig } from "vite"
 
 // ── TanStack Start Vite config ─────────────────────────────────────────────
 // `tanstackStart` replaces `@vitejs/plugin-react` for SSR-aware bundling.
@@ -17,10 +17,10 @@ export default defineConfig({
     tanstackStart({
       // Route generation config
       tsr: {
-        routesDirectory:    "./src/routes",
+        routesDirectory: "./src/routes",
         generatedRouteTree: "./src/routeTree.gen.ts",
-        quoteStyle:         "double",
-        semicolons:         false,
+        quoteStyle: "double",
+        semicolons: false,
       },
       // SSR entry point
       server: {
@@ -33,8 +33,8 @@ export default defineConfig({
     }),
   ],
   server: {
-    host:         "0.0.0.0",
-    port:         4322,
+    host: "0.0.0.0",
+    port: 4322,
     allowedHosts: true,
   },
   resolve: {

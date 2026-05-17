@@ -1,23 +1,26 @@
-import { Elysia }                from "elysia"
-import { listSessionsHandler }  from "@/handlers/list-sessions"
+import { listSessionsHandler } from "@/handlers/list-sessions"
 import { revokeSessionHandler } from "@/handlers/revoke-session"
-import { isSessionDenied }      from "@/lib/session-denylist"
-import { SessionQuery }         from "@/schemas"
+import { SessionQuery } from "@/schemas"
+import { Elysia } from "elysia"
+
+import { isSessionDenied } from "@/lib/session-denylist"
 
 const sessionRoutes = new Elysia({ prefix: "/session" })
   .get("/", listSessionsHandler, {
     query: SessionQuery,
     detail: {
-      tags:        ["Sessions"],
-      summary:     "List sessions",
-      description: "Returns a paginated list of the authenticated user's active sessions, ordered by creation time descending.",
+      tags: ["Sessions"],
+      summary: "List sessions",
+      description:
+        "Returns a paginated list of the authenticated user's active sessions, ordered by creation time descending.",
     },
   })
   .delete("/:id", revokeSessionHandler, {
     detail: {
-      tags:        ["Sessions"],
-      summary:     "Revoke session",
-      description: "Invalidates a specific session by ID. Users may only revoke their own sessions.",
+      tags: ["Sessions"],
+      summary: "Revoke session",
+      description:
+        "Invalidates a specific session by ID. Users may only revoke their own sessions.",
     },
   })
 
@@ -38,19 +41,24 @@ const sessionRoutes = new Elysia({ prefix: "/session" })
    * Latency: ~1–5 ms (Redis GET from same datacenter).
    * The gateway's circuit breaker handles auth-service downtime.
    */
-  .get("/internal/:id/valid", async ({ params, set }) => {
-    const denied = await isSessionDenied(params.id)
-    if (denied) {
-      set.status = 401
-      return { valid: false, reason: "session_revoked" }
-    }
-    return { valid: true }
-  }, {
-    detail: {
-      tags:        ["Sessions"],
-      summary:     "Check session validity (internal)",
-      description: "Returns whether a sessionId is active in the denylist. Called by the API gateway to enforce immediate revocation of access tokens after logout or explicit session revocation. Requires x-service-token.",
+  .get(
+    "/internal/:id/valid",
+    async ({ params, set }) => {
+      const denied = await isSessionDenied(params.id)
+      if (denied) {
+        set.status = 401
+        return { valid: false, reason: "session_revoked" }
+      }
+      return { valid: true }
     },
-  })
+    {
+      detail: {
+        tags: ["Sessions"],
+        summary: "Check session validity (internal)",
+        description:
+          "Returns whether a sessionId is active in the denylist. Called by the API gateway to enforce immediate revocation of access tokens after logout or explicit session revocation. Requires x-service-token.",
+      },
+    }
+  )
 
 export default sessionRoutes

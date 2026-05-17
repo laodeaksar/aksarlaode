@@ -6,47 +6,47 @@ import { z } from "zod"
 // clear error rather than crashing inside the handler with a confusing TypeError.
 
 export const OrderCreatedSchema = z.object({
-  orderId:    z.string().min(1),
-  userId:     z.string().min(1),
-  userEmail:  z.string().email(),
+  orderId: z.string().min(1),
+  userId: z.string().min(1),
+  userEmail: z.string().email(),
   grandTotal: z.number().positive(),
 })
 
 export const OrderConfirmationSchema = z.object({
-  orderId:   z.string().min(1),
-  userId:    z.string().optional(),
+  orderId: z.string().min(1),
+  userId: z.string().optional(),
   userEmail: z.string().email(),
-  amount:    z.number().positive(),
+  amount: z.number().positive(),
 })
 
 export const OrderCancelledSchema = z.object({
-  orderId:   z.string().min(1),
-  userId:    z.string().optional(),
+  orderId: z.string().min(1),
+  userId: z.string().optional(),
   userEmail: z.string().email(),
-  reason:    z.string().min(1),
+  reason: z.string().min(1),
 })
 
 export const PasswordResetSchema = z.object({
-  userId:    z.string().min(1),
-  email:     z.string().email(),
+  userId: z.string().min(1),
+  email: z.string().email(),
   resetLink: z.string().url(),
 })
 
 export const ShippingUpdateSchema = z.object({
-  orderId:        z.string().min(1),
-  userId:         z.string().optional(),
-  userEmail:      z.string().email(),
+  orderId: z.string().min(1),
+  userId: z.string().optional(),
+  userEmail: z.string().email(),
   trackingNumber: z.string().min(1),
-  courierName:    z.string().min(1),
-  estimatedDate:  z.string().min(1),
+  courierName: z.string().min(1),
+  estimatedDate: z.string().min(1),
 })
 
 export const PAYLOAD_SCHEMAS = {
-  "order-created":      OrderCreatedSchema,
+  "order-created": OrderCreatedSchema,
   "order-confirmation": OrderConfirmationSchema,
-  "order-cancelled":    OrderCancelledSchema,
-  "password-reset":     PasswordResetSchema,
-  "shipping-update":    ShippingUpdateSchema,
+  "order-cancelled": OrderCancelledSchema,
+  "password-reset": PasswordResetSchema,
+  "shipping-update": ShippingUpdateSchema,
 } as const
 
 export type PayloadSchemaMap = typeof PAYLOAD_SCHEMAS

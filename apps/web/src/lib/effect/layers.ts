@@ -1,4 +1,4 @@
-import { Layer, Context } from "effect"
+import { Context, Layer } from "effect"
 
 // ── ApiConfig service ──────────────────────────────────────
 export class ApiConfig extends Context.Tag("ApiConfig")<
@@ -23,7 +23,7 @@ export class ApiConfig extends Context.Tag("ApiConfig")<
 // is never referenced in browser bundles.
 const serverBaseUrl: string =
   (import.meta.env["INTERNAL_API_URL"] as string | undefined) ??
-  (import.meta.env["PUBLIC_API_URL"]   as string | undefined) ??
+  (import.meta.env["PUBLIC_API_URL"] as string | undefined) ??
   "http://localhost:3000"
 
 export const ApiConfigLayer = Layer.succeed(ApiConfig, {

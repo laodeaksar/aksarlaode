@@ -1,12 +1,13 @@
-import { Effect }              from "effect"
+import { Effect } from "effect"
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv }          from "@/types/context"
-import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions"
-import { verifyJwt }  from "@/lib/jwt"
+
+import type { AppEnv } from "@/types/context"
 import { verifyHmac } from "@/lib/hmac"
+import { verifyJwt } from "@/lib/jwt"
+import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions"
 
 export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const path   = c.req.path
+  const path = c.req.path
   const method = c.req.method
 
   // ── 1. Public routes — pass straight through ──────────────────────────────
@@ -21,14 +22,18 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     // FIX GW-04: read body once and cache it in context so proxy.ts can forward
     // it without trying to re-read the already-consumed stream (which yields an
     // empty body and silently breaks every downstream webhook handler).
-    const body      = await c.req.text()
+    const body = await c.req.text()
     const signature = c.req.header("x-midtrans-signature") ?? ""
 
     const verified = await Effect.runPromiseExit(verifyHmac(body, signature))
 
     if (verified._tag === "Failure") {
       return c.json(
-        { error: "Invalid webhook signature", code: "UNAUTHORIZED", requestId: c.var.requestId },
+        {
+          error: "Invalid webhook signature",
+          code: "UNAUTHORIZED",
+          requestId: c.var.requestId,
+        },
         401
       )
     }
@@ -42,11 +47,15 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   c.set("webhookRawBody", null)
 
   const authHeader = c.req.header("Authorization")
-  const token      = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
 
   if (!token) {
     return c.json(
-      { error: "Missing or malformed Authorization header", code: "UNAUTHORIZED", requestId: c.var.requestId },
+      {
+        error: "Missing or malformed Authorization header",
+        code: "UNAUTHORIZED",
+        requestId: c.var.requestId,
+      },
       401
     )
   }
@@ -54,7 +63,7 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const result = await Effect.runPromiseExit(verifyJwt(token))
 
   if (result._tag === "Failure") {
-    const tag  = (result.cause.error as { _tag?: string })?._tag ?? ""
+    const tag = (result.cause.error as { _tag?: string })?._tag ?? ""
     const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED"
     return c.json(
       { error: "Invalid or expired token", code, requestId: c.var.requestId },
@@ -87,10 +96,10 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function isPublic(path: string, method: string): boolean {
   return PUBLIC_ROUTES.some(
-    r => r.path === path && (r.method === method || r.method === "*")
+    (r) => r.path === path && (r.method === method || r.method === "*")
   )
 }
 
 function isWebhook(path: string): boolean {
-  return WEBHOOK_ROUTES.some(r => path.startsWith(r))
+  return WEBHOOK_ROUTES.some((r) => path.startsWith(r))
 }

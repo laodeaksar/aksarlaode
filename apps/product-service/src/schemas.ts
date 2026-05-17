@@ -9,31 +9,31 @@ export const ProductStatusSchema = t.Union([
 
 // ── Product response shape (mirrors DB select type) ────────────────────────
 export const ProductSchema = t.Object({
-  id:           t.String({ format: "uuid" }),
-  name:         t.String(),
-  slug:         t.String(),
-  sku:          t.String(),
-  description:  t.Optional(t.String()),
-  price:        t.Number(),
+  id: t.String({ format: "uuid" }),
+  name: t.String(),
+  slug: t.String(),
+  sku: t.String(),
+  description: t.Optional(t.String()),
+  price: t.Number(),
   comparePrice: t.Optional(t.Number()),
-  stock:        t.Integer(),
-  weight:       t.Optional(t.Number()),
-  imageUrls:    t.Optional(t.Array(t.String({ format: "uri" }))),
-  tags:         t.Optional(t.Array(t.String())),
-  categoryId:   t.Optional(t.String({ format: "uuid" })),
-  status:       ProductStatusSchema,
-  isDigital:    t.Optional(t.Boolean()),
-  salesCount:   t.Optional(t.Integer()),
-  createdAt:    t.Optional(t.String({ format: "date-time" })),
-  updatedAt:    t.Optional(t.String({ format: "date-time" })),
+  stock: t.Integer(),
+  weight: t.Optional(t.Number()),
+  imageUrls: t.Optional(t.Array(t.String({ format: "uri" }))),
+  tags: t.Optional(t.Array(t.String())),
+  categoryId: t.Optional(t.String({ format: "uuid" })),
+  status: ProductStatusSchema,
+  isDigital: t.Optional(t.Boolean()),
+  salesCount: t.Optional(t.Integer()),
+  createdAt: t.Optional(t.String({ format: "date-time" })),
+  updatedAt: t.Optional(t.String({ format: "date-time" })),
 })
 
 // ── Paginated list response ────────────────────────────────────────────────
 export const ProductListResponseSchema = t.Object({
-  items:      t.Array(ProductSchema),
-  total:      t.Integer(),
-  page:       t.Integer(),
-  limit:      t.Integer(),
+  items: t.Array(ProductSchema),
+  total: t.Integer(),
+  page: t.Integer(),
+  limit: t.Integer(),
   // FIX PRD-07: nextCursor is null for offset pagination or last pages;
   // non-null signals the client can fetch the next page with cursor=<value>.
   nextCursor: t.Union([t.String(), t.Null()]),
@@ -41,21 +41,43 @@ export const ProductListResponseSchema = t.Object({
 
 // ── Query params for GET / (list) ──────────────────────────────────────────
 export const ProductListQuerySchema = t.Object({
-  search:     t.Optional(t.String({ description: "Full-text search on name and description" })),
-  categoryId: t.Optional(t.String({ format: "uuid", description: "Filter by category" })),
-  minPrice:   t.Optional(t.String({ description: "Minimum price (inclusive)" })),
-  maxPrice:   t.Optional(t.String({ description: "Maximum price (inclusive)" })),
-  inStock:    t.Optional(t.Union([t.Literal("true"), t.Literal("false")], { description: "Filter by stock availability" })),
-  sortBy:     t.Optional(t.Union([
-    t.Literal("price_asc"),
-    t.Literal("price_desc"),
-    t.Literal("newest"),
-    t.Literal("popular"),
-  ], { description: "Sort order" })),
-  page:       t.Optional(t.String({ description: "Page number for offset pagination (default: 1)" })),
-  limit:      t.Optional(t.String({ description: "Items per page, max 100 (default: 20)" })),
+  search: t.Optional(
+    t.String({ description: "Full-text search on name and description" })
+  ),
+  categoryId: t.Optional(
+    t.String({ format: "uuid", description: "Filter by category" })
+  ),
+  minPrice: t.Optional(t.String({ description: "Minimum price (inclusive)" })),
+  maxPrice: t.Optional(t.String({ description: "Maximum price (inclusive)" })),
+  inStock: t.Optional(
+    t.Union([t.Literal("true"), t.Literal("false")], {
+      description: "Filter by stock availability",
+    })
+  ),
+  sortBy: t.Optional(
+    t.Union(
+      [
+        t.Literal("price_asc"),
+        t.Literal("price_desc"),
+        t.Literal("newest"),
+        t.Literal("popular"),
+      ],
+      { description: "Sort order" }
+    )
+  ),
+  page: t.Optional(
+    t.String({ description: "Page number for offset pagination (default: 1)" })
+  ),
+  limit: t.Optional(
+    t.String({ description: "Items per page, max 100 (default: 20)" })
+  ),
   // FIX PRD-07: cursor for cursor-based pagination (mutually exclusive with page)
-  cursor:     t.Optional(t.String({ description: "Cursor from previous page's nextCursor for efficient deep pagination" })),
+  cursor: t.Optional(
+    t.String({
+      description:
+        "Cursor from previous page's nextCursor for efficient deep pagination",
+    })
+  ),
 })
 
 // ── Path params ────────────────────────────────────────────────────────────
@@ -65,19 +87,19 @@ export const ProductIdParamSchema = t.Object({
 
 // ── Create body ────────────────────────────────────────────────────────────
 export const CreateProductBodySchema = t.Object({
-  name:         t.String({ minLength: 1 }),
-  slug:         t.String({ minLength: 1 }),
-  sku:          t.String({ minLength: 1 }),
-  description:  t.Optional(t.String()),
-  price:        t.Number({ minimum: 0 }),
+  name: t.String({ minLength: 1 }),
+  slug: t.String({ minLength: 1 }),
+  sku: t.String({ minLength: 1 }),
+  description: t.Optional(t.String()),
+  price: t.Number({ minimum: 0 }),
   comparePrice: t.Optional(t.Number({ minimum: 0 })),
-  stock:        t.Integer({ minimum: 0 }),
-  weight:       t.Optional(t.Number({ minimum: 0 })),
-  imageUrls:    t.Optional(t.Array(t.String({ format: "uri" }))),
-  tags:         t.Optional(t.Array(t.String())),
-  categoryId:   t.Optional(t.String({ format: "uuid" })),
-  status:       t.Optional(ProductStatusSchema),
-  isDigital:    t.Optional(t.Boolean()),
+  stock: t.Integer({ minimum: 0 }),
+  weight: t.Optional(t.Number({ minimum: 0 })),
+  imageUrls: t.Optional(t.Array(t.String({ format: "uri" }))),
+  tags: t.Optional(t.Array(t.String())),
+  categoryId: t.Optional(t.String({ format: "uuid" })),
+  status: t.Optional(ProductStatusSchema),
+  isDigital: t.Optional(t.Boolean()),
 })
 
 // ── Update body (all fields optional) ─────────────────────────────────────
@@ -86,56 +108,67 @@ export const UpdateProductBodySchema = t.Partial(CreateProductBodySchema)
 // ── Stock check response ───────────────────────────────────────────────────
 export const StockResponseSchema = t.Object({
   productId: t.String({ format: "uuid" }),
-  stock:     t.Integer({ description: "Current available stock" }),
-  inStock:   t.Boolean({ description: "True when stock > 0" }),
+  stock: t.Integer({ description: "Current available stock" }),
+  inStock: t.Boolean({ description: "True when stock > 0" }),
 })
 
 // ── Stock operation request body ───────────────────────────────────────────
 export const StockOperationBodySchema = t.Object({
-  quantity: t.Integer({ minimum: 1, description: "Number of units to reserve or release" }),
+  quantity: t.Integer({
+    minimum: 1,
+    description: "Number of units to reserve or release",
+  }),
 })
 
 // ── Stock operation response ───────────────────────────────────────────────
 export const StockReserveResponseSchema = t.Object({
-  productId:      t.String({ format: "uuid" }),
-  reserved:       t.Integer(),
+  productId: t.String({ format: "uuid" }),
+  reserved: t.Integer(),
   remainingStock: t.Union([t.Integer(), t.Null()]),
 })
 
 export const StockReleaseResponseSchema = t.Object({
-  productId:      t.String({ format: "uuid" }),
-  released:       t.Integer(),
+  productId: t.String({ format: "uuid" }),
+  released: t.Integer(),
   remainingStock: t.Union([t.Integer(), t.Null()]),
 })
 
 // ── Insufficient stock error ───────────────────────────────────────────────
 export const InsufficientStockErrorSchema = t.Object({
   error: t.String(),
-  code:  t.Optional(t.Literal("INSUFFICIENT_STOCK")),
+  code: t.Optional(t.Literal("INSUFFICIENT_STOCK")),
 })
 
 // ── Generic error response ─────────────────────────────────────────────────
 export const ErrorSchema = t.Object({
   error: t.String(),
-  code:  t.Optional(t.String()),
+  code: t.Optional(t.String()),
 })
 
 // ── Validation error response (422) ───────────────────────────────────────
 // Matches the structured payload returned by the global onError handler.
 export const ValidationErrorSchema = t.Object({
-  error:  t.Literal("Validation failed"),
-  code:   t.Literal("VALIDATION_ERROR"),
-  source: t.Union([
-    t.Literal("body"),
-    t.Literal("query"),
-    t.Literal("params"),
-    t.Literal("headers"),
-    t.Literal("request"),
-  ], { description: "Which part of the request failed validation" }),
+  error: t.Literal("Validation failed"),
+  code: t.Literal("VALIDATION_ERROR"),
+  source: t.Union(
+    [
+      t.Literal("body"),
+      t.Literal("query"),
+      t.Literal("params"),
+      t.Literal("headers"),
+      t.Literal("request"),
+    ],
+    { description: "Which part of the request failed validation" }
+  ),
   fields: t.Array(
     t.Object({
-      field:   t.String({ description: "JSON path of the invalid field, e.g. 'price' or 'items/0/name'" }),
-      message: t.String({ description: "Human-readable reason the field failed" }),
+      field: t.String({
+        description:
+          "JSON path of the invalid field, e.g. 'price' or 'items/0/name'",
+      }),
+      message: t.String({
+        description: "Human-readable reason the field failed",
+      }),
     }),
     { description: "Per-field validation errors" }
   ),

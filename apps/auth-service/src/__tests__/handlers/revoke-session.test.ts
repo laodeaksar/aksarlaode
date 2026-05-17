@@ -1,11 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Elysia } from "elysia"
+import { revokeSessionHandler } from "@/handlers/revoke-session"
+import { sessionRepository } from "@/repository/session.repository"
 import { Effect } from "effect"
-import { MOCK_USER, MOCK_SESSION } from "../fixtures"
+import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { writeAuditLog } from "@/lib/audit-log"
+
+import { MOCK_SESSION, MOCK_USER } from "../fixtures"
 
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: {
-    findByIdAndUserId:   vi.fn(),
+    findByIdAndUserId: vi.fn(),
     deleteByIdAndUserId: vi.fn(),
   },
 }))
@@ -13,17 +18,15 @@ vi.mock("@/lib/audit-log", () => ({
   writeAuditLog: vi.fn(),
 }))
 
-import { sessionRepository }   from "@/repository/session.repository"
-import { writeAuditLog }       from "@/lib/audit-log"
-import { revokeSessionHandler } from "@/handlers/revoke-session"
-
 const app = new Elysia().delete("/sessions/:id", revokeSessionHandler)
 
 function del(sessionId: string, userId?: string) {
-  return app.handle(new Request(`http://localhost/sessions/${sessionId}`, {
-    method:  "DELETE",
-    headers: userId ? { "x-user-id": userId } : {},
-  }))
+  return app.handle(
+    new Request(`http://localhost/sessions/${sessionId}`, {
+      method: "DELETE",
+      headers: userId ? { "x-user-id": userId } : {},
+    })
+  )
 }
 
 describe("revokeSessionHandler", () => {
@@ -38,7 +41,7 @@ describe("revokeSessionHandler", () => {
   })
 
   it("returns 200 on successful revocation", async () => {
-    const res  = await del(MOCK_SESSION.id, MOCK_USER.id)
+    const res = await del(MOCK_SESSION.id, MOCK_USER.id)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.message).toContain("revoked")
@@ -48,15 +51,17 @@ describe("revokeSessionHandler", () => {
     await del(MOCK_SESSION.id, MOCK_USER.id)
     expect(writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
-        event:    "SESSION_REVOKED",
-        actorId:  MOCK_USER.id,
-        meta:     expect.objectContaining({ sessionId: MOCK_SESSION.id }),
+        event: "SESSION_REVOKED",
+        actorId: MOCK_USER.id,
+        meta: expect.objectContaining({ sessionId: MOCK_SESSION.id }),
       })
     )
   })
 
   it("does not emit audit event when session is not found", async () => {
-    vi.mocked(sessionRepository.findByIdAndUserId).mockReturnValue(Effect.succeed(null))
+    vi.mocked(sessionRepository.findByIdAndUserId).mockReturnValue(
+      Effect.succeed(null)
+    )
     await del("other-session", MOCK_USER.id)
     expect(writeAuditLog).not.toHaveBeenCalled()
   })

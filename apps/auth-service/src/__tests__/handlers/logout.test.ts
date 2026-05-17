@@ -1,7 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Elysia } from "elysia"
+import { logoutHandler } from "@/handlers/logout"
+import { sessionRepository } from "@/repository/session.repository"
 import { Effect } from "effect"
-import { MOCK_USER, MOCK_TOKENS } from "../fixtures"
+import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { writeAuditLog } from "@/lib/audit-log"
+
+import { MOCK_TOKENS, MOCK_USER } from "../fixtures"
 
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: { deleteByToken: vi.fn() },
@@ -10,30 +15,30 @@ vi.mock("@/lib/audit-log", () => ({
   writeAuditLog: vi.fn(),
 }))
 
-import { sessionRepository } from "@/repository/session.repository"
-import { writeAuditLog }     from "@/lib/audit-log"
-import { logoutHandler }     from "@/handlers/logout"
-
 const app = new Elysia().post("/logout", logoutHandler)
 
 function post(cookie?: string, userId?: string) {
   const headers: Record<string, string> = {}
-  if (cookie)  headers["cookie"]    = cookie
-  if (userId)  headers["x-user-id"] = userId
-  return app.handle(new Request("http://localhost/logout", {
-    method: "POST",
-    headers,
-  }))
+  if (cookie) headers["cookie"] = cookie
+  if (userId) headers["x-user-id"] = userId
+  return app.handle(
+    new Request("http://localhost/logout", {
+      method: "POST",
+      headers,
+    })
+  )
 }
 
 describe("logoutHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(sessionRepository.deleteByToken).mockReturnValue(Effect.succeed({} as any))
+    vi.mocked(sessionRepository.deleteByToken).mockReturnValue(
+      Effect.succeed({} as any)
+    )
   })
 
   it("returns 200 with logout message", async () => {
-    const res  = await post()
+    const res = await post()
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.message).toContain("Logged out")
@@ -45,7 +50,7 @@ describe("logoutHandler", () => {
   })
 
   it("clears cookie with Path=/auth so it overrides the cookie set at login", async () => {
-    const res    = await post()
+    const res = await post()
     const cookie = res.headers.get("set-cookie") ?? ""
     expect(cookie).toContain("Path=/auth")
     expect(cookie).not.toContain("Path=/auth/refresh")

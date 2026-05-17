@@ -1,6 +1,7 @@
 import type { MailChannelsProvider } from "@/providers/mailchannels.provider"
-import { fetchUserEmail }             from "@/lib/user-client"
-import type { EmailJobPayload }       from "@/queues/email.queue"
+import type { EmailJobPayload } from "@/queues/email.queue"
+
+import { fetchUserEmail } from "@/lib/user-client"
 
 // FIX EML-02: previous version sent to payload.userId (a UUID) — not an email
 // address.  Now uses payload.userEmail (set by EML-03 producer update).
@@ -8,15 +9,24 @@ import type { EmailJobPayload }       from "@/queues/email.queue"
 // is missing (old job produced before the producer update was deployed).
 
 export async function handleOrderCreated(
-  payload:  EmailJobPayload["order-created"],
+  payload: EmailJobPayload["order-created"],
   provider: MailChannelsProvider
 ) {
   try {
-    const to = payload.userEmail || await fetchUserEmail(payload.userId)
+    const to = payload.userEmail || (await fetchUserEmail(payload.userId))
 
     if (!to) {
-      console.warn(JSON.stringify({ event: "order_created_email_skipped_no_address", orderId: payload.orderId }))
-      return { success: false, error: "No email address resolved", retryable: false }
+      console.warn(
+        JSON.stringify({
+          event: "order_created_email_skipped_no_address",
+          orderId: payload.orderId,
+        })
+      )
+      return {
+        success: false,
+        error: "No email address resolved",
+        retryable: false,
+      }
     }
 
     await provider.send({

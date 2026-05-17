@@ -1,20 +1,33 @@
-import { and, asc, desc, eq, gte, ilike, isNull, lt, lte, or, SQL } from "drizzle-orm"
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNull,
+  lt,
+  lte,
+  or,
+  SQL,
+} from "drizzle-orm"
+
 import { schema } from "@repo/database"
 
 export type ProductFilters = {
-  search?:     string
+  search?: string
   categoryId?: string
-  minPrice?:   number
-  maxPrice?:   number
-  inStock?:    boolean
-  sortBy?:     "price_asc" | "price_desc" | "newest" | "popular"
-  page?:       number
-  limit?:      number
+  minPrice?: number
+  maxPrice?: number
+  inStock?: boolean
+  sortBy?: "price_asc" | "price_desc" | "newest" | "popular"
+  page?: number
+  limit?: number
   // FIX PRD-07: cursor-based pagination.
   // Provide this instead of `page` for efficient deep pagination.
   // Value is a base64url-encoded "<createdAt ISO>:<id>" string from the
   // previous page's `nextCursor` field.
-  cursor?:     string
+  cursor?: string
 }
 
 export function buildProductQuery(filters: ProductFilters) {
@@ -35,8 +48,7 @@ export function buildProductQuery(filters: ProductFilters) {
   if (filters.maxPrice !== undefined)
     conditions.push(lte(schema.products.price, filters.maxPrice))
 
-  if (filters.inStock)
-    conditions.push(gte(schema.products.stock, 1))
+  if (filters.inStock) conditions.push(gte(schema.products.stock, 1))
 
   // FIX PRD-07: cursor decoding — if cursor is provided, add a WHERE clause
   // that picks up from after the last item on the previous page.
@@ -45,10 +57,10 @@ export function buildProductQuery(filters: ProductFilters) {
   if (filters.cursor) {
     try {
       const decoded = Buffer.from(filters.cursor, "base64url").toString("utf8")
-      const sepIdx  = decoded.lastIndexOf(":")
+      const sepIdx = decoded.lastIndexOf(":")
       if (sepIdx > 0) {
         const cursorDate = decoded.slice(0, sepIdx)
-        const cursorId   = decoded.slice(sepIdx + 1)
+        const cursorId = decoded.slice(sepIdx + 1)
         // For "newest" sort (desc createdAt): rows AFTER the cursor have
         // createdAt < cursorDate, or equal createdAt with id < cursorId.
         conditions.push(
@@ -68,15 +80,21 @@ export function buildProductQuery(filters: ProductFilters) {
   }
 
   const orderBy = {
-    price_asc:  asc(schema.products.price),
+    price_asc: asc(schema.products.price),
     price_desc: desc(schema.products.price),
-    newest:     desc(schema.products.createdAt),
-    popular:    desc(schema.products.salesCount),
+    newest: desc(schema.products.createdAt),
+    popular: desc(schema.products.salesCount),
   }[filters.sortBy ?? "newest"]
 
-  const limit  = Math.min(filters.limit ?? 20, 100)
+  const limit = Math.min(filters.limit ?? 20, 100)
   // When using cursor pagination, offset is always 0 (cursor already positions us)
   const offset = activeCursor ? 0 : ((filters.page ?? 1) - 1) * limit
 
-  return { where: and(...conditions), orderBy, limit, offset, cursor: activeCursor }
+  return {
+    where: and(...conditions),
+    orderBy,
+    limit,
+    offset,
+    cursor: activeCursor,
+  }
 }

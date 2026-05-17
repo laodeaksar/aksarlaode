@@ -1,8 +1,8 @@
-import { env } from "@repo/env/auth"
 import {
-  isAllowedAvatarUrl as coreIsAllowedAvatarUrl,
   ALLOWED_AVATAR_HOSTS,
+  isAllowedAvatarUrl as coreIsAllowedAvatarUrl,
 } from "@repo/common/lib/avatar"
+import { env } from "@repo/env/auth"
 
 export { ALLOWED_AVATAR_HOSTS }
 

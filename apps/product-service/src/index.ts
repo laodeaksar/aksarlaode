@@ -1,9 +1,11 @@
-import Elysia        from "elysia"
-import { cors }       from "@elysiajs/cors"
-import { swagger }    from "@elysiajs/swagger"
-import { env }        from "@repo/env/product"
-import { productRoutes }   from "./routes/product.routes"
-import { withUserContext }  from "./plugins/user-context"
+import { cors } from "@elysiajs/cors"
+import { swagger } from "@elysiajs/swagger"
+import Elysia from "elysia"
+
+import { env } from "@repo/env/product"
+
+import { withUserContext } from "./plugins/user-context"
+import { productRoutes } from "./routes/product.routes"
 
 const PORT = parseInt(process.env["PORT"] ?? "3002", 10)
 
@@ -19,36 +21,47 @@ const serviceToken = (app: Elysia) =>
 const app = new Elysia()
 
   // ── API docs (mounted before auth so /docs is accessible in dev) ──────────
-  .use(swagger({
-    documentation: {
-      info: {
-        title:       "Product Service API",
-        version:     "1.0.0",
-        description: "Internal API for managing products. All endpoints require the `x-service-token` header.",
-      },
-      tags: [
-        { name: "Products", description: "CRUD operations on products" },
-        { name: "Health",   description: "Service health check" },
-      ],
-      components: {
-        securitySchemes: {
-          serviceToken: {
-            type: "apiKey",
-            in:   "header",
-            name: "x-service-token",
+  .use(
+    swagger({
+      documentation: {
+        info: {
+          title: "Product Service API",
+          version: "1.0.0",
+          description:
+            "Internal API for managing products. All endpoints require the `x-service-token` header.",
+        },
+        tags: [
+          { name: "Products", description: "CRUD operations on products" },
+          { name: "Health", description: "Service health check" },
+        ],
+        components: {
+          securitySchemes: {
+            serviceToken: {
+              type: "apiKey",
+              in: "header",
+              name: "x-service-token",
+            },
           },
         },
+        security: [{ serviceToken: [] }],
       },
-      security: [{ serviceToken: [] }],
-    },
-    path: "/docs",
-  }))
+      path: "/docs",
+    })
+  )
 
   // ── CORS ──────────────────────────────────────────────────────────────────
-  .use(cors({
-    origin:         [env.WEB_URL, env.ADMIN_URL],
-    allowedHeaders: ["Content-Type", "x-service-token", "x-user-id", "x-user-role", "x-request-id"],
-  }))
+  .use(
+    cors({
+      origin: [env.WEB_URL, env.ADMIN_URL],
+      allowedHeaders: [
+        "Content-Type",
+        "x-service-token",
+        "x-user-id",
+        "x-user-role",
+        "x-request-id",
+      ],
+    })
+  )
 
   // ── Auth & user context ───────────────────────────────────────────────────
   .use(serviceToken)
@@ -56,13 +69,15 @@ const app = new Elysia()
 
   // ── Request logger (requestId available here after derive) ─────────────
   .onRequest(({ request, headers }) => {
-    console.info(JSON.stringify({
-      event:      "request_in",
-      method:     request.method,
-      path:       new URL(request.url).pathname,
-      requestId:  headers["x-request-id"] ?? null,
-      userId:     headers["x-user-id"]    ?? null,
-    }))
+    console.info(
+      JSON.stringify({
+        event: "request_in",
+        method: request.method,
+        path: new URL(request.url).pathname,
+        requestId: headers["x-request-id"] ?? null,
+        userId: headers["x-user-id"] ?? null,
+      })
+    )
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
@@ -82,21 +97,23 @@ const app = new Elysia()
       if (err?.validator?.Errors) {
         for (const e of err.validator.Errors(err.value ?? {})) {
           fields.push({
-            field:   String(e.path).replace(/^\//, "") || "root",
+            field: String(e.path).replace(/^\//, "") || "root",
             message: String(e.message),
           })
         }
       }
 
-      console.warn(JSON.stringify({
-        event:  "validation_error",
-        source: err?.on ?? "request",
-        fields,
-      }))
+      console.warn(
+        JSON.stringify({
+          event: "validation_error",
+          source: err?.on ?? "request",
+          fields,
+        })
+      )
 
       return {
-        error:  "Validation failed",
-        code:   "VALIDATION_ERROR",
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
         source: err?.on ?? "request",
         fields,
       }
@@ -109,7 +126,9 @@ const app = new Elysia()
     }
 
     // Unhandled errors
-    console.error(JSON.stringify({ event: "unhandled_error", code, message: error.message }))
+    console.error(
+      JSON.stringify({ event: "unhandled_error", code, message: error.message })
+    )
     set.status = 500
     return { error: "Internal server error", code: "INTERNAL_ERROR" }
   })
@@ -125,4 +144,4 @@ const shutdown = async (signal: string) => {
   process.exit(0)
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"))
-process.on("SIGINT",  () => shutdown("SIGINT"))
+process.on("SIGINT", () => shutdown("SIGINT"))

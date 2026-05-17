@@ -1,5 +1,6 @@
-import { Effect, Data } from "effect"
-import { env }          from "@repo/env/auth"
+import { Data, Effect } from "effect"
+
+import { env } from "@repo/env/auth"
 
 class TokenError extends Data.TaggedError("TokenError")<{ reason: string }> {}
 
@@ -18,15 +19,15 @@ export type TokenPair = { accessToken: string; refreshToken: string }
  * cross-type token substitution attacks.
  */
 export const issueTokenPair = (
-  userId:    string,
-  role:      string,
+  userId: string,
+  role: string,
   sessionId: string,
-  email:     string
+  email: string
 ): Effect.Effect<TokenPair, TokenError> =>
   Effect.gen(function* () {
-    const accessToken  = yield* signToken(
+    const accessToken = yield* signToken(
       { sub: userId, role, sessionId, email, type: "access" },
-      60 * 5,    // 5 min — reduced from 15 min to shorten the post-logout revocation window
+      60 * 5, // 5 min — reduced from 15 min to shorten the post-logout revocation window
       env.JWT_ACCESS_PRIVATE_KEY
     )
     const refreshToken = yield* signToken(
@@ -51,7 +52,7 @@ export const issueTokenPair = (
  *  — type claim (matches expectedType)
  */
 export const verifyToken = (
-  token:        string,
+  token: string,
   expectedType: "access" | "refresh"
 ): Effect.Effect<Record<string, unknown>, TokenError> =>
   Effect.tryPromise({
@@ -66,18 +67,21 @@ export const verifyToken = (
       ) as Record<string, unknown>
 
       if (headerObj["alg"] !== "EdDSA") {
-        throw new Error(`Unexpected algorithm: ${String(headerObj["alg"] ?? "missing")}`)
+        throw new Error(
+          `Unexpected algorithm: ${String(headerObj["alg"] ?? "missing")}`
+        )
       }
 
       // ── 2. Verify Ed25519 signature ─────────────────────────────────────────
-      const publicKeyB64 = expectedType === "access"
-        ? env.JWT_ACCESS_PUBLIC_KEY
-        : env.JWT_REFRESH_PUBLIC_KEY
+      const publicKeyB64 =
+        expectedType === "access"
+          ? env.JWT_ACCESS_PUBLIC_KEY
+          : env.JWT_REFRESH_PUBLIC_KEY
 
       const key = await importPublicKey(publicKeyB64)
 
       const sigBytes = fromBase64url(sig)
-      const data     = new TextEncoder().encode(`${header}.${body}`)
+      const data = new TextEncoder().encode(`${header}.${body}`)
 
       const valid = await crypto.subtle.verify("Ed25519", key, sigBytes, data)
       if (!valid) throw new Error("Invalid signature")
@@ -107,19 +111,19 @@ export const verifyToken = (
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 const signToken = (
-  claims:           Record<string, unknown>,
+  claims: Record<string, unknown>,
   expiresInSeconds: number,
-  privateKeyB64:    string
+  privateKeyB64: string
 ): Effect.Effect<string, TokenError> =>
   Effect.tryPromise({
     try: async () => {
-      const key     = await importPrivateKey(privateKeyB64)
-      const now     = Math.floor(Date.now() / 1000)
+      const key = await importPrivateKey(privateKeyB64)
+      const now = Math.floor(Date.now() / 1000)
       const payload = { ...claims, iat: now, exp: now + expiresInSeconds }
-      const header  = b64url(JSON.stringify({ alg: "EdDSA", typ: "JWT" }))
-      const body    = b64url(JSON.stringify(payload))
-      const data    = new TextEncoder().encode(`${header}.${body}`)
-      const sigBuf  = await crypto.subtle.sign("Ed25519", key, data)
+      const header = b64url(JSON.stringify({ alg: "EdDSA", typ: "JWT" }))
+      const body = b64url(JSON.stringify(payload))
+      const data = new TextEncoder().encode(`${header}.${body}`)
+      const sigBuf = await crypto.subtle.sign("Ed25519", key, data)
       return `${header}.${body}.${b64url(sigBuf)}`
     },
     catch: (e) => new TokenError({ reason: String(e) }),
@@ -147,7 +151,7 @@ async function importPublicKey(b64: string): Promise<CryptoKey> {
 
 /** Decode standard base64 (used for DER-encoded keys stored in env vars). */
 const fromBase64 = (b64: string): Uint8Array =>
-  Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+  Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
 
 /** Decode base64url (used for JWT signature segments). */
 const fromBase64url = (b64url: string): Uint8Array =>
@@ -155,5 +159,11 @@ const fromBase64url = (b64url: string): Uint8Array =>
 
 /** Encode to base64url (no padding). */
 const b64url = (input: string | ArrayBuffer): string =>
-  btoa(typeof input === "string" ? input : String.fromCharCode(...new Uint8Array(input)))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+  btoa(
+    typeof input === "string"
+      ? input
+      : String.fromCharCode(...new Uint8Array(input))
+  )
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")

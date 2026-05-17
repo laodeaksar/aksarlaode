@@ -1,10 +1,10 @@
 export type CartItem = {
-  id:       string
-  name:     string
-  price:    number
+  id: string
+  name: string
+  price: number
   quantity: number
   imageUrl?: string
-  slug:     string
+  slug: string
 }
 
 const CART_KEY = "ec_cart"
@@ -28,7 +28,7 @@ export const cartStore = {
 
   addItem: (item: CartItem): void => {
     const items = loadCart()
-    const existing = items.find(i => i.id === item.id)
+    const existing = items.find((i) => i.id === item.id)
     if (existing) {
       existing.quantity += item.quantity
     } else {
@@ -39,18 +39,18 @@ export const cartStore = {
   },
 
   removeItem: (id: string): void => {
-    const items = loadCart().filter(i => i.id !== id)
+    const items = loadCart().filter((i) => i.id !== id)
     saveCart(items)
     window.dispatchEvent(new CustomEvent("cart:updated"))
   },
 
   updateQuantity: (id: string, quantity: number): void => {
     const items = loadCart()
-    const item = items.find(i => i.id === id)
+    const item = items.find((i) => i.id === id)
     if (item) {
       item.quantity = quantity
       if (item.quantity <= 0) {
-        saveCart(items.filter(i => i.id !== id))
+        saveCart(items.filter((i) => i.id !== id))
       } else {
         saveCart(items)
       }
@@ -66,6 +66,5 @@ export const cartStore = {
   getTotal: (): number =>
     loadCart().reduce((sum, i) => sum + i.price * i.quantity, 0),
 
-  getCount: (): number =>
-    loadCart().reduce((sum, i) => sum + i.quantity, 0),
+  getCount: (): number => loadCart().reduce((sum, i) => sum + i.quantity, 0),
 }

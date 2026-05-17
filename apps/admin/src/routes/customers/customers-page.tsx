@@ -1,45 +1,45 @@
-import { Link }              from "@tanstack/react-router"
-import { useQuery }          from "@tanstack/react-query"
-import { useState }          from "react"
-import { customersApi }      from "@/lib/api"
-import { DataTable }         from "@/components/data-table/data-table"
-import { Badge }             from "@repo/ui/components/badge"
-import type { ColumnDef }    from "@tanstack/react-table"
-import type { User }         from "@repo/common"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import type { ColumnDef } from "@tanstack/react-table"
+
+import type { User } from "@repo/common"
+import { Badge } from "@repo/ui/components/badge"
+
+import { customersApi } from "@/lib/api"
+import { DataTable } from "@/components/data-table/data-table"
 
 const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
-  OWNER:    "default",
-  ADMIN:    "default",
+  OWNER: "default",
+  ADMIN: "default",
   CUSTOMER: "outline",
 }
 
 const columns: ColumnDef<User>[] = [
   {
     accessorKey: "name",
-    header:      "Name",
+    header: "Name",
     cell: ({ getValue }) => (
       <span className="font-medium text-gray-900">{getValue() as string}</span>
     ),
   },
   {
     accessorKey: "email",
-    header:      "Email",
+    header: "Email",
     cell: ({ getValue }) => (
       <span className="text-gray-600">{getValue() as string}</span>
     ),
   },
   {
     accessorKey: "role",
-    header:      "Role",
+    header: "Role",
     cell: ({ getValue }) => {
       const role = getValue() as string
-      return (
-        <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>
-      )
+      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>
     },
   },
   {
-    id:   "actions",
+    id: "actions",
     header: "",
     cell: ({ row }) => (
       <Link
@@ -54,16 +54,19 @@ const columns: ColumnDef<User>[] = [
 ]
 
 export default function CustomersPage() {
-  const [page,   setPage]   = useState(1)
+  const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", page, search],
-    queryFn:  () => customersApi.list(new URLSearchParams({
-      page:   String(page),
-      limit:  "20",
-      ...(search ? { search } : {}),
-    }).toString()),
+    queryFn: () =>
+      customersApi.list(
+        new URLSearchParams({
+          page: String(page),
+          limit: "20",
+          ...(search ? { search } : {}),
+        }).toString()
+      ),
   })
 
   return (
@@ -74,7 +77,10 @@ export default function CustomersPage() {
         className="w-64 rounded border px-3 py-2 text-sm"
         placeholder="Search by name or email..."
         value={search}
-        onChange={e => { setSearch(e.target.value); setPage(1) }}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setPage(1)
+        }}
       />
 
       <DataTable

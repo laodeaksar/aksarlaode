@@ -18,8 +18,12 @@ import { generateKeyPairSync } from "node:crypto"
 function generate(label: string) {
   const { privateKey, publicKey } = generateKeyPairSync("ed25519")
 
-  const priv = privateKey.export({ type: "pkcs8", format: "der" }).toString("base64")
-  const pub  = publicKey.export({  type: "spki",  format: "der" }).toString("base64")
+  const priv = privateKey
+    .export({ type: "pkcs8", format: "der" })
+    .toString("base64")
+  const pub = publicKey
+    .export({ type: "spki", format: "der" })
+    .toString("base64")
 
   console.log(`# ── ${label} ──`)
   console.log(`JWT_${label}_PRIVATE_KEY=${priv}`)

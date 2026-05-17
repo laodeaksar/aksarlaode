@@ -1,19 +1,32 @@
-import { Effect, Cause } from "effect"
-import type { Context } from "elysia"
-import { productRepository, ProductNotFoundError } from "@/repository/product.repository"
+import {
+  ProductNotFoundError,
+  productRepository,
+} from "@/repository/product.repository"
 import type { DerivedContext } from "@/types"
+import { Cause, Effect } from "effect"
+import type { Context } from "elysia"
 
-export const updateHandler = async ({ params, body, set, userRole, userId, requestId }: Context & DerivedContext) => {
+export const updateHandler = async ({
+  params,
+  body,
+  set,
+  userRole,
+  userId,
+  requestId,
+}: Context & DerivedContext) => {
   if (userRole !== "ADMIN") {
     set.status = 403
     return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" }
   }
 
-  const id   = params.id
+  const id = params.id
   const data = body as Record<string, unknown>
 
   // FIX PRD-06b: reject zero or negative price before touching the DB.
-  if (data.price !== undefined && (typeof data.price !== "number" || data.price <= 0)) {
+  if (
+    data.price !== undefined &&
+    (typeof data.price !== "number" || data.price <= 0)
+  ) {
     set.status = 422
     return { error: "Price must be a positive number", code: "INVALID_PRICE" }
   }
@@ -31,13 +44,15 @@ export const updateHandler = async ({ params, body, set, userRole, userId, reque
     return { error: "Failed to update product" }
   }
 
-  console.info(JSON.stringify({
-    event:      "product_updated",
-    productId:  id,
-    fields:     Object.keys(data),
-    userId,
-    requestId,
-  }))
+  console.info(
+    JSON.stringify({
+      event: "product_updated",
+      productId: id,
+      fields: Object.keys(data),
+      userId,
+      requestId,
+    })
+  )
 
   return result.value
 }

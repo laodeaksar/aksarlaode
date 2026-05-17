@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro"
-import { AppRuntime }    from "@/lib/effect/runtime"
-import { apiFetch }      from "@/lib/api/client"
+
+import { apiFetch } from "@/lib/api/client"
 import type { ApiError } from "@/lib/effect/errors"
+import { AppRuntime } from "@/lib/effect/runtime"
 
 // FIX W-01: CheckoutForm.tsx was calling fetch("/api/payment/initiate") which
 // had no matching route in the Astro app — every checkout produced an orphaned
@@ -16,7 +17,10 @@ import type { ApiError } from "@/lib/effect/errors"
 // FIX WEB-05: Map typed upstream errors to safe browser-facing messages.
 // Never forward raw error internals (ECONNREFUSED URLs, stack traces, internal
 // service paths) — only the gateway-controlled HttpError message is forwarded.
-function sanitizeUpstreamError(err: unknown): { status: number; message: string } {
+function sanitizeUpstreamError(err: unknown): {
+  status: number
+  message: string
+} {
   const e = err as Partial<ApiError>
   switch (e._tag) {
     case "AuthError":
@@ -45,17 +49,17 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     body = await request.json()
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON body" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    )
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 
   if (!body.orderId || typeof body.orderId !== "string") {
-    return new Response(
-      JSON.stringify({ error: "orderId is required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    )
+    return new Response(JSON.stringify({ error: "orderId is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 
   const exit = await AppRuntime.runPromiseExit(
@@ -63,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       "/payments/initiate",
       {
         method: "POST",
-        body:   JSON.stringify(body),
+        body: JSON.stringify(body),
         cookie,
       }
     )
@@ -71,14 +75,14 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (exit._tag === "Failure") {
     const { status, message } = sanitizeUpstreamError(exit.cause.error)
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status, headers: { "Content-Type": "application/json" } }
-    )
+    return new Response(JSON.stringify({ error: message }), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 
-  return new Response(
-    JSON.stringify(exit.value),
-    { status: 201, headers: { "Content-Type": "application/json" } }
-  )
+  return new Response(JSON.stringify(exit.value), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  })
 }

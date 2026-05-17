@@ -12,10 +12,18 @@ import { env } from "@repo/env/gateway"
 //
 // Example:  GET /products/123 → http://product-service:3002/123
 export const SERVICE_REGISTRY = {
-  AUTH:    { url: env.AUTH_SERVICE_URL,    prefix: "/auth",     timeoutMs: 10_000 },
-  PRODUCT: { url: env.PRODUCT_SERVICE_URL, prefix: "/products", timeoutMs: 15_000 },
-  ORDER:   { url: env.ORDER_SERVICE_URL,   prefix: "/orders",   timeoutMs: 20_000 },
-  PAYMENT: { url: env.PAYMENT_SERVICE_URL, prefix: "/payments", timeoutMs: 30_000 },
+  AUTH: { url: env.AUTH_SERVICE_URL, prefix: "/auth", timeoutMs: 10_000 },
+  PRODUCT: {
+    url: env.PRODUCT_SERVICE_URL,
+    prefix: "/products",
+    timeoutMs: 15_000,
+  },
+  ORDER: { url: env.ORDER_SERVICE_URL, prefix: "/orders", timeoutMs: 20_000 },
+  PAYMENT: {
+    url: env.PAYMENT_SERVICE_URL,
+    prefix: "/payments",
+    timeoutMs: 30_000,
+  },
 } as const
 
 // Webhooks are not a proxied service but share the payment timeout budget.

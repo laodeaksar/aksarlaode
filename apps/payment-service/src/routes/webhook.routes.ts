@@ -1,6 +1,6 @@
-import { Hono }           from "hono"
 import { webhookHandler } from "@/handlers/webhook"
-import type { AppEnv }    from "@/types"
+import type { AppEnv } from "@/types"
+import { Hono } from "hono"
 
 const router = new Hono<AppEnv>()
 

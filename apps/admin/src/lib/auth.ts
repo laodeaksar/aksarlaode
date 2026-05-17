@@ -5,10 +5,10 @@ import { env } from "@repo/env/admin"
 export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
 
 export type Session = {
-  id:    string
+  id: string
   email: string
-  name:  string
-  role:  UserRole
+  name: string
+  role: UserRole
 }
 
 export async function getSession(): Promise<Session | null> {

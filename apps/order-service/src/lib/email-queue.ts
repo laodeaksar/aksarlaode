@@ -1,17 +1,18 @@
 import { Queue } from "bullmq"
-import { env }   from "@repo/env/order"
+
+import { env } from "@repo/env/order"
 
 const connection = {
-  host:     env.REDIS_HOST,
-  port:     env.REDIS_PORT,
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
   password: env.REDIS_PASSWORD || undefined,
 }
 
 // Payload types kept in sync with email-worker's EmailJobPayload contract.
 type OrderCreatedPayload = {
-  orderId:    string
-  userId:     string
-  userEmail:  string   // FIX EML-03: required so email-worker skips auth-service round-trip
+  orderId: string
+  userId: string
+  userEmail: string // FIX EML-03: required so email-worker skips auth-service round-trip
   grandTotal: number
 }
 

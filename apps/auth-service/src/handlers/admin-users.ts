@@ -8,13 +8,13 @@
  *
  * passwordHash is stripped from every response — it never leaves this service.
  */
-import { Effect }          from "effect"
-import type { HandlerCtx } from "@/types"
-import type { UserRole }   from "@/types"
-import { userRepository }  from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
+import { userRepository } from "@/repository/user.repository"
+import type { HandlerCtx, UserRole } from "@/types"
+import { Effect } from "effect"
+
+import { writeAuditLog } from "@/lib/audit-log"
 import { canManage, isAtLeastAdmin, isAtLeastOwner } from "@/lib/role"
-import { writeAuditLog }   from "@/lib/audit-log"
 
 // ── Projection ────────────────────────────────────────────────────────────────
 // passwordHash is excluded at the DB query layer (SAFE_USER_COLUMNS in
@@ -22,24 +22,24 @@ import { writeAuditLog }   from "@/lib/audit-log"
 // The type below reflects what the repository actually returns.
 
 type RawUser = {
-  id:        string
-  email:     string
-  name:      string
-  role:      string
+  id: string
+  email: string
+  name: string
+  role: string
   avatarUrl: string | null
-  phone:     string | null
+  phone: string | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
 }
 
 const shapeUser = (u: RawUser) => ({
-  id:        u.id,
-  email:     u.email,
-  name:      u.name,
-  role:      u.role,
+  id: u.id,
+  email: u.email,
+  name: u.name,
+  role: u.role,
   avatarUrl: u.avatarUrl ?? null,
-  phone:     u.phone     ?? null,
+  phone: u.phone ?? null,
   createdAt: u.createdAt.toISOString(),
   updatedAt: u.updatedAt.toISOString(),
   deletedAt: u.deletedAt ? u.deletedAt.toISOString() : null,
@@ -47,7 +47,11 @@ const shapeUser = (u: RawUser) => ({
 
 // ── GET /admin/users ──────────────────────────────────────────────────────────
 
-export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx) => {
+export const adminListUsersHandler = async ({
+  query,
+  headers,
+  set,
+}: HandlerCtx) => {
   const actorRole = headers["x-user-role"] as UserRole | undefined
 
   if (!actorRole || !isAtLeastAdmin(actorRole)) {
@@ -55,13 +59,18 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
     return { error: "Forbidden — ADMIN role required", code: "FORBIDDEN" }
   }
 
-  const q = query as { page?: string; limit?: string; role?: string; includeDeleted?: boolean }
+  const q = query as {
+    page?: string
+    limit?: string
+    role?: string
+    includeDeleted?: boolean
+  }
 
-  const page  = Math.max(1, Number(q.page  ?? 1))
+  const page = Math.max(1, Number(q.page ?? 1))
   const limit = Math.min(100, Math.max(1, Number(q.limit ?? 20)))
 
   const VALID_ROLES = new Set<UserRole>(["CUSTOMER", "ADMIN", "OWNER"])
-  const roleFilter  = q.role?.toUpperCase() as UserRole | undefined
+  const roleFilter = q.role?.toUpperCase() as UserRole | undefined
 
   if (roleFilter && !VALID_ROLES.has(roleFilter)) {
     set.status = 422
@@ -83,7 +92,7 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
   const { items, total, totalPages, hasNext, hasPrev } = result.value
 
   return {
-    items: items.map(u => shapeUser(u as RawUser)),
+    items: items.map((u) => shapeUser(u as RawUser)),
     total,
     page,
     limit,
@@ -95,11 +104,16 @@ export const adminListUsersHandler = async ({ query, headers, set }: HandlerCtx)
 
 // ── PATCH /admin/users/:id/role ───────────────────────────────────────────────
 
-export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }: HandlerCtx) => {
-  const { id: targetId }  = params  as { id: string }
-  const { role: newRole } = body    as { role: UserRole }
-  const actorId           = headers["x-user-id"]
-  const actorRole         = headers["x-user-role"] as UserRole | undefined
+export const adminUpdateUserRoleHandler = async ({
+  params,
+  body,
+  headers,
+  set,
+}: HandlerCtx) => {
+  const { id: targetId } = params as { id: string }
+  const { role: newRole } = body as { role: UserRole }
+  const actorId = headers["x-user-id"]
+  const actorRole = headers["x-user-role"] as UserRole | undefined
 
   if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
     set.status = 403
@@ -109,8 +123,9 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
   if (newRole === "OWNER") {
     set.status = 422
     return {
-      error: "OWNER cannot be assigned via this endpoint. Use POST /auth/owner/transfer.",
-      code:  "USE_TRANSFER_ENDPOINT",
+      error:
+        "OWNER cannot be assigned via this endpoint. Use POST /auth/owner/transfer.",
+      code: "USE_TRANSFER_ENDPOINT",
     }
   }
 
@@ -135,8 +150,17 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
 
   if (exit._tag === "Failure") {
     const err = exit.cause.error as { _tag: string }
-    if (err._tag === "NotFoundError")  { set.status = 404; return { error: "User not found",                             code: "USER_NOT_FOUND" } }
-    if (err._tag === "ForbiddenError") { set.status = 403; return { error: "Cannot manage a user with equal or higher role", code: "FORBIDDEN"    } }
+    if (err._tag === "NotFoundError") {
+      set.status = 404
+      return { error: "User not found", code: "USER_NOT_FOUND" }
+    }
+    if (err._tag === "ForbiddenError") {
+      set.status = 403
+      return {
+        error: "Cannot manage a user with equal or higher role",
+        code: "FORBIDDEN",
+      }
+    }
     set.status = 500
     return { error: "Failed to update user role" }
   }
@@ -144,24 +168,28 @@ export const adminUpdateUserRoleHandler = async ({ params, body, headers, set }:
   const { target, updated } = exit.value
 
   writeAuditLog({
-    event:    "ROLE_CHANGE",
+    event: "ROLE_CHANGE",
     actorId,
     targetId,
     meta: { previousRole: target.role, newRole },
   })
 
   return {
-    user:    shapeUser(updated as RawUser),
+    user: shapeUser(updated as RawUser),
     changed: { from: target.role, to: newRole },
   }
 }
 
 // ── DELETE /admin/users/:id ───────────────────────────────────────────────────
 
-export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCtx) => {
+export const adminDeleteUserHandler = async ({
+  params,
+  headers,
+  set,
+}: HandlerCtx) => {
   const { id: targetId } = params as { id: string }
-  const actorId          = headers["x-user-id"]
-  const actorRole        = headers["x-user-role"] as UserRole | undefined
+  const actorId = headers["x-user-id"]
+  const actorRole = headers["x-user-role"] as UserRole | undefined
 
   // ── Gate 1: caller must be OWNER ──────────────────────────────────────────
   if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
@@ -202,9 +230,24 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
 
   if (exit._tag === "Failure") {
     const err = exit.cause.error as { _tag: string }
-    if (err._tag === "NotFoundError")       { set.status = 404; return { error: "User not found",                   code: "USER_NOT_FOUND"    } }
-    if (err._tag === "OwnerProtectedError") { set.status = 403; return { error: "OWNER accounts cannot be deleted", code: "OWNER_PROTECTED"   } }
-    if (err._tag === "ForbiddenError")      { set.status = 403; return { error: "Cannot delete a user with equal or higher role", code: "FORBIDDEN" } }
+    if (err._tag === "NotFoundError") {
+      set.status = 404
+      return { error: "User not found", code: "USER_NOT_FOUND" }
+    }
+    if (err._tag === "OwnerProtectedError") {
+      set.status = 403
+      return {
+        error: "OWNER accounts cannot be deleted",
+        code: "OWNER_PROTECTED",
+      }
+    }
+    if (err._tag === "ForbiddenError") {
+      set.status = 403
+      return {
+        error: "Cannot delete a user with equal or higher role",
+        code: "FORBIDDEN",
+      }
+    }
     set.status = 500
     return { error: "Failed to delete user" }
   }
@@ -212,7 +255,7 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
   const { target } = exit.value
 
   writeAuditLog({
-    event:    "ROLE_CHANGE",
+    event: "ROLE_CHANGE",
     actorId,
     targetId,
     meta: { action: "SOFT_DELETE", deletedRole: target.role },
@@ -222,9 +265,9 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
   return {
     message: `User ${targetId} soft-deleted and all sessions invalidated.`,
     deleted: {
-      id:        target.id,
-      email:     target.email,
-      role:      target.role,
+      id: target.id,
+      email: target.email,
+      role: target.role,
       deletedAt: new Date().toISOString(),
     },
   }
@@ -232,10 +275,14 @@ export const adminDeleteUserHandler = async ({ params, headers, set }: HandlerCt
 
 // ── PATCH /admin/users/:id/restore ───────────────────────────────────────────
 
-export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerCtx) => {
+export const adminRestoreUserHandler = async ({
+  params,
+  headers,
+  set,
+}: HandlerCtx) => {
   const { id: targetId } = params as { id: string }
-  const actorId          = headers["x-user-id"]
-  const actorRole        = headers["x-user-role"] as UserRole | undefined
+  const actorId = headers["x-user-id"]
+  const actorRole = headers["x-user-role"] as UserRole | undefined
 
   if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
     set.status = 403
@@ -245,8 +292,9 @@ export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerC
   const program = Effect.gen(function* () {
     // Must use the include-deleted variant to find the target
     const target = yield* userRepository.findByIdIncludeDeleted(targetId)
-    if (!target)            return yield* Effect.fail({ _tag: "NotFoundError"   as const })
-    if (!target.deletedAt)  return yield* Effect.fail({ _tag: "NotDeletedError" as const })
+    if (!target) return yield* Effect.fail({ _tag: "NotFoundError" as const })
+    if (!target.deletedAt)
+      return yield* Effect.fail({ _tag: "NotDeletedError" as const })
 
     const restored = yield* userRepository.restoreById(targetId)
     return { target, restored }
@@ -256,8 +304,14 @@ export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerC
 
   if (exit._tag === "Failure") {
     const err = exit.cause.error as { _tag: string }
-    if (err._tag === "NotFoundError")   { set.status = 404; return { error: "User not found",                code: "USER_NOT_FOUND"  } }
-    if (err._tag === "NotDeletedError") { set.status = 409; return { error: "User is not soft-deleted",      code: "NOT_DELETED"     } }
+    if (err._tag === "NotFoundError") {
+      set.status = 404
+      return { error: "User not found", code: "USER_NOT_FOUND" }
+    }
+    if (err._tag === "NotDeletedError") {
+      set.status = 409
+      return { error: "User is not soft-deleted", code: "NOT_DELETED" }
+    }
     set.status = 500
     return { error: "Failed to restore user" }
   }
@@ -265,7 +319,7 @@ export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerC
   const { restored } = exit.value
 
   writeAuditLog({
-    event:    "ROLE_CHANGE",
+    event: "ROLE_CHANGE",
     actorId,
     targetId,
     meta: { action: "RESTORE", restoredRole: restored!.role },
@@ -274,6 +328,6 @@ export const adminRestoreUserHandler = async ({ params, headers, set }: HandlerC
   set.status = 200
   return {
     message: `User ${targetId} restored successfully.`,
-    user:    shapeUser(restored as RawUser),
+    user: shapeUser(restored as RawUser),
   }
 }

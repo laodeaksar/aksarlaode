@@ -1,36 +1,39 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Elysia } from "elysia"
+import { refreshHandler } from "@/handlers/refresh"
+import { sessionRepository } from "@/repository/session.repository"
+import { userRepository } from "@/repository/user.repository"
 import { Effect } from "effect"
-import { MOCK_USER, MOCK_SESSION, MOCK_TOKENS } from "../fixtures"
+import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { issueTokenPair, verifyToken } from "@/lib/token"
+
+import { MOCK_SESSION, MOCK_TOKENS, MOCK_USER } from "../fixtures"
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: { findById: vi.fn() },
 }))
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: {
-    findByToken:   vi.fn(),
-    rotateSession: vi.fn(),   // atomic rotation replaces separate delete + create
+    findByToken: vi.fn(),
+    rotateSession: vi.fn(), // atomic rotation replaces separate delete + create
   },
 }))
 vi.mock("@/lib/token", () => ({
-  verifyToken:    vi.fn(),
+  verifyToken: vi.fn(),
   issueTokenPair: vi.fn(),
 }))
-
-import { userRepository }             from "@/repository/user.repository"
-import { sessionRepository }          from "@/repository/session.repository"
-import { verifyToken, issueTokenPair } from "@/lib/token"
-import { refreshHandler }             from "@/handlers/refresh"
 
 const REFRESH_COOKIE = `ec_refresh=${encodeURIComponent(MOCK_TOKENS.refreshToken)}`
 
 const app = new Elysia().post("/refresh", refreshHandler)
 
 function post(cookie?: string) {
-  return app.handle(new Request("http://localhost/refresh", {
-    method:  "POST",
-    headers: cookie ? { cookie } : {},
-  }))
+  return app.handle(
+    new Request("http://localhost/refresh", {
+      method: "POST",
+      headers: cookie ? { cookie } : {},
+    })
+  )
 }
 
 describe("refreshHandler", () => {
@@ -39,14 +42,20 @@ describe("refreshHandler", () => {
     vi.mocked(verifyToken).mockReturnValue(
       Effect.succeed({ sub: MOCK_USER.id, type: "refresh" })
     )
-    vi.mocked(sessionRepository.findByToken).mockReturnValue(Effect.succeed(MOCK_SESSION))
-    vi.mocked(userRepository.findById).mockReturnValue(Effect.succeed(MOCK_USER))
-    vi.mocked(sessionRepository.rotateSession).mockReturnValue(Effect.succeed({} as any))
+    vi.mocked(sessionRepository.findByToken).mockReturnValue(
+      Effect.succeed(MOCK_SESSION)
+    )
+    vi.mocked(userRepository.findById).mockReturnValue(
+      Effect.succeed(MOCK_USER)
+    )
+    vi.mocked(sessionRepository.rotateSession).mockReturnValue(
+      Effect.succeed({} as any)
+    )
     vi.mocked(issueTokenPair).mockReturnValue(Effect.succeed(MOCK_TOKENS))
   })
 
   it("returns 200 with new accessToken on valid refresh cookie", async () => {
-    const res  = await post(REFRESH_COOKIE)
+    const res = await post(REFRESH_COOKIE)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.accessToken).toBe(MOCK_TOKENS.accessToken)
@@ -54,7 +63,7 @@ describe("refreshHandler", () => {
   })
 
   it("rotated cookie uses Path=/auth so browser sends it to /auth/logout", async () => {
-    const res    = await post(REFRESH_COOKIE)
+    const res = await post(REFRESH_COOKIE)
     const cookie = res.headers.get("set-cookie") ?? ""
     expect(cookie).toContain("Path=/auth")
     expect(cookie).not.toContain("Path=/auth/refresh")
@@ -65,7 +74,7 @@ describe("refreshHandler", () => {
     // Single call to rotateSession — not separate delete + create
     expect(sessionRepository.rotateSession).toHaveBeenCalledTimes(1)
     expect(sessionRepository.rotateSession).toHaveBeenCalledWith(
-      expect.any(String),   // old token hash
+      expect.any(String), // old token hash
       expect.objectContaining({ userId: MOCK_USER.id })
     )
   })
@@ -82,7 +91,9 @@ describe("refreshHandler", () => {
   })
 
   it("returns 401 when session not found in DB", async () => {
-    vi.mocked(sessionRepository.findByToken).mockReturnValue(Effect.succeed(null))
+    vi.mocked(sessionRepository.findByToken).mockReturnValue(
+      Effect.succeed(null)
+    )
     const res = await post(REFRESH_COOKIE)
     expect(res.status).toBe(401)
   })

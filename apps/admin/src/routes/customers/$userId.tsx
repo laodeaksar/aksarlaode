@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useQuery }        from "@tanstack/react-query"
-import { customersApi }    from "@/lib/api"
+
+import { customersApi } from "@/lib/api"
 
 export const Route = createFileRoute("/customers/$userId")({
   component: CustomerDetailPage,
@@ -11,7 +12,7 @@ function CustomerDetailPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["customer", userId],
-    queryFn:  () => customersApi.getOne(userId),
+    queryFn: () => customersApi.getOne(userId),
   })
 
   if (isLoading) return <p className="p-6 text-gray-500">Loading customer...</p>

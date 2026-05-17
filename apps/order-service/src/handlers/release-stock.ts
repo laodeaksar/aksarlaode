@@ -1,10 +1,16 @@
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
-import { env }             from "@repo/env/order"
 import { orderRepository } from "@/repository/order.repository"
-import { productClient }   from "@/lib/product-client"
+import { Effect } from "effect"
+import type { Context } from "elysia"
 
-export const releaseStockHandler = async ({ params, headers, set }: Context) => {
+import { env } from "@repo/env/order"
+
+import { productClient } from "@/lib/product-client"
+
+export const releaseStockHandler = async ({
+  params,
+  headers,
+  set,
+}: Context) => {
   const { orderId } = params as { orderId: string }
 
   // ── Authorization — internal service calls only ──────────────────────────
@@ -29,7 +35,7 @@ export const releaseStockHandler = async ({ params, headers, set }: Context) => 
   // Release stock for every line item in parallel
   const releaseResult = await Effect.runPromiseExit(
     Effect.all(
-      order.items.map(item =>
+      order.items.map((item) =>
         productClient.releaseStock(item.productId, item.quantity)
       ),
       { concurrency: "unbounded" }

@@ -1,35 +1,50 @@
-import { Effect, Data } from "effect"
-import { db, schema }   from "@repo/database"
 import { eq, sql } from "drizzle-orm"
+import { Data, Effect } from "effect"
+
+import { db, schema } from "@repo/database"
+
+import { cacheKey, productCache } from "@/lib/product-cache"
 import { buildProductQuery, type ProductFilters } from "@/lib/query-builder"
-import { productCache, cacheKey } from "@/lib/product-cache"
 
 // ── Error types ────────────────────────────────────────────────────────────
-export class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{ id: string }> {}
-export class DbError              extends Data.TaggedError("DbError")<{ cause: unknown }> {}
-export class InsufficientStockError extends Data.TaggedError("InsufficientStockError")<{
-  productId: string; requested: number; available: number
+export class ProductNotFoundError extends Data.TaggedError(
+  "ProductNotFoundError"
+)<{ id: string }> {}
+export class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
+export class InsufficientStockError extends Data.TaggedError(
+  "InsufficientStockError"
+)<{
+  productId: string
+  requested: number
+  available: number
 }> {}
 
-type NewProduct     = typeof schema.products.$inferInsert
-type UpdateProduct  = Partial<Omit<NewProduct, "id" | "createdAt">>
+type NewProduct = typeof schema.products.$inferInsert
+type UpdateProduct = Partial<Omit<NewProduct, "id" | "createdAt">>
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // ── list ───────────────────────────────────────────────────────────────────
 // FIX PRD-04: filter deleted_at IS NULL so soft-deleted products are excluded.
 const list = (filters: ProductFilters) =>
   Effect.tryPromise({
     try: async () => {
-      const { where, orderBy, limit, offset, cursor } = buildProductQuery(filters)
+      const { where, orderBy, limit, offset, cursor } =
+        buildProductQuery(filters)
 
       const [items, [{ count }]] = await Promise.all([
-        db.select().from(schema.products)
+        db
+          .select()
+          .from(schema.products)
           .where(where)
           .orderBy(orderBy)
-          .limit(limit + 1)   // fetch one extra to determine if there's a next page
+          .limit(limit + 1) // fetch one extra to determine if there's a next page
           .offset(offset),
-        db.select({ count: sql<number>`count(*)` }).from(schema.products).where(where),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.products)
+          .where(where),
       ])
 
       // FIX PRD-07: cursor-based pagination response
@@ -37,15 +52,17 @@ const list = (filters: ProductFilters) =>
       let pageItems = items
 
       if (cursor !== null && items.length > limit) {
-        pageItems  = items.slice(0, limit)
+        pageItems = items.slice(0, limit)
         const last = pageItems[pageItems.length - 1]!
-        nextCursor = Buffer.from(`${last.createdAt.toISOString()}:${last.id}`).toString("base64url")
+        nextCursor = Buffer.from(
+          `${last.createdAt.toISOString()}:${last.id}`
+        ).toString("base64url")
       }
 
       return {
-        items:      pageItems,
-        total:      Number(count),
-        page:       filters.page ?? 1,
+        items: pageItems,
+        total: Number(count),
+        page: filters.page ?? 1,
         limit,
         nextCursor,
       }
@@ -57,12 +74,16 @@ const list = (filters: ProductFilters) =>
 const findById = (id: string) =>
   Effect.gen(function* () {
     // FIX PRD-05: check in-process cache first
-    const cached = productCache.get<typeof schema.products.$inferSelect>(cacheKey.byId(id))
+    const cached = productCache.get<typeof schema.products.$inferSelect>(
+      cacheKey.byId(id)
+    )
     if (cached) return cached
 
     const result = yield* Effect.tryPromise({
       try: () =>
-        db.select().from(schema.products)
+        db
+          .select()
+          .from(schema.products)
           .where(eq(schema.products.id, id))
           // FIX PRD-04: exclude soft-deleted products
           .limit(1),
@@ -70,7 +91,7 @@ const findById = (id: string) =>
     })
 
     // FIX PRD-04: treat soft-deleted rows as not found
-    const row = result.find(r => r.deletedAt == null)
+    const row = result.find((r) => r.deletedAt == null)
     if (!row) return yield* Effect.fail(new ProductNotFoundError({ id }))
 
     productCache.set(cacheKey.byId(id), row)
@@ -80,7 +101,7 @@ const findById = (id: string) =>
 // ── findByIdOrSlug ─────────────────────────────────────────────────────────
 const findByIdOrSlug = (idOrSlug: string) =>
   Effect.gen(function* () {
-    const isUuid    = UUID_REGEX.test(idOrSlug)
+    const isUuid = UUID_REGEX.test(idOrSlug)
 
     // FIX PRD-05: check in-process cache first
     const ck = isUuid ? cacheKey.byId(idOrSlug) : cacheKey.bySlug(idOrSlug)
@@ -88,22 +109,20 @@ const findByIdOrSlug = (idOrSlug: string) =>
     if (cached) return cached
 
     const condition = isUuid
-      ? eq(schema.products.id,   idOrSlug)
+      ? eq(schema.products.id, idOrSlug)
       : eq(schema.products.slug, idOrSlug)
 
     const result = yield* Effect.tryPromise({
-      try: () =>
-        db.select().from(schema.products)
-          .where(condition)
-          .limit(1),
+      try: () => db.select().from(schema.products).where(condition).limit(1),
       catch: (e) => new DbError({ cause: e }),
     })
 
     // FIX PRD-04: treat soft-deleted rows as not found
-    const row = result.find(r => r.deletedAt == null)
-    if (!row) return yield* Effect.fail(new ProductNotFoundError({ id: idOrSlug }))
+    const row = result.find((r) => r.deletedAt == null)
+    if (!row)
+      return yield* Effect.fail(new ProductNotFoundError({ id: idOrSlug }))
 
-    productCache.set(cacheKey.byId(row.id),   row)
+    productCache.set(cacheKey.byId(row.id), row)
     productCache.set(cacheKey.bySlug(row.slug), row)
     return row
   })
@@ -112,11 +131,14 @@ const findByIdOrSlug = (idOrSlug: string) =>
 const create = (data: NewProduct) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
-      try:   () => db.insert(schema.products).values(data).returning(),
+      try: () => db.insert(schema.products).values(data).returning(),
       catch: (e) => new DbError({ cause: e }),
     })
 
-    if (!result[0]) return yield* Effect.fail(new DbError({ cause: "Insert returned no rows" }))
+    if (!result[0])
+      return yield* Effect.fail(
+        new DbError({ cause: "Insert returned no rows" })
+      )
     return result[0]
   })
 
@@ -127,9 +149,12 @@ const update = (id: string, data: UpdateProduct) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
-        db.update(schema.products)
+        db
+          .update(schema.products)
           .set({ ...data, updatedAt: new Date() })
-          .where(sql`${schema.products.id} = ${id} AND ${schema.products.deletedAt} IS NULL`)
+          .where(
+            sql`${schema.products.id} = ${id} AND ${schema.products.deletedAt} IS NULL`
+          )
           .returning(),
       catch: (e) => new DbError({ cause: e }),
     })
@@ -150,9 +175,12 @@ const deleteById = (id: string) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
-        db.update(schema.products)
+        db
+          .update(schema.products)
           .set({ deletedAt: new Date() })
-          .where(sql`${schema.products.id} = ${id} AND ${schema.products.deletedAt} IS NULL`)
+          .where(
+            sql`${schema.products.id} = ${id} AND ${schema.products.deletedAt} IS NULL`
+          )
           .returning({ id: schema.products.id, slug: schema.products.slug }),
       catch: (e) => new DbError({ cause: e }),
     })
@@ -170,7 +198,8 @@ const reserveStock = (productId: string, quantity: number) =>
   Effect.gen(function* () {
     const updated = yield* Effect.tryPromise({
       try: () =>
-        db.update(schema.products)
+        db
+          .update(schema.products)
           .set({ stock: sql`${schema.products.stock} - ${quantity}` })
           .where(
             sql`${schema.products.id} = ${productId}
@@ -184,7 +213,11 @@ const reserveStock = (productId: string, quantity: number) =>
     if (updated.length === 0) {
       const check = yield* Effect.tryPromise({
         try: () =>
-          db.select({ stock: schema.products.stock, deletedAt: schema.products.deletedAt })
+          db
+            .select({
+              stock: schema.products.stock,
+              deletedAt: schema.products.deletedAt,
+            })
             .from(schema.products)
             .where(eq(schema.products.id, productId))
             .limit(1),
@@ -214,7 +247,8 @@ const releaseStock = (productId: string, quantity: number) =>
   Effect.gen(function* () {
     yield* Effect.tryPromise({
       try: () =>
-        db.update(schema.products)
+        db
+          .update(schema.products)
           .set({ stock: sql`${schema.products.stock} + ${quantity}` })
           .where(eq(schema.products.id, productId)),
       catch: (e) => new DbError({ cause: e }),

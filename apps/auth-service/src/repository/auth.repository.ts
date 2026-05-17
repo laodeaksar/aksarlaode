@@ -1,8 +1,9 @@
-import { Effect, Data }  from "effect"
-import { db, schema }    from "@repo/database"
-import { eq }            from "drizzle-orm"
 import type { UserRole } from "@/types"
+import { eq } from "drizzle-orm"
+import { Data, Effect } from "effect"
+
 import { ConflictError } from "@repo/common/errors"
+import { db, schema } from "@repo/database"
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -39,18 +40,18 @@ function isUniqueViolation(e: unknown): boolean {
  */
 export const createUserWithSession = (
   userData: {
-    id:           string
-    email:        string
-    name:         string
+    id: string
+    email: string
+    name: string
     passwordHash: string
-    role:         UserRole
+    role: UserRole
   },
   sessionData: {
-    id:        string
-    userId:    string
-    token:     string
+    id: string
+    userId: string
+    token: string
     expiresAt: Date
-  },
+  }
 ) =>
   Effect.tryPromise({
     try: () =>
@@ -102,9 +103,9 @@ export const createUserWithSession = (
  * (the outer handler re-checks for the token and returns 401).
  */
 export const consumeResetToken = (
-  tokenHash:       string,
-  userId:          string,
-  newPasswordHash: string,
+  tokenHash: string,
+  userId: string,
+  newPasswordHash: string
 ) =>
   Effect.tryPromise({
     try: () =>
@@ -133,8 +134,14 @@ export const consumeResetToken = (
           .where(eq(schema.sessions.userId, userId))
       }),
     catch: (e) => {
-      if (e instanceof Error && e.message === "TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED") {
-        return new ConflictError("token", "Reset token not found or already consumed")
+      if (
+        e instanceof Error &&
+        e.message === "TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED"
+      ) {
+        return new ConflictError(
+          "token",
+          "Reset token not found or already consumed"
+        )
       }
       return new DbError({ cause: e })
     },

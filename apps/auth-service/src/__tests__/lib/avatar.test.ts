@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { isAllowedAvatarUrl }   from "@/lib/avatar"
+import { describe, expect, it } from "vitest"
+
+import { isAllowedAvatarUrl } from "@/lib/avatar"
 
 /**
  * Unit tests for isAllowedAvatarUrl.
@@ -48,7 +49,9 @@ describe("isAllowedAvatarUrl", () => {
     })
 
     it("rejects javascript scheme (XSS vector)", () => {
-      expect(isAllowedAvatarUrl("javascript:alert(document.cookie)")).toBe(false)
+      expect(isAllowedAvatarUrl("javascript:alert(document.cookie)")).toBe(
+        false
+      )
     })
 
     it("rejects protocol-relative URL (no scheme)", () => {
@@ -77,15 +80,19 @@ describe("isAllowedAvatarUrl", () => {
     })
 
     it("blocks AWS EC2 instance metadata endpoint", () => {
-      expect(isAllowedAvatarUrl(
-        "https://169.254.169.254/latest/meta-data/iam/security-credentials/"
-      )).toBe(false)
+      expect(
+        isAllowedAvatarUrl(
+          "https://169.254.169.254/latest/meta-data/iam/security-credentials/"
+        )
+      ).toBe(false)
     })
 
     it("blocks GCP instance metadata endpoint", () => {
-      expect(isAllowedAvatarUrl(
-        "https://metadata.google.internal/computeMetadata/v1/project/project-id"
-      )).toBe(false)
+      expect(
+        isAllowedAvatarUrl(
+          "https://metadata.google.internal/computeMetadata/v1/project/project-id"
+        )
+      ).toBe(false)
     })
   })
 
@@ -93,10 +100,10 @@ describe("isAllowedAvatarUrl", () => {
 
   describe("blocks raw IPv4 addresses regardless of range", () => {
     it.each([
-      ["RFC-1918 class A",  "https://10.0.0.1/admin"],
-      ["RFC-1918 class B",  "https://172.16.0.1/internal"],
-      ["RFC-1918 class C",  "https://192.168.1.1/router"],
-      ["public IP (test)",  "https://203.0.113.55/image.png"],
+      ["RFC-1918 class A", "https://10.0.0.1/admin"],
+      ["RFC-1918 class B", "https://172.16.0.1/internal"],
+      ["RFC-1918 class C", "https://192.168.1.1/router"],
+      ["public IP (test)", "https://203.0.113.55/image.png"],
     ])("blocks %s: %s", (_, url) => {
       expect(isAllowedAvatarUrl(url)).toBe(false)
     })
@@ -117,24 +124,34 @@ describe("isAllowedAvatarUrl", () => {
     })
 
     it("rejects domain that ends with an allowed domain as TLD (gravatar.com.attacker.net)", () => {
-      expect(isAllowedAvatarUrl("https://gravatar.com.attacker.net/img.png")).toBe(false)
+      expect(
+        isAllowedAvatarUrl("https://gravatar.com.attacker.net/img.png")
+      ).toBe(false)
     })
 
     it("rejects URL where allowed hostname appears only in the path", () => {
-      expect(isAllowedAvatarUrl("https://attacker.net/gravatar.com/avatar")).toBe(false)
+      expect(
+        isAllowedAvatarUrl("https://attacker.net/gravatar.com/avatar")
+      ).toBe(false)
     })
 
     it("rejects URL where allowed hostname appears only in the query string", () => {
-      expect(isAllowedAvatarUrl("https://attacker.net/?proxy=gravatar.com")).toBe(false)
+      expect(
+        isAllowedAvatarUrl("https://attacker.net/?proxy=gravatar.com")
+      ).toBe(false)
     })
 
     it("rejects URL where allowed hostname appears in user-info (@ bypass)", () => {
       // https://user@host/path — URL.hostname resolves to 'attacker.net'
-      expect(isAllowedAvatarUrl("https://gravatar.com@attacker.net/img.png")).toBe(false)
+      expect(
+        isAllowedAvatarUrl("https://gravatar.com@attacker.net/img.png")
+      ).toBe(false)
     })
 
     it("rejects URL with allowed hostname in username field", () => {
-      expect(isAllowedAvatarUrl("https://gravatar.com:password@attacker.net/img")).toBe(false)
+      expect(
+        isAllowedAvatarUrl("https://gravatar.com:password@attacker.net/img")
+      ).toBe(false)
     })
   })
 
@@ -142,15 +159,21 @@ describe("isAllowedAvatarUrl", () => {
 
   describe("rejects domains not in the allowlist", () => {
     it("rejects an unknown external domain", () => {
-      expect(isAllowedAvatarUrl("https://attacker.example.com/evil.png")).toBe(false)
+      expect(isAllowedAvatarUrl("https://attacker.example.com/evil.png")).toBe(
+        false
+      )
     })
 
     it("rejects a domain that looks legitimate but is not listed", () => {
-      expect(isAllowedAvatarUrl("https://fakegravatar.com/avatar/abc")).toBe(false)
+      expect(isAllowedAvatarUrl("https://fakegravatar.com/avatar/abc")).toBe(
+        false
+      )
     })
 
     it("rejects a domain with gravatar as a subdomain of a malicious host", () => {
-      expect(isAllowedAvatarUrl("https://gravatar.attacker.com/img")).toBe(false)
+      expect(isAllowedAvatarUrl("https://gravatar.attacker.com/img")).toBe(
+        false
+      )
     })
   })
 

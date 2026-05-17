@@ -32,13 +32,15 @@
 //   the product service never aborts the primary operation.
 
 import { createMiddleware } from "@tanstack/react-start"
-import { getCookies }       from "@tanstack/react-start/server"
-import type { Session }     from "@/lib/auth"
+import { getCookies } from "@tanstack/react-start/server"
+
+import type { Session } from "@/lib/auth"
+
 import {
-  SERVER_FN_ACTION_MAP,
-  sanitizeInput,
   extractResourceId,
   fireAuditWrite,
+  sanitizeInput,
+  SERVER_FN_ACTION_MAP,
 } from "./Audit"
 
 // ── Session resolution ─────────────────────────────────────────────────────
@@ -61,8 +63,9 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
 
     if (!res.ok) return null
 
-    const body = await res.json() as unknown
-    const data  = (body as { data?: Session } | null)?.data ?? (body as Session | null)
+    const body = (await res.json()) as unknown
+    const data =
+      (body as { data?: Session } | null)?.data ?? (body as Session | null)
     return data ?? null
   } catch {
     return null
@@ -73,20 +76,20 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
 
 export const auditMiddleware = createMiddleware().server(
   async ({ next, serverFnMeta, data }) => {
-    const fnName  = serverFnMeta?.name ?? ""
+    const fnName = serverFnMeta?.name ?? ""
     const mapping = SERVER_FN_ACTION_MAP[fnName]
 
     // Not a mapped mutating function — pass through unchanged.
     if (!mapping) return next()
 
     // Resolve environment config from process.env (server-only).
-    const apiUrl        = process.env["PUBLIC_API_URL"]          ?? "http://localhost:3000"
-    const internalToken = process.env["INTERNAL_SERVICE_TOKEN"]  ?? ""
+    const apiUrl = process.env["PUBLIC_API_URL"] ?? "http://localhost:3000"
+    const internalToken = process.env["INTERNAL_SERVICE_TOKEN"] ?? ""
 
     // Attempt session resolution — if it fails we still run the handler
     // but write the audit entry with a "system" fallback actor.
     const session = await resolveSession(apiUrl)
-    const actorId   = session?.id   ?? "system"
+    const actorId = session?.id ?? "system"
     const actorRole = session?.role ?? "ADMIN"
 
     const startMs = performance.now()
@@ -98,41 +101,41 @@ export const auditMiddleware = createMiddleware().server(
       fireAuditWrite(apiUrl, internalToken, {
         actorId,
         actorRole,
-        action:     mapping.action,
-        resource:   mapping.resource,
+        action: mapping.action,
+        resource: mapping.resource,
         resourceId: extractResourceId(fnName, data, result),
         metadata: {
-          fn:         fnName,
-          file:       serverFnMeta?.filename ?? "(unknown)",
+          fn: fnName,
+          file: serverFnMeta?.filename ?? "(unknown)",
           durationMs: Math.round(performance.now() - startMs),
-          outcome:    "ok",
-          input:      sanitizeInput(data),
+          outcome: "ok",
+          input: sanitizeInput(data),
         },
       })
 
       return result
 
-    // ── Error path ──────────────────────────────────────────────────────
+      // ── Error path ──────────────────────────────────────────────────────
     } catch (err: unknown) {
       fireAuditWrite(apiUrl, internalToken, {
         actorId,
         actorRole,
-        action:     mapping.action,
-        resource:   mapping.resource,
+        action: mapping.action,
+        resource: mapping.resource,
         resourceId: extractResourceId(fnName, data),
         metadata: {
-          fn:         fnName,
-          file:       serverFnMeta?.filename ?? "(unknown)",
+          fn: fnName,
+          file: serverFnMeta?.filename ?? "(unknown)",
           durationMs: Math.round(performance.now() - startMs),
-          outcome:    "error",
-          input:      sanitizeInput(data),
-          error:      serializeErr(err),
+          outcome: "error",
+          input: sanitizeInput(data),
+          error: serializeErr(err),
         },
       })
 
       throw err
     }
-  },
+  }
 )
 
 // ── Error serialisation ─────────────────────────────────────────────────────
@@ -143,8 +146,9 @@ function serializeErr(err: unknown): Record<string, unknown> {
 
   const e = err as Record<string, unknown>
   return {
-    _tag:    typeof e["_tag"]    === "string" ? e["_tag"]    : "UnknownError",
-    message: typeof e["message"] === "string" ? e["message"] : JSON.stringify(err),
+    _tag: typeof e["_tag"] === "string" ? e["_tag"] : "UnknownError",
+    message:
+      typeof e["message"] === "string" ? e["message"] : JSON.stringify(err),
     ...(typeof e["status"] === "number" ? { status: e["status"] } : {}),
   }
 }

@@ -1,7 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
 
-type Props  = { children: ReactNode; fallback?: ReactNode }
-type State  = { error: Error | null }
+type Props = { children: ReactNode; fallback?: ReactNode }
+type State = { error: Error | null }
 
 // ── Global Error Boundary ──────────────────────────────────────────────────
 // FIX ADM-07: Prevents a single crashed component from blanking the entire
@@ -35,7 +35,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-          <p className="mb-1 text-base font-semibold text-red-700">Something went wrong</p>
+          <p className="mb-1 text-base font-semibold text-red-700">
+            Something went wrong
+          </p>
           <p className="mb-4 max-w-sm text-sm text-red-600">{error.message}</p>
           <button
             onClick={this.reset}

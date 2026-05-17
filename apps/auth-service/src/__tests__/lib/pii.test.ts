@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
+
 import { maskEmail } from "@/lib/pii"
 
 describe("maskEmail", () => {
@@ -35,7 +36,7 @@ describe("maskEmail", () => {
   })
 
   it("does not include the full original email in the output", () => {
-    const email  = "secret.user@company.com"
+    const email = "secret.user@company.com"
     const masked = maskEmail(email)
     expect(masked).not.toBe(email)
     expect(masked).not.toContain("secret.user")

@@ -1,10 +1,12 @@
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
-import { env }             from "@repo/env/order"
-import { orderRepository } from "@/repository/order.repository"
-import { shapeOrder }      from "@/lib/shape-order"
-import type { UpdateStatusBody } from "@/types"
 import type { OrderStatus } from "@/models/order.model"
+import { orderRepository } from "@/repository/order.repository"
+import type { UpdateStatusBody } from "@/types"
+import { Effect } from "effect"
+import type { Context } from "elysia"
+
+import { env } from "@repo/env/order"
+
+import { shapeOrder } from "@/lib/shape-order"
 
 // FIX ORD-01: explicit state machine — only valid forward transitions are
 // permitted. Prevents admin from accidentally or maliciously moving an order
@@ -25,20 +27,25 @@ import type { OrderStatus } from "@/models/order.model"
 //   REFUNDED        → (none)      terminal state
 const VALID_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   PENDING_PAYMENT: ["PAID", "CANCELLED"],
-  PAID:            ["PROCESSING", "CANCELLED", "REFUNDED"],
-  PROCESSING:      ["SHIPPED", "CANCELLED"],
-  SHIPPED:         ["DELIVERED", "CANCELLED"],
-  DELIVERED:       ["REFUNDED"],
+  PAID: ["PROCESSING", "CANCELLED", "REFUNDED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "CANCELLED"],
+  DELIVERED: ["REFUNDED"],
 }
 
-export const updateStatusHandler = async ({ params, body, headers, set }: Context) => {
-  const { orderId }      = params as { orderId: string }
+export const updateStatusHandler = async ({
+  params,
+  body,
+  headers,
+  set,
+}: Context) => {
+  const { orderId } = params as { orderId: string }
   const { status, note } = body as UpdateStatusBody
 
   // ── Authorization — admin role OR trusted internal service only ──────────
-  const role           = headers["x-user-role"]
-  const serviceToken   = headers["x-service-token"]
-  const isAdmin        = role === "ADMIN" || role === "OWNER"
+  const role = headers["x-user-role"]
+  const serviceToken = headers["x-service-token"]
+  const isAdmin = role === "ADMIN" || role === "OWNER"
   const isInternalCall = serviceToken === env.INTERNAL_SERVICE_TOKEN
 
   if (!isAdmin && !isInternalCall) {
@@ -47,13 +54,14 @@ export const updateStatusHandler = async ({ params, body, headers, set }: Contex
   }
 
   // Track who made the change for audit log
-  const userId    = headers["x-user-id"]
-  const changedBy = isInternalCall && !userId
-    ? "service:internal"
-    : (userId ?? "unknown")
+  const userId = headers["x-user-id"]
+  const changedBy =
+    isInternalCall && !userId ? "service:internal" : (userId ?? "unknown")
 
   // ── Fetch current order to validate state transition ─────────────────────
-  const findResult = await Effect.runPromiseExit(orderRepository.findByOrderId(orderId))
+  const findResult = await Effect.runPromiseExit(
+    orderRepository.findByOrderId(orderId)
+  )
 
   if (findResult._tag === "Failure") {
     set.status = 404
@@ -61,14 +69,14 @@ export const updateStatusHandler = async ({ params, body, headers, set }: Contex
   }
 
   const currentStatus = findResult.value.status as OrderStatus
-  const allowed       = VALID_TRANSITIONS[currentStatus]
+  const allowed = VALID_TRANSITIONS[currentStatus]
 
   if (!allowed) {
     // currentStatus is a terminal state (CANCELLED or REFUNDED)
     set.status = 409
     return {
       error: `Order is in terminal state '${currentStatus}' and cannot be updated`,
-      code:  "INVALID_STATUS_TRANSITION",
+      code: "INVALID_STATUS_TRANSITION",
     }
   }
 
@@ -76,13 +84,18 @@ export const updateStatusHandler = async ({ params, body, headers, set }: Contex
     set.status = 422
     return {
       error: `Transition '${currentStatus}' → '${status}' is not allowed. Valid: [${allowed.join(", ")}]`,
-      code:  "INVALID_STATUS_TRANSITION",
+      code: "INVALID_STATUS_TRANSITION",
     }
   }
 
   // ── Apply the valid transition ────────────────────────────────────────────
   const result = await Effect.runPromiseExit(
-    orderRepository.updateStatus(orderId, status as OrderStatus, note, changedBy)
+    orderRepository.updateStatus(
+      orderId,
+      status as OrderStatus,
+      note,
+      changedBy
+    )
   )
 
   if (result._tag === "Failure") {

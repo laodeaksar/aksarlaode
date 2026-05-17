@@ -1,21 +1,23 @@
-import { Effect }            from "effect"
-import { verifyToken, issueTokenPair } from "@/lib/token"
-import { hashToken }         from "@/lib/token-hash"
-import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
+import { userRepository } from "@/repository/user.repository"
+import type { HandlerCtx } from "@/types"
+import { Effect } from "effect"
+
 import { AuthError, toErrorResponse } from "@repo/common/errors"
-import type { HandlerCtx }   from "@/types"
+
+import { issueTokenPair, verifyToken } from "@/lib/token"
+import { hashToken } from "@/lib/token-hash"
 
 export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
   const cookieHeader = headers["cookie"] ?? ""
-  const match        = cookieHeader.match(/ec_refresh=([^;]+)/)
-  const rawToken     = match?.[1] ? decodeURIComponent(match[1]) : null
+  const match = cookieHeader.match(/ec_refresh=([^;]+)/)
+  const rawToken = match?.[1] ? decodeURIComponent(match[1]) : null
 
   const program = Effect.gen(function* () {
     if (!rawToken) return yield* Effect.fail(new AuthError())
 
     const rawTokenHash = yield* Effect.tryPromise({
-      try:   () => hashToken(rawToken),
+      try: () => hashToken(rawToken),
       catch: () => new AuthError(),
     })
 
@@ -27,25 +29,28 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
       return yield* Effect.fail(new AuthError())
     }
 
-    const session = yield* sessionRepository.findByToken(rawTokenHash).pipe(
-      Effect.mapError(() => new AuthError())
-    )
+    const session = yield* sessionRepository
+      .findByToken(rawTokenHash)
+      .pipe(Effect.mapError(() => new AuthError()))
     if (!session || session.expiresAt < new Date()) {
       return yield* Effect.fail(new AuthError())
     }
 
-    const user = yield* userRepository.findById(payload["sub"]).pipe(
-      Effect.mapError(() => new AuthError())
-    )
+    const user = yield* userRepository
+      .findById(payload["sub"])
+      .pipe(Effect.mapError(() => new AuthError()))
     if (!user) return yield* Effect.fail(new AuthError())
 
     const newSessionId = crypto.randomUUID()
-    const tokens       = yield* issueTokenPair(user.id, user.role, newSessionId, user.email).pipe(
-      Effect.mapError(() => new AuthError())
-    )
+    const tokens = yield* issueTokenPair(
+      user.id,
+      user.role,
+      newSessionId,
+      user.email
+    ).pipe(Effect.mapError(() => new AuthError()))
 
     const newRefreshTokenHash = yield* Effect.tryPromise({
-      try:   () => hashToken(tokens.refreshToken),
+      try: () => hashToken(tokens.refreshToken),
       catch: () => new AuthError(),
     })
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -55,9 +60,14 @@ export const refreshHandler = async ({ headers, set }: HandlerCtx) => {
     // transaction. This eliminates the failure mode where the old session is
     // deleted but the new one is never created, which would orphan the client's
     // cookie and force an unexpected re-login.
-    yield* sessionRepository.rotateSession(rawTokenHash, {
-      id: newSessionId, userId: user.id, token: newRefreshTokenHash, expiresAt,
-    }).pipe(Effect.mapError(() => new AuthError()))
+    yield* sessionRepository
+      .rotateSession(rawTokenHash, {
+        id: newSessionId,
+        userId: user.id,
+        token: newRefreshTokenHash,
+        expiresAt,
+      })
+      .pipe(Effect.mapError(() => new AuthError()))
 
     return tokens
   })

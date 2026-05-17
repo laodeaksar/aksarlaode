@@ -1,27 +1,27 @@
-import { serve }              from "@hono/node-server"
-import { Hono }               from "hono"
-import { env }                from "@repo/env/gateway"
-import { cors }               from "./middleware/cors"
-import { requestId }          from "./middleware/request-id"
-import { logger }             from "./middleware/logger"
-import { rateLimiter }        from "./middleware/rate-limiter"
-import { bodySizeLimiter }    from "./middleware/body-size-limiter"
-import { requestTimeout }     from "./middleware/request-timeout"
-import { authResolver }       from "./middleware/auth-resolver"
-import { contextInjector }    from "./middleware/context-injector"
-import { routeGuard }         from "./middleware/route-guard"
-import { auditLog }           from "./middleware/audit-log"
-import { idempotency }        from "./middleware/idempotency"
-import { responseNormalizer } from "./middleware/response-normalizer"
-import { errorBoundary }      from "./lib/errors"
+import { serve } from "@hono/node-server"
+import { Hono } from "hono"
+
+import { env } from "@repo/env/gateway"
+
 import { getAllBreakerStatus, restoreAllBreakers } from "./lib/circuit-breaker"
-
-import authRoutes    from "./routes/auth.routes"
-import productRoutes from "./routes/product.routes"
-import orderRoutes   from "./routes/order.routes"
+import { errorBoundary } from "./lib/errors"
+import { auditLog } from "./middleware/audit-log"
+import { authResolver } from "./middleware/auth-resolver"
+import { bodySizeLimiter } from "./middleware/body-size-limiter"
+import { contextInjector } from "./middleware/context-injector"
+import { cors } from "./middleware/cors"
+import { idempotency } from "./middleware/idempotency"
+import { logger } from "./middleware/logger"
+import { rateLimiter } from "./middleware/rate-limiter"
+import { requestId } from "./middleware/request-id"
+import { requestTimeout } from "./middleware/request-timeout"
+import { responseNormalizer } from "./middleware/response-normalizer"
+import { routeGuard } from "./middleware/route-guard"
+import authRoutes from "./routes/auth.routes"
+import orderRoutes from "./routes/order.routes"
 import paymentRoutes from "./routes/payment.routes"
+import productRoutes from "./routes/product.routes"
 import webhookRoutes from "./routes/webhook.routes"
-
 import type { AppEnv } from "./types/context"
 
 const app = new Hono<AppEnv>()
@@ -29,13 +29,16 @@ const app = new Hono<AppEnv>()
 // ── Health check — before all middleware so it always responds ────────────────
 app.get("/health", (c) => {
   const circuits = getAllBreakerStatus()
-  const degraded = circuits.some(b => b.state !== "CLOSED")
-  return c.json({
-    status:   degraded ? "degraded" : "ok",
-    service:  "api-gateway",
-    ts:       new Date().toISOString(),
-    circuits,
-  }, degraded ? 207 : 200)
+  const degraded = circuits.some((b) => b.state !== "CLOSED")
+  return c.json(
+    {
+      status: degraded ? "degraded" : "ok",
+      service: "api-gateway",
+      ts: new Date().toISOString(),
+      circuits,
+    },
+    degraded ? 207 : 200
+  )
 })
 
 // FIX GW-07: Internal-only circuit breaker state endpoint.
@@ -50,13 +53,16 @@ app.get("/internal/health/breakers", (c) => {
     return c.json({ error: "Unauthorized", code: "INVALID_SERVICE_TOKEN" }, 401)
   }
   const circuits = getAllBreakerStatus()
-  const degraded = circuits.some(b => b.state !== "CLOSED")
-  return c.json({
-    status:   degraded ? "degraded" : "ok",
-    service:  "api-gateway",
-    ts:       new Date().toISOString(),
-    circuits,
-  }, degraded ? 207 : 200)
+  const degraded = circuits.some((b) => b.state !== "CLOSED")
+  return c.json(
+    {
+      status: degraded ? "degraded" : "ok",
+      service: "api-gateway",
+      ts: new Date().toISOString(),
+      circuits,
+    },
+    degraded ? 207 : 200
+  )
 })
 
 // ── Global middleware (order is strict) ───────────────────────────────────────
@@ -66,17 +72,17 @@ app.use("*", logger)
 app.use("*", rateLimiter)
 app.use("*", bodySizeLimiter)
 app.use("*", requestTimeout)
-app.use("*", authResolver)       // populates c.var.authPayload or short-circuits 401
-app.use("*", contextInjector)    // promotes authPayload → c.var.user (typed User | null)
-app.use("*", auditLog)           // structured audit trail (after user is known, before RBAC)
-app.use("*", idempotency)        // POST deduplication via Idempotency-Key header
-app.use("*", routeGuard)         // RBAC enforcement
+app.use("*", authResolver) // populates c.var.authPayload or short-circuits 401
+app.use("*", contextInjector) // promotes authPayload → c.var.user (typed User | null)
+app.use("*", auditLog) // structured audit trail (after user is known, before RBAC)
+app.use("*", idempotency) // POST deduplication via Idempotency-Key header
+app.use("*", routeGuard) // RBAC enforcement
 app.use("*", responseNormalizer) // sets x-request-id / x-response-time headers
 
 // ── Route tree ────────────────────────────────────────────────────────────────
-app.route("/auth",     authRoutes)
+app.route("/auth", authRoutes)
 app.route("/products", productRoutes)
-app.route("/orders",   orderRoutes)
+app.route("/orders", orderRoutes)
 app.route("/payments", paymentRoutes)
 app.route("/webhooks", webhookRoutes)
 
@@ -91,12 +97,14 @@ const PORT = Number(process.env.PORT ?? 3000)
 
 restoreAllBreakers().then(() => {
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.info(JSON.stringify({
-      event:   "server_started",
-      service: "api-gateway",
-      port:    PORT,
-      env:     env.NODE_ENV,
-    }))
+    console.info(
+      JSON.stringify({
+        event: "server_started",
+        service: "api-gateway",
+        port: PORT,
+        env: env.NODE_ENV,
+      })
+    )
   })
 })
 

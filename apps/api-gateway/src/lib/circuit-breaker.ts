@@ -34,25 +34,25 @@ interface Config {
 }
 
 interface PersistedState {
-  state:        State
+  state: State
   lastOpenedAt: number
-  failures:     number[]   // timestamps
-  savedAt:      number
+  failures: number[] // timestamps
+  savedAt: number
 }
 
 // ── Per-service config overrides ──────────────────────────────────────────────
 const SERVICE_CONFIGS: Record<string, Partial<Config>> = {
-  AUTH:    { failureThreshold: 3, cooldownMs: 20_000 },
+  AUTH: { failureThreshold: 3, cooldownMs: 20_000 },
   PAYMENT: { failureThreshold: 8, windowMs: 120_000, cooldownMs: 60_000 },
 }
 
 const DEFAULT_CONFIG: Config = {
   failureThreshold: 5,
-  windowMs:         60_000,
-  cooldownMs:       30_000,
+  windowMs: 60_000,
+  cooldownMs: 30_000,
 }
 
-const REDIS_TTL_SEC = 86_400   // 24 hours
+const REDIS_TTL_SEC = 86_400 // 24 hours
 
 function redisKey(service: string) {
   return `breaker:state:${service}`
@@ -60,13 +60,16 @@ function redisKey(service: string) {
 
 // ── CircuitBreaker class ──────────────────────────────────────────────────────
 export class CircuitBreaker {
-  private state:         State    = "CLOSED"
-  private failures:      number[] = []
-  private lastOpenedAt:  number   = 0
-  private probeInFlight: boolean  = false
-  readonly config:       Config
+  private state: State = "CLOSED"
+  private failures: number[] = []
+  private lastOpenedAt: number = 0
+  private probeInFlight: boolean = false
+  readonly config: Config
 
-  constructor(public readonly name: string, overrides: Partial<Config> = {}) {
+  constructor(
+    public readonly name: string,
+    overrides: Partial<Config> = {}
+  ) {
     this.config = { ...DEFAULT_CONFIG, ...overrides }
   }
 
@@ -84,19 +87,21 @@ export class CircuitBreaker {
       const age = Date.now() - saved.savedAt
       if (age > this.config.cooldownMs * 2) return
 
-      this.state        = saved.state
+      this.state = saved.state
       this.lastOpenedAt = saved.lastOpenedAt
-      this.failures     = saved.failures.filter(ts =>
-        Date.now() - ts < this.config.windowMs
+      this.failures = saved.failures.filter(
+        (ts) => Date.now() - ts < this.config.windowMs
       )
 
       if (this.state !== "CLOSED") {
-        console.info(JSON.stringify({
-          event:        "circuit_state_restored",
-          service:      this.name,
-          state:        this.state,
-          ageSec:       Math.round(age / 1000),
-        }))
+        console.info(
+          JSON.stringify({
+            event: "circuit_state_restored",
+            service: this.name,
+            state: this.state,
+            ageSec: Math.round(age / 1000),
+          })
+        )
       }
     } catch {
       // Fail-open — Redis unavailable or corrupt snapshot; start from CLOSED.
@@ -106,14 +111,16 @@ export class CircuitBreaker {
   // ── Persist current state to Redis (fire-and-forget) ─────────────────────
   private persist(): void {
     const payload: PersistedState = {
-      state:        this.state,
+      state: this.state,
       lastOpenedAt: this.lastOpenedAt,
-      failures:     this.failures,
-      savedAt:      Date.now(),
+      failures: this.failures,
+      savedAt: Date.now(),
     }
     getRedis()
       .set(redisKey(this.name), JSON.stringify(payload), "EX", REDIS_TTL_SEC)
-      .catch(() => { /* non-critical — degraded to in-memory only */ })
+      .catch(() => {
+        /* non-critical — degraded to in-memory only */
+      })
   }
 
   /**
@@ -129,9 +136,11 @@ export class CircuitBreaker {
 
       case "OPEN":
         if (now - this.lastOpenedAt < this.config.cooldownMs) return false
-        this.state         = "HALF_OPEN"
+        this.state = "HALF_OPEN"
         this.probeInFlight = true
-        console.info(JSON.stringify({ event: "circuit_half_open", service: this.name }))
+        console.info(
+          JSON.stringify({ event: "circuit_half_open", service: this.name })
+        )
         this.persist()
         return true
 
@@ -145,10 +154,12 @@ export class CircuitBreaker {
    */
   success(): void {
     if (this.state === "HALF_OPEN" || this.state === "OPEN") {
-      this.state         = "CLOSED"
-      this.failures      = []
+      this.state = "CLOSED"
+      this.failures = []
       this.probeInFlight = false
-      console.info(JSON.stringify({ event: "circuit_closed", service: this.name }))
+      console.info(
+        JSON.stringify({ event: "circuit_closed", service: this.name })
+      )
       this.persist()
     }
   }
@@ -159,7 +170,9 @@ export class CircuitBreaker {
   failure(): void {
     const now = Date.now()
 
-    this.failures = this.failures.filter(ts => now - ts < this.config.windowMs)
+    this.failures = this.failures.filter(
+      (ts) => now - ts < this.config.windowMs
+    )
     this.failures.push(now)
 
     if (this.state === "HALF_OPEN") {
@@ -167,7 +180,10 @@ export class CircuitBreaker {
       return
     }
 
-    if (this.state === "CLOSED" && this.failures.length >= this.config.failureThreshold) {
+    if (
+      this.state === "CLOSED" &&
+      this.failures.length >= this.config.failureThreshold
+    ) {
       this.trip(now)
     }
   }
@@ -175,23 +191,25 @@ export class CircuitBreaker {
   /** Current snapshot — used by the health endpoint. */
   status(): { name: string; state: State; failures: number; config: Config } {
     return {
-      name:     this.name,
-      state:    this.state,
+      name: this.name,
+      state: this.state,
       failures: this.failures.length,
-      config:   this.config,
+      config: this.config,
     }
   }
 
   private trip(now: number): void {
-    this.state         = "OPEN"
-    this.lastOpenedAt  = now
+    this.state = "OPEN"
+    this.lastOpenedAt = now
     this.probeInFlight = false
-    console.error(JSON.stringify({
-      event:      "circuit_open",
-      service:    this.name,
-      failures:   this.failures.length,
-      cooldownMs: this.config.cooldownMs,
-    }))
+    console.error(
+      JSON.stringify({
+        event: "circuit_open",
+        service: this.name,
+        failures: this.failures.length,
+        cooldownMs: this.config.cooldownMs,
+      })
+    )
     this.persist()
   }
 }
@@ -209,7 +227,7 @@ export function getBreaker(service: string): CircuitBreaker {
 }
 
 export function getAllBreakerStatus() {
-  return Array.from(registry.values()).map(b => b.status())
+  return Array.from(registry.values()).map((b) => b.status())
 }
 
 /**
@@ -220,6 +238,6 @@ export function getAllBreakerStatus() {
 export async function restoreAllBreakers(): Promise<void> {
   const knownServices = ["AUTH", "PRODUCT", "ORDER", "PAYMENT"]
   await Promise.allSettled(
-    knownServices.map(name => getBreaker(name).restoreFromRedis())
+    knownServices.map((name) => getBreaker(name).restoreFromRedis())
   )
 }

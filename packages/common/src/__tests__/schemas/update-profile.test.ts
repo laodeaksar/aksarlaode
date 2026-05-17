@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { UpdateProfileSchema }  from "../../schemas/index"
+import { describe, expect, it } from "vitest"
+
+import { UpdateProfileSchema } from "../../schemas/index"
 
 /**
  * Tests for UpdateProfileSchema — specifically the avatarUrl domain allowlist.
@@ -15,8 +16,8 @@ import { UpdateProfileSchema }  from "../../schemas/index"
 function avatarError(avatarUrl: string): string | null {
   const result = UpdateProfileSchema.safeParse({ avatarUrl })
   if (result.success) return null
-  const issue = result.error.issues.find(i =>
-    Array.isArray(i.path) && i.path.includes("avatarUrl")
+  const issue = result.error.issues.find(
+    (i) => Array.isArray(i.path) && i.path.includes("avatarUrl")
   )
   return issue?.message ?? null
 }
@@ -48,7 +49,10 @@ describe("UpdateProfileSchema — avatarUrl — allowed domains", () => {
   })
 
   it("accepts a profile with undefined avatarUrl", () => {
-    expect(UpdateProfileSchema.safeParse({ name: "Alice", avatarUrl: undefined }).success).toBe(true)
+    expect(
+      UpdateProfileSchema.safeParse({ name: "Alice", avatarUrl: undefined })
+        .success
+    ).toBe(true)
   })
 })
 
@@ -61,7 +65,9 @@ describe("UpdateProfileSchema — avatarUrl — rejects disallowed domains", () 
 
   it("produces a helpful error message naming the constraint", () => {
     const msg = avatarError("https://attacker.example.com/evil.png")
-    expect(msg).toMatch(/avatarUrl must be an HTTPS URL from an allowed domain/i)
+    expect(msg).toMatch(
+      /avatarUrl must be an HTTPS URL from an allowed domain/i
+    )
   })
 
   it("error message lists the allowed hosts", () => {
@@ -74,7 +80,9 @@ describe("UpdateProfileSchema — avatarUrl — rejects disallowed domains", () 
   })
 
   it("rejects a domain that ends with an allowed domain as its TLD", () => {
-    expect(avatarAccepted("https://gravatar.com.attacker.net/img.png")).toBe(false)
+    expect(avatarAccepted("https://gravatar.com.attacker.net/img.png")).toBe(
+      false
+    )
   })
 })
 
@@ -98,12 +106,12 @@ describe("UpdateProfileSchema — avatarUrl — rejects non-HTTPS schemes", () =
 
 describe("UpdateProfileSchema — avatarUrl — SSRF prevention", () => {
   it.each([
-    ["localhost",          "https://localhost/internal"],
-    ["127.0.0.1",          "https://127.0.0.1/secret"],
-    ["RFC-1918 class A",   "https://10.0.0.1/admin"],
-    ["RFC-1918 class C",   "https://192.168.1.1/router"],
-    ["AWS metadata",       "https://169.254.169.254/latest/meta-data/"],
-    ["GCP metadata",       "https://metadata.google.internal/computeMetadata/v1/"],
+    ["localhost", "https://localhost/internal"],
+    ["127.0.0.1", "https://127.0.0.1/secret"],
+    ["RFC-1918 class A", "https://10.0.0.1/admin"],
+    ["RFC-1918 class C", "https://192.168.1.1/router"],
+    ["AWS metadata", "https://169.254.169.254/latest/meta-data/"],
+    ["GCP metadata", "https://metadata.google.internal/computeMetadata/v1/"],
   ])("rejects %s: %s", (_, url) => {
     expect(avatarAccepted(url)).toBe(false)
   })
@@ -134,6 +142,8 @@ describe("UpdateProfileSchema — at least one field required", () => {
   })
 
   it("accepts an object with only phone", () => {
-    expect(UpdateProfileSchema.safeParse({ phone: "+6281234" }).success).toBe(true)
+    expect(UpdateProfileSchema.safeParse({ phone: "+6281234" }).success).toBe(
+      true
+    )
   })
 })

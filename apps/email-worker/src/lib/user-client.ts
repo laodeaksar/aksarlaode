@@ -11,16 +11,13 @@ type UserProfile = { id: string; name: string; email: string }
 
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
   try {
-    const res = await fetch(
-      `${env.AUTH_SERVICE_URL}/admin/users/${userId}`,
-      {
-        headers: {
-          "x-service-token": env.INTERNAL_SERVICE_TOKEN,
-          "Accept":          "application/json",
-        },
-        signal: AbortSignal.timeout(5_000),
-      }
-    )
+    const res = await fetch(`${env.AUTH_SERVICE_URL}/admin/users/${userId}`, {
+      headers: {
+        "x-service-token": env.INTERNAL_SERVICE_TOKEN,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(5_000),
+    })
     if (!res.ok) return null
     const body = await res.json()
     return (body?.data ?? body) as UserProfile

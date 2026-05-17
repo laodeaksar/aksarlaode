@@ -24,7 +24,7 @@ import { redis } from "@/lib/redis"
  * ────────────────────────────────────────────────────────────────────────────
  */
 
-const ACCESS_TOKEN_TTL_SECONDS = 5 * 60    // Must match token.ts signToken() call
+const ACCESS_TOKEN_TTL_SECONDS = 5 * 60 // Must match token.ts signToken() call
 
 const denylistKey = (sessionId: string) => `denylist:session:${sessionId}`
 
@@ -39,11 +39,13 @@ export async function denySession(sessionId: string): Promise<void> {
   try {
     await redis.setex(denylistKey(sessionId), ACCESS_TOKEN_TTL_SECONDS, "1")
   } catch (err) {
-    console.error(JSON.stringify({
-      event:     "denylist_write_error",
-      sessionId,
-      error:     String(err),
-    }))
+    console.error(
+      JSON.stringify({
+        event: "denylist_write_error",
+        sessionId,
+        error: String(err),
+      })
+    )
   }
 }
 
@@ -58,6 +60,6 @@ export async function isSessionDenied(sessionId: string): Promise<boolean> {
     const val = await redis.get(denylistKey(sessionId))
     return val === "1"
   } catch {
-    return true   // fail-closed
+    return true // fail-closed
   }
 }

@@ -19,12 +19,12 @@ export interface OkResponseWithMeta<T, M extends Record<string, unknown>> {
 }
 
 export interface PaginationMeta {
-  page:         number
-  limit:        number
-  total:        number
-  totalPages:   number
-  hasNextPage:  boolean
-  hasPrevPage:  boolean
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
 }
 
 export interface PaginatedResponse<T> {
@@ -81,14 +81,14 @@ export function paginated<T>(
   data: T[],
   input: { page: number; limit: number; total: number }
 ): PaginatedResponse<T> {
-  const totalPages  = Math.ceil(input.total / input.limit) || 1
+  const totalPages = Math.ceil(input.total / input.limit) || 1
   const hasNextPage = input.page < totalPages
   const hasPrevPage = input.page > 1
 
   return {
     data,
     meta: {
-      page:  input.page,
+      page: input.page,
       limit: input.limit,
       total: input.total,
       totalPages,

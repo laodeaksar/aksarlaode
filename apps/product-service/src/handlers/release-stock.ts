@@ -1,20 +1,25 @@
-import { Effect, Cause } from "effect"
-import type { Context }  from "elysia"
 import { productRepository } from "@/repository/product.repository"
+import { Cause, Effect } from "effect"
+import type { Context } from "elysia"
 
 export const releaseStockHandler = async ({ params, body, set }: Context) => {
-  const { id }       = params
+  const { id } = params
   const { quantity } = body as { quantity: number }
 
   // FIX PRD-02: reject zero/negative quantities — releasing 0 is a no-op that
   // hides bugs, and releasing a negative value would silently reduce stock.
   if (!Number.isInteger(quantity) || quantity < 1) {
     set.status = 422
-    return { error: "quantity must be a positive integer", code: "INVALID_QUANTITY" }
+    return {
+      error: "quantity must be a positive integer",
+      code: "INVALID_QUANTITY",
+    }
   }
 
   // Verify product exists before releasing
-  const productResult = await Effect.runPromiseExit(productRepository.findById(id))
+  const productResult = await Effect.runPromiseExit(
+    productRepository.findById(id)
+  )
 
   if (productResult._tag === "Failure") {
     set.status = 404

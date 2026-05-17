@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv, User }     from "@/types/context"
+
+import type { AppEnv, User } from "@/types/context"
 
 // Promotes the authPayload (set by authResolver) into a fully-typed User.
 //
@@ -12,8 +13,8 @@ export const contextInjector: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   if (payload && "id" in payload && payload.id && payload.role) {
     c.set("user", {
-      id:        payload.id,
-      role:      payload.role,
+      id: payload.id,
+      role: payload.role,
       sessionId: payload.sessionId ?? "",
     })
   } else {

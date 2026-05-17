@@ -1,9 +1,10 @@
-import { createServerFn }  from "@tanstack/react-start"
-import { Effect, Schema }  from "effect"
+import { effectMiddleware } from "@/effect/Middleware"
 import { ApiClientService } from "@/effect/Services"
 import type { AuditLogEntry } from "@/effect/Services"
-import { effectMiddleware } from "@/effect/Middleware"
-import { decodeOrThrow }   from "./_utils"
+import { createServerFn } from "@tanstack/react-start"
+import { Effect, Schema } from "effect"
+
+import { decodeOrThrow } from "./_utils"
 
 // ── Input schema ───────────────────────────────────────────────────────────
 
@@ -19,20 +20,23 @@ export const listAuditLogsFn = createServerFn({ method: "GET" })
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ListAuditLogsParamsSchema,
-      raw as Schema.Schema.Encoded<typeof ListAuditLogsParamsSchema>,
+      raw as Schema.Schema.Encoded<typeof ListAuditLogsParamsSchema>
     )
   )
   .handler(
-    async ({ data, context }): Promise<{
+    async ({
+      data,
+      context,
+    }): Promise<{
       items: AuditLogEntry[]
       total: number
-      page:  number
+      page: number
       limit: number
     }> =>
       context.runtime.runPromise(
         Effect.gen(function* () {
           const api = yield* ApiClientService
           return yield* api.auditLogs.list(data.page)
-        }),
+        })
       )
   )

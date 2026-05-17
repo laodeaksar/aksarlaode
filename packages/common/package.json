@@ -5,14 +5,16 @@
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    "./schemas":   "./src/schemas/index.ts",
-    "./errors":    "./src/errors/index.ts",
-    "./response":  "./src/response/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./errors": "./src/errors/index.ts",
+    "./response": "./src/response/index.ts",
     "./lib/avatar": "./src/lib/avatar.ts"
   },
   "scripts": {
-    "test":       "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
+    "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "dependencies": {
     "zod": "^3.24.0"

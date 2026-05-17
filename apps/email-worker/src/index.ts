@@ -1,8 +1,10 @@
-import { emailWorker } from "./processor/email.processor"
-import { emailQueue }  from "./queues/email.queue"
 import { renderMetrics } from "./lib/metrics"
+import { emailWorker } from "./processor/email.processor"
+import { emailQueue } from "./queues/email.queue"
 
-console.info(JSON.stringify({ event: "worker_started", service: "email-worker" }))
+console.info(
+  JSON.stringify({ event: "worker_started", service: "email-worker" })
+)
 
 // FIX EML-09: Lightweight HTTP server that exposes:
 //   GET /health  — liveness probe (always 200 if process is up)
@@ -37,19 +39,23 @@ Bun.serve({
   },
 })
 
-console.info(JSON.stringify({
-  event:   "metrics_server_started",
-  service: "email-worker",
-  port:    METRICS_PORT,
-}))
+console.info(
+  JSON.stringify({
+    event: "metrics_server_started",
+    service: "email-worker",
+    port: METRICS_PORT,
+  })
+)
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {
-  console.info(JSON.stringify({ event: "shutdown", signal, service: "email-worker" }))
+  console.info(
+    JSON.stringify({ event: "shutdown", signal, service: "email-worker" })
+  )
   await emailWorker.close()
   await emailQueue.close()
   process.exit(0)
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"))
-process.on("SIGINT",  () => shutdown("SIGINT"))
+process.on("SIGINT", () => shutdown("SIGINT"))

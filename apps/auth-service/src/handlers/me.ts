@@ -1,10 +1,11 @@
-import { ok }                from "@repo/common/response"
-import { toErrorResponse, AuthError } from "@repo/common/errors"
-import type { HandlerCtx }   from "@/types"
+import type { HandlerCtx } from "@/types"
+
+import { AuthError, toErrorResponse } from "@repo/common/errors"
+import { ok } from "@repo/common/response"
 
 export const meHandler = async ({ headers, set }: HandlerCtx) => {
   const userId = headers["x-user-id"]
-  const role   = headers["x-user-role"]
+  const role = headers["x-user-role"]
 
   if (!userId) {
     const { body, status } = toErrorResponse(new AuthError())

@@ -1,10 +1,11 @@
+import { paymentRepository } from "@/repository/payment.repository"
+import type { AppEnv } from "@/types"
 import { Effect } from "effect"
 import type { Context } from "hono"
-import { paymentRepository } from "@/repository/payment.repository"
-import { orderClient }       from "@/lib/order-client"
-import { emailQueue }        from "@/lib/email-queue"
+
+import { emailQueue } from "@/lib/email-queue"
 import type { MidtransNotification } from "@/lib/midtrans"
-import type { AppEnv } from "@/types"
+import { orderClient } from "@/lib/order-client"
 
 // FIX PAY-04: split into two maps.
 //
@@ -19,23 +20,23 @@ import type { AppEnv } from "@/types"
 // value) and leave the order-service status stale.
 
 const PAYMENT_STATUS_MAP: Record<string, string> = {
-  capture:    "PAID",
+  capture: "PAID",
   settlement: "PAID",
-  pending:    "PENDING",
-  deny:       "FAILED",
-  cancel:     "CANCELLED",
-  expire:     "EXPIRED",
-  refund:     "REFUNDED",
+  pending: "PENDING",
+  deny: "FAILED",
+  cancel: "CANCELLED",
+  expire: "EXPIRED",
+  refund: "REFUNDED",
 }
 
 const ORDER_STATUS_MAP: Record<string, string | null> = {
-  capture:    "PAID",
+  capture: "PAID",
   settlement: "PAID",
-  pending:    null,        // no-op — order stays PENDING_PAYMENT
-  deny:       "CANCELLED", // was "FAILED" — invalid OrderStatus → 422
-  cancel:     "CANCELLED",
-  expire:     "CANCELLED", // was "EXPIRED" — invalid OrderStatus → 422
-  refund:     "REFUNDED",
+  pending: null, // no-op — order stays PENDING_PAYMENT
+  deny: "CANCELLED", // was "FAILED" — invalid OrderStatus → 422
+  cancel: "CANCELLED",
+  expire: "CANCELLED", // was "EXPIRED" — invalid OrderStatus → 422
+  refund: "REFUNDED",
 }
 
 export const webhookHandler = async (c: Context<AppEnv>) => {
@@ -44,9 +45,9 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
   const notification = await c.req.json<MidtransNotification>()
 
   const program = Effect.gen(function* () {
-    const txStatus      = notification.transaction_status ?? ""
+    const txStatus = notification.transaction_status ?? ""
     const paymentStatus = PAYMENT_STATUS_MAP[txStatus] ?? "UNKNOWN"
-    const orderStatus   = ORDER_STATUS_MAP[txStatus]    // null = skip
+    const orderStatus = ORDER_STATUS_MAP[txStatus] // null = skip
 
     // ── FIX PAY-05: Idempotency guard ────────────────────────────────────────
     // Midtrans may deliver the same notification more than once. Fetch the
@@ -57,22 +58,23 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     // We use Effect.either so that PaymentNotFoundError (first-time webhook
     // before initiate has run) is treated as "not yet processed" rather than
     // crashing the flow.
-    const existingResult = yield* paymentRepository.findByOrderId(notification.order_id).pipe(
-      Effect.either
-    )
+    const existingResult = yield* paymentRepository
+      .findByOrderId(notification.order_id)
+      .pipe(Effect.either)
 
-    const existingStatus = existingResult._tag === "Right"
-      ? existingResult.right.status
-      : null
+    const existingStatus =
+      existingResult._tag === "Right" ? existingResult.right.status : null
 
     if (existingStatus === paymentStatus) {
-      console.info(JSON.stringify({
-        event:      "webhook_duplicate_skipped",
-        orderId:    notification.order_id,
-        txStatus,
-        paymentStatus,
-        note:       "Status already matches — skipping side effects",
-      }))
+      console.info(
+        JSON.stringify({
+          event: "webhook_duplicate_skipped",
+          orderId: notification.order_id,
+          txStatus,
+          paymentStatus,
+          note: "Status already matches — skipping side effects",
+        })
+      )
       return { received: true }
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -86,31 +88,38 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     // missing record (Left) means initiate has not run yet, so there is no
     // authoritative amount to compare against.
     if (existingResult._tag === "Right") {
-      const notificationAmount = Math.round(parseFloat(notification.gross_amount ?? "0"))
-      const dbAmount           = existingResult.right.amount
+      const notificationAmount = Math.round(
+        parseFloat(notification.gross_amount ?? "0")
+      )
+      const dbAmount = existingResult.right.amount
 
       if (notificationAmount !== dbAmount) {
-        console.error(JSON.stringify({
-          event:              "ALERT_PAYMENT_AMOUNT_MISMATCH",
-          severity:           "CRITICAL",
-          orderId:            notification.order_id,
-          dbAmount,
-          notificationAmount,
-          grossAmountRaw:     notification.gross_amount,
-          txStatus,
-          note:               "Rejecting webhook — gross_amount does not match stored payment amount. Possible tampered notification.",
-        }))
+        console.error(
+          JSON.stringify({
+            event: "ALERT_PAYMENT_AMOUNT_MISMATCH",
+            severity: "CRITICAL",
+            orderId: notification.order_id,
+            dbAmount,
+            notificationAmount,
+            grossAmountRaw: notification.gross_amount,
+            txStatus,
+            note: "Rejecting webhook — gross_amount does not match stored payment amount. Possible tampered notification.",
+          })
+        )
         return { received: true }
       }
     }
     // ─────────────────────────────────────────────────────────────────────────
 
     // 1. Update payment record (status + paymentType + paidAt)
-    const payment = yield* paymentRepository.updateByOrderId(notification.order_id, {
-      status:      paymentStatus,
-      paymentType: notification.payment_type,
-      paidAt:      paymentStatus === "PAID" ? new Date() : undefined,
-    })
+    const payment = yield* paymentRepository.updateByOrderId(
+      notification.order_id,
+      {
+        status: paymentStatus,
+        paymentType: notification.payment_type,
+        paidAt: paymentStatus === "PAID" ? new Date() : undefined,
+      }
+    )
 
     // 2. Sync order-service — only when there is a meaningful order status change
     if (orderStatus !== null) {
@@ -125,19 +134,23 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
 
     if (paymentStatus === "PAID") {
       yield* emailQueue.add("order-confirmation", {
-        orderId:   notification.order_id,
+        orderId: notification.order_id,
         userEmail,
-        amount:    payment.amount,
+        amount: payment.amount,
       })
     }
 
-    if (paymentStatus === "EXPIRED" || paymentStatus === "CANCELLED" || paymentStatus === "FAILED") {
+    if (
+      paymentStatus === "EXPIRED" ||
+      paymentStatus === "CANCELLED" ||
+      paymentStatus === "FAILED"
+    ) {
       yield* orderClient.releaseStock(notification.order_id)
 
       yield* emailQueue.addCancelled({
-        orderId:   notification.order_id,
+        orderId: notification.order_id,
         userEmail,
-        reason:    paymentStatus,
+        reason: paymentStatus,
       })
     }
 
@@ -148,12 +161,14 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
 
   // Always return 200 to Midtrans — if we 5xx it retries indefinitely.
   if (result._tag === "Failure") {
-    console.error(JSON.stringify({
-      event:    "webhook_processing_failed",
-      orderId:  notification?.order_id,
-      txStatus: notification?.transaction_status,
-      cause:    String(result.cause),
-    }))
+    console.error(
+      JSON.stringify({
+        event: "webhook_processing_failed",
+        orderId: notification?.order_id,
+        txStatus: notification?.transaction_status,
+        cause: String(result.cause),
+      })
+    )
     return c.json({ received: false }, 200)
   }
 

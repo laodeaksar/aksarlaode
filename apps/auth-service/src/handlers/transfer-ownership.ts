@@ -15,23 +15,27 @@
  * OWNER. They must re-login (or wait for token expiry) for the new
  * role to be reflected. The response body communicates this clearly.
  */
-import { Effect }              from "effect"
-import { verifyPassword }      from "@/lib/password"
-import { userRepository }      from "@/repository/user.repository"
-import { sessionRepository }   from "@/repository/session.repository"
-import { writeAuditLog }       from "@/lib/audit-log"
-import { isAtLeastOwner }      from "@/lib/role"
-import type { HandlerCtx }     from "@/types"
-import type { UserRole }       from "@/types"
+import { sessionRepository } from "@/repository/session.repository"
+import { userRepository } from "@/repository/user.repository"
+import type { HandlerCtx, UserRole } from "@/types"
+import { Effect } from "effect"
+
+import { writeAuditLog } from "@/lib/audit-log"
+import { verifyPassword } from "@/lib/password"
+import { isAtLeastOwner } from "@/lib/role"
 
 type TransferOwnershipBody = {
-  targetUserId:    string
+  targetUserId: string
   currentPassword: string
 }
 
-export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCtx) => {
+export const transferOwnershipHandler = async ({
+  body,
+  headers,
+  set,
+}: HandlerCtx) => {
   const { targetUserId, currentPassword } = body as TransferOwnershipBody
-  const actorId   = headers["x-user-id"]
+  const actorId = headers["x-user-id"]
   const actorRole = headers["x-user-role"] as UserRole | undefined
 
   // ── Gate 1: caller must be OWNER ────────────────────────────────────────
@@ -46,7 +50,10 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
   // ── Gate 2: cannot transfer to self ─────────────────────────────────────
   if (actorId === targetUserId) {
     set.status = 422
-    return { error: "Cannot transfer ownership to yourself", code: "INVALID_TARGET" }
+    return {
+      error: "Cannot transfer ownership to yourself",
+      code: "INVALID_TARGET",
+    }
   }
 
   const program = Effect.gen(function* () {
@@ -56,7 +63,10 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
       return yield* Effect.fail({ _tag: "AuthError" as const })
     }
 
-    const passwordOk = yield* verifyPassword(currentPassword, actor.passwordHash)
+    const passwordOk = yield* verifyPassword(
+      currentPassword,
+      actor.passwordHash
+    )
     if (!passwordOk) {
       return yield* Effect.fail({ _tag: "AuthError" as const })
     }
@@ -69,7 +79,10 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
 
     // ── Atomic role swap ──────────────────────────────────────────────────
     // transferOwnership runs both updates inside a single DB transaction.
-    const result = yield* userRepository.transferOwnership(actorId, targetUserId)
+    const result = yield* userRepository.transferOwnership(
+      actorId,
+      targetUserId
+    )
 
     // ── Invalidate all sessions for both parties ───────────────────────
     // Previous owner's sessions carry a JWT that still claims OWNER role.
@@ -89,7 +102,10 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
 
     if (err._tag === "AuthError") {
       set.status = 401
-      return { error: "Password verification failed", code: "INVALID_CREDENTIALS" }
+      return {
+        error: "Password verification failed",
+        code: "INVALID_CREDENTIALS",
+      }
     }
     if (err._tag === "NotFoundError") {
       set.status = 404
@@ -101,20 +117,21 @@ export const transferOwnershipHandler = async ({ body, headers, set }: HandlerCt
 
   // ── Audit log ─────────────────────────────────────────────────────────
   writeAuditLog({
-    event:    "OWNER_TRANSFER",
+    event: "OWNER_TRANSFER",
     actorId,
     targetId: targetUserId,
-    meta:     { previousRole: "OWNER", newRole: "ADMIN" },
+    meta: { previousRole: "OWNER", newRole: "ADMIN" },
   })
 
   return {
-    message: "Ownership transferred successfully. Re-login to receive an updated token.",
+    message:
+      "Ownership transferred successfully. Re-login to receive an updated token.",
     newOwner: {
-      id:   exit.value.newOwner.id,
+      id: exit.value.newOwner.id,
       role: exit.value.newOwner.role,
     },
     prevOwner: {
-      id:   exit.value.prevOwner.id,
+      id: exit.value.prevOwner.id,
       role: exit.value.prevOwner.role,
     },
   }

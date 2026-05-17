@@ -1,6 +1,6 @@
-import { Effect, Data } from "effect"
+import { Data, Effect } from "effect"
 
-class HashError   extends Data.TaggedError("HashError")   {}
+class HashError extends Data.TaggedError("HashError") {}
 class VerifyError extends Data.TaggedError("VerifyError") {}
 
 /**
@@ -11,15 +11,14 @@ class VerifyError extends Data.TaggedError("VerifyError") {}
  *   memoryCost 65536 (64 MB) — dominates GPU throughput
  *   timeCost   3            — additional time-hardening on top of memory
  */
-export const hashPassword = (
-  plain: string
-): Effect.Effect<string, HashError> =>
+export const hashPassword = (plain: string): Effect.Effect<string, HashError> =>
   Effect.tryPromise({
-    try: () => Bun.password.hash(plain, {
-      algorithm:  "argon2id",
-      memoryCost: 65536,
-      timeCost:   3,
-    }),
+    try: () =>
+      Bun.password.hash(plain, {
+        algorithm: "argon2id",
+        memoryCost: 65536,
+        timeCost: 3,
+      }),
     catch: () => new HashError(),
   })
 
@@ -34,7 +33,7 @@ export const hashPassword = (
  * upgrade to Argon2id on the next opportunity (e.g., inside loginHandler).
  */
 export const verifyPassword = (
-  plain:  string,
+  plain: string,
   stored: string
 ): Effect.Effect<boolean, VerifyError> =>
   Effect.tryPromise({
@@ -60,18 +59,24 @@ const isArgon2Hash = (s: string): boolean => s.startsWith("$argon2")
 
 // ── Legacy PBKDF2-HMAC-SHA256 path (kept for migration, not for new hashes) ──
 
-async function verifyLegacyPbkdf2(plain: string, stored: string): Promise<boolean> {
+async function verifyLegacyPbkdf2(
+  plain: string,
+  stored: string
+): Promise<boolean> {
   const [saltHex, hashHex] = stored.split(":")
   if (!saltHex || !hashHex) return false
 
-  const salt      = unhex(saltHex)
-  const key       = await derivePbkdf2Key(plain, salt)
+  const salt = unhex(saltHex)
+  const key = await derivePbkdf2Key(plain, salt)
   const candidate = new Uint8Array(await crypto.subtle.exportKey("raw", key))
 
   return constantTimeEqual(hex(candidate), hashHex)
 }
 
-async function derivePbkdf2Key(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function derivePbkdf2Key(
+  password: string,
+  salt: Uint8Array
+): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),
@@ -88,8 +93,10 @@ async function derivePbkdf2Key(password: string, salt: Uint8Array): Promise<Cryp
   )
 }
 
-const hex   = (b: Uint8Array) => [...b].map(x => x.toString(16).padStart(2, "0")).join("")
-const unhex = (s: string)     => new Uint8Array(s.match(/.{2}/g)!.map(h => parseInt(h, 16)))
+const hex = (b: Uint8Array) =>
+  [...b].map((x) => x.toString(16).padStart(2, "0")).join("")
+const unhex = (s: string) =>
+  new Uint8Array(s.match(/.{2}/g)!.map((h) => parseInt(h, 16)))
 
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false

@@ -1,13 +1,19 @@
-import { Effect }            from "effect"
 import { sessionRepository } from "@/repository/session.repository"
-import { denySession }       from "@/lib/session-denylist"
-import { writeAuditLog }     from "@/lib/audit-log"
-import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
-import { message }           from "@repo/common/response"
-import type { HandlerCtx }   from "@/types"
+import type { HandlerCtx } from "@/types"
+import { Effect } from "effect"
 
-export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx) => {
-  const userId    = headers["x-user-id"]
+import { AuthError, NotFoundError, toErrorResponse } from "@repo/common/errors"
+import { message } from "@repo/common/response"
+
+import { writeAuditLog } from "@/lib/audit-log"
+import { denySession } from "@/lib/session-denylist"
+
+export const revokeSessionHandler = async ({
+  headers,
+  params,
+  set,
+}: HandlerCtx) => {
+  const userId = headers["x-user-id"]
   const sessionId = params["id"]
 
   if (!userId) {
@@ -17,13 +23,18 @@ export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx)
   }
 
   if (!sessionId) {
-    const { body, status } = toErrorResponse(new AuthError("Session ID required"))
+    const { body, status } = toErrorResponse(
+      new AuthError("Session ID required")
+    )
     set.status = status
     return body
   }
 
   const program = Effect.gen(function* () {
-    const session = yield* sessionRepository.findByIdAndUserId(sessionId, userId)
+    const session = yield* sessionRepository.findByIdAndUserId(
+      sessionId,
+      userId
+    )
     if (!session) return yield* Effect.fail(new NotFoundError("Session"))
     yield* sessionRepository.deleteByIdAndUserId(sessionId, userId)
   })
@@ -43,10 +54,10 @@ export const revokeSessionHandler = async ({ headers, params, set }: HandlerCtx)
   await denySession(sessionId)
 
   writeAuditLog({
-    event:    "SESSION_REVOKED",
-    actorId:  userId,
+    event: "SESSION_REVOKED",
+    actorId: userId,
     targetId: userId,
-    meta:     { sessionId },
+    meta: { sessionId },
   })
 
   return message("Session revoked")

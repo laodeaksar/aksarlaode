@@ -16,7 +16,7 @@ type LabelSet = Record<string, string>
 
 interface CounterEntry {
   labels: LabelSet
-  value:  number
+  value: number
 }
 
 const counters: Record<string, CounterEntry[]> = {}
@@ -24,7 +24,7 @@ const counters: Record<string, CounterEntry[]> = {}
 function getOrCreate(name: string, labels: LabelSet): CounterEntry {
   if (!counters[name]) counters[name] = []
   const key = JSON.stringify(labels)
-  let entry = counters[name].find(e => JSON.stringify(e.labels) === key)
+  let entry = counters[name].find((e) => JSON.stringify(e.labels) === key)
   if (!entry) {
     entry = { labels, value: 0 }
     counters[name].push(entry)
@@ -39,7 +39,8 @@ export function incrementCounter(name: string, labels: LabelSet = {}): void {
 // ── Prometheus text format serialiser ─────────────────────────────────────────
 function labelsToString(labels: LabelSet): string {
   const pairs = Object.entries(labels).map(
-    ([k, v]) => `${k}="${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`
+    ([k, v]) =>
+      `${k}="${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`
   )
   return pairs.length > 0 ? `{${pairs.join(",")}}` : ""
 }
@@ -53,14 +54,16 @@ export function renderMetrics(): string {
   lines.push("email_worker_up 1")
 
   const HELP: Record<string, string> = {
-    email_sent_total:  "Total number of emails successfully sent",
-    email_failed_total: "Total number of transient email send failures (will be retried)",
-    email_retry_total:  "Total number of emails permanently failed after all retry attempts",
+    email_sent_total: "Total number of emails successfully sent",
+    email_failed_total:
+      "Total number of transient email send failures (will be retried)",
+    email_retry_total:
+      "Total number of emails permanently failed after all retry attempts",
   }
   const TYPE: Record<string, string> = {
-    email_sent_total:   "counter",
+    email_sent_total: "counter",
     email_failed_total: "counter",
-    email_retry_total:  "counter",
+    email_retry_total: "counter",
   }
 
   for (const [name, entries] of Object.entries(counters)) {

@@ -6,14 +6,14 @@ import { z } from "zod/v4"
  * is missing or invalid — no silent fallbacks.
  */
 export function parseEnv<T extends z.ZodRawShape>(
-  shape:       T,
+  shape: T,
   serviceName: string
 ): z.infer<z.ZodObject<T>> {
   const result = z.object(shape).safeParse(process.env)
 
   if (!result.success) {
     const fields = result.error.flatten().fieldErrors
-    const lines  = Object.entries(fields)
+    const lines = Object.entries(fields)
       .map(([key, errors]) => `   ${key.padEnd(30)} ${errors?.join(", ")}`)
       .join("\n")
 

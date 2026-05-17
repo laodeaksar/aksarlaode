@@ -1,7 +1,8 @@
 import { Effect, Either } from "effect"
-import { AppRuntime }         from "./Runtime"
-import { ApiClientService }   from "./Services"
+
 import { serializeError, type AppError, type SerializedError } from "./Errors"
+import { AppRuntime } from "./Runtime"
+import { ApiClientService } from "./Services"
 
 // ── runServerEffect ────────────────────────────────────────────────────────
 // Primary helper for TanStack Start server functions.
@@ -9,7 +10,7 @@ import { serializeError, type AppError, type SerializedError } from "./Errors"
 // typed errors as thrown exceptions (TanStack Start serializes them to the client).
 
 export async function runServerEffect<A>(
-  effect: Effect.Effect<A, AppError, ApiClientService>,
+  effect: Effect.Effect<A, AppError, ApiClientService>
 ): Promise<A> {
   return AppRuntime.runPromise(effect)
 }
@@ -20,7 +21,7 @@ export async function runServerEffect<A>(
 // try/catch — for example, returning structured error data to the client.
 
 export async function runServerEffectSafe<A>(
-  effect: Effect.Effect<A, AppError, ApiClientService>,
+  effect: Effect.Effect<A, AppError, ApiClientService>
 ): Promise<{ ok: true; data: A } | { ok: false; error: SerializedError }> {
   const result = await AppRuntime.runPromise(Effect.either(effect))
 

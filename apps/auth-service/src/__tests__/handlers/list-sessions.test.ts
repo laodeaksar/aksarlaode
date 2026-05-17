@@ -1,22 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Elysia } from "elysia"
-import { Effect } from "effect"
-import { MOCK_USER, MOCK_SESSION } from "../fixtures"
+import { listSessionsHandler } from "@/handlers/list-sessions"
+import { sessionRepository } from "@/repository/session.repository"
 import { SessionQuery } from "@/schemas"
+import { Effect } from "effect"
+import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { MOCK_SESSION, MOCK_USER } from "../fixtures"
 
 vi.mock("@/repository/session.repository", () => ({
   sessionRepository: { findPageByUserId: vi.fn() },
 }))
 
-import { sessionRepository }  from "@/repository/session.repository"
-import { listSessionsHandler } from "@/handlers/list-sessions"
-
-const app = new Elysia().get("/sessions", listSessionsHandler, { query: SessionQuery })
+const app = new Elysia().get("/sessions", listSessionsHandler, {
+  query: SessionQuery,
+})
 
 function get(userId?: string, query = "") {
-  return app.handle(new Request(`http://localhost/sessions${query}`, {
-    headers: userId ? { "x-user-id": userId } : {},
-  }))
+  return app.handle(
+    new Request(`http://localhost/sessions${query}`, {
+      headers: userId ? { "x-user-id": userId } : {},
+    })
+  )
 }
 
 describe("listSessionsHandler", () => {
@@ -28,7 +32,7 @@ describe("listSessionsHandler", () => {
   })
 
   it("returns 200 with paginated sessions", async () => {
-    const res  = await get(MOCK_USER.id)
+    const res = await get(MOCK_USER.id)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data).toHaveLength(1)
@@ -37,7 +41,7 @@ describe("listSessionsHandler", () => {
   })
 
   it("does not expose the raw token in the response", async () => {
-    const res  = await get(MOCK_USER.id)
+    const res = await get(MOCK_USER.id)
     const body = await res.json()
     expect(JSON.stringify(body)).not.toContain("mock.refresh.token")
   })
@@ -56,7 +60,7 @@ describe("listSessionsHandler", () => {
 
     expect(sessionRepository.findPageByUserId).toHaveBeenCalledWith(
       MOCK_USER.id,
-      { limit: 10, offset: 10 },
+      { limit: 10, offset: 10 }
     )
   })
 
@@ -69,7 +73,7 @@ describe("listSessionsHandler", () => {
       Effect.succeed({ items, total: 25 })
     )
 
-    const res  = await get(MOCK_USER.id, "?page=2&limit=10")
+    const res = await get(MOCK_USER.id, "?page=2&limit=10")
     const body = await res.json()
     expect(body.data).toHaveLength(10)
     expect(body.meta.page).toBe(2)

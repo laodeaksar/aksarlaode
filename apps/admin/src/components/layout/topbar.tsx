@@ -3,7 +3,8 @@ import { env } from "@repo/env/admin"
 export function Topbar() {
   const handleLogout = async () => {
     await fetch(`${env.PUBLIC_API_URL}/auth/logout`, {
-      method: "POST", credentials: "include",
+      method: "POST",
+      credentials: "include",
     })
     window.location.href = "/login"
   }

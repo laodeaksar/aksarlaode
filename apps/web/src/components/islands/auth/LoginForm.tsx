@@ -1,15 +1,16 @@
-import { useForm }         from "react-hook-form"
-import { zodResolver }     from "@hookform/resolvers/zod"
-import { useState }        from "react"
-import { Effect }          from "effect"
-import { AppRuntime }      from "@/lib/effect/runtime"
-import { authApi }         from "@/lib/api/auth"
+import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Effect } from "effect"
+import { useForm } from "react-hook-form"
+
+import { authApi } from "@/lib/api/auth"
+import { AuthError } from "@/lib/effect/errors"
+import { AppRuntime } from "@/lib/effect/runtime"
 import { loginSchema, type LoginInput } from "@/lib/schemas/forms"
-import { AuthError }       from "@/lib/effect/errors"
 
 export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null)
-  const [isSuccess,   setIsSuccess]   = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const {
     register,
@@ -95,7 +96,9 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-gray-500">
         Don't have an account?{" "}
-        <a href="/account/register" className="text-blue-600 hover:underline">Register</a>
+        <a href="/account/register" className="text-blue-600 hover:underline">
+          Register
+        </a>
       </p>
     </form>
   )

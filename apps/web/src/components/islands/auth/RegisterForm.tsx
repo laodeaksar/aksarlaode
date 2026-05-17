@@ -1,10 +1,11 @@
-import { useForm }         from "react-hook-form"
-import { zodResolver }     from "@hookform/resolvers/zod"
-import { useState }        from "react"
-import { Effect }          from "effect"
-import { AppRuntime }      from "@/lib/effect/runtime"
-import { authApi }         from "@/lib/api/auth"
-import { HttpError }       from "@/lib/effect/errors"
+import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Effect } from "effect"
+import { useForm } from "react-hook-form"
+
+import { authApi } from "@/lib/api/auth"
+import { HttpError } from "@/lib/effect/errors"
+import { AppRuntime } from "@/lib/effect/runtime"
 import { registerSchema, type RegisterInput } from "@/lib/schemas/forms"
 
 export function RegisterForm() {
@@ -17,15 +18,13 @@ export function RegisterForm() {
     setError,
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    mode:     "onBlur",    // validate on blur for better UX
+    mode: "onBlur", // validate on blur for better UX
   })
 
   const onSubmit = async (values: RegisterInput) => {
     setServerError(null)
 
-    const exit = await AppRuntime.runPromiseExit(
-      authApi.register(values)
-    )
+    const exit = await AppRuntime.runPromiseExit(authApi.register(values))
 
     if (exit._tag === "Failure") {
       const err = exit.cause.error
@@ -45,23 +44,44 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       {serverError && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</div>
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          {serverError}
+        </div>
       )}
 
       <Field label="Full Name" error={errors.name?.message}>
-        <input {...register("name")} className={inputCls(!!errors.name)} placeholder="Budi Santoso" />
+        <input
+          {...register("name")}
+          className={inputCls(!!errors.name)}
+          placeholder="Budi Santoso"
+        />
       </Field>
 
       <Field label="Email" error={errors.email?.message}>
-        <input {...register("email")} type="email" className={inputCls(!!errors.email)} placeholder="you@example.com" />
+        <input
+          {...register("email")}
+          type="email"
+          className={inputCls(!!errors.email)}
+          placeholder="you@example.com"
+        />
       </Field>
 
       <Field label="Password" error={errors.password?.message}>
-        <input {...register("password")} type="password" className={inputCls(!!errors.password)} placeholder="Min 8 characters" />
+        <input
+          {...register("password")}
+          type="password"
+          className={inputCls(!!errors.password)}
+          placeholder="Min 8 characters"
+        />
       </Field>
 
       <Field label="Confirm Password" error={errors.confirmPassword?.message}>
-        <input {...register("confirmPassword")} type="password" className={inputCls(!!errors.confirmPassword)} placeholder="Repeat password" />
+        <input
+          {...register("confirmPassword")}
+          type="password"
+          className={inputCls(!!errors.confirmPassword)}
+          placeholder="Repeat password"
+        />
       </Field>
 
       <button

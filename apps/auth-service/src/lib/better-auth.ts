@@ -22,4 +22,4 @@
  * See: security audit finding F-03
  */
 
-export {}   // keep as a module to avoid import errors in any stale references
+export {} // keep as a module to avoid import errors in any stale references

@@ -11,33 +11,47 @@
  *   pnpm --filter auth-service test:integration
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { Elysia }  from "elysia"
-import { cors }    from "@elysiajs/cors"
-import { Pool }    from "pg"
-
-import authRoutes    from "@/routes/auth.routes"
-import sessionRoutes from "@/routes/session.routes"
-import adminRoutes   from "@/routes/admin.routes"
 import { serviceTokenMiddleware } from "@/middleware/service-token"
-import { env }                    from "@repo/env/auth"
+import adminRoutes from "@/routes/admin.routes"
+import authRoutes from "@/routes/auth.routes"
+import sessionRoutes from "@/routes/session.routes"
+import { cors } from "@elysiajs/cors"
+import { Elysia } from "elysia"
+import { Pool } from "pg"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
+
+import { env } from "@repo/env/auth"
 
 // ── App factory (mirrors index.ts, without .listen()) ──────────────────────
 function makeApp() {
   return new Elysia()
-    .use(cors({
-      origin:         [env.WEB_URL, env.ADMIN_URL],
-      allowedHeaders: ["Content-Type", "Authorization", "x-service-token",
-                       "x-user-id", "x-session-id", "x-request-id"],
-      credentials:    true,
-    }))
+    .use(
+      cors({
+        origin: [env.WEB_URL, env.ADMIN_URL],
+        allowedHeaders: [
+          "Content-Type",
+          "Authorization",
+          "x-service-token",
+          "x-user-id",
+          "x-session-id",
+          "x-request-id",
+        ],
+        credentials: true,
+      })
+    )
     .onBeforeHandle(serviceTokenMiddleware)
     .use(authRoutes)
     .use(sessionRoutes)
     .use(adminRoutes)
     .onError(({ code, error, set }) => {
-      if (code === "VALIDATION") { set.status = 422; return { error: "Validation failed" } }
-      if (code === "NOT_FOUND")  { set.status = 404; return { error: "Not found" } }
+      if (code === "VALIDATION") {
+        set.status = 422
+        return { error: "Validation failed" }
+      }
+      if (code === "NOT_FOUND") {
+        set.status = 404
+        return { error: "Not found" }
+      }
       set.status = 500
       console.error("[smoke] unhandled:", error.message)
       return { error: "Internal server error" }
@@ -49,30 +63,40 @@ function makeApp() {
 const SERVICE_TOKEN = env.INTERNAL_SERVICE_TOKEN
 
 async function request(
-  app:     Elysia,
-  method:  string,
-  path:    string,
-  opts:    { body?: unknown; cookie?: string; userId?: string; sessionId?: string } = {},
+  app: Elysia,
+  method: string,
+  path: string,
+  opts: {
+    body?: unknown
+    cookie?: string
+    userId?: string
+    sessionId?: string
+  } = {}
 ) {
   const headers: Record<string, string> = {
-    "Content-Type":   "application/json",
+    "Content-Type": "application/json",
     "x-service-token": SERVICE_TOKEN,
   }
-  if (opts.cookie)    headers["Cookie"]       = opts.cookie
-  if (opts.userId)    headers["x-user-id"]    = opts.userId
+  if (opts.cookie) headers["Cookie"] = opts.cookie
+  if (opts.userId) headers["x-user-id"] = opts.userId
   if (opts.sessionId) headers["x-session-id"] = opts.sessionId
 
-  const res = await app.handle(new Request(`http://localhost${path}`, {
-    method,
-    headers,
-    body: opts.body != null ? JSON.stringify(opts.body) : undefined,
-  }))
+  const res = await app.handle(
+    new Request(`http://localhost${path}`, {
+      method,
+      headers,
+      body: opts.body != null ? JSON.stringify(opts.body) : undefined,
+    })
+  )
 
   // Debug: log body on server errors so failures are visible in CI
   if (res.status >= 500) {
     const cloned = res.clone()
-    const body   = await cloned.json().catch(() => "(non-json body)")
-    console.error(`[smoke] ${method} ${path} → ${res.status}:`, JSON.stringify(body))
+    const body = await cloned.json().catch(() => "(non-json body)")
+    console.error(
+      `[smoke] ${method} ${path} → ${res.status}:`,
+      JSON.stringify(body)
+    )
   }
 
   return res
@@ -80,16 +104,16 @@ async function request(
 
 function extractRefreshCookie(res: Response): string | null {
   const raw = res.headers.get("set-cookie") ?? ""
-  const m   = raw.match(/ec_refresh=([^;]+)/)
+  const m = raw.match(/ec_refresh=([^;]+)/)
   return m ? decodeURIComponent(m[1]) : null
 }
 
 // ── Unique test-run email ──────────────────────────────────────────────────
 
-const runId     = crypto.randomUUID().slice(0, 8)
+const runId = crypto.randomUUID().slice(0, 8)
 const testEmail = `smoke+${runId}@integration.test`
-const testPass  = "SmokeTest1!"
-const testName  = "Smoke User"
+const testPass = "SmokeTest1!"
+const testName = "Smoke User"
 
 // ── State shared across steps ──────────────────────────────────────────────
 
@@ -108,7 +132,10 @@ afterAll(async () => {
   // Uses a short-lived pg.Pool (the db singleton is owned by Drizzle).
   const pool = new Pool({ connectionString: env.DATABASE_URL })
   try {
-    await pool.query(`DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email = $1)`, [testEmail])
+    await pool.query(
+      `DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email = $1)`,
+      [testEmail]
+    )
     await pool.query(`DELETE FROM users WHERE email = $1`, [testEmail])
   } finally {
     await pool.end()
@@ -119,7 +146,7 @@ afterAll(async () => {
 
 describe("auth smoke — register", () => {
   it("returns 201 with accessToken and user shape", async () => {
-    const res  = await request(app, "POST", "/auth/register", {
+    const res = await request(app, "POST", "/auth/register", {
       body: { email: testEmail, name: testName, password: testPass },
     })
     const body = await res.json()
@@ -130,7 +157,7 @@ describe("auth smoke — register", () => {
     expect(body.user).not.toHaveProperty("passwordHash")
 
     // Persist for subsequent steps
-    userId       = body.user.id
+    userId = body.user.id
     refreshToken = extractRefreshCookie(res) ?? ""
     expect(refreshToken).not.toBe("")
   })
@@ -149,13 +176,16 @@ describe("auth smoke — register", () => {
 
     // Clean up the extra user
     const pool = new Pool({ connectionString: env.DATABASE_URL })
-    await pool.query(`DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email = $1)`, [uniqueEmail])
+    await pool.query(
+      `DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email = $1)`,
+      [uniqueEmail]
+    )
     await pool.query(`DELETE FROM users WHERE email = $1`, [uniqueEmail])
     await pool.end()
   })
 
   it("returns 409 when the same email registers again", async () => {
-    const res  = await request(app, "POST", "/auth/register", {
+    const res = await request(app, "POST", "/auth/register", {
       body: { email: testEmail, name: "Dup", password: testPass },
     })
     const body = await res.json()
@@ -165,7 +195,7 @@ describe("auth smoke — register", () => {
 
   it("returns 422 for a missing required field", async () => {
     const res = await request(app, "POST", "/auth/register", {
-      body: { email: testEmail, password: testPass },   // name missing
+      body: { email: testEmail, password: testPass }, // name missing
     })
     expect(res.status).toBe(422)
   })
@@ -173,7 +203,7 @@ describe("auth smoke — register", () => {
 
 describe("auth smoke — login", () => {
   it("returns 200 with a fresh accessToken for valid credentials", async () => {
-    const res  = await request(app, "POST", "/auth/login", {
+    const res = await request(app, "POST", "/auth/login", {
       body: { email: testEmail, password: testPass },
     })
     const body = await res.json()
@@ -205,7 +235,7 @@ describe("auth smoke — login", () => {
 
 describe("auth smoke — refresh", () => {
   it("returns 200 with a new accessToken using the refresh cookie", async () => {
-    const res  = await request(app, "POST", "/auth/refresh", {
+    const res = await request(app, "POST", "/auth/refresh", {
       cookie: `ec_refresh=${refreshToken}`,
     })
     const body = await res.json()
@@ -233,8 +263,8 @@ describe("auth smoke — refresh", () => {
 
 describe("auth smoke — logout", () => {
   it("returns 200 and clears the refresh cookie", async () => {
-    const res  = await request(app, "POST", "/auth/logout", {
-      cookie:  `ec_refresh=${refreshToken}`,
+    const res = await request(app, "POST", "/auth/logout", {
+      cookie: `ec_refresh=${refreshToken}`,
       userId,
     })
     const body = await res.json()
@@ -257,11 +287,13 @@ describe("auth smoke — logout", () => {
 
 describe("auth smoke — service-token guard", () => {
   it("returns 403 for any request missing the service token", async () => {
-    const res = await app.handle(new Request("http://localhost/auth/login", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email: testEmail, password: testPass }),
-    }))
+    const res = await app.handle(
+      new Request("http://localhost/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail, password: testPass }),
+      })
+    )
     expect(res.status).toBe(403)
   })
 })

@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from "hono"
+
 import type { AppEnv } from "@/types/context"
-import { ROUTE_PERMISSIONS, ROLE_HIERARCHY } from "@/lib/route-permissions"
+import { ROLE_HIERARCHY, ROUTE_PERMISSIONS } from "@/lib/route-permissions"
 
 export const routeGuard: MiddlewareHandler<AppEnv> = async (c, next) => {
   const user = c.var.user
@@ -12,8 +13,8 @@ export const routeGuard: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (!rule.pattern.test(path)) continue
     if (rule.method !== "*" && rule.method !== method) continue
 
-    const userLevel = ROLE_HIERARCHY[user.role]  ?? -1
-    const minLevel  = ROLE_HIERARCHY[rule.minRole]
+    const userLevel = ROLE_HIERARCHY[user.role] ?? -1
+    const minLevel = ROLE_HIERARCHY[rule.minRole]
 
     if (userLevel < minLevel) {
       return c.json(

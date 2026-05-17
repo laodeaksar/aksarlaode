@@ -1,13 +1,13 @@
 import { Layer, ManagedRuntime } from "effect"
-import { ConfigService }         from "./Services"
-import { ApiClientService }      from "./Services"
+
+import { ApiClientService, ConfigService } from "./Services"
 
 // ── Application Layer ──────────────────────────────────────────────────────
 // `ApiClientService.Default` requires `ConfigService` internally.
 // `Layer.provide` wires that dependency so the composed layer is self-contained.
 
 export const AppLayer = ApiClientService.Default.pipe(
-  Layer.provide(ConfigService.Default),
+  Layer.provide(ConfigService.Default)
 )
 
 // ── Server Runtime ─────────────────────────────────────────────────────────

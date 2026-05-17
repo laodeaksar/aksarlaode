@@ -1,11 +1,12 @@
-import Elysia, { t }          from "elysia"
-import { env }                 from "@repo/env/order"
-import { createHandler }       from "@/handlers/create"
-import { listHandler }         from "@/handlers/list"
-import { getOneHandler }       from "@/handlers/get-one"
-import { cancelHandler }       from "@/handlers/cancel"
-import { updateStatusHandler } from "@/handlers/update-status"
+import { cancelHandler } from "@/handlers/cancel"
+import { createHandler } from "@/handlers/create"
+import { getOneHandler } from "@/handlers/get-one"
+import { listHandler } from "@/handlers/list"
 import { releaseStockHandler } from "@/handlers/release-stock"
+import { updateStatusHandler } from "@/handlers/update-status"
+import Elysia, { t } from "elysia"
+
+import { env } from "@repo/env/order"
 
 // ── Shared param schemas ───────────────────────────────────────────────────
 const OrderIdParamSchema = t.Object({
@@ -14,31 +15,31 @@ const OrderIdParamSchema = t.Object({
 
 const ErrorSchema = t.Object({
   error: t.String(),
-  code:  t.Optional(t.String()),
+  code: t.Optional(t.String()),
 })
 
 // ── Request body schemas ───────────────────────────────────────────────────
 const LineItemSchema = t.Object({
   productId: t.String({ format: "uuid" }),
-  quantity:  t.Integer({ minimum: 1 }),
+  quantity: t.Integer({ minimum: 1 }),
 })
 
 const AddressSchema = t.Object({
   recipientName: t.String({ minLength: 1 }),
-  phone:         t.String({ minLength: 1 }),
-  street:        t.String({ minLength: 1 }),
-  city:          t.String({ minLength: 1 }),
-  province:      t.String({ minLength: 1 }),
-  postalCode:    t.String({ minLength: 1 }),
-  country:       t.Optional(t.String()),
+  phone: t.String({ minLength: 1 }),
+  street: t.String({ minLength: 1 }),
+  city: t.String({ minLength: 1 }),
+  province: t.String({ minLength: 1 }),
+  postalCode: t.String({ minLength: 1 }),
+  country: t.Optional(t.String()),
 })
 
 const CreateOrderBodySchema = t.Object({
-  items:           t.Array(LineItemSchema, { minItems: 1 }),
+  items: t.Array(LineItemSchema, { minItems: 1 }),
   shippingAddress: AddressSchema,
   // shippingFee sent by client is informational only; authoritative value is set server-side
-  shippingFee:     t.Optional(t.Number({ minimum: 0 })),
-  notes:           t.Optional(t.String()),
+  shippingFee: t.Optional(t.Number({ minimum: 0 })),
+  notes: t.Optional(t.String()),
   // discountAmount intentionally omitted — must only come from a server-validated voucher flow
 })
 
@@ -68,81 +69,98 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
 
   .post("/", createHandler, {
     body: CreateOrderBodySchema,
-    headers: t.Object({
-      // Required — without idempotency key, retries can cause double orders
-      "idempotency-key": t.String({
-        minLength: 16,
-        maxLength: 128,
-        description: "Client-generated unique key (UUID v4 recommended). Makes the endpoint idempotent: duplicate requests with the same key within 24 h return the original response without creating a second order.",
-        examples:    ["550e8400-e29b-41d4-a716-446655440000"],
-      }),
-    }, { additionalProperties: true }),
+    headers: t.Object(
+      {
+        // Required — without idempotency key, retries can cause double orders
+        "idempotency-key": t.String({
+          minLength: 16,
+          maxLength: 128,
+          description:
+            "Client-generated unique key (UUID v4 recommended). Makes the endpoint idempotent: duplicate requests with the same key within 24 h return the original response without creating a second order.",
+          examples: ["550e8400-e29b-41d4-a716-446655440000"],
+        }),
+      },
+      { additionalProperties: true }
+    ),
     response: {
-      201: t.Object({ orderId: t.String(), grandTotal: t.Number(), status: t.String() }),
+      201: t.Object({
+        orderId: t.String(),
+        grandTotal: t.Number(),
+        status: t.String(),
+      }),
       404: ErrorSchema,
       409: ErrorSchema,
       500: ErrorSchema,
       502: ErrorSchema,
     },
     detail: {
-      summary:     "Create order",
-      description: "Fetches authoritative prices from product-service, reserves stock atomically with rollback compensation on partial failure, persists order, and queues confirmation email. Requires `Idempotency-Key` header.",
+      summary: "Create order",
+      description:
+        "Fetches authoritative prices from product-service, reserves stock atomically with rollback compensation on partial failure, persists order, and queues confirmation email. Requires `Idempotency-Key` header.",
     },
   })
 
   .get("/", listHandler, {
     query: t.Object({
-      page:  t.Optional(t.String({ description: "Page number (default: 1)" })),
-      limit: t.Optional(t.String({ description: "Items per page, max 100 (default: 20)" })),
+      page: t.Optional(t.String({ description: "Page number (default: 1)" })),
+      limit: t.Optional(
+        t.String({ description: "Items per page, max 100 (default: 20)" })
+      ),
     }),
     response: {
       200: t.Object({
-        items: t.Array(t.Object({
-          orderId:  t.String(),
-          userId:   t.String(),
-          status:   t.String(),
-          items: t.Array(t.Object({
-            productId:   t.String(),
-            productName: t.String(),
-            sku:         t.String(),
-            imageUrl:    t.Union([t.String(), t.Null()]),
-            price:       t.Number(),
-            quantity:    t.Integer(),
-            subtotal:    t.Number(),
-          })),
-          shippingAddress: t.Object({
-            recipientName: t.String(),
-            phone:         t.String(),
-            street:        t.String(),
-            city:          t.String(),
-            province:      t.String(),
-            postalCode:    t.String(),
-            country:       t.String(),
-          }),
-          totalAmount:    t.Number(),
-          shippingFee:    t.Number(),
-          discountAmount: t.Number(),
-          grandTotal:     t.Number(),
-          notes:          t.Union([t.String(), t.Null()]),
-          statusHistory: t.Array(t.Object({
-            status:    t.String(),
-            note:      t.Union([t.String(), t.Null()]),
-            changedBy: t.String(),
-            timestamp: t.String(),
-          })),
-          createdAt:   t.Union([t.String(), t.Null()]),
-          updatedAt:   t.Union([t.String(), t.Null()]),
-          paidAt:      t.Union([t.String(), t.Null()]),
-          shippedAt:   t.Union([t.String(), t.Null()]),
-          deliveredAt: t.Union([t.String(), t.Null()]),
-          cancelledAt: t.Union([t.String(), t.Null()]),
-        })),
-        total:      t.Integer(),
-        page:       t.Integer(),
-        limit:      t.Integer(),
+        items: t.Array(
+          t.Object({
+            orderId: t.String(),
+            userId: t.String(),
+            status: t.String(),
+            items: t.Array(
+              t.Object({
+                productId: t.String(),
+                productName: t.String(),
+                sku: t.String(),
+                imageUrl: t.Union([t.String(), t.Null()]),
+                price: t.Number(),
+                quantity: t.Integer(),
+                subtotal: t.Number(),
+              })
+            ),
+            shippingAddress: t.Object({
+              recipientName: t.String(),
+              phone: t.String(),
+              street: t.String(),
+              city: t.String(),
+              province: t.String(),
+              postalCode: t.String(),
+              country: t.String(),
+            }),
+            totalAmount: t.Number(),
+            shippingFee: t.Number(),
+            discountAmount: t.Number(),
+            grandTotal: t.Number(),
+            notes: t.Union([t.String(), t.Null()]),
+            statusHistory: t.Array(
+              t.Object({
+                status: t.String(),
+                note: t.Union([t.String(), t.Null()]),
+                changedBy: t.String(),
+                timestamp: t.String(),
+              })
+            ),
+            createdAt: t.Union([t.String(), t.Null()]),
+            updatedAt: t.Union([t.String(), t.Null()]),
+            paidAt: t.Union([t.String(), t.Null()]),
+            shippedAt: t.Union([t.String(), t.Null()]),
+            deliveredAt: t.Union([t.String(), t.Null()]),
+            cancelledAt: t.Union([t.String(), t.Null()]),
+          })
+        ),
+        total: t.Integer(),
+        page: t.Integer(),
+        limit: t.Integer(),
         totalPages: t.Integer(),
-        hasNext:    t.Boolean(),
-        hasPrev:    t.Boolean(),
+        hasNext: t.Boolean(),
+        hasPrev: t.Boolean(),
       }),
       500: ErrorSchema,
     },
@@ -160,42 +178,46 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
     params: OrderIdParamSchema,
     response: {
       200: t.Object({
-        orderId:        t.String(),
-        userId:         t.String(),
-        status:         t.String(),
-        items: t.Array(t.Object({
-          productId:   t.String(),
-          productName: t.String(),
-          sku:         t.String(),
-          imageUrl:    t.Union([t.String(), t.Null()]),
-          price:       t.Number(),
-          quantity:    t.Integer(),
-          subtotal:    t.Number(),
-        })),
+        orderId: t.String(),
+        userId: t.String(),
+        status: t.String(),
+        items: t.Array(
+          t.Object({
+            productId: t.String(),
+            productName: t.String(),
+            sku: t.String(),
+            imageUrl: t.Union([t.String(), t.Null()]),
+            price: t.Number(),
+            quantity: t.Integer(),
+            subtotal: t.Number(),
+          })
+        ),
         shippingAddress: t.Object({
           recipientName: t.String(),
-          phone:         t.String(),
-          street:        t.String(),
-          city:          t.String(),
-          province:      t.String(),
-          postalCode:    t.String(),
-          country:       t.String(),
+          phone: t.String(),
+          street: t.String(),
+          city: t.String(),
+          province: t.String(),
+          postalCode: t.String(),
+          country: t.String(),
         }),
-        totalAmount:    t.Number(),
-        shippingFee:    t.Number(),
+        totalAmount: t.Number(),
+        shippingFee: t.Number(),
         discountAmount: t.Number(),
-        grandTotal:     t.Number(),
-        notes:          t.Union([t.String(), t.Null()]),
-        statusHistory: t.Array(t.Object({
-          status:    t.String(),
-          note:      t.Union([t.String(), t.Null()]),
-          changedBy: t.String(),
-          timestamp: t.String(),
-        })),
-        createdAt:   t.Union([t.String(), t.Null()]),
-        updatedAt:   t.Union([t.String(), t.Null()]),
-        paidAt:      t.Union([t.String(), t.Null()]),
-        shippedAt:   t.Union([t.String(), t.Null()]),
+        grandTotal: t.Number(),
+        notes: t.Union([t.String(), t.Null()]),
+        statusHistory: t.Array(
+          t.Object({
+            status: t.String(),
+            note: t.Union([t.String(), t.Null()]),
+            changedBy: t.String(),
+            timestamp: t.String(),
+          })
+        ),
+        createdAt: t.Union([t.String(), t.Null()]),
+        updatedAt: t.Union([t.String(), t.Null()]),
+        paidAt: t.Union([t.String(), t.Null()]),
+        shippedAt: t.Union([t.String(), t.Null()]),
         deliveredAt: t.Union([t.String(), t.Null()]),
         cancelledAt: t.Union([t.String(), t.Null()]),
       }),
@@ -218,42 +240,46 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
     params: OrderIdParamSchema,
     response: {
       200: t.Object({
-        orderId:  t.String(),
-        userId:   t.String(),
-        status:   t.String(),
-        items: t.Array(t.Object({
-          productId:   t.String(),
-          productName: t.String(),
-          sku:         t.String(),
-          imageUrl:    t.Union([t.String(), t.Null()]),
-          price:       t.Number(),
-          quantity:    t.Integer(),
-          subtotal:    t.Number(),
-        })),
+        orderId: t.String(),
+        userId: t.String(),
+        status: t.String(),
+        items: t.Array(
+          t.Object({
+            productId: t.String(),
+            productName: t.String(),
+            sku: t.String(),
+            imageUrl: t.Union([t.String(), t.Null()]),
+            price: t.Number(),
+            quantity: t.Integer(),
+            subtotal: t.Number(),
+          })
+        ),
         shippingAddress: t.Object({
           recipientName: t.String(),
-          phone:         t.String(),
-          street:        t.String(),
-          city:          t.String(),
-          province:      t.String(),
-          postalCode:    t.String(),
-          country:       t.String(),
+          phone: t.String(),
+          street: t.String(),
+          city: t.String(),
+          province: t.String(),
+          postalCode: t.String(),
+          country: t.String(),
         }),
-        totalAmount:    t.Number(),
-        shippingFee:    t.Number(),
+        totalAmount: t.Number(),
+        shippingFee: t.Number(),
         discountAmount: t.Number(),
-        grandTotal:     t.Number(),
-        notes:          t.Union([t.String(), t.Null()]),
-        statusHistory: t.Array(t.Object({
-          status:    t.String(),
-          note:      t.Union([t.String(), t.Null()]),
-          changedBy: t.String(),
-          timestamp: t.String(),
-        })),
-        createdAt:   t.Union([t.String(), t.Null()]),
-        updatedAt:   t.Union([t.String(), t.Null()]),
-        paidAt:      t.Union([t.String(), t.Null()]),
-        shippedAt:   t.Union([t.String(), t.Null()]),
+        grandTotal: t.Number(),
+        notes: t.Union([t.String(), t.Null()]),
+        statusHistory: t.Array(
+          t.Object({
+            status: t.String(),
+            note: t.Union([t.String(), t.Null()]),
+            changedBy: t.String(),
+            timestamp: t.String(),
+          })
+        ),
+        createdAt: t.Union([t.String(), t.Null()]),
+        updatedAt: t.Union([t.String(), t.Null()]),
+        paidAt: t.Union([t.String(), t.Null()]),
+        shippedAt: t.Union([t.String(), t.Null()]),
         deliveredAt: t.Union([t.String(), t.Null()]),
         cancelledAt: t.Union([t.String(), t.Null()]),
       }),
@@ -274,45 +300,49 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
 
   .patch("/:orderId/status", updateStatusHandler, {
     params: OrderIdParamSchema,
-    body:   UpdateStatusBodySchema,
+    body: UpdateStatusBodySchema,
     response: {
       200: t.Object({
-        orderId:  t.String(),
-        userId:   t.String(),
-        status:   t.String(),
-        items: t.Array(t.Object({
-          productId:   t.String(),
-          productName: t.String(),
-          sku:         t.String(),
-          imageUrl:    t.Union([t.String(), t.Null()]),
-          price:       t.Number(),
-          quantity:    t.Integer(),
-          subtotal:    t.Number(),
-        })),
+        orderId: t.String(),
+        userId: t.String(),
+        status: t.String(),
+        items: t.Array(
+          t.Object({
+            productId: t.String(),
+            productName: t.String(),
+            sku: t.String(),
+            imageUrl: t.Union([t.String(), t.Null()]),
+            price: t.Number(),
+            quantity: t.Integer(),
+            subtotal: t.Number(),
+          })
+        ),
         shippingAddress: t.Object({
           recipientName: t.String(),
-          phone:         t.String(),
-          street:        t.String(),
-          city:          t.String(),
-          province:      t.String(),
-          postalCode:    t.String(),
-          country:       t.String(),
+          phone: t.String(),
+          street: t.String(),
+          city: t.String(),
+          province: t.String(),
+          postalCode: t.String(),
+          country: t.String(),
         }),
-        totalAmount:    t.Number(),
-        shippingFee:    t.Number(),
+        totalAmount: t.Number(),
+        shippingFee: t.Number(),
         discountAmount: t.Number(),
-        grandTotal:     t.Number(),
-        notes:          t.Union([t.String(), t.Null()]),
-        statusHistory: t.Array(t.Object({
-          status:    t.String(),
-          note:      t.Union([t.String(), t.Null()]),
-          changedBy: t.String(),
-          timestamp: t.String(),
-        })),
-        createdAt:   t.Union([t.String(), t.Null()]),
-        updatedAt:   t.Union([t.String(), t.Null()]),
-        paidAt:      t.Union([t.String(), t.Null()]),
-        shippedAt:   t.Union([t.String(), t.Null()]),
+        grandTotal: t.Number(),
+        notes: t.Union([t.String(), t.Null()]),
+        statusHistory: t.Array(
+          t.Object({
+            status: t.String(),
+            note: t.Union([t.String(), t.Null()]),
+            changedBy: t.String(),
+            timestamp: t.String(),
+          })
+        ),
+        createdAt: t.Union([t.String(), t.Null()]),
+        updatedAt: t.Union([t.String(), t.Null()]),
+        paidAt: t.Union([t.String(), t.Null()]),
+        shippedAt: t.Union([t.String(), t.Null()]),
         deliveredAt: t.Union([t.String(), t.Null()]),
         cancelledAt: t.Union([t.String(), t.Null()]),
       }),
@@ -335,14 +365,19 @@ export const orderRoutes = new Elysia({ prefix: "/orders", tags: ["Orders"] })
   .post("/:orderId/release-stock", releaseStockHandler, {
     params: OrderIdParamSchema,
     response: {
-      200: t.Object({ message: t.String(), orderId: t.String(), itemCount: t.Integer() }),
+      200: t.Object({
+        message: t.String(),
+        orderId: t.String(),
+        itemCount: t.Integer(),
+      }),
       403: ErrorSchema,
       404: ErrorSchema,
       500: ErrorSchema,
       502: ErrorSchema,
     },
     detail: {
-      summary:     "Release reserved stock",
-      description: "Internal service endpoint — releases all reserved stock for every line item back to product inventory.",
+      summary: "Release reserved stock",
+      description:
+        "Internal service endpoint — releases all reserved stock for every line item back to product inventory.",
     },
   })

@@ -1,17 +1,17 @@
 import { redis } from "@/lib/redis"
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const KEY_PREFIX  = "idempotency:order:"
-const LOCK_TTL    = 30       // seconds — max in-flight duration before lock expires
-const RESULT_TTL  = 86_400   // seconds — 24 h result cache
+const KEY_PREFIX = "idempotency:order:"
+const LOCK_TTL = 30 // seconds — max in-flight duration before lock expires
+const RESULT_TTL = 86_400 // seconds — 24 h result cache
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export type IdempotencyResult = { status: number; body: unknown }
 
 type IdempotencyState =
-  | { state: "hit";     result: IdempotencyResult }  // cached result exists
-  | { state: "pending" }                             // another request in-flight
-  | { state: "free" }                                // new key, proceed normally
+  | { state: "hit"; result: IdempotencyResult } // cached result exists
+  | { state: "pending" } // another request in-flight
+  | { state: "free" } // new key, proceed normally
 
 // ── Implementation ─────────────────────────────────────────────────────────
 export const idempotency = {
@@ -27,10 +27,17 @@ export const idempotency = {
     const raw = await redis.get(KEY_PREFIX + key)
 
     if (raw === "PENDING") return { state: "pending" }
-    if (raw !== null)      return { state: "hit", result: JSON.parse(raw) as IdempotencyResult }
+    if (raw !== null)
+      return { state: "hit", result: JSON.parse(raw) as IdempotencyResult }
 
     // Atomic SETNX — only one concurrent caller wins the lock
-    const claimed = await redis.set(KEY_PREFIX + key, "PENDING", "EX", LOCK_TTL, "NX")
+    const claimed = await redis.set(
+      KEY_PREFIX + key,
+      "PENDING",
+      "EX",
+      LOCK_TTL,
+      "NX"
+    )
     return claimed ? { state: "free" } : { state: "pending" }
   },
 

@@ -19,7 +19,7 @@ export type Permission =
   | "customers:read"
   | "dashboard:read"
   | "users:manage"
-  | "audit:read"       // FIX ADM-06b: audit log viewer access
+  | "audit:read" // FIX ADM-06b: audit log viewer access
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OWNER: [
@@ -41,11 +41,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "dashboard:read",
     "audit:read",
   ],
-  FINANCE: [
-    "orders:read",
-    "customers:read",
-    "dashboard:read",
-  ],
+  FINANCE: ["orders:read", "customers:read", "dashboard:read"],
   CUSTOMER: [],
 }
 

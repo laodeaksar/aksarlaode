@@ -1,17 +1,11 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router"
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-}                                                 from "@tanstack/react-query"
-import { ProductForm }                            from "@/components/forms/product-form"
-import {
-  getProductFn,
-  updateProductFn,
-}                                                 from "@/server/products"
-import type { UpdateProductInput }                from "@/effect/Services"
-import { can }                                    from "@/lib/rbac"
-import type { Session }                           from "@/lib/auth"
+import type { UpdateProductInput } from "@/effect/Services"
+import { getProductFn, updateProductFn } from "@/server/products"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
+
+import type { Session } from "@/lib/auth"
+import { can } from "@/lib/rbac"
+import { ProductForm } from "@/components/forms/product-form"
 
 export const Route = createFileRoute("/products/$productId")({
   // Route-level RBAC: editing requires products:write (ADMIN / OWNER only).
@@ -25,8 +19,7 @@ export const Route = createFileRoute("/products/$productId")({
 
   // SSR loader: fetch the product server-side so the page is fully rendered
   // on first load — no client-visible loading spinner on navigation.
-  loader: ({ params }) =>
-    getProductFn({ data: { id: params.productId } }),
+  loader: ({ params }) => getProductFn({ data: { id: params.productId } }),
 
   head: ({ loaderData }) => ({
     meta: [
@@ -44,13 +37,13 @@ export const Route = createFileRoute("/products/$productId")({
 function EditProductPage() {
   const { productId } = Route.useParams()
   const loaderProduct = Route.useLoaderData()
-  const navigate      = useNavigate()
-  const queryClient   = useQueryClient()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // Hydrate React Query cache from SSR loader data to avoid a second fetch
   const { data: product, isLoading } = useQuery({
-    queryKey:    ["product", productId],
-    queryFn:     () => getProductFn({ data: { id: productId } }),
+    queryKey: ["product", productId],
+    queryFn: () => getProductFn({ data: { id: productId } }),
     initialData: loaderProduct ?? undefined,
   })
 
@@ -64,7 +57,7 @@ function EditProductPage() {
       const previous = queryClient.getQueryData(["product", productId])
 
       queryClient.setQueryData(["product", productId], (old: typeof product) =>
-        old ? { ...old, ...updatedFields } : old,
+        old ? { ...old, ...updatedFields } : old
       )
 
       return { previous }
@@ -102,13 +95,15 @@ function EditProductPage() {
       <h1 className="text-2xl font-semibold text-gray-900">Edit Product</h1>
       <ProductForm
         defaultValues={{
-          name:  product.name,
+          name: product.name,
           price: product.price,
           stock: product.stock,
-          sku:   product.sku,
+          sku: product.sku,
           // exactOptionalPropertyTypes: spread only when defined to avoid
           // `description: string | undefined` vs `description?: string` mismatch.
-          ...(product.description !== undefined && { description: product.description }),
+          ...(product.description !== undefined && {
+            description: product.description,
+          }),
         }}
         onSubmit={(data) => mutation.mutate(data satisfies UpdateProductInput)}
         isLoading={mutation.isPending}

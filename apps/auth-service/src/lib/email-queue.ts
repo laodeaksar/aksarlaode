@@ -1,4 +1,5 @@
 import { Queue } from "bullmq"
+
 import { redis } from "@/lib/redis"
 
 // FIX EML-01: queue name changed from "password-reset" to "email" so this
@@ -6,8 +7,8 @@ import { redis } from "@/lib/redis"
 // Job name "password-reset" matches the HANDLERS map in email.processor.ts.
 
 export type PasswordResetJobData = {
-  userId:    string
-  email:     string
+  userId: string
+  email: string
   resetLink: string
 }
 
@@ -15,12 +16,14 @@ const emailQueue = new Queue("email", {
   connection: redis,
   defaultJobOptions: {
     removeOnComplete: 100,
-    removeOnFail:     200,
-    attempts:         3,
+    removeOnFail: 200,
+    attempts: 3,
     backoff: { type: "exponential", delay: 5_000 },
   },
 })
 
-export async function enqueuePasswordReset(data: PasswordResetJobData): Promise<void> {
+export async function enqueuePasswordReset(
+  data: PasswordResetJobData
+): Promise<void> {
   await emailQueue.add("password-reset", data)
 }

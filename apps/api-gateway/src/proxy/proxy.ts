@@ -1,8 +1,11 @@
 import type { Context } from "hono"
-import { env }         from "@repo/env/gateway"
+
+import { env } from "@repo/env/gateway"
+
+import type { AppEnv } from "@/types/context"
+import { getBreaker } from "@/lib/circuit-breaker"
+
 import { SERVICE_REGISTRY } from "./service-registry"
-import { getBreaker }       from "@/lib/circuit-breaker"
-import type { AppEnv }      from "@/types/context"
 
 export async function proxyTo(
   service: keyof typeof SERVICE_REGISTRY,
@@ -14,15 +17,17 @@ export async function proxyTo(
 
   // ── Circuit open — reject immediately, don't touch upstream ──────────────
   if (!breaker.allow()) {
-    console.warn(JSON.stringify({
-      event:     "circuit_rejected",
-      service,
-      requestId: c.var.requestId,
-    }))
+    console.warn(
+      JSON.stringify({
+        event: "circuit_rejected",
+        service,
+        requestId: c.var.requestId,
+      })
+    )
     return c.json(
       {
-        error:     "Service temporarily unavailable — please retry shortly",
-        code:      "CIRCUIT_OPEN",
+        error: "Service temporarily unavailable — please retry shortly",
+        code: "CIRCUIT_OPEN",
         requestId: c.var.requestId,
       },
       503
@@ -31,9 +36,9 @@ export async function proxyTo(
 
   // ── Build upstream request ────────────────────────────────────────────────
   const strippedPath = c.req.path.replace(prefix, "") || "/"
-  const requestUrl   = new URL(c.req.url)
-  const targetUrl    = new URL(strippedPath, baseUrl)
-  targetUrl.search   = requestUrl.search
+  const requestUrl = new URL(c.req.url)
+  const targetUrl = new URL(strippedPath, baseUrl)
+  targetUrl.search = requestUrl.search
 
   let body: BodyInit | null = null
   if (!["GET", "HEAD"].includes(c.req.method)) {
@@ -49,7 +54,7 @@ export async function proxyTo(
   }
 
   const upstreamRequest = new Request(targetUrl.toString(), {
-    method:  c.req.method,
+    method: c.req.method,
     headers: buildUpstreamHeaders(c),
     body,
   })
@@ -68,14 +73,16 @@ export async function proxyTo(
     if (response.status >= 500) {
       breaker.failure()
       // FIX GW-07b: structured log for all upstream 5xx errors
-      console.error(JSON.stringify({
-        event:          "upstream_error",
-        service,
-        path:           strippedPath,
-        upstreamStatus: response.status,
-        latencyMs,
-        requestId:      c.var.requestId,
-      }))
+      console.error(
+        JSON.stringify({
+          event: "upstream_error",
+          service,
+          path: strippedPath,
+          upstreamStatus: response.status,
+          latencyMs,
+          requestId: c.var.requestId,
+        })
+      )
     } else {
       breaker.success()
     }
@@ -88,17 +95,23 @@ export async function proxyTo(
     if (e instanceof Error && e.name === "AbortError") throw e
 
     // FIX GW-07b: structured log for network-level upstream failures
-    console.error(JSON.stringify({
-      event:     "upstream_network_error",
-      service,
-      path:      strippedPath,
-      latencyMs,
-      requestId: c.var.requestId,
-      error:     String(e),
-    }))
+    console.error(
+      JSON.stringify({
+        event: "upstream_network_error",
+        service,
+        path: strippedPath,
+        latencyMs,
+        requestId: c.var.requestId,
+        error: String(e),
+      })
+    )
 
     return c.json(
-      { error: "Service unavailable", code: "UPSTREAM_ERROR", requestId: c.var.requestId },
+      {
+        error: "Service unavailable",
+        code: "UPSTREAM_ERROR",
+        requestId: c.var.requestId,
+      },
       502
     ) as unknown as Response
   }
@@ -112,25 +125,23 @@ function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   headers.delete("Cookie")
 
   const clientIp =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-real-ip") ??
-    "unknown"
+    c.req.header("cf-connecting-ip") ?? c.req.header("x-real-ip") ?? "unknown"
 
   headers.delete("x-forwarded-for")
   headers.delete("x-forwarded-host")
   headers.delete("x-real-ip")
   headers.set("x-forwarded-for", clientIp)
-  headers.set("x-real-ip",       clientIp)
+  headers.set("x-real-ip", clientIp)
 
   const user = c.var.user
   if (user) {
-    headers.set("x-user-id",    user.id)
-    headers.set("x-user-role",  user.role)
+    headers.set("x-user-id", user.id)
+    headers.set("x-user-role", user.role)
     headers.set("x-session-id", user.sessionId)
     if (user.email) headers.set("x-user-email", user.email)
   }
 
-  headers.set("x-request-id",    c.var.requestId)
+  headers.set("x-request-id", c.var.requestId)
   headers.set("x-service-token", env.INTERNAL_SERVICE_TOKEN)
 
   return headers

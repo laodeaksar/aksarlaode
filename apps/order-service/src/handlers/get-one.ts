@@ -1,17 +1,19 @@
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
 import { orderRepository } from "@/repository/order.repository"
-import { shapeOrder }      from "@/lib/shape-order"
+import { Effect } from "effect"
+import type { Context } from "elysia"
+
+import { shapeOrder } from "@/lib/shape-order"
 
 export const getOneHandler = async ({ params, headers, set }: Context) => {
   const { orderId } = params as { orderId: string }
-  const userId      = headers["x-user-id"]!
-  const role        = headers["x-user-role"]
+  const userId = headers["x-user-id"]!
+  const role = headers["x-user-role"]
 
   // Admins may view any order; regular users are gated by ownership check
-  const program = role === "ADMIN"
-    ? orderRepository.findByOrderId(orderId)
-    : orderRepository.checkOwnership(orderId, userId)
+  const program =
+    role === "ADMIN"
+      ? orderRepository.findByOrderId(orderId)
+      : orderRepository.checkOwnership(orderId, userId)
 
   const result = await Effect.runPromiseExit(program)
 

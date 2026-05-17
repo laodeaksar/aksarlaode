@@ -1,11 +1,13 @@
-import { Elysia }   from "elysia"
-import { cors }     from "@elysiajs/cors"
-import { swagger }  from "@elysiajs/swagger"
-import { env }      from "@repo/env/auth"
-import authRoutes    from "./routes/auth.routes"
-import sessionRoutes from "./routes/session.routes"
-import adminRoutes   from "./routes/admin.routes"
+import { cors } from "@elysiajs/cors"
+import { swagger } from "@elysiajs/swagger"
+import { Elysia } from "elysia"
+
+import { env } from "@repo/env/auth"
+
 import { serviceTokenMiddleware } from "./middleware/service-token"
+import adminRoutes from "./routes/admin.routes"
+import authRoutes from "./routes/auth.routes"
+import sessionRoutes from "./routes/session.routes"
 
 const PORT = parseInt(process.env["PORT"] ?? "3001", 10)
 
@@ -14,59 +16,86 @@ const app = new Elysia()
   // ── API docs — development only ──────────────────────────────────────────────
   // Swagger exposes the full API surface (all routes, schemas, security schemes).
   // In production this leaks attack surface. Disabled; use `pnpm dev` locally.
-  .use(env.NODE_ENV !== "production"
-    ? swagger({
-        documentation: {
-          info: {
-            title:       "Auth Service API",
-            version:     "1.0.0",
-            description: "Handles authentication, session management, and user administration for the platform.",
-          },
-          tags: [
-            { name: "Auth",     description: "Login, register, token refresh, profile and password management" },
-            { name: "Sessions", description: "List and revoke active user sessions" },
-            { name: "Admin",    description: "User management — requires ADMIN or OWNER role" },
-            { name: "Owner",    description: "Ownership transfer — requires OWNER role" },
-            { name: "Health",   description: "Service health check" },
-          ],
-          components: {
-            securitySchemes: {
-              bearerAuth: {
-                type:         "http",
-                scheme:       "bearer",
-                bearerFormat: "JWT",
-                description:  "Short-lived access token issued by POST /auth/login or POST /auth/refresh.",
+  .use(
+    env.NODE_ENV !== "production"
+      ? swagger({
+          documentation: {
+            info: {
+              title: "Auth Service API",
+              version: "1.0.0",
+              description:
+                "Handles authentication, session management, and user administration for the platform.",
+            },
+            tags: [
+              {
+                name: "Auth",
+                description:
+                  "Login, register, token refresh, profile and password management",
               },
-              serviceToken: {
-                type:        "apiKey",
-                in:          "header",
-                name:        "x-service-token",
-                description: "Internal service-to-service token required by the API gateway.",
+              {
+                name: "Sessions",
+                description: "List and revoke active user sessions",
+              },
+              {
+                name: "Admin",
+                description: "User management — requires ADMIN or OWNER role",
+              },
+              {
+                name: "Owner",
+                description: "Ownership transfer — requires OWNER role",
+              },
+              { name: "Health", description: "Service health check" },
+            ],
+            components: {
+              securitySchemes: {
+                bearerAuth: {
+                  type: "http",
+                  scheme: "bearer",
+                  bearerFormat: "JWT",
+                  description:
+                    "Short-lived access token issued by POST /auth/login or POST /auth/refresh.",
+                },
+                serviceToken: {
+                  type: "apiKey",
+                  in: "header",
+                  name: "x-service-token",
+                  description:
+                    "Internal service-to-service token required by the API gateway.",
+                },
               },
             },
+            security: [{ bearerAuth: [] }],
           },
-          security: [{ bearerAuth: [] }],
-        },
-        path: "/docs",
-      })
-    : new Elysia()
+          path: "/docs",
+        })
+      : new Elysia()
   )
 
-  .use(cors({
-    origin:         [env.WEB_URL, env.ADMIN_URL],
-    allowedHeaders: ["Content-Type", "Authorization", "x-service-token", "x-user-id", "x-request-id"],
-    credentials:    true,
-  }))
+  .use(
+    cors({
+      origin: [env.WEB_URL, env.ADMIN_URL],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "x-service-token",
+        "x-user-id",
+        "x-request-id",
+      ],
+      credentials: true,
+    })
+  )
 
   .onRequest(({ request, store }) => {
     const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID()
     ;(store as Record<string, string>)["requestId"] = requestId
-    console.info(JSON.stringify({
-      event:     "request_in",
-      requestId,
-      method:    request.method,
-      path:      new URL(request.url).pathname,
-    }))
+    console.info(
+      JSON.stringify({
+        event: "request_in",
+        requestId,
+        method: request.method,
+        path: new URL(request.url).pathname,
+      })
+    )
   })
 
   // ── Security response headers ─────────────────────────────────────────────
@@ -75,11 +104,13 @@ const app = new Elysia()
   // HSTS is only emitted in production — in dev, the service may run over HTTP.
   .onAfterHandle(({ set }) => {
     set.headers["X-Content-Type-Options"] = "nosniff"
-    set.headers["X-Frame-Options"]        = "DENY"
-    set.headers["Referrer-Policy"]        = "no-referrer"
-    set.headers["Permissions-Policy"]     = "geolocation=(), microphone=(), camera=()"
+    set.headers["X-Frame-Options"] = "DENY"
+    set.headers["Referrer-Policy"] = "no-referrer"
+    set.headers["Permissions-Policy"] =
+      "geolocation=(), microphone=(), camera=()"
     if (env.NODE_ENV === "production") {
-      set.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+      set.headers["Strict-Transport-Security"] =
+        "max-age=63072000; includeSubDomains; preload"
     }
   })
 
@@ -94,11 +125,13 @@ const app = new Elysia()
   .use(adminRoutes)
 
   .onError(({ code, error, set }) => {
-    console.error(JSON.stringify({
-      event:   "unhandled_error",
-      code,
-      message: error.message,
-    }))
+    console.error(
+      JSON.stringify({
+        event: "unhandled_error",
+        code,
+        message: error.message,
+      })
+    )
 
     if (code === "VALIDATION") {
       set.status = 422
@@ -127,6 +160,6 @@ const shutdown = async (signal: string) => {
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"))
-process.on("SIGINT",  () => shutdown("SIGINT"))
+process.on("SIGINT", () => shutdown("SIGINT"))
 
 export type App = typeof app

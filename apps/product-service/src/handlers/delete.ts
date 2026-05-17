@@ -1,10 +1,20 @@
-import { Effect, Cause } from "effect"
-import type { Context } from "elysia"
-import { productRepository, ProductNotFoundError } from "@/repository/product.repository"
-import { writeAuditLog } from "@/lib/admin-audit"
+import {
+  ProductNotFoundError,
+  productRepository,
+} from "@/repository/product.repository"
 import type { DerivedContext } from "@/types"
+import { Cause, Effect } from "effect"
+import type { Context } from "elysia"
 
-export const deleteHandler = async ({ params, set, userRole, userId, requestId }: Context & DerivedContext) => {
+import { writeAuditLog } from "@/lib/admin-audit"
+
+export const deleteHandler = async ({
+  params,
+  set,
+  userRole,
+  userId,
+  requestId,
+}: Context & DerivedContext) => {
   if (userRole !== "ADMIN") {
     set.status = 403
     return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" }
@@ -25,22 +35,24 @@ export const deleteHandler = async ({ params, set, userRole, userId, requestId }
     return { error: "Failed to delete product" }
   }
 
-  console.info(JSON.stringify({
-    event:      "product_deleted",
-    productId:  id,
-    userId,
-    requestId,
-  }))
+  console.info(
+    JSON.stringify({
+      event: "product_deleted",
+      productId: id,
+      userId,
+      requestId,
+    })
+  )
 
   // FIX ADM-06b: append an immutable audit entry so admins can review
   // product delete history in the admin panel audit log viewer.
   writeAuditLog({
-    actorId:    userId ?? "unknown",
-    actorRole:  userRole ?? "ADMIN",
-    action:     "product_deleted",
-    resource:   "product",
+    actorId: userId ?? "unknown",
+    actorRole: userRole ?? "ADMIN",
+    action: "product_deleted",
+    resource: "product",
     resourceId: id,
-    metadata:   { requestId },
+    metadata: { requestId },
   })
 
   return { message: "Deleted" }

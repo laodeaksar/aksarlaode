@@ -34,13 +34,12 @@ export const STATIC_ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   "images.unsplash.com",
   "cdn.jsdelivr.net",
   // ── Social / OAuth provider avatars ─────────────────────────────────────
-  "lh3.googleusercontent.com",      // Google OAuth profile pictures
-  "avatars.githubusercontent.com",  // GitHub profile pictures
+  "lh3.googleusercontent.com", // Google OAuth profile pictures
+  "avatars.githubusercontent.com", // GitHub profile pictures
 ])
 
 /** Human-readable comma-separated list — used in validation error messages. */
-export const ALLOWED_AVATAR_HOSTS: string =
-  [...STATIC_ALLOWED_HOSTS].join(", ")
+export const ALLOWED_AVATAR_HOSTS: string = [...STATIC_ALLOWED_HOSTS].join(", ")
 
 // ── Blocklist (runs before allowlist) ─────────────────────────────────────────
 
@@ -50,7 +49,7 @@ const BLOCKED_HOSTNAMES: ReadonlySet<string> = new Set([
   "127.0.0.1",
   "::1",
   "0.0.0.0",
-  "169.254.169.254",          // AWS / GCP / Azure instance metadata
+  "169.254.169.254", // AWS / GCP / Azure instance metadata
   "metadata.google.internal",
 ])
 
@@ -77,7 +76,7 @@ function isRawIpAddress(hostname: string): boolean {
  *                     Blocked hostnames are still rejected even if present here.
  */
 export function isAllowedAvatarUrl(
-  raw:        string,
+  raw: string,
   extraHosts: ReadonlySet<string> = new Set()
 ): boolean {
   let url: URL
@@ -93,7 +92,7 @@ export function isAllowedAvatarUrl(
 
   // Blocklist check — always takes priority
   if (BLOCKED_HOSTNAMES.has(host)) return false
-  if (isRawIpAddress(host))        return false
+  if (isRawIpAddress(host)) return false
 
   // Allowlist check
   return STATIC_ALLOWED_HOSTS.has(host) || extraHosts.has(host)

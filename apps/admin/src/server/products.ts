@@ -1,23 +1,20 @@
-import { createServerFn }  from "@tanstack/react-start"
-import { Effect, Schema }   from "effect"
+import { auditMiddleware } from "@/effect/AuditMiddleware"
+import { NotFoundError, ValidationError } from "@/effect/Errors"
+import { effectMiddleware } from "@/effect/Middleware"
 import {
   ApiClientService,
   NewProductSchema,
   UpdateProductSchema,
   type NewProduct,
 } from "@/effect/Services"
-import {
-  ValidationError,
-  NotFoundError,
-} from "@/effect/Errors"
-import { effectMiddleware } from "@/effect/Middleware"
-import { auditMiddleware }  from "@/effect/AuditMiddleware"
+import { createServerFn } from "@tanstack/react-start"
+import { Effect, Schema } from "effect"
 
 // ── Input schemas ──────────────────────────────────────────────────────────
 
 const ListParamsSchema = Schema.Struct({
-  page:   Schema.optionalWith(Schema.NumberFromString, { default: () => 1 }),
-  limit:  Schema.optionalWith(Schema.NumberFromString, { default: () => 20 }),
+  page: Schema.optionalWith(Schema.NumberFromString, { default: () => 1 }),
+  limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 20 }),
   search: Schema.optional(Schema.String),
 })
 
@@ -48,7 +45,7 @@ function decodeOrThrow<A, I>(schema: Schema.Schema<A, I>, input: I): A {
  */
 function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
+    Object.entries(obj).filter(([, v]) => v !== undefined)
   ) as T
 }
 
@@ -65,11 +62,14 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
 export const listProductsFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
-    decodeOrThrow(ListParamsSchema, raw as Schema.Schema.Encoded<typeof ListParamsSchema>)
+    decodeOrThrow(
+      ListParamsSchema,
+      raw as Schema.Schema.Encoded<typeof ListParamsSchema>
+    )
   )
   .handler(async ({ data, context }) => {
     const params: { page: number; limit: number; search?: string } = {
-      page:  data.page,
+      page: data.page,
       limit: data.limit,
     }
     if (data.search !== undefined) params.search = data.search
@@ -78,7 +78,7 @@ export const listProductsFn = createServerFn({ method: "GET" })
       Effect.gen(function* () {
         const api = yield* ApiClientService
         return yield* api.products.list(params)
-      }),
+      })
     )
   })
 
@@ -87,20 +87,25 @@ export const listProductsFn = createServerFn({ method: "GET" })
 export const getProductFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])
   .inputValidator((raw: unknown) =>
-    decodeOrThrow(ProductIdSchema, raw as Schema.Schema.Encoded<typeof ProductIdSchema>)
+    decodeOrThrow(
+      ProductIdSchema,
+      raw as Schema.Schema.Encoded<typeof ProductIdSchema>
+    )
   )
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
-        const api     = yield* ApiClientService
+        const api = yield* ApiClientService
         const product = yield* api.products.getOne(data.id)
 
         if (!product) {
-          yield* Effect.fail(new NotFoundError({ resource: "Product", id: data.id }))
+          yield* Effect.fail(
+            new NotFoundError({ resource: "Product", id: data.id })
+          )
         }
 
         return product
-      }),
+      })
     )
   )
 
@@ -126,7 +131,10 @@ export const getProductFn = createServerFn({ method: "GET" })
 export const createProductFn = createServerFn({ method: "POST" })
   .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
-    decodeOrThrow(NewProductSchema, raw as Schema.Schema.Encoded<typeof NewProductSchema>)
+    decodeOrThrow(
+      NewProductSchema,
+      raw as Schema.Schema.Encoded<typeof NewProductSchema>
+    )
   )
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
@@ -135,23 +143,28 @@ export const createProductFn = createServerFn({ method: "POST" })
         // stripUndefined: schema partial produces `x?: T | undefined`;
         // NewProduct uses `x?: T` — strip explicit undefineds to align shapes.
         return yield* api.products.create(
-          stripUndefined(data as unknown as Record<string, unknown>) as NewProduct
+          stripUndefined(
+            data as unknown as Record<string, unknown>
+          ) as NewProduct
         )
-      }),
+      })
     )
   )
 
 // ── PUT /products/:id — update product ────────────────────────────────────
 
 const UpdateParamsSchema = Schema.Struct({
-  id:   Schema.String.pipe(Schema.minLength(1)),
+  id: Schema.String.pipe(Schema.minLength(1)),
   body: UpdateProductSchema,
 })
 
 export const updateProductFn = createServerFn({ method: "POST" })
   .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
-    decodeOrThrow(UpdateParamsSchema, raw as Schema.Schema.Encoded<typeof UpdateParamsSchema>)
+    decodeOrThrow(
+      UpdateParamsSchema,
+      raw as Schema.Schema.Encoded<typeof UpdateParamsSchema>
+    )
   )
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
@@ -159,9 +172,11 @@ export const updateProductFn = createServerFn({ method: "POST" })
         const api = yield* ApiClientService
         return yield* api.products.update(
           data.id,
-          stripUndefined(data.body as unknown as Record<string, unknown>) as Partial<NewProduct>
+          stripUndefined(
+            data.body as unknown as Record<string, unknown>
+          ) as Partial<NewProduct>
         )
-      }),
+      })
     )
   )
 
@@ -170,13 +185,16 @@ export const updateProductFn = createServerFn({ method: "POST" })
 export const deleteProductFn = createServerFn({ method: "POST" })
   .middleware([effectMiddleware, auditMiddleware])
   .inputValidator((raw: unknown) =>
-    decodeOrThrow(ProductIdSchema, raw as Schema.Schema.Encoded<typeof ProductIdSchema>)
+    decodeOrThrow(
+      ProductIdSchema,
+      raw as Schema.Schema.Encoded<typeof ProductIdSchema>
+    )
   )
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService
         return yield* api.products.delete(data.id)
-      }),
+      })
     )
   )

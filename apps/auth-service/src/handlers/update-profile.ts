@@ -1,17 +1,24 @@
-import { Effect }                from "effect"
-import { userRepository }       from "@/repository/user.repository"
-import { isAllowedAvatarUrl, ALLOWED_AVATAR_HOSTS } from "@/lib/avatar"
-import { AuthError, ValidationError, NotFoundError, toErrorResponse } from "@repo/common/errors"
-import { ok }                   from "@repo/common/response"
+import { userRepository } from "@/repository/user.repository"
+import { Effect } from "effect"
+
+import {
+  AuthError,
+  NotFoundError,
+  toErrorResponse,
+  ValidationError,
+} from "@repo/common/errors"
+import { ok } from "@repo/common/response"
+
+import { ALLOWED_AVATAR_HOSTS, isAllowedAvatarUrl } from "@/lib/avatar"
 
 export const updateProfileHandler = async ({
   body,
   headers,
   set,
 }: {
-  body:    { name?: string; phone?: string; avatarUrl?: string }
+  body: { name?: string; phone?: string; avatarUrl?: string }
   headers: Record<string, string | undefined>
-  set:     any
+  set: any
 }) => {
   const userId = headers["x-user-id"]
 
@@ -37,7 +44,7 @@ export const updateProfileHandler = async ({
     const { body: errBody, status } = toErrorResponse(
       new ValidationError(
         `avatarUrl must be an HTTPS URL from an allowed domain. ` +
-        `Allowed: ${ALLOWED_AVATAR_HOSTS}`
+          `Allowed: ${ALLOWED_AVATAR_HOSTS}`
       )
     )
     set.status = status
@@ -49,12 +56,12 @@ export const updateProfileHandler = async ({
     if (!updated) return yield* Effect.fail(new NotFoundError("User"))
 
     return {
-      id:        updated.id,
-      email:     updated.email,
-      name:      updated.name,
-      phone:     updated.phone     ?? null,
+      id: updated.id,
+      email: updated.email,
+      name: updated.name,
+      phone: updated.phone ?? null,
       avatarUrl: updated.avatarUrl ?? null,
-      role:      updated.role,
+      role: updated.role,
     }
   })
 

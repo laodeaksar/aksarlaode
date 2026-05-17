@@ -1,14 +1,16 @@
-import { Effect }                       from "effect"
-import type { Context }                 from "elysia"
-import { env }                          from "@repo/env/order"
-import { orderRepository }              from "@/repository/order.repository"
-import { productClient }                from "@/lib/product-client"
-import { emailQueue }                   from "@/lib/email-queue"
-import { authClient }                  from "@/lib/auth-client"
-import { generateOrderId }              from "@/lib/order-id"
-import { idempotency }                  from "@/lib/idempotency"
-import { checkOrderCreateRateLimit }    from "@/lib/rate-limiter"
-import type { CreateOrderBody }         from "@/types"
+import { orderRepository } from "@/repository/order.repository"
+import type { CreateOrderBody } from "@/types"
+import { Effect } from "effect"
+import type { Context } from "elysia"
+
+import { env } from "@repo/env/order"
+
+import { authClient } from "@/lib/auth-client"
+import { emailQueue } from "@/lib/email-queue"
+import { idempotency } from "@/lib/idempotency"
+import { generateOrderId } from "@/lib/order-id"
+import { productClient } from "@/lib/product-client"
+import { checkOrderCreateRateLimit } from "@/lib/rate-limiter"
 
 // FIX ORD-03: Strip HTML tags from customer-supplied text before persisting.
 // Prevents XSS in admin panel where notes may be rendered as HTML.
@@ -18,7 +20,7 @@ function stripHtml(input: string): string {
 }
 
 export const createHandler = async ({ body, headers, set }: Context) => {
-  const input  = body as CreateOrderBody
+  const input = body as CreateOrderBody
   const userId = headers["x-user-id"]!
 
   // ── Rate limit — sliding window per userId ────────────────────────────────
@@ -26,9 +28,9 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   // consume an idempotency slot or touch downstream services.
   const rl = await checkOrderCreateRateLimit(userId)
 
-  set.headers["X-RateLimit-Limit"]     = String(rl.limit)
+  set.headers["X-RateLimit-Limit"] = String(rl.limit)
   set.headers["X-RateLimit-Remaining"] = String(rl.remaining)
-  set.headers["X-RateLimit-Reset"]     = String(Math.ceil(rl.resetMs / 1000)) // Unix seconds
+  set.headers["X-RateLimit-Reset"] = String(Math.ceil(rl.resetMs / 1000)) // Unix seconds
 
   if (!rl.allowed) {
     const retryAfterSec = Math.ceil((rl.resetMs - Date.now()) / 1000)
@@ -36,7 +38,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     set.status = 429
     return {
       error: "Too many order requests — please slow down",
-      code:  "RATE_LIMIT_EXCEEDED",
+      code: "RATE_LIMIT_EXCEEDED",
       retryAfterSec,
     }
   }
@@ -45,7 +47,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   // Without the method+path component, the same Idempotency-Key header value
   // sent to two different endpoints by the same user would collide and one
   // endpoint would incorrectly return the other's cached response.
-  const rawKey         = headers["idempotency-key"] as string
+  const rawKey = headers["idempotency-key"] as string
   const idempotencyKey = `${userId}:POST:/orders:${rawKey}`
 
   const check = await idempotency.getOrLock(idempotencyKey)
@@ -59,7 +61,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     set.status = 409
     return {
       error: "A request with this Idempotency-Key is already in progress",
-      code:  "REQUEST_IN_FLIGHT",
+      code: "REQUEST_IN_FLIGHT",
     }
   }
   // state === "free" → lock acquired, continue to order creation
@@ -69,8 +71,12 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     // ── 1. Fetch authoritative prices from product-service ──────────────────
     //    Never trust client-supplied prices — always override with server data.
     const verifiedItems: Array<{
-      productId: string; productName: string; sku: string
-      price: number; quantity: number; imageUrl?: string
+      productId: string
+      productName: string
+      sku: string
+      price: number
+      quantity: number
+      imageUrl?: string
     }> = []
 
     for (const item of input.items) {
@@ -82,12 +88,12 @@ export const createHandler = async ({ body, headers, set }: Context) => {
       }
       const product = productResult.right
       verifiedItems.push({
-        productId:   product.productId,
+        productId: product.productId,
         productName: product.productName,
-        sku:         product.sku,
-        price:       product.price,      // ← server price, not client price
-        quantity:    item.quantity,
-        imageUrl:    product.imageUrl,
+        sku: product.sku,
+        price: product.price, // ← server price, not client price
+        quantity: item.quantity,
+        imageUrl: product.imageUrl,
       })
     }
 
@@ -101,7 +107,9 @@ export const createHandler = async ({ body, headers, set }: Context) => {
 
       if (reserveResult._tag === "Left") {
         yield* Effect.all(
-          reserved.map(r => productClient.releaseStock(r.productId, r.quantity)),
+          reserved.map((r) =>
+            productClient.releaseStock(r.productId, r.quantity)
+          ),
           { concurrency: "unbounded" }
         )
         return yield* Effect.fail(reserveResult.left)
@@ -112,24 +120,32 @@ export const createHandler = async ({ body, headers, set }: Context) => {
 
     // ── 3. Compute totals — shippingFee from server config; discount rejected ─
     //    discountAmount is NOT accepted from client body to prevent manipulation.
-    const totalAmount = verifiedItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    const grandTotal  = Math.max(
+    const totalAmount = verifiedItems.reduce(
+      (sum, i) => sum + i.price * i.quantity,
+      0
+    )
+    const grandTotal = Math.max(
       env.MINIMUM_ORDER_AMOUNT,
       totalAmount + (input.shippingFee ?? 0)
     )
 
     const order = yield* orderRepository.create({
-      orderId:         generateOrderId(),
+      orderId: generateOrderId(),
       userId,
-      status:          "PENDING_PAYMENT",
-      items:           verifiedItems.map(i => ({ ...i, subtotal: i.price * i.quantity })),
+      status: "PENDING_PAYMENT",
+      items: verifiedItems.map((i) => ({
+        ...i,
+        subtotal: i.price * i.quantity,
+      })),
       shippingAddress: input.shippingAddress,
-      statusHistory:   [{ status: "PENDING_PAYMENT", changedBy: userId, timestamp: new Date() }],
+      statusHistory: [
+        { status: "PENDING_PAYMENT", changedBy: userId, timestamp: new Date() },
+      ],
       totalAmount,
-      shippingFee:     input.shippingFee ?? 0,
-      discountAmount:  0,
+      shippingFee: input.shippingFee ?? 0,
+      discountAmount: 0,
       grandTotal,
-      notes:           input.notes != null ? stripHtml(input.notes) : undefined,
+      notes: input.notes != null ? stripHtml(input.notes) : undefined,
     })
 
     // Non-blocking — fire and forget; failure does not abort order creation.
@@ -138,19 +154,25 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     authClient
       .fetchUserEmail(userId)
       .catch(() => "")
-      .then(userEmail =>
+      .then((userEmail) =>
         emailQueue.add("order-created", {
-          orderId:    order.orderId,
+          orderId: order.orderId,
           userId,
           userEmail,
           grandTotal,
         })
       )
-      .catch(err =>
-        console.error(JSON.stringify({ event: "email_queue_error", error: String(err) }))
+      .catch((err) =>
+        console.error(
+          JSON.stringify({ event: "email_queue_error", error: String(err) })
+        )
       )
 
-    return { orderId: order.orderId, grandTotal: order.grandTotal, status: order.status }
+    return {
+      orderId: order.orderId,
+      grandTotal: order.grandTotal,
+      status: order.status,
+    }
   })
 
   const result = await Effect.runPromiseExit(program)
@@ -161,10 +183,28 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     await idempotency.fail(idempotencyKey)
 
     const err = result.cause.error as { _tag?: string }
-    if (err._tag === "InsufficientStockError") { set.status = 409; return { error: "Insufficient stock",          code: "INSUFFICIENT_STOCK" } }
-    if (err._tag === "ProductNotFoundError")   { set.status = 404; return { error: "Product not found",           code: "PRODUCT_NOT_FOUND" } }
-    if (err._tag === "ProductClientError")     { set.status = 502; return { error: "Product service unavailable", code: "PRODUCT_SERVICE_UNAVAILABLE" } }
-    if (err._tag === "DuplicateOrderError")    { set.status = 409; return { error: "Duplicate order ID, please retry", code: "DUPLICATE_ORDER_ID" } }
+    if (err._tag === "InsufficientStockError") {
+      set.status = 409
+      return { error: "Insufficient stock", code: "INSUFFICIENT_STOCK" }
+    }
+    if (err._tag === "ProductNotFoundError") {
+      set.status = 404
+      return { error: "Product not found", code: "PRODUCT_NOT_FOUND" }
+    }
+    if (err._tag === "ProductClientError") {
+      set.status = 502
+      return {
+        error: "Product service unavailable",
+        code: "PRODUCT_SERVICE_UNAVAILABLE",
+      }
+    }
+    if (err._tag === "DuplicateOrderError") {
+      set.status = 409
+      return {
+        error: "Duplicate order ID, please retry",
+        code: "DUPLICATE_ORDER_ID",
+      }
+    }
     set.status = 500
     return { error: "Order creation failed" }
   }
@@ -173,7 +213,10 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   const responseBody = result.value
 
   // Cache result so identical retries return the same response without side effects
-  await idempotency.complete(idempotencyKey, { status: 201, body: responseBody })
+  await idempotency.complete(idempotencyKey, {
+    status: 201,
+    body: responseBody,
+  })
 
   set.status = 201
   return responseBody

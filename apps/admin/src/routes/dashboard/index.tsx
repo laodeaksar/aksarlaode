@@ -1,7 +1,8 @@
-import { createFileRoute }    from "@tanstack/react-router"
-import { useQuery }           from "@tanstack/react-query"
-import { getDashboardStatsFn } from "@/server/dashboard"
 import type { DashboardStats, OrderSummary } from "@/effect/Services"
+import { getDashboardStatsFn } from "@/server/dashboard"
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui"
 
 export const Route = createFileRoute("/dashboard/")({
@@ -16,10 +17,10 @@ function DashboardPage() {
   const loaderData = Route.useLoaderData()
 
   const { data } = useQuery({
-    queryKey:        ["dashboard-stats"],
-    queryFn:         () => getDashboardStatsFn({}),
+    queryKey: ["dashboard-stats"],
+    queryFn: () => getDashboardStatsFn({}),
     // Seed from SSR — no skeleton flash on first load
-    initialData:     loaderData,
+    initialData: loaderData,
     // Keep dashboard live without a full page refresh
     refetchInterval: 30_000,
   })
@@ -33,16 +34,21 @@ function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard title="Revenue (Today)"  value={`Rp ${stats.revenueToday.toLocaleString("id-ID")}`} />
-        <StatCard title="Orders (Today)"   value={stats.ordersToday}    />
-        <StatCard title="Total Customers"  value={stats.totalCustomers} />
-        <StatCard title="Total Products"   value={stats.totalProducts}  />
+        <StatCard
+          title="Revenue (Today)"
+          value={`Rp ${stats.revenueToday.toLocaleString("id-ID")}`}
+        />
+        <StatCard title="Orders (Today)" value={stats.ordersToday} />
+        <StatCard title="Total Customers" value={stats.totalCustomers} />
+        <StatCard title="Total Products" value={stats.totalProducts} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Orders */}
         <Card>
-          <CardHeader><CardTitle>Recent Orders</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+          </CardHeader>
           <CardContent>
             <RecentOrdersTable orders={stats.recentOrders} />
           </CardContent>
@@ -50,7 +56,9 @@ function DashboardPage() {
 
         {/* Top Products */}
         <Card>
-          <CardHeader><CardTitle>Top Products</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Top Products</CardTitle>
+          </CardHeader>
           <CardContent>
             <TopProductsList items={stats.topProducts} />
           </CardContent>
@@ -66,7 +74,9 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-gray-500">
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
@@ -82,7 +92,10 @@ function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
   return (
     <div className="space-y-2">
       {orders.map((order) => (
-        <div key={order.orderId} className="flex items-center justify-between text-sm">
+        <div
+          key={order.orderId}
+          className="flex items-center justify-between text-sm"
+        >
           <span className="font-mono text-xs text-gray-600">
             {order.orderId.slice(0, 12)}…
           </span>
@@ -112,7 +125,10 @@ function TopProductsList({
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
-        <div key={item.id} className="flex items-center justify-between text-sm">
+        <div
+          key={item.id}
+          className="flex items-center justify-between text-sm"
+        >
           <span className="text-gray-700">
             {i + 1}. {item.name}
           </span>

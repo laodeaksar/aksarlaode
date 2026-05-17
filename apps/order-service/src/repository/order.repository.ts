@@ -1,11 +1,23 @@
-import { Effect, Data }  from "effect"
-import { OrderModel, type OrderStatus, type OrderDocument } from "@/models/order.model"
+import {
+  OrderModel,
+  type OrderDocument,
+  type OrderStatus,
+} from "@/models/order.model"
+import { Data, Effect } from "effect"
 
-class OrderNotFoundError    extends Data.TaggedError("OrderNotFoundError")<{ id: string }> {}
-class OrderConflictError    extends Data.TaggedError("OrderConflictError")<{ reason: string }> {}
-class DbError               extends Data.TaggedError("DbError")<{ cause: unknown }> {}
-class DuplicateOrderError   extends Data.TaggedError("DuplicateOrderError")<{ orderId: string }> {}
-class InvalidTransitionError extends Data.TaggedError("InvalidTransitionError")<{
+class OrderNotFoundError extends Data.TaggedError("OrderNotFoundError")<{
+  id: string
+}> {}
+class OrderConflictError extends Data.TaggedError("OrderConflictError")<{
+  reason: string
+}> {}
+class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
+class DuplicateOrderError extends Data.TaggedError("DuplicateOrderError")<{
+  orderId: string
+}> {}
+class InvalidTransitionError extends Data.TaggedError(
+  "InvalidTransitionError"
+)<{
   orderId: string
   from: string
   to: string
@@ -14,18 +26,19 @@ class InvalidTransitionError extends Data.TaggedError("InvalidTransitionError")<
 // Valid status transitions — terminal states (CANCELLED, REFUNDED) have no outgoing edges
 const VALID_TRANSITIONS: Partial<Record<OrderStatus, Set<OrderStatus>>> = {
   PENDING_PAYMENT: new Set(["PAID", "CANCELLED"]),
-  PAID:            new Set(["PROCESSING", "CANCELLED", "REFUNDED"]),
-  PROCESSING:      new Set(["SHIPPED", "CANCELLED"]),
-  SHIPPED:         new Set(["DELIVERED", "CANCELLED"]),
-  DELIVERED:       new Set(["REFUNDED"]),
+  PAID: new Set(["PROCESSING", "CANCELLED", "REFUNDED"]),
+  PROCESSING: new Set(["SHIPPED", "CANCELLED"]),
+  SHIPPED: new Set(["DELIVERED", "CANCELLED"]),
+  DELIVERED: new Set(["REFUNDED"]),
 }
 
 const create = (data: Omit<OrderDocument, keyof Document>) =>
   Effect.tryPromise({
-    try:   () => OrderModel.create(data),
+    try: () => OrderModel.create(data),
     catch: (e: any) => {
       // MongoDB duplicate key — unique index on orderId
-      if (e?.code === 11000) return new DuplicateOrderError({ orderId: data.orderId as string })
+      if (e?.code === 11000)
+        return new DuplicateOrderError({ orderId: data.orderId as string })
       return new DbError({ cause: e })
     },
   })
@@ -33,7 +46,7 @@ const create = (data: Omit<OrderDocument, keyof Document>) =>
 const findByOrderId = (orderId: string) =>
   Effect.gen(function* () {
     const doc = yield* Effect.tryPromise({
-      try:   () => OrderModel.findOne({ orderId }).lean(),
+      try: () => OrderModel.findOne({ orderId }).lean(),
       catch: (e) => new DbError({ cause: e }),
     })
     if (!doc) return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
@@ -45,7 +58,11 @@ const findByUser = (userId: string, page = 1, limit = 20) =>
     try: async () => {
       const skip = (page - 1) * limit
       const [items, total] = await Promise.all([
-        OrderModel.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+        OrderModel.find({ userId })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
         OrderModel.countDocuments({ userId }),
       ])
       return { items, total, page, limit }
@@ -55,35 +72,45 @@ const findByUser = (userId: string, page = 1, limit = 20) =>
 
 // Append to statusHistory + update top-level status field.
 // Enforces state machine — rejects transitions not in VALID_TRANSITIONS.
-const updateStatus = (orderId: string, status: OrderStatus, note?: string, changedBy = "system") =>
+const updateStatus = (
+  orderId: string,
+  status: OrderStatus,
+  note?: string,
+  changedBy = "system"
+) =>
   Effect.gen(function* () {
     // 1. Fetch current document to validate the transition
     const current = yield* Effect.tryPromise({
-      try:   () => OrderModel.findOne({ orderId }).select("status").lean(),
+      try: () => OrderModel.findOne({ orderId }).select("status").lean(),
       catch: (e) => new DbError({ cause: e }),
     })
 
-    if (!current) return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
+    if (!current)
+      return yield* Effect.fail(new OrderNotFoundError({ id: orderId }))
 
     const currentStatus = current.status as OrderStatus
-    const allowed       = VALID_TRANSITIONS[currentStatus]
+    const allowed = VALID_TRANSITIONS[currentStatus]
 
     // Terminal states have no outgoing edges; all other invalid jumps are rejected
     if (!allowed || !allowed.has(status)) {
-      console.warn(JSON.stringify({
-        event:   "order_invalid_transition",
-        orderId,
-        from:    currentStatus,
-        to:      status,
-        changedBy,
-      }))
-      return yield* Effect.fail(new InvalidTransitionError({ orderId, from: currentStatus, to: status }))
+      console.warn(
+        JSON.stringify({
+          event: "order_invalid_transition",
+          orderId,
+          from: currentStatus,
+          to: status,
+          changedBy,
+        })
+      )
+      return yield* Effect.fail(
+        new InvalidTransitionError({ orderId, from: currentStatus, to: status })
+      )
     }
 
     // 2. Perform the update (current status already validated above)
     const timestampField: Partial<Record<string, Date>> = {
-      PAID:      new Date(),
-      SHIPPED:   new Date(),
+      PAID: new Date(),
+      SHIPPED: new Date(),
       DELIVERED: new Date(),
       CANCELLED: new Date(),
     }
@@ -93,8 +120,15 @@ const updateStatus = (orderId: string, status: OrderStatus, note?: string, chang
         OrderModel.findOneAndUpdate(
           { orderId },
           {
-            $set:  { status, ...( timestampField[status] ? { [`${status.toLowerCase()}At`]: timestampField[status] } : {} ) },
-            $push: { statusHistory: { status, note, changedBy, timestamp: new Date() } },
+            $set: {
+              status,
+              ...(timestampField[status]
+                ? { [`${status.toLowerCase()}At`]: timestampField[status] }
+                : {}),
+            },
+            $push: {
+              statusHistory: { status, note, changedBy, timestamp: new Date() },
+            },
           },
           { new: true }
         ).lean(),
@@ -111,19 +145,24 @@ const updateStatus = (orderId: string, status: OrderStatus, note?: string, chang
  * order was already in a different state (race condition with webhook) or
  * does not exist. Never throws — callers check for null.
  */
-const cancelIfPending = (orderId: string, changedBy = "system:reconciliation") =>
+const cancelIfPending = (
+  orderId: string,
+  changedBy = "system:reconciliation"
+) =>
   Effect.tryPromise({
     try: () =>
       OrderModel.findOneAndUpdate(
-        { orderId, status: "PENDING_PAYMENT" },  // condition: only cancel if still pending
+        { orderId, status: "PENDING_PAYMENT" }, // condition: only cancel if still pending
         {
-          $set:  { status: "CANCELLED", cancelledAt: new Date() },
-          $push: { statusHistory: {
-            status:    "CANCELLED",
-            note:      "payment_expired",
-            changedBy,
-            timestamp: new Date(),
-          }},
+          $set: { status: "CANCELLED", cancelledAt: new Date() },
+          $push: {
+            statusHistory: {
+              status: "CANCELLED",
+              note: "payment_expired",
+              changedBy,
+              timestamp: new Date(),
+            },
+          },
         },
         { new: true }
       ).lean(),
@@ -138,9 +177,11 @@ const findExpiredPending = (expiryMinutes: number) =>
   Effect.tryPromise({
     try: () => {
       const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000)
-      return OrderModel
-        .find({ status: "PENDING_PAYMENT", createdAt: { $lt: cutoff } })
-        .select("orderId items")   // only the fields the reconciler needs
+      return OrderModel.find({
+        status: "PENDING_PAYMENT",
+        createdAt: { $lt: cutoff },
+      })
+        .select("orderId items") // only the fields the reconciler needs
         .lean()
     },
     catch: (e) => new DbError({ cause: e }),
@@ -156,12 +197,12 @@ const checkOwnership = (orderId: string, userId: string) =>
   })
 
 export type AdminOrderFilters = {
-  userId?:   string
-  status?:   OrderStatus[]
+  userId?: string
+  status?: OrderStatus[]
   dateFrom?: Date
-  dateTo?:   Date
-  page?:     number
-  limit?:    number
+  dateTo?: Date
+  page?: number
+  limit?: number
 }
 
 /**
@@ -175,17 +216,21 @@ const findAll = (filters: AdminOrderFilters = {}) =>
       const skip = (page - 1) * limit
 
       const query: Record<string, unknown> = {}
-      if (userId)               query.userId  = userId
-      if (status?.length)       query.status  = { $in: status }
+      if (userId) query.userId = userId
+      if (status?.length) query.status = { $in: status }
       if (dateFrom || dateTo) {
         const range: Record<string, Date> = {}
         if (dateFrom) range.$gte = dateFrom
-        if (dateTo)   range.$lte = dateTo
+        if (dateTo) range.$lte = dateTo
         query.createdAt = range
       }
 
       const [items, total] = await Promise.all([
-        OrderModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+        OrderModel.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
         OrderModel.countDocuments(query),
       ])
 
@@ -195,45 +240,49 @@ const findAll = (filters: AdminOrderFilters = {}) =>
         page,
         limit,
         totalPages: Math.ceil(total / limit),
-        hasNext:    page * limit < total,
-        hasPrev:    page > 1,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
       }
     },
     catch: (e) => new DbError({ cause: e }),
   })
 
 export type SummaryFilters = {
-  userId?:   string
+  userId?: string
   dateFrom?: Date
-  dateTo?:   Date
+  dateTo?: Date
 }
 
 export type StatusBucket = {
-  status:        string
-  orderCount:    number
-  totalRevenue:  number
+  status: string
+  orderCount: number
+  totalRevenue: number
   avgOrderValue: number
   minOrderValue: number
   maxOrderValue: number
 }
 
 export type DailyBucket = {
-  date:       string   // "YYYY-MM-DD"
+  date: string // "YYYY-MM-DD"
   orderCount: number
-  revenue:    number
+  revenue: number
 }
 
 export type OrderSummary = {
-  period: { dateFrom: string | null; dateTo: string | null; userId: string | null }
+  period: {
+    dateFrom: string | null
+    dateTo: string | null
+    userId: string | null
+  }
   overall: {
-    totalOrders:      number
-    totalRevenue:     number
-    paidRevenue:      number   // PAID + PROCESSING + SHIPPED + DELIVERED
-    avgOrderValue:    number
-    cancelledCount:   number
-    cancellationRate: number   // 0–100 %
-    refundedCount:    number
-    refundedRevenue:  number
+    totalOrders: number
+    totalRevenue: number
+    paidRevenue: number // PAID + PROCESSING + SHIPPED + DELIVERED
+    avgOrderValue: number
+    cancelledCount: number
+    cancellationRate: number // 0–100 %
+    refundedCount: number
+    refundedRevenue: number
   }
   byStatus: StatusBucket[]
   // Only populated when date range ≤ 90 days; empty array otherwise
@@ -241,7 +290,12 @@ export type OrderSummary = {
 }
 
 // Revenue-generating statuses (payment was received)
-const PAID_STATUSES_SET = new Set(["PAID", "PROCESSING", "SHIPPED", "DELIVERED"])
+const PAID_STATUSES_SET = new Set([
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+])
 
 /**
  * Single aggregation pipeline that returns:
@@ -260,7 +314,7 @@ const summarize = (filters: SummaryFilters = {}) =>
       if (dateFrom || dateTo) {
         const range: Record<string, Date> = {}
         if (dateFrom) range.$gte = dateFrom
-        if (dateTo)   range.$lte = dateTo
+        if (dateTo) range.$lte = dateTo
         match.createdAt = range
       }
 
@@ -272,9 +326,9 @@ const summarize = (filters: SummaryFilters = {}) =>
             byStatus: [
               {
                 $group: {
-                  _id:           "$status",
-                  orderCount:    { $sum: 1 },
-                  totalRevenue:  { $sum: "$grandTotal" },
+                  _id: "$status",
+                  orderCount: { $sum: 1 },
+                  totalRevenue: { $sum: "$grandTotal" },
                   avgOrderValue: { $avg: "$grandTotal" },
                   minOrderValue: { $min: "$grandTotal" },
                   maxOrderValue: { $max: "$grandTotal" },
@@ -286,16 +340,21 @@ const summarize = (filters: SummaryFilters = {}) =>
             overall: [
               {
                 $group: {
-                  _id:          null,
-                  totalOrders:  { $sum: 1 },
+                  _id: null,
+                  totalOrders: { $sum: 1 },
                   totalRevenue: { $sum: "$grandTotal" },
-                  sumGrandTotal:{ $sum: "$grandTotal" },
-                  count:        { $sum: 1 },
+                  sumGrandTotal: { $sum: "$grandTotal" },
+                  count: { $sum: 1 },
                   // Tag each doc so we can sum only paid/cancelled/refunded
                   paidRevenue: {
                     $sum: {
                       $cond: [
-                        { $in: ["$status", ["PAID","PROCESSING","SHIPPED","DELIVERED"]] },
+                        {
+                          $in: [
+                            "$status",
+                            ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"],
+                          ],
+                        },
                         "$grandTotal",
                         0,
                       ],
@@ -309,7 +368,11 @@ const summarize = (filters: SummaryFilters = {}) =>
                   },
                   refundedRevenue: {
                     $sum: {
-                      $cond: [{ $eq: ["$status", "REFUNDED"] }, "$grandTotal", 0],
+                      $cond: [
+                        { $eq: ["$status", "REFUNDED"] },
+                        "$grandTotal",
+                        0,
+                      ],
                     },
                   },
                 },
@@ -319,9 +382,11 @@ const summarize = (filters: SummaryFilters = {}) =>
             dailyTrend: [
               {
                 $group: {
-                  _id:        { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                  _id: {
+                    $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+                  },
                   orderCount: { $sum: 1 },
-                  revenue:    { $sum: "$grandTotal" },
+                  revenue: { $sum: "$grandTotal" },
                 },
               },
               { $sort: { _id: 1 } },
@@ -332,51 +397,56 @@ const summarize = (filters: SummaryFilters = {}) =>
 
       // ── Shape overall ──────────────────────────────────────────────────────
       const ov = facetResult?.overall?.[0] ?? {}
-      const totalOrders    = ov.totalOrders    ?? 0
-      const totalRevenue   = ov.totalRevenue   ?? 0
-      const paidRevenue    = ov.paidRevenue    ?? 0
+      const totalOrders = ov.totalOrders ?? 0
+      const totalRevenue = ov.totalRevenue ?? 0
+      const paidRevenue = ov.paidRevenue ?? 0
       const cancelledCount = ov.cancelledCount ?? 0
-      const refundedCount  = ov.refundedCount  ?? 0
-      const refundedRevenue= ov.refundedRevenue ?? 0
-      const avgOrderValue  = totalOrders > 0 ? totalRevenue / totalOrders : 0
-      const cancellationRate = totalOrders > 0
-        ? Math.round((cancelledCount / totalOrders) * 10_000) / 100   // 2 decimal places
-        : 0
+      const refundedCount = ov.refundedCount ?? 0
+      const refundedRevenue = ov.refundedRevenue ?? 0
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+      const cancellationRate =
+        totalOrders > 0
+          ? Math.round((cancelledCount / totalOrders) * 10_000) / 100 // 2 decimal places
+          : 0
 
       // ── Shape byStatus ─────────────────────────────────────────────────────
-      const byStatus: StatusBucket[] = (facetResult?.byStatus ?? []).map((b: any) => ({
-        status:        b._id,
-        orderCount:    b.orderCount,
-        totalRevenue:  Math.round(b.totalRevenue  * 100) / 100,
-        avgOrderValue: Math.round(b.avgOrderValue * 100) / 100,
-        minOrderValue: Math.round(b.minOrderValue * 100) / 100,
-        maxOrderValue: Math.round(b.maxOrderValue * 100) / 100,
-      }))
+      const byStatus: StatusBucket[] = (facetResult?.byStatus ?? []).map(
+        (b: any) => ({
+          status: b._id,
+          orderCount: b.orderCount,
+          totalRevenue: Math.round(b.totalRevenue * 100) / 100,
+          avgOrderValue: Math.round(b.avgOrderValue * 100) / 100,
+          minOrderValue: Math.round(b.minOrderValue * 100) / 100,
+          maxOrderValue: Math.round(b.maxOrderValue * 100) / 100,
+        })
+      )
 
       // ── Daily trend — only include when date window ≤ 90 days ─────────────
-      const windowDays = dateFrom && dateTo
-        ? (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24)
-        : null
+      const windowDays =
+        dateFrom && dateTo
+          ? (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24)
+          : null
 
-      const dailyTrend: DailyBucket[] = (windowDays === null || windowDays <= 90)
-        ? (facetResult?.dailyTrend ?? []).map((d: any) => ({
-            date:       d._id,
-            orderCount: d.orderCount,
-            revenue:    Math.round(d.revenue * 100) / 100,
-          }))
-        : []
+      const dailyTrend: DailyBucket[] =
+        windowDays === null || windowDays <= 90
+          ? (facetResult?.dailyTrend ?? []).map((d: any) => ({
+              date: d._id,
+              orderCount: d.orderCount,
+              revenue: Math.round(d.revenue * 100) / 100,
+            }))
+          : []
 
       return {
         period: {
           dateFrom: dateFrom?.toISOString() ?? null,
-          dateTo:   dateTo?.toISOString()   ?? null,
-          userId:   userId ?? null,
+          dateTo: dateTo?.toISOString() ?? null,
+          userId: userId ?? null,
         },
         overall: {
           totalOrders,
-          totalRevenue:    Math.round(totalRevenue    * 100) / 100,
-          paidRevenue:     Math.round(paidRevenue     * 100) / 100,
-          avgOrderValue:   Math.round(avgOrderValue   * 100) / 100,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          paidRevenue: Math.round(paidRevenue * 100) / 100,
+          avgOrderValue: Math.round(avgOrderValue * 100) / 100,
           cancelledCount,
           cancellationRate,
           refundedCount,
@@ -397,21 +467,20 @@ const summarize = (filters: SummaryFilters = {}) =>
  */
 export async function* exportOrders(
   filters: Omit<AdminOrderFilters, "page" | "limit">,
-  maxRows = 50_000,
+  maxRows = 50_000
 ) {
   const { userId, status, dateFrom, dateTo } = filters
   const query: Record<string, unknown> = {}
-  if (userId)         query.userId   = userId
-  if (status?.length) query.status   = { $in: status }
+  if (userId) query.userId = userId
+  if (status?.length) query.status = { $in: status }
   if (dateFrom || dateTo) {
     const range: Record<string, Date> = {}
     if (dateFrom) range.$gte = dateFrom
-    if (dateTo)   range.$lte = dateTo
+    if (dateTo) range.$lte = dateTo
     query.createdAt = range
   }
 
-  const cursor = OrderModel
-    .find(query)
+  const cursor = OrderModel.find(query)
     .sort({ createdAt: -1 })
     .limit(maxRows)
     .lean()
@@ -436,7 +505,7 @@ const addNote = (orderId: string, note: string, changedBy: string) =>
           {
             $push: {
               statusHistory: {
-                status:    "__NOTE__",   // sentinel — not an OrderStatus transition
+                status: "__NOTE__", // sentinel — not an OrderStatus transition
                 note,
                 changedBy,
                 timestamp: new Date(),
@@ -455,6 +524,14 @@ const addNote = (orderId: string, note: string, changedBy: string) =>
 export { InvalidTransitionError }
 
 export const orderRepository = {
-  create, findByOrderId, findByUser, findAll, summarize, updateStatus,
-  cancelIfPending, findExpiredPending, checkOwnership, addNote,
+  create,
+  findByOrderId,
+  findByUser,
+  findAll,
+  summarize,
+  updateStatus,
+  cancelIfPending,
+  findExpiredPending,
+  checkOwnership,
+  addNote,
 }

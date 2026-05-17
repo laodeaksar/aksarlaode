@@ -1,14 +1,15 @@
-import { Effect }              from "effect"
+import { Effect } from "effect"
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv }          from "@/types/context"
+
+import type { AppEnv } from "@/types/context"
 
 // ── In-memory sliding window rate limiter ─────────────────────────────────────
 // Single-instance implementation. For multi-instance deployments, swap the
 // store with an Upstash Redis client (same interface, same logic).
 //
 // Limits (conservative defaults — tune for production load):
-const BURST_LIMIT     = 20   // max requests per second
-const SUSTAINED_LIMIT = 200  // max requests per minute
+const BURST_LIMIT = 20 // max requests per second
+const SUSTAINED_LIMIT = 200 // max requests per minute
 
 type WindowEntry = { count: number; resetAt: number }
 const store = new Map<string, WindowEntry>()
@@ -23,10 +24,10 @@ setInterval(() => {
 
 // ── Core window logic ─────────────────────────────────────────────────────────
 function incrementWindow(
-  ip:       string,
-  window:   string,
+  ip: string,
+  window: string,
   windowMs: number,
-  limit:    number
+  limit: number
 ): Effect.Effect<{ allowed: boolean; resetIn: number }, never> {
   return Effect.sync(() => {
     const key = `${ip}:${window}`
@@ -46,9 +47,12 @@ function incrementWindow(
 // FIX PRD-06: Dedicated per-IP rate limiter for the public product listing
 // endpoint.  Stricter than the global limit (100 req/min vs 200 req/min) to
 // prevent catalogue scraping without penalising normal browsing.
-const PRODUCT_LIST_LIMIT = 100  // max requests per minute per IP for GET /products
+const PRODUCT_LIST_LIMIT = 100 // max requests per minute per IP for GET /products
 
-export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
+export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (
+  c,
+  next
+) => {
   const ip =
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -61,7 +65,11 @@ export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (c, ne
   if (result._tag === "Success" && !result.value.allowed) {
     c.header("Retry-After", String(Math.ceil(result.value.resetIn / 1000)))
     return c.json(
-      { error: "Too Many Requests", code: "RATE_LIMITED", requestId: c.var.requestId },
+      {
+        error: "Too Many Requests",
+        code: "RATE_LIMITED",
+        requestId: c.var.requestId,
+      },
       429
     )
   }
@@ -78,7 +86,7 @@ export const rateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
     "unknown"
 
   const check = Effect.gen(function* () {
-    const perSecond = yield* incrementWindow(ip, "1s", 1_000,  BURST_LIMIT)
+    const perSecond = yield* incrementWindow(ip, "1s", 1_000, BURST_LIMIT)
     const perMinute = yield* incrementWindow(ip, "1m", 60_000, SUSTAINED_LIMIT)
 
     if (!perSecond.allowed || !perMinute.allowed) {
@@ -92,7 +100,11 @@ export const rateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
     const { retryAfter } = result.cause.error as { retryAfter: number }
     c.header("Retry-After", String(Math.ceil(retryAfter / 1000)))
     return c.json(
-      { error: "Too Many Requests", code: "RATE_LIMITED", requestId: c.var.requestId },
+      {
+        error: "Too Many Requests",
+        code: "RATE_LIMITED",
+        requestId: c.var.requestId,
+      },
       429
     )
   }

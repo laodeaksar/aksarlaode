@@ -1,8 +1,8 @@
 export type SendMailOptions = {
-  to:       string | string[]
-  subject:  string
-  html:     string
-  from?:    string
+  to: string | string[]
+  subject: string
+  html: string
+  from?: string
   replyTo?: string
 }
 

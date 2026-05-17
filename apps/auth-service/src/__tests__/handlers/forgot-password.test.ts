@@ -1,8 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { Elysia } from "elysia"
-import { Effect } from "effect"
-import { MOCK_USER } from "../fixtures"
+import { forgotPasswordHandler } from "@/handlers/forgot-password"
+import { resetTokenRepository } from "@/repository/reset-token.repository"
+import { userRepository } from "@/repository/user.repository"
 import { ForgotPasswordBody } from "@/schemas"
+import { Effect } from "effect"
+import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { enqueuePasswordReset } from "@/lib/email-queue"
+
+import { MOCK_USER } from "../fixtures"
 
 vi.mock("@/repository/user.repository", () => ({
   userRepository: { findByEmail: vi.fn() },
@@ -16,27 +22,32 @@ vi.mock("@/lib/email-queue", () => ({
   enqueuePasswordReset: vi.fn(() => Promise.resolve()),
 }))
 
-import { userRepository }        from "@/repository/user.repository"
-import { resetTokenRepository }  from "@/repository/reset-token.repository"
-import { enqueuePasswordReset }  from "@/lib/email-queue"
-import { forgotPasswordHandler } from "@/handlers/forgot-password"
-
-const app = new Elysia().post("/forgot-password", forgotPasswordHandler, { body: ForgotPasswordBody })
+const app = new Elysia().post("/forgot-password", forgotPasswordHandler, {
+  body: ForgotPasswordBody,
+})
 
 function post(body: unknown) {
-  return app.handle(new Request("http://localhost/forgot-password", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-  }))
+  return app.handle(
+    new Request("http://localhost/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  )
 }
 
 describe("forgotPasswordHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(MOCK_USER))
-    vi.mocked(resetTokenRepository.deleteAllByUserId).mockReturnValue(Effect.succeed({} as any))
-    vi.mocked(resetTokenRepository.create).mockReturnValue(Effect.succeed({} as any))
+    vi.mocked(userRepository.findByEmail).mockReturnValue(
+      Effect.succeed(MOCK_USER)
+    )
+    vi.mocked(resetTokenRepository.deleteAllByUserId).mockReturnValue(
+      Effect.succeed({} as any)
+    )
+    vi.mocked(resetTokenRepository.create).mockReturnValue(
+      Effect.succeed({} as any)
+    )
     vi.mocked(enqueuePasswordReset).mockResolvedValue(undefined)
   })
 
@@ -45,7 +56,7 @@ describe("forgotPasswordHandler", () => {
   // (same status, same body shape). Any difference allows user enumeration.
 
   it("returns 200 with a generic message when email IS registered", async () => {
-    const res  = await post({ email: "test@example.com" })
+    const res = await post({ email: "test@example.com" })
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(typeof body.message).toBe("string")
@@ -57,7 +68,9 @@ describe("forgotPasswordHandler", () => {
     const notFound = await post({ email: "ghost@example.com" })
     const notFoundBody = await notFound.json()
 
-    vi.mocked(userRepository.findByEmail).mockReturnValue(Effect.succeed(MOCK_USER))
+    vi.mocked(userRepository.findByEmail).mockReturnValue(
+      Effect.succeed(MOCK_USER)
+    )
     const found = await post({ email: "test@example.com" })
     const foundBody = await found.json()
 
@@ -67,8 +80,10 @@ describe("forgotPasswordHandler", () => {
   })
 
   it("returns 200 even when the email queue throws (prevents status-code enumeration)", async () => {
-    vi.mocked(enqueuePasswordReset).mockRejectedValue(new Error("Queue unavailable"))
-    const res  = await post({ email: "test@example.com" })
+    vi.mocked(enqueuePasswordReset).mockRejectedValue(
+      new Error("Queue unavailable")
+    )
+    const res = await post({ email: "test@example.com" })
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(typeof body.message).toBe("string")
@@ -86,7 +101,9 @@ describe("forgotPasswordHandler", () => {
 
   it("invalidates old tokens before issuing a new one", async () => {
     await post({ email: "test@example.com" })
-    expect(resetTokenRepository.deleteAllByUserId).toHaveBeenCalledWith(MOCK_USER.id)
+    expect(resetTokenRepository.deleteAllByUserId).toHaveBeenCalledWith(
+      MOCK_USER.id
+    )
     expect(resetTokenRepository.create).toHaveBeenCalled()
   })
 

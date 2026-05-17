@@ -17,30 +17,35 @@
 
 export type AuditEventName =
   // ── Privileged account actions ───────────────────────────────────────────
-  | "OWNER_TRANSFER"    // ownership transferred to another user
-  | "ROLE_CHANGE"       // any role mutation or user deletion
-  | "OWNER_LOGIN"       // OWNER authenticated successfully (kept for back-compat)
+  | "OWNER_TRANSFER" // ownership transferred to another user
+  | "ROLE_CHANGE" // any role mutation or user deletion
+  | "OWNER_LOGIN" // OWNER authenticated successfully (kept for back-compat)
   // ── Account lifecycle ────────────────────────────────────────────────────
-  | "ACCOUNT_CREATED"   // new user account successfully registered
+  | "ACCOUNT_CREATED" // new user account successfully registered
   // ── Session lifecycle ────────────────────────────────────────────────────
-  | "LOGIN_SUCCESS"     // any user authenticated successfully
-  | "LOGIN_FAILED"      // authentication attempt rejected (bad credentials)
-  | "LOGOUT"            // user explicitly logged out
-  | "SESSION_REVOKED"   // a specific session was revoked via the sessions API
+  | "LOGIN_SUCCESS" // any user authenticated successfully
+  | "LOGIN_FAILED" // authentication attempt rejected (bad credentials)
+  | "LOGOUT" // user explicitly logged out
+  | "SESSION_REVOKED" // a specific session was revoked via the sessions API
   // ── Credential changes ───────────────────────────────────────────────────
-  | "PASSWORD_CHANGED"  // password changed via change-password endpoint
-  | "PASSWORD_RESET"    // password reset via forgot/reset-password flow
+  | "PASSWORD_CHANGED" // password changed via change-password endpoint
+  | "PASSWORD_RESET" // password reset via forgot/reset-password flow
 
 export type AuditEntry = {
-  event:    AuditEventName
-  actorId:  string
+  event: AuditEventName
+  actorId: string
   targetId: string
-  meta?:    Record<string, string>
+  meta?: Record<string, string>
 }
 
-export const writeAuditLog = ({ event, actorId, targetId, meta = {} }: AuditEntry): void => {
+export const writeAuditLog = ({
+  event,
+  actorId,
+  targetId,
+  meta = {},
+}: AuditEntry): void => {
   const entry = {
-    audit:     true,
+    audit: true,
     event,
     actorId,
     targetId,

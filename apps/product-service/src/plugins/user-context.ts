@@ -1,5 +1,5 @@
-import Elysia from "elysia"
 import type { UserRole } from "@/types"
+import Elysia from "elysia"
 
 /**
  * Parses the forwarded user headers set by the API gateway after JWT verification.
@@ -12,9 +12,11 @@ import type { UserRole } from "@/types"
  * Usage in any handler:
  *   ({ userId, userRole, requestId }) => { ... }
  */
-export const withUserContext = new Elysia({ name: "user-context" })
-  .derive({ as: "global" }, ({ headers }) => ({
-    userId:    headers["x-user-id"]                        ?? null,
+export const withUserContext = new Elysia({ name: "user-context" }).derive(
+  { as: "global" },
+  ({ headers }) => ({
+    userId: headers["x-user-id"] ?? null,
     userRole: (headers["x-user-role"] as UserRole | undefined) ?? null,
-    requestId: headers["x-request-id"]                    ?? null,
-  }))
+    requestId: headers["x-request-id"] ?? null,
+  })
+)

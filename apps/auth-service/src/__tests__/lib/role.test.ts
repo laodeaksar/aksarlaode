@@ -1,11 +1,12 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
+
 import {
-  ROLE_LEVEL,
+  canManage,
   hasMinRole,
-  isOwner,
   isAtLeastAdmin,
   isAtLeastOwner,
-  canManage,
+  isOwner,
+  ROLE_LEVEL,
 } from "@/lib/role"
 
 describe("ROLE_LEVEL — numeric ordering", () => {

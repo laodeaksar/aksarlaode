@@ -1,40 +1,53 @@
-import { Link }                 from "@tanstack/react-router"
-import { useQuery }               from "@tanstack/react-query"
-import { useState, useMemo }      from "react"
-import { Route }                  from "./index"
-import { listOrdersFn }           from "@/server/orders"
-import { DataTable }              from "@/components/data-table/data-table"
-import { Badge }                  from "@repo/ui/components/badge"
-import type { ColumnDef }         from "@tanstack/react-table"
-import type { OrderSummary }      from "@/effect/Services"
+import { useMemo, useState } from "react"
+import type { OrderSummary } from "@/effect/Services"
+import { listOrdersFn } from "@/server/orders"
+import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import type { ColumnDef } from "@tanstack/react-table"
 
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+import { Badge } from "@repo/ui/components/badge"
+
+import { DataTable } from "@/components/data-table/data-table"
+
+import { Route } from "./index"
+
+const STATUS_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   PENDING_PAYMENT: "secondary",
-  PAID:            "default",
-  PROCESSING:      "default",
-  SHIPPED:         "default",
-  DELIVERED:       "outline",
-  CANCELLED:       "destructive",
-  REFUNDED:        "secondary",
+  PAID: "default",
+  PROCESSING: "default",
+  SHIPPED: "default",
+  DELIVERED: "outline",
+  CANCELLED: "destructive",
+  REFUNDED: "secondary",
 }
 
 const ORDER_STATUSES = [
-  "PENDING_PAYMENT", "PAID", "PROCESSING", "SHIPPED",
-  "DELIVERED", "CANCELLED", "REFUNDED",
+  "PENDING_PAYMENT",
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
 ] as const
 
 // Defined outside component — never changes, no memoization needed
 const columns: ColumnDef<OrderSummary>[] = [
   {
     accessorKey: "orderId",
-    header:      "Order ID",
+    header: "Order ID",
     cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-gray-800">{getValue() as string}</span>
+      <span className="font-mono text-xs text-gray-800">
+        {getValue() as string}
+      </span>
     ),
   },
   {
     accessorKey: "status",
-    header:      "Status",
+    header: "Status",
     cell: ({ getValue }) => {
       const status = getValue() as string
       return (
@@ -46,18 +59,18 @@ const columns: ColumnDef<OrderSummary>[] = [
   },
   {
     accessorKey: "grandTotal",
-    header:      "Amount",
+    header: "Amount",
     cell: ({ getValue }) =>
       `Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`,
   },
   {
     accessorKey: "createdAt",
-    header:      "Date",
+    header: "Date",
     cell: ({ getValue }) =>
       new Date(getValue() as string).toLocaleDateString("id-ID"),
   },
   {
-    id:     "actions",
+    id: "actions",
     header: "",
     cell: ({ row }) => (
       <Link
@@ -72,7 +85,7 @@ const columns: ColumnDef<OrderSummary>[] = [
 ]
 
 export default function OrdersPage() {
-  const [page,   setPage]   = useState(1)
+  const [page, setPage] = useState(1)
   const [status, setStatus] = useState("")
 
   // Seed first-page data from the SSR loader — no skeleton on initial load
@@ -80,9 +93,10 @@ export default function OrdersPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders", page, status],
-    queryFn:  () => listOrdersFn({
-      data: { page, ...(status ? { status } : {}) },
-    }),
+    queryFn: () =>
+      listOrdersFn({
+        data: { page, ...(status ? { status } : {}) },
+      }),
     // Use SSR data only for the first page with no filter applied
     initialData: page === 1 && !status ? loaderData : undefined,
   })
@@ -95,12 +109,17 @@ export default function OrdersPage() {
         <select
           className="rounded border px-3 py-2 text-sm bg-white"
           value={status}
-          onChange={e => { setStatus(e.target.value); setPage(1) }}
+          onChange={(e) => {
+            setStatus(e.target.value)
+            setPage(1)
+          }}
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>
-          {ORDER_STATUSES.map(s => (
-            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+          {ORDER_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s.replace(/_/g, " ")}
+            </option>
           ))}
         </select>
       </div>

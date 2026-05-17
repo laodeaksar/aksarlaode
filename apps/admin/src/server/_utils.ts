@@ -1,8 +1,8 @@
 // ── Shared server-function utilities ───────────────────────────────────────
 // Imported by all files in src/server/. Do NOT import in client-side code.
 
-import { Schema } from "effect"
 import { ValidationError } from "@/effect/Errors"
+import { Schema } from "effect"
 
 /**
  * Decode `input` via Effect.Schema, throwing a typed `ValidationError` on
@@ -28,6 +28,6 @@ export function decodeOrThrow<A, I>(schema: Schema.Schema<A, I>, input: I): A {
  */
 export function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
+    Object.entries(obj).filter(([, v]) => v !== undefined)
   ) as T
 }

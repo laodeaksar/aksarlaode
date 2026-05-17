@@ -1,6 +1,6 @@
+import { productRepository } from "@/repository/product.repository"
 import { Effect } from "effect"
 import type { Context } from "elysia"
-import { productRepository } from "@/repository/product.repository"
 
 export const getStockHandler = async ({ params, set }: Context) => {
   const { id } = params

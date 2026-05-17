@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { recordEmailAttempt } from "@/lib/account-lockout"
+import { redis } from "@/lib/redis"
 
 vi.mock("@/lib/redis", () => ({
   redis: { eval: vi.fn() },
 }))
 
-import { redis } from "@/lib/redis"
-import { recordEmailAttempt } from "@/lib/account-lockout"
-
-const EMAIL_HASH = "a".repeat(64)   // fake SHA-256 hex
+const EMAIL_HASH = "a".repeat(64) // fake SHA-256 hex
 
 function mockAllowed() {
   vi.mocked(redis.eval).mockResolvedValue([1, 0])
@@ -31,7 +31,7 @@ describe("recordEmailAttempt", () => {
     const result = await recordEmailAttempt(EMAIL_HASH)
     expect(result.locked).toBe(true)
     if (result.locked) {
-      expect(result.retryAfterSec).toBe(300)   // 300_000 ms → 300 s
+      expect(result.retryAfterSec).toBe(300) // 300_000 ms → 300 s
     }
   })
 
@@ -47,14 +47,14 @@ describe("recordEmailAttempt", () => {
     mockAllowed()
     await recordEmailAttempt(EMAIL_HASH)
     expect(redis.eval).toHaveBeenCalledWith(
-      expect.any(String),              // Lua script
-      1,                               // number of KEYS
-      expect.stringContaining("lockout:email:"),  // KEYS[1]
-      expect.any(String),              // ARGV[1] now (ms)
-      expect.any(String),              // ARGV[2] window_start (ms)
-      "20",                            // ARGV[3] max_requests
-      "3600",                          // ARGV[4] ttl_sec (1 hour)
-      expect.any(String),              // ARGV[5] member (uuid)
+      expect.any(String), // Lua script
+      1, // number of KEYS
+      expect.stringContaining("lockout:email:"), // KEYS[1]
+      expect.any(String), // ARGV[1] now (ms)
+      expect.any(String), // ARGV[2] window_start (ms)
+      "20", // ARGV[3] max_requests
+      "3600", // ARGV[4] ttl_sec (1 hour)
+      expect.any(String) // ARGV[5] member (uuid)
     )
   })
 

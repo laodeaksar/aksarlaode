@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono"
-import type { AppEnv }          from "@/types/context"
+
+import type { AppEnv } from "@/types/context"
 
 // ── Sanitization ──────────────────────────────────────────────────────────────
 // Any object key matching this pattern has its value replaced with "[REDACTED]".
@@ -8,12 +9,12 @@ import type { AppEnv }          from "@/types/context"
 const SENSITIVE_KEY_RE = /^(password|token|secret|key|auth|cvv|cvc|pin|card)/i
 
 function sanitize(value: unknown, depth = 0): unknown {
-  if (depth > 4)               return "[truncated]"
-  if (value === null)          return null
+  if (depth > 4) return "[truncated]"
+  if (value === null) return null
   if (typeof value !== "object") return value
 
   if (Array.isArray(value)) {
-    const items = value.slice(0, 20).map(v => sanitize(v, depth + 1))
+    const items = value.slice(0, 20).map((v) => sanitize(v, depth + 1))
     return value.length > 20 ? [...items, `…+${value.length - 20} more`] : items
   }
 
@@ -69,7 +70,7 @@ export const auditLog: MiddlewareHandler<AppEnv> = async (c, next) => {
     : undefined
 
   // Sanitize query params
-  const url     = new URL(c.req.url)
+  const url = new URL(c.req.url)
   const query: Record<string, string> = {}
   url.searchParams.forEach((v, k) => {
     query[k] = SENSITIVE_KEY_RE.test(k) ? "[REDACTED]" : v
@@ -81,31 +82,30 @@ export const auditLog: MiddlewareHandler<AppEnv> = async (c, next) => {
   const user = c.var.user
 
   const entry = {
-    event:     "audit",
-    ts:        new Date().toISOString(),
+    event: "audit",
+    ts: new Date().toISOString(),
     requestId: c.var.requestId,
 
     // Request
-    method:  c.req.method,
-    path:    c.req.path,
-    query:   Object.keys(query).length > 0 ? query : undefined,
+    method: c.req.method,
+    path: c.req.path,
+    query: Object.keys(query).length > 0 ? query : undefined,
     body,
 
     // Response
-    status:   c.res.status,
+    status: c.res.status,
     duration: Date.now() - startMs,
 
     // Identity — available after contextInjector sets c.var.user
-    userId:    user?.id        ?? null,
-    role:      user?.role      ?? null,
+    userId: user?.id ?? null,
+    role: user?.role ?? null,
     sessionId: user?.sessionId ?? null,
 
     // Client
-    ip: (
+    ip:
       c.req.header("cf-connecting-ip") ??
       c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
-    ),
+      "unknown",
     ua: c.req.header("user-agent") ?? null,
   }
 

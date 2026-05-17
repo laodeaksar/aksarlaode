@@ -47,31 +47,36 @@ end
 
 // ── Core sliding-window check ─────────────────────────────────────────────────
 async function checkSlidingWindow(
-  key:        string,
-  maxReq:     number,
-  windowSec:  number,
+  key: string,
+  maxReq: number,
+  windowSec: number
 ): Promise<{ allowed: boolean; retryAfterSec: number }> {
-  const now         = Date.now()
+  const now = Date.now()
   const windowStart = now - windowSec * 1000
-  const member      = `${now}:${crypto.randomUUID()}`
+  const member = `${now}:${crypto.randomUUID()}`
 
   try {
-    const result = await redis.eval(
-      SLIDING_WINDOW_SCRIPT, 1,
+    const result = (await redis.eval(
+      SLIDING_WINDOW_SCRIPT,
+      1,
       key,
-      String(now), String(windowStart), String(maxReq), String(windowSec), member,
-    ) as [number, number]
+      String(now),
+      String(windowStart),
+      String(maxReq),
+      String(windowSec),
+      member
+    )) as [number, number]
 
     const [allowed, retryMs] = result
     return { allowed: allowed === 1, retryAfterSec: Math.ceil(retryMs / 1000) }
   } catch {
-    return { allowed: true, retryAfterSec: 0 }   // fail-open
+    return { allowed: true, retryAfterSec: 0 } // fail-open
   }
 }
 
 // ── Login lockout ─────────────────────────────────────────────────────────────
-const EMAIL_ATTEMPT_MAX        = 20
-const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60   // 1 hour
+const EMAIL_ATTEMPT_MAX = 20
+const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60 // 1 hour
 
 export type LockoutResult =
   | { locked: false }
@@ -84,11 +89,13 @@ export type LockoutResult =
  * @param emailHash - SHA-256 hex digest of the raw email address (lowercase).
  *                    Use hashToken() from lib/token-hash.ts.
  */
-export async function recordEmailAttempt(emailHash: string): Promise<LockoutResult> {
+export async function recordEmailAttempt(
+  emailHash: string
+): Promise<LockoutResult> {
   const { allowed, retryAfterSec } = await checkSlidingWindow(
     `lockout:email:${emailHash}`,
     EMAIL_ATTEMPT_MAX,
-    EMAIL_ATTEMPT_WINDOW_SEC,
+    EMAIL_ATTEMPT_WINDOW_SEC
   )
   if (!allowed) return { locked: true, retryAfterSec }
   return { locked: false }
@@ -99,8 +106,8 @@ export async function recordEmailAttempt(emailHash: string): Promise<LockoutResu
 // 3 requests per 15 minutes per hashed email address.
 // Fail-OPEN: if Redis is unavailable, let the request through (the per-IP
 // forgotPasswordRateLimiter on the route still applies).
-const FORGOT_MAX        = 3
-const FORGOT_WINDOW_SEC = 15 * 60   // 15 minutes
+const FORGOT_MAX = 3
+const FORGOT_WINDOW_SEC = 15 * 60 // 15 minutes
 
 export type ForgotPasswordRateResult =
   | { limited: false }
@@ -118,12 +125,12 @@ export type ForgotPasswordRateResult =
  * @param emailHash - SHA-256 hex digest of the lowercase email.
  */
 export async function recordForgotPasswordAttempt(
-  emailHash: string,
+  emailHash: string
 ): Promise<ForgotPasswordRateResult> {
   const { allowed, retryAfterSec } = await checkSlidingWindow(
     `ratelimit:forgot:${emailHash}`,
     FORGOT_MAX,
-    FORGOT_WINDOW_SEC,
+    FORGOT_WINDOW_SEC
   )
   if (!allowed) return { limited: true, retryAfterSec }
   return { limited: false }

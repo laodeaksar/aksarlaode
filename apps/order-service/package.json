@@ -7,25 +7,27 @@
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun run dist/index.js",
     "typecheck": "tsc --noEmit",
+    "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
+    "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache",
     "test": "bun test",
     "test:watch": "bun test --watch"
   },
   "dependencies": {
-    "elysia":            "^1.1.0",
-    "@elysiajs/cors":    "^1.1.0",
+    "elysia": "^1.1.0",
+    "@elysiajs/cors": "^1.1.0",
     "@elysiajs/swagger": "^1.1.0",
-    "effect":            "^3.15.0",
-    "mongoose":          "^8.13.0",
-    "bullmq":            "^5.0.0",
-    "ioredis":           "^5.0.0",
-    "@repo/env":         "workspace:*",
-    "@repo/common":      "workspace:*",
-    "@repo/database":    "workspace:*"
+    "effect": "^3.15.0",
+    "mongoose": "^8.13.0",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.0.0",
+    "@repo/env": "workspace:*",
+    "@repo/common": "workspace:*",
+    "@repo/database": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "^20.0.0",
-    "typescript":  "^5.4.0"
+    "typescript": "^5.4.0"
   }
 }

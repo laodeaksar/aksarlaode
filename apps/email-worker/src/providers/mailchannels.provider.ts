@@ -1,27 +1,30 @@
-import { BaseProvider, type SendMailOptions, type SendResult } from "./base.provider"
 import { env } from "@repo/env"
+
+import {
+  BaseProvider,
+  type SendMailOptions,
+  type SendResult,
+} from "./base.provider"
 
 export class MailChannelsProvider extends BaseProvider {
   readonly name = "MailChannels"
 
   async send(options: SendMailOptions): Promise<SendResult> {
     const recipients = Array.isArray(options.to)
-      ? options.to.map(email => ({ email }))
+      ? options.to.map((email) => ({ email }))
       : [{ email: options.to }]
 
     try {
       const res = await fetch("https://api.mailchannels.net/tx/v1/send", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           personalizations: [{ to: recipients }],
           from: {
-            email: options.from    ?? env.MAIL_FROM_ADDRESS,
-            name:  env.MAIL_FROM_NAME,
+            email: options.from ?? env.MAIL_FROM_ADDRESS,
+            name: env.MAIL_FROM_NAME,
           },
-          reply_to: options.replyTo
-            ? { email: options.replyTo }
-            : undefined,
+          reply_to: options.replyTo ? { email: options.replyTo } : undefined,
           subject: options.subject,
           content: [{ type: "text/html", value: options.html }],
         }),
@@ -39,7 +42,6 @@ export class MailChannelsProvider extends BaseProvider {
 
       // 5xx = transient — retry
       return { success: false, error: body, retryable: true }
-
     } catch (e) {
       // Network error — retry
       return { success: false, error: String(e), retryable: true }

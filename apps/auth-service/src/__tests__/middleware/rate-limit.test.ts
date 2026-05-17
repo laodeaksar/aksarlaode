@@ -1,5 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import {
+  changePasswordRateLimiter,
+  forgotPasswordRateLimiter,
+  loginRateLimiter,
+  refreshRateLimiter,
+  registerRateLimiter,
+  resetPasswordRateLimiter,
+} from "@/middleware/rate-limit"
 import { Elysia } from "elysia"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { redis } from "@/lib/redis"
 
 /**
  * The rate limiter implementation uses redis.eval() to run an atomic Lua
@@ -23,28 +33,21 @@ vi.mock("@/lib/redis", () => ({
   },
 }))
 
-import { redis } from "@/lib/redis"
-import {
-  loginRateLimiter,
-  registerRateLimiter,
-  forgotPasswordRateLimiter,
-  changePasswordRateLimiter,
-  resetPasswordRateLimiter,
-  refreshRateLimiter,
-} from "@/middleware/rate-limit"
-
 type AnyLimiter = typeof loginRateLimiter
 
 function makeApp(limiter: AnyLimiter) {
-  return new Elysia()
-    .post("/test", () => ({ ok: true }), { beforeHandle: limiter })
+  return new Elysia().post("/test", () => ({ ok: true }), {
+    beforeHandle: limiter,
+  })
 }
 
 function post(app: Elysia, ip = "1.2.3.4") {
-  return app.handle(new Request("http://localhost/test", {
-    method:  "POST",
-    headers: { "x-real-ip": ip },
-  }))
+  return app.handle(
+    new Request("http://localhost/test", {
+      method: "POST",
+      headers: { "x-real-ip": ip },
+    })
+  )
 }
 
 /** Mock the Lua script returning "allowed" — [1, 0]. */
@@ -77,7 +80,7 @@ describe("changePasswordRateLimiter", () => {
 
   it("returns 429 when Lua script says blocked", async () => {
     mockBlocked(45_000)
-    const res  = await post(app)
+    const res = await post(app)
     const body = await res.json()
     expect(res.status).toBe(429)
     expect(body.code).toBe("RATE_LIMITED")
@@ -106,7 +109,7 @@ describe("resetPasswordRateLimiter", () => {
 
   it("returns 429 when blocked", async () => {
     mockBlocked(120_000)
-    const res  = await post(app)
+    const res = await post(app)
     const body = await res.json()
     expect(res.status).toBe(429)
     expect(body.code).toBe("RATE_LIMITED")
@@ -129,7 +132,7 @@ describe("refreshRateLimiter", () => {
 
   it("returns 429 with correct Retry-After when blocked", async () => {
     mockBlocked(300_000)
-    const res  = await post(app)
+    const res = await post(app)
     const body = await res.json()
     expect(res.status).toBe(429)
     expect(body.code).toBe("RATE_LIMITED")
@@ -170,7 +173,7 @@ describe("fail-closed when Redis is unavailable", () => {
 
   it("returns 503 when redis.eval throws", async () => {
     mockRedisDown("connection refused")
-    const res  = await post(app)
+    const res = await post(app)
     const body = await res.json()
     expect(res.status).toBe(503)
     expect(body.code).toBe("SERVICE_UNAVAILABLE")
@@ -212,14 +215,14 @@ describe("IP bucket isolation", () => {
     mockAllowed()
     await post(app, "10.0.0.1")
     expect(redis.eval).toHaveBeenCalledWith(
-      expect.any(String),          // Lua script
-      1,                           // number of KEYS
-      expect.stringContaining("10.0.0.1"),  // KEYS[1] contains the IP
-      expect.any(String),          // ARGV[1] now
-      expect.any(String),          // ARGV[2] window_start
-      expect.any(String),          // ARGV[3] max_requests
-      expect.any(String),          // ARGV[4] ttl_sec
-      expect.any(String),          // ARGV[5] member (crypto.randomUUID())
+      expect.any(String), // Lua script
+      1, // number of KEYS
+      expect.stringContaining("10.0.0.1"), // KEYS[1] contains the IP
+      expect.any(String), // ARGV[1] now
+      expect.any(String), // ARGV[2] window_start
+      expect.any(String), // ARGV[3] max_requests
+      expect.any(String), // ARGV[4] ttl_sec
+      expect.any(String) // ARGV[5] member (crypto.randomUUID())
     )
   })
 
@@ -254,7 +257,7 @@ describe("registerRateLimiter", () => {
 
   it("returns 429 when blocked", async () => {
     mockBlocked(3600_000)
-    const res  = await post(app)
+    const res = await post(app)
     const body = await res.json()
     expect(res.status).toBe(429)
     expect(body.code).toBe("RATE_LIMITED")

@@ -1,8 +1,8 @@
-import { createServerFn }  from "@tanstack/react-start"
-import { Effect }           from "effect"
+import { effectMiddleware } from "@/effect/Middleware"
 import { ApiClientService } from "@/effect/Services"
 import type { DashboardStats } from "@/effect/Services"
-import { effectMiddleware } from "@/effect/Middleware"
+import { createServerFn } from "@tanstack/react-start"
+import { Effect } from "effect"
 
 // ── GET /admin/dashboard/stats ─────────────────────────────────────────────
 // SSR loader for the Dashboard route — returns KPI cards, recent orders and
@@ -10,11 +10,12 @@ import { effectMiddleware } from "@/effect/Middleware"
 
 export const getDashboardStatsFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])
-  .handler(async ({ context }): Promise<DashboardStats> =>
-    context.runtime.runPromise(
-      Effect.gen(function* () {
-        const api = yield* ApiClientService
-        return yield* api.dashboard.stats()
-      }),
-    )
+  .handler(
+    async ({ context }): Promise<DashboardStats> =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService
+          return yield* api.dashboard.stats()
+        })
+      )
   )

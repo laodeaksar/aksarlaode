@@ -1,8 +1,9 @@
+import { lazy } from "react"
+import { listProductsFn } from "@/server/products"
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { lazy }                      from "react"
-import { listProductsFn }            from "@/server/products"
-import { can }                       from "@/lib/rbac"
-import type { Session }              from "@/lib/auth"
+
+import type { Session } from "@/lib/auth"
+import { can } from "@/lib/rbac"
 
 // ── Route — GET /products/ ─────────────────────────────────────────────────
 // loader: runs on the SERVER during SSR (via TanStack Start server function).

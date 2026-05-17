@@ -1,19 +1,26 @@
-import { Effect }             from "effect"
-import { verifyPassword, hashPassword } from "@/lib/password"
-import { userRepository }    from "@/repository/user.repository"
 import { sessionRepository } from "@/repository/session.repository"
-import { writeAuditLog }     from "@/lib/audit-log"
-import { AuthError, NotFoundError, ValidationError, toErrorResponse } from "@repo/common/errors"
-import { message }           from "@repo/common/response"
+import { userRepository } from "@/repository/user.repository"
+import { Effect } from "effect"
+
+import {
+  AuthError,
+  NotFoundError,
+  toErrorResponse,
+  ValidationError,
+} from "@repo/common/errors"
+import { message } from "@repo/common/response"
+
+import { writeAuditLog } from "@/lib/audit-log"
+import { hashPassword, verifyPassword } from "@/lib/password"
 
 export const changePasswordHandler = async ({
   body,
   headers,
   set,
 }: {
-  body:    { currentPassword: string; newPassword: string }
+  body: { currentPassword: string; newPassword: string }
   headers: Record<string, string | undefined>
-  set:     any
+  set: any
 }) => {
   const userId = headers["x-user-id"]
 
@@ -25,7 +32,9 @@ export const changePasswordHandler = async ({
 
   if (body.newPassword === body.currentPassword) {
     const { body: errBody, status } = toErrorResponse(
-      new ValidationError("New password must be different from current password")
+      new ValidationError(
+        "New password must be different from current password"
+      )
     )
     set.status = status
     return errBody
@@ -36,7 +45,8 @@ export const changePasswordHandler = async ({
     if (!user) return yield* Effect.fail(new NotFoundError("User"))
 
     const valid = yield* verifyPassword(body.currentPassword, user.passwordHash)
-    if (!valid) return yield* Effect.fail(new AuthError("Current password is incorrect"))
+    if (!valid)
+      return yield* Effect.fail(new AuthError("Current password is incorrect"))
 
     const newHash = yield* hashPassword(body.newPassword)
     yield* userRepository.updatePasswordHash(userId, newHash)
@@ -53,8 +63,8 @@ export const changePasswordHandler = async ({
   }
 
   writeAuditLog({
-    event:    "PASSWORD_CHANGED",
-    actorId:  userId,
+    event: "PASSWORD_CHANGED",
+    actorId: userId,
     targetId: userId,
   })
 

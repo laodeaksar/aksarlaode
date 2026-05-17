@@ -1,8 +1,9 @@
 import { createMiddleware } from "@tanstack/react-start"
-import { ManagedRuntime }   from "effect"
-import { AppRuntime }       from "./Runtime"
+import { ManagedRuntime } from "effect"
+
+import { logError, logInfo } from "./Logger"
+import { AppRuntime } from "./Runtime"
 import type { AppServices } from "./Runtime"
-import { logInfo, logError } from "./Logger"
 
 // ── Effect middleware for TanStack Start server functions ──────────────────
 //
@@ -43,7 +44,7 @@ export const effectMiddleware = createMiddleware().server(
     const startMs = performance.now()
     // serverFnMeta is present for server-function calls and absent for plain
     // router requests — guard with fallbacks so the type stays narrowed.
-    const fn   = serverFnMeta?.name     ?? "(unknown)"
+    const fn = serverFnMeta?.name ?? "(unknown)"
     const file = serverFnMeta?.filename ?? "(unknown)"
 
     try {
@@ -57,7 +58,7 @@ export const effectMiddleware = createMiddleware().server(
         fn,
         file,
         durationMs: Math.round(performance.now() - startMs),
-        status:     "ok",
+        status: "ok",
       })
 
       return result
@@ -72,8 +73,9 @@ export const effectMiddleware = createMiddleware().server(
       if (err !== null && typeof err === "object") {
         const e = err as Record<string, unknown>
         errorPayload = {
-          _tag:    typeof e["_tag"]    === "string" ? e["_tag"]    : "UnknownError",
-          message: typeof e["message"] === "string" ? e["message"] : String(err),
+          _tag: typeof e["_tag"] === "string" ? e["_tag"] : "UnknownError",
+          message:
+            typeof e["message"] === "string" ? e["message"] : String(err),
           ...(typeof e["status"] === "number" ? { status: e["status"] } : {}),
         }
       } else {
@@ -85,11 +87,11 @@ export const effectMiddleware = createMiddleware().server(
         file,
         durationMs,
         status: "error",
-        error:  errorPayload,
+        error: errorPayload,
       })
 
       // Re-throw — TanStack Start serialises the error and sends it to the client.
       throw err
     }
-  },
+  }
 )

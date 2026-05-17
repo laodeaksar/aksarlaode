@@ -1,14 +1,14 @@
-import { Effect }          from "effect"
-import type { Context }    from "elysia"
 import { orderRepository } from "@/repository/order.repository"
+import { Effect } from "effect"
+import type { Context } from "elysia"
 
 // ── Terminal statuses — order will not move further ───────────────────────────
 const TERMINAL_STATUSES = new Set(["DELIVERED", "CANCELLED", "REFUNDED"])
 
 // ── Human-readable duration ───────────────────────────────────────────────────
 function formatDuration(ms: number): string {
-  if (ms < 1_000)        return `${ms}ms`
-  if (ms < 60_000)       return `${Math.floor(ms / 1_000)}s`
+  if (ms < 1_000) return `${ms}ms`
+  if (ms < 60_000) return `${Math.floor(ms / 1_000)}s`
   if (ms < 3_600_000) {
     const m = Math.floor(ms / 60_000)
     const s = Math.floor((ms % 60_000) / 1_000)
@@ -26,17 +26,21 @@ function formatDuration(ms: number): string {
 
 // ── Enriched timeline event ───────────────────────────────────────────────────
 type TimelineEvent = {
-  index:         number
-  status:        string
-  note:          string | null
-  changedBy:     string
-  timestamp:     string          // ISO 8601
-  durationSince: number | null   // ms since previous event; null for first
-  durationHuman: string | null   // human-readable version of durationSince
+  index: number
+  status: string
+  note: string | null
+  changedBy: string
+  timestamp: string // ISO 8601
+  durationSince: number | null // ms since previous event; null for first
+  durationHuman: string | null // human-readable version of durationSince
   isCurrentState: boolean
 }
 
-export const adminOrderTimelineHandler = async ({ params, headers, set }: Context) => {
+export const adminOrderTimelineHandler = async ({
+  params,
+  headers,
+  set,
+}: Context) => {
   // ── Authorization ─────────────────────────────────────────────────────────
   if (headers["x-user-role"] !== "ADMIN") {
     set.status = 403
@@ -67,69 +71,73 @@ export const adminOrderTimelineHandler = async ({ params, headers, set }: Contex
   )
 
   // ── Build enriched timeline ───────────────────────────────────────────────
-  const isTerminal    = TERMINAL_STATUSES.has(order.status)
-  const now           = new Date()
+  const isTerminal = TERMINAL_STATUSES.has(order.status)
+  const now = new Date()
   const timeline: TimelineEvent[] = []
 
   for (let i = 0; i < history.length; i++) {
-    const event    = history[i]!
-    const eventTs  = new Date(event.timestamp).getTime()
-    const prevTs   = i > 0 ? new Date(history[i - 1]!.timestamp).getTime() : null
+    const event = history[i]!
+    const eventTs = new Date(event.timestamp).getTime()
+    const prevTs = i > 0 ? new Date(history[i - 1]!.timestamp).getTime() : null
     const duration = prevTs !== null ? eventTs - prevTs : null
 
     timeline.push({
-      index:          i,
-      status:         event.status,
-      note:           event.note ?? null,
-      changedBy:      event.changedBy ?? "system",
-      timestamp:      new Date(event.timestamp).toISOString(),
-      durationSince:  duration,
-      durationHuman:  duration !== null ? formatDuration(duration) : null,
+      index: i,
+      status: event.status,
+      note: event.note ?? null,
+      changedBy: event.changedBy ?? "system",
+      timestamp: new Date(event.timestamp).toISOString(),
+      durationSince: duration,
+      durationHuman: duration !== null ? formatDuration(duration) : null,
       isCurrentState: i === history.length - 1 && isTerminal,
     })
   }
 
   // ── Append a live "still in progress" marker for non-terminal orders ──────
   if (!isTerminal && history.length > 0) {
-    const lastTs      = new Date(history[history.length - 1]!.timestamp).getTime()
-    const elapsedMs   = now.getTime() - lastTs
+    const lastTs = new Date(history[history.length - 1]!.timestamp).getTime()
+    const elapsedMs = now.getTime() - lastTs
 
     timeline.push({
-      index:          history.length,
-      status:         `${order.status} (ongoing)`,
-      note:           null,
-      changedBy:      "system",
-      timestamp:      now.toISOString(),
-      durationSince:  elapsedMs,
-      durationHuman:  formatDuration(elapsedMs),
+      index: history.length,
+      status: `${order.status} (ongoing)`,
+      note: null,
+      changedBy: "system",
+      timestamp: now.toISOString(),
+      durationSince: elapsedMs,
+      durationHuman: formatDuration(elapsedMs),
       isCurrentState: true,
     })
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────
-  const firstTs        = history.length > 0 ? new Date(history[0]!.timestamp).getTime() : null
-  const lastTs         = isTerminal && history.length > 0
-    ? new Date(history[history.length - 1]!.timestamp).getTime()
-    : now.getTime()
+  const firstTs =
+    history.length > 0 ? new Date(history[0]!.timestamp).getTime() : null
+  const lastTs =
+    isTerminal && history.length > 0
+      ? new Date(history[history.length - 1]!.timestamp).getTime()
+      : now.getTime()
   const totalDurationMs = firstTs !== null ? lastTs - firstTs : 0
 
   return {
-    orderId:       order.orderId,
-    userId:        order.userId,
+    orderId: order.orderId,
+    userId: order.userId,
     currentStatus: order.status,
-    grandTotal:    order.grandTotal,
-    createdAt:     (order as any).createdAt
+    grandTotal: order.grandTotal,
+    createdAt: (order as any).createdAt
       ? new Date((order as any).createdAt).toISOString()
       : null,
     isTerminal,
     summary: {
-      eventCount:        history.length,
+      eventCount: history.length,
       totalDurationMs,
-      totalDurationHuman: totalDurationMs > 0 ? formatDuration(totalDurationMs) : "0ms",
-      openedAt:          firstTs ? new Date(firstTs).toISOString() : null,
-      closedAt:          isTerminal && history.length > 0
-        ? new Date(history[history.length - 1]!.timestamp).toISOString()
-        : null,
+      totalDurationHuman:
+        totalDurationMs > 0 ? formatDuration(totalDurationMs) : "0ms",
+      openedAt: firstTs ? new Date(firstTs).toISOString() : null,
+      closedAt:
+        isTerminal && history.length > 0
+          ? new Date(history[history.length - 1]!.timestamp).toISOString()
+          : null,
     },
     timeline,
   }

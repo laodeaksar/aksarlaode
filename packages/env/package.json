@@ -4,13 +4,17 @@
   "private": true,
   "main": "./src/index.ts",
   "exports": {
-    ".":          "./src/index.ts",
-    "./auth":     "./src/auth.ts",
+    ".": "./src/index.ts",
+    "./auth": "./src/auth.ts",
     "./database": "./src/database.ts",
-    "./gateway":  "./src/gateway.ts",
-    "./product":  "./src/product.ts",
-    "./order":    "./src/order.ts",
-    "./admin":    "./src/admin.ts"
+    "./gateway": "./src/gateway.ts",
+    "./product": "./src/product.ts",
+    "./order": "./src/order.ts",
+    "./admin": "./src/admin.ts"
+  },
+  "scripts": {
+    "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
+    "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "dependencies": {
     "zod": "^3.24.0"

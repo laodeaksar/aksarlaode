@@ -11,7 +11,7 @@
  * This file is only ever imported via the vitest.integration.config.ts alias.
  */
 import { createHash } from "node:crypto"
-import { Effect }     from "effect"
+import { Effect } from "effect"
 
 function sha256Hex(input: string) {
   return createHash("sha256").update(input).digest("hex")

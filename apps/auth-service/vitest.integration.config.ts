@@ -1,5 +1,5 @@
+import { resolve } from "path"
 import { defineConfig } from "vitest/config"
-import { resolve }      from "path"
 
 /**
  * Separate Vitest config for integration / smoke tests.
@@ -27,11 +27,11 @@ export default defineConfig({
   resolve: {
     alias: {
       // ── Specific overrides must come before the catch-all "@" alias ──────
-      "@/lib/redis":        resolve(MOCKS, "redis.ts"),
-      "@/lib/password":     resolve(MOCKS, "password.ts"),
+      "@/lib/redis": resolve(MOCKS, "redis.ts"),
+      "@/lib/password": resolve(MOCKS, "password.ts"),
 
       // ── Env packages — use real DATABASE_URL, fresh JWT keys ─────────────
-      "@repo/env/auth":     resolve(MOCKS, "env-auth.ts"),
+      "@repo/env/auth": resolve(MOCKS, "env-auth.ts"),
       "@repo/env/database": resolve(MOCKS, "env-database.ts"),
 
       // ── Path alias (mirrors tsconfig paths) ──────────────────────────────
@@ -39,14 +39,14 @@ export default defineConfig({
     },
   },
   test: {
-    globals:     true,
+    globals: true,
     environment: "node",
-    include:     ["src/__tests__/integration/**/*.smoke.test.ts"],
+    include: ["src/__tests__/integration/**/*.smoke.test.ts"],
     globalSetup: ["src/__tests__/integration/global-setup.ts"],
-    testTimeout:  30_000,
-    hookTimeout:  30_000,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     // Run integration tests sequentially — they share a real database
-    pool:           "forks",
+    pool: "forks",
     poolOptions: { forks: { singleFork: true } },
   },
 })

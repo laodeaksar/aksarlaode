@@ -21,7 +21,7 @@ import { Button } from "@repo/ui/components/button"
 import { Input } from "@repo/ui/components/input"
 
 import { deleteProductFn, listProductsFn } from "@/server/products"
-import { can, useSession } from "@/lib"
+import { can, toast, useSession } from "@/lib"
 import { DataTable } from "@/components"
 
 import { Route } from "./products.route"
@@ -226,10 +226,15 @@ function DeleteButton({ productId }: { productId: string }) {
       return { snapshots }
     },
 
-    onError: (_err, _vars, ctx) => {
+    onSuccess: () => {
+      toast.success("Produk berhasil dihapus")
+    },
+
+    onError: (err, _vars, ctx) => {
       ctx?.snapshots.forEach(([key, data]) =>
         queryClient.setQueryData(key, data),
       )
+      toast.error("Gagal menghapus produk", err)
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["products"] }),

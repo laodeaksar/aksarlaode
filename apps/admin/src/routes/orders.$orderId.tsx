@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@repo/ui/components/alert-dialog"
 
-import { can, effectResolver, useSession } from "@/lib"
+import { can, effectResolver, toast, useSession } from "@/lib"
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders"
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
 
@@ -86,9 +86,14 @@ function OrderDetailPage() {
         },
       }),
     onSuccess: () => {
+      toast.success("Status pesanan berhasil diperbarui")
       queryClient.invalidateQueries({ queryKey: ["order", orderId] })
       reset()
       setConfirmOpen(false)
+    },
+
+    onError: (err) => {
+      toast.error("Gagal mengubah status pesanan", err)
     },
   })
 

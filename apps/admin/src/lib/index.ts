@@ -12,6 +12,9 @@
 export { silentRefresh } from "./api"
 export type { AuditLogEntry, DashboardStats, OrderSummary, OrderDetail } from "./api"
 
+// ── toast ──────────────────────────────────────────────────────────────────
+export { toast } from "./toast"
+
 // ── auth ───────────────────────────────────────────────────────────────────
 export { getSession } from "./auth"
 export type { Session, UserRole } from "./auth"

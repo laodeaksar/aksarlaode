@@ -3,7 +3,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 import { createProductFn } from "@/server/products"
 import type { NewProductInput } from "@/effect/Services"
-import { can, type Session } from "@/lib"
+import { can, toast, type Session } from "@/lib"
 import { ProductForm } from "@/components/forms/product-form"
 
 export const Route = createFileRoute("/products/new")({
@@ -62,13 +62,15 @@ function NewProductPage() {
     },
 
     // Roll back on error
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previousData) {
         queryClient.setQueryData(["products", 1, ""], ctx.previousData)
       }
+      toast.error("Gagal membuat produk", err)
     },
 
     onSuccess: () => {
+      toast.success("Produk berhasil dibuat")
       queryClient.invalidateQueries({ queryKey: ["products"] })
       navigate({ to: "/products" })
     },

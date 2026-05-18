@@ -3,7 +3,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 import { getProductFn, updateProductFn } from "@/server/products"
 import type { UpdateProductInput } from "@/effect/Services"
-import { can, type Session } from "@/lib"
+import { can, toast, type Session } from "@/lib"
 import { ProductForm } from "@/components/forms/product-form"
 
 export const Route = createFileRoute("/products/$productId")({
@@ -62,13 +62,15 @@ function EditProductPage() {
       return { previous }
     },
 
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(["product", productId], ctx.previous)
       }
+      toast.error("Gagal memperbarui produk", err)
     },
 
     onSuccess: () => {
+      toast.success("Produk berhasil diperbarui")
       queryClient.invalidateQueries({ queryKey: ["products"] })
       queryClient.invalidateQueries({ queryKey: ["product", productId] })
       navigate({ to: "/products" })

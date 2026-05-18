@@ -1,6 +1,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
+import { toast } from 'sonner'
 
 import { routeTree } from './routeTree.gen'
 import { NotFound } from '@/components/not-found'
@@ -30,15 +31,28 @@ function is401(error: unknown): boolean {
 const REFRESH_COOLDOWN_MS = 10_000
 let lastRefreshAttempt = 0
 
+// ── Session-expired redirect ───────────────────────────────────────────────
+// Shows a warning toast so the user understands why the redirect is happening,
+// waits briefly for the toast to be readable, then navigates to /login.
+// `id` deduplicates: if multiple 401s fire simultaneously only one toast shows.
+
+async function redirectToLogin(): Promise<void> {
+  if (typeof window === "undefined") return
+  toast.warning("Sesi Anda telah berakhir. Mengarahkan ke halaman login...", {
+    id: "session-expired",
+    duration: 4_000,
+  })
+  await new Promise<void>((resolve) => setTimeout(resolve, 1_500))
+  window.location.href = "/login"
+}
+
 async function handle401(queryClient: QueryClient): Promise<void> {
   const now = Date.now()
 
   if (now - lastRefreshAttempt < REFRESH_COOLDOWN_MS) {
     // Already refreshed (or tried) very recently but still getting 401 —
-    // the session is truly expired.  Send the user to the login page.
-    if (typeof window !== "undefined") {
-      window.location.href = "/login"
-    }
+    // the session is truly expired.  Notify and redirect.
+    await redirectToLogin()
     return
   }
 
@@ -50,9 +64,7 @@ async function handle401(queryClient: QueryClient): Promise<void> {
     // Query re-fetches with the fresh token on next render cycle.
     await queryClient.invalidateQueries()
   } else {
-    if (typeof window !== "undefined") {
-      window.location.href = "/login"
-    }
+    await redirectToLogin()
   }
 }
 

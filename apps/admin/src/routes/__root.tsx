@@ -11,6 +11,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
 
 import appCss from "@repo/ui/globals.css?url"
 
@@ -98,7 +99,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const session = routeCtx.session ?? null
 
   if (pathname.startsWith("/login")) {
-    return <div className="min-h-screen bg-muted/40">{children}</div>
+    return (
+      <div className="min-h-screen bg-muted/40">
+        {children}
+        <Toaster position="top-center" richColors />
+      </div>
+    )
   }
 
   return (
@@ -133,6 +139,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               <ReactQueryDevtools buttonPosition="bottom-left" />
             </>
           )}
+          <Toaster position="top-center" richColors />
           <Scripts />
         </body>
       </html>

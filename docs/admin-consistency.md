@@ -70,12 +70,12 @@
   `products.route.tsx`. `audit-logs.route.tsx` sudah punya guard (`audit:read`) — sisa
   `as any` cast pada `redirect` juga dihapus sekalian.
 
-- [ ] **HOOK-01** Tambah Husky + lint-staged ke root `package.json` agar `prettier` +
-  `eslint` berjalan otomatis setiap commit:
-  ```bash
-  pnpm add -D husky lint-staged -w
-  pnpx husky init
-  ```
+- [x] **HOOK-01** Husky v9 + lint-staged v15 dikonfigurasi di root monorepo.
+  `"prepare": "husky"` ditambahkan ke `scripts`; `lint-staged` config di `package.json`
+  menjalankan `prettier --write --cache` pada semua file `*.{ts,tsx,mdx,json,css,md}`
+  yang di-stage. Hook `.husky/pre-commit` berisi `pnpm lint-staged`.
+  Jalankan `pnpm install` sekali untuk mengaktifkan (Replit environment tidak mendukung
+  network install saat sesi agent berjalan).
 
 ---
 

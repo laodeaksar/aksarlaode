@@ -102,10 +102,13 @@
   keduanya sudah ada di `ApiClientService` (Effect layer) tapi page-nya masih pakai
   `lib/api.ts` langsung.
 
-- [ ] **SPLIT-01** Split `src/effect/Services.ts` (247 baris) menjadi 3 file:
-  - `Services.config.ts` — `ConfigService`
-  - `Services.schemas.ts` — semua `Schema.Struct` + inferred types
-  - `Services.api.ts` — `ApiClientService`
+- [x] **SPLIT-01** `src/effect/Services.ts` (261 baris) dipecah menjadi 3 file:
+  - `Services.config.ts` (19 baris) — `ConfigService` + env var reads
+  - `Services.schemas.ts` (101 baris) — semua type defs + `Schema.Struct` + re-exports dari `lib/api`
+  - `Services.api.ts` (145 baris) — `ApiClientService` + semua method (products, orders, customers, dashboard, auditLogs)
+  - `Services.ts` dijadikan barrel (12 baris) — `export * from` ketiga sub-module.
+  Semua 11 importer lama (`from "@/effect/Services"`) tetap berjalan tanpa perubahan.
+  Kode baru sebaiknya import langsung dari sub-module yang relevan.
 
 - [ ] **TOKEN-01** Ganti hardcoded `text-gray-*` / `bg-gray-*` / `border-gray-*` di
   semua component dan page files dengan semantic Tailwind v4 tokens:

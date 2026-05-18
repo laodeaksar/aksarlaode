@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { Badge } from "@repo/ui/components/badge"
-import { Button } from "@repo/components/ui/button"
+import { Button } from "@repo/ui/components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card"
 import {
   AlertDialog,

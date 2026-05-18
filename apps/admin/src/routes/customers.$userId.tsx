@@ -1,24 +1,27 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
-import { customersApi } from "@/lib/api"
+import { getCustomerFn } from "@/server/customers"
 
 export const Route = createFileRoute("/customers/$userId")({
+  loader: ({ params }) => getCustomerFn({ data: { id: params.userId } }),
   component: CustomerDetailPage,
 })
 
 function CustomerDetailPage() {
   const { userId } = Route.useParams()
+  const loaderData = Route.useLoaderData()
 
-  const { data, isLoading } = useQuery({
+  const { data: customer, isLoading } = useQuery({
     queryKey: ["customer", userId],
-    queryFn: () => customersApi.getOne(userId),
+    queryFn: () => getCustomerFn({ data: { id: userId } }),
+    initialData: loaderData,
   })
 
-  if (isLoading) return <p className="p-6 text-gray-500">Loading customer...</p>
-
-  const customer = data?.data
-  if (!customer) return <p className="p-6 text-red-500">Customer not found.</p>
+  if (isLoading && !customer)
+    return <p className="p-6 text-gray-500">Loading customer...</p>
+  if (!customer)
+    return <p className="p-6 text-red-500">Customer not found.</p>
 
   return (
     <div className="space-y-4 max-w-xl">

@@ -1,14 +1,7 @@
 import { Effect } from "effect"
 
-import type {
-  AuditLogEntry,
-  DashboardStats,
-  NewProduct,
-  OrderDetail,
-  OrderSummary,
-  Product,
-  User,
-} from "./Services.schemas"
+import type { AuditLogEntry, DashboardStats, OrderDetail, OrderSummary } from "@/types"
+import type { NewProduct, Product, User } from "./Services.schemas"
 import { ConfigService } from "./Services.config"
 import { ApiError, NetworkError } from "./Errors"
 

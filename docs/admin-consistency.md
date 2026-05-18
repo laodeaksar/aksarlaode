@@ -88,10 +88,17 @@
   - `NewProduct` di `@repo/common` requires `slug`, admin form tidak punya field slug
   Butuh koordinasi dengan product-service team untuk reconcile kontrak API.
 
-- [ ] **TYPE-04** Pindah tipe `OrderSummary`, `OrderDetail`, `DashboardStats`,
-  `AuditLogEntry` dari `src/lib/api.ts` ke `packages/common` atau `src/types/`.
-  Saat ini `Services.ts` mengimport dari `lib/api.ts` (layer lama) — ketergantungan
-  terbalik yang harus dihilangkan.
+- [x] **TYPE-04** 4 response types dipindah ke `src/types/api-responses.ts`:
+  `OrderSummary`, `OrderDetail`, `DashboardStats`, `AuditLogEntry`.
+  - `src/types/index.ts` — barrel baru untuk semua admin response types
+  - `Services.schemas.ts` → `from "@/types"` (bukan lagi `@/lib/api`)
+  - `Services.api.ts` → `from "@/types"` untuk 4 types ini; tetap
+    `from "./Services.schemas"` untuk `Product`, `NewProduct`, `User`
+  - `lib/api.ts` → re-ekspor dari `@/types` untuk backward compat
+  - Ketergantungan terbalik (Effect layer → client layer) **dihilangkan**.
+  - **Skip `@repo/common`**: shape admin diverge dari `@repo/common/OrderDetail`
+    (field `productName` vs `name`, tidak ada `totalAmount`) — reconcile dengan
+    order-service team saat TYPE-03.
 
 - [ ] **LAYER-01** Migrasi `authApi` dari `lib/api.ts` ke server function di
   `src/server/auth.ts`. Saat ini `login-page.tsx` dan `topbar.tsx` masih pakai Layer A

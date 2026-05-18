@@ -8,10 +8,7 @@
 //   login / logout / refresh  → qui (window.location + cookie handling)
 //   semua data lainnya        → src/server/*.ts (Effect server function)
 //
-// TODO(TYPE-04): i 4 type di risposta (OrderSummary, OrderDetail,
-// DashboardStats, AuditLogEntry) vengono ancora re-esportati da
-// Services.schemas.ts → lib/api.ts. Spostare le definizioni in @repo/common
-// o src/types/ per eliminare questa dipendenza inversa.
+// TYPE-04 selesai: 4 response types dipindah ke src/types/api-responses.ts.
 
 import { env } from "@repo/env/admin"
 
@@ -107,49 +104,12 @@ export const authApi = {
 }
 
 // ── Response types ─────────────────────────────────────────────────────────
-// TODO(TYPE-04): pindahkan ke @repo/common atau src/types/ agar
-// Services.schemas.ts tidak lagi bergantung pada layer client ini.
-
-export type AuditLogEntry = {
-  id: string
-  actorId: string
-  actorRole: string
-  action: string
-  resource: string
-  resourceId: string
-  oldValue: Record<string, unknown> | null
-  newValue: Record<string, unknown> | null
-  metadata: Record<string, unknown> | null
-  createdAt: string
-}
-
-export type DashboardStats = {
-  totalRevenue: number
-  totalOrders: number
-  totalCustomers: number
-  totalProducts: number
-  revenueToday: number
-  ordersToday: number
-  recentOrders: OrderSummary[]
-  topProducts: Array<{ id: string; name: string; salesCount: number }>
-}
-
-export type OrderSummary = {
-  orderId: string
-  userId: string
-  status: string
-  grandTotal: number
-  createdAt: string
-}
-
-export type OrderDetail = OrderSummary & {
-  items: Array<{
-    productId: string
-    productName: string
-    quantity: number
-    price: number
-    subtotal: number
-  }>
-  shippingAddress: Record<string, string>
-  statusHistory: Array<{ status: string; note?: string; timestamp: string }>
-}
+// TYPE-04 selesai: definisi dipindahkan ke src/types/api-responses.ts.
+// Re-ekspor di sini untuk backward compat — konsumen lama yang import dari
+// "@/lib" atau "@/lib/api" masih berfungsi tanpa perubahan.
+export type {
+  AuditLogEntry,
+  DashboardStats,
+  OrderDetail,
+  OrderSummary,
+} from "@/types"

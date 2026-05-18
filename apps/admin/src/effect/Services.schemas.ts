@@ -48,16 +48,15 @@ export type User = {
   createdAt: string | undefined
 }
 
-// ── Re-exported types from api.ts (used across the app) ───────────────────
-// TODO(TYPE-04): move these type definitions out of lib/api.ts into
-// @repo/common or src/types/ so Services.schemas.ts no longer depends on
-// the legacy client layer.
+// ── Re-exported API response types ────────────────────────────────────────
+// TYPE-04: definisi kanonik ada di src/types/api-responses.ts — tidak lagi
+// bergantung pada layer client (lib/api.ts). Dipendenza inversa eliminata.
 export type {
   AuditLogEntry,
   DashboardStats,
   OrderDetail,
   OrderSummary,
-} from "@/lib/api"
+} from "@/types"
 
 // ── Effect.Schema — request / response validation ─────────────────────────
 

@@ -1,11 +1,8 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { EyeIcon, EyeOffIcon } from "lucide-react"
-
-import { authApi, effectResolver } from "@/lib"
-import { LoginSchema, type LoginFields } from "@/schemas/forms"
 import { Button } from "@repo/ui/components/button"
 import {
   Card,
@@ -26,6 +23,10 @@ import {
   InputGroupInput,
 } from "@repo/ui/components/input-group"
 
+import { loginFn } from "@/server/auth"
+import { effectResolver } from "@/lib"
+import { LoginSchema, type LoginFields } from "@/schemas/forms"
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
@@ -40,11 +41,7 @@ export default function LoginPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: async (data: LoginFields) => {
-      const result = await authApi.login(data)
-      if (result.error) throw new Error(result.error)
-      return result.data!
-    },
+    mutationFn: (data: LoginFields) => loginFn({ data }),
     onSuccess: () => {
       navigate({ to: "/dashboard" })
     },
@@ -113,7 +110,7 @@ export default function LoginPage() {
                 {mutation.error instanceof Error
                   ? mutation.error.message
                   : "Login gagal. Periksa email dan password."}
-              </p>
+            </p>
             )}
 
             <Button

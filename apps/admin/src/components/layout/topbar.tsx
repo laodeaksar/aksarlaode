@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 
-import { authApi } from "@/lib"
+import { logoutFn } from "@/server/auth"
 
 export function Topbar() {
   const navigate    = useNavigate()
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: () => authApi.logout(),
+    mutationFn: () => logoutFn(),
     onSettled: () => {
       queryClient.clear()
       navigate({ to: "/login" })

@@ -1,7 +1,7 @@
 // ── src/lib/index.ts — barrel export ──────────────────────────────────────
 //
 // Importa utility e tipi interni sempre da qui:
-//   import { authApi, getSession, can, useSession } from "@/lib"
+//   import { silentRefresh, getSession, can, useSession } from "@/lib"
 //   import type { Session, UserRole, Permission } from "@/lib"
 //
 // Regola: i file DENTRO src/lib/* che importano da fratelli usano il percorso
@@ -9,7 +9,7 @@
 // Questo barrel è solo per i CONSUMER esterni (route, componenti, ecc).
 
 // ── api ────────────────────────────────────────────────────────────────────
-export { authApi } from "./api"
+export { silentRefresh } from "./api"
 export type { AuditLogEntry, DashboardStats, OrderSummary, OrderDetail } from "./api"
 
 // ── auth ───────────────────────────────────────────────────────────────────

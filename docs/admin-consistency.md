@@ -100,10 +100,11 @@
     (field `productName` vs `name`, tidak ada `totalAmount`) — reconcile dengan
     order-service team saat TYPE-03.
 
-- [ ] **LAYER-01** Migrasi `authApi` dari `lib/api.ts` ke server function di
-  `src/server/auth.ts`. Saat ini `login-page.tsx` dan `topbar.tsx` masih pakai Layer A
-  (client-side fetch). Setelah migrasi, `lib/api.ts` bisa di-scope hanya untuk
-  `silentRefresh` interceptor.
+- [x] **LAYER-01** Migrasi `authApi` dari `lib/api.ts` ke server function di
+  `src/server/auth.ts`. `loginFn` dan `logoutFn` dibuat dengan cookie forwarding
+  via `appendResponseHeader` + `getCookies` dari `@tanstack/react-start/server`.
+  `login-page.tsx` dan `topbar.tsx` diupdate ke server functions. `lib/api.ts`
+  sekarang hanya berisi `silentRefresh` (diekspor) dan re-ekspor response types.
 
 - [x] **LAYER-02** Migrasi selesai — semua page (`audit-logs-page`, `dashboard-page`,
   `orders-page`, `orders.$orderId`, `products-page`, `customers-page`) sudah menggunakan

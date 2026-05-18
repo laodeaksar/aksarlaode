@@ -1,7 +1,13 @@
 import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
+
+import { effectResolver } from "@/lib/effect-resolver"
 import { env } from "@repo/env/admin"
 import { useNavigate } from "@tanstack/react-router"
+import { EyeOffIcon } from "lucide-react"
 
+import { LoginSchema, type LoginFields} from "@/schemas/forms"
+import
 import { Button } from "@repo/ui/components/button"
 import {
   Card,
@@ -9,6 +15,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@repo/ui/components/field"
+import { Input } from "@repo/ui/components/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput
+} from "@repo/ui/components/input-group"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -17,7 +36,18 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const { register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFields>({
+    resolver: effectResolver(LoginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+
+  const onFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
@@ -52,7 +82,56 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
+          <FieldGroup>
+            <Controller
+              name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    Email address
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id={field.name}
+                      aria-invalid={fieldState.invalid}
+                    placeholder="example@mail.com"
+                    autoComplete="off"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="password"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}
+                   Password
+                  </FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      {...field}
+                      id={field.name}
+                      placeholder="*********"
+                      type="password"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <InputGroupAddon align="inline-end">
+          <EyeOffIcon />
+        </InputGroupAddon>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </FieldGroup>
+
+          {/*<div className="space-y-1">
               <label
                 htmlFor="login-email"
                 className="block text-sm font-medium text-gray-700"
@@ -88,7 +167,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
-            </div>
+            </div>*/}
 
             {error && (
               <p role="alert" className="text-sm text-red-600">

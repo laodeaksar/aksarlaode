@@ -1,18 +1,7 @@
-import { useState } from "react"
+import { useForm } from "react-hook-form"
 
-// ── Typed form values — mirrors NewProductInput from Effect Schema ──────────
-// Using a local type keeps this component independent of the server layer.
-// The Effect Schema in Services.ts is the authoritative validation at the
-// server function boundary; this form adds a lightweight client-side guard
-// so obviously invalid data never hits the network.
-
-export type ProductFormValues = {
-  name: string
-  price: number
-  stock: number
-  sku: string
-  description?: string
-}
+import { effectResolver } from "@/lib/effect-resolver"
+import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms"
 
 interface Props {
   defaultValues?: Partial<ProductFormValues>
@@ -27,124 +16,131 @@ export function ProductForm({
   isLoading,
   error,
 }: Props) {
-  const [name, setName] = useState(defaultValues.name ?? "")
-  const [price, setPrice] = useState(defaultValues.price ?? 0)
-  const [stock, setStock] = useState(defaultValues.stock ?? 0)
-  const [description, setDescription] = useState(
-    defaultValues.description ?? ""
-  )
-  const [sku, setSku] = useState(defaultValues.sku ?? "")
-  const [formError, setFormError] = useState<string | null>(null)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProductFormValues>({
+    resolver: effectResolver(ProductFormSchema),
+    defaultValues: {
+      name: defaultValues.name ?? "",
+      price: defaultValues.price ?? 0,
+      stock: defaultValues.stock ?? 0,
+      sku: defaultValues.sku ?? "",
+      description: defaultValues.description ?? "",
+    },
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormError(null)
-
-    // Client-side guard — catches obvious mistakes before hitting the server.
-    // Effect Schema in the server function is the authoritative validator.
-    if (!name.trim()) {
-      setFormError("Name wajib diisi.")
-      return
-    }
-    if (!sku.trim()) {
-      setFormError("SKU wajib diisi.")
-      return
-    }
-    if (price <= 0) {
-      setFormError("Price harus lebih dari 0.")
-      return
-    }
-    if (stock < 0) {
-      setFormError("Stock tidak boleh negatif.")
-      return
-    }
-
+  const onFormSubmit = handleSubmit((data) =>
     onSubmit({
-      name: name.trim(),
-      price: Number(price),
-      stock: Number(stock),
-      sku: sku.trim(),
-      description: description.trim() || undefined,
-    })
-  }
-
-  const displayError = formError ?? error
+      ...data,
+      name: data.name.trim(),
+      sku: data.sku.trim(),
+      description: data.description?.trim() || "",
+    }),
+  )
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={onFormSubmit}
       className="bg-white rounded-xl border border-gray-200 p-6 space-y-4"
     >
-      {displayError && (
-        <p className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-          {displayError}
-        </p>
+      {error && (
+        <p className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{error}</p>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="pf-name"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Name
         </label>
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
+          id="pf-name"
           aria-label="Product name"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+          {...register("name")}
         />
+        {errors.name && (
+          <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+        )}
       </div>
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="pf-sku"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           SKU
         </label>
         <input
-          value={sku}
-          onChange={(e) => setSku(e.target.value)}
-          required
+          id="pf-sku"
           aria-label="Product SKU"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+          {...register("sku")}
         />
+        {errors.sku && (
+          <p className="text-red-500 text-xs mt-1">{errors.sku.message}</p>
+        )}
       </div>
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="pf-price"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Price (IDR)
         </label>
         <input
+          id="pf-price"
           type="number"
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
           min={1}
-          required
           aria-label="Product price"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+          {...register("price", { valueAsNumber: true })}
         />
+        {errors.price && (
+          <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>
+        )}
       </div>
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="pf-stock"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Stock
         </label>
         <input
+          id="pf-stock"
           type="number"
-          value={stock}
-          onChange={(e) => setStock(Number(e.target.value))}
           min={0}
-          required
           aria-label="Product stock"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+          {...register("stock", { valueAsNumber: true })}
         />
+        {errors.stock && (
+          <p className="text-red-500 text-xs mt-1">{errors.stock.message}</p>
+        )}
       </div>
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="pf-description"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Description
         </label>
         <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          id="pf-description"
           rows={3}
           aria-label="Product description"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+          {...register("description")}
         />
       </div>
+
       <button
         type="submit"
         disabled={isLoading}

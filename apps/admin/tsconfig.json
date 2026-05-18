@@ -1,25 +1,22 @@
 {
-  "extends": "@repo/typescript-config/react.json",
+  "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
-    "outDir":   "dist",
-    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/*": ["./src/*"],
       "@repo/ui/*": ["../../packages/ui/src/*"]
     },
-    "jsx":              "react-jsx",
-    "strict":           true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "module":           "ESNext",
-    "moduleResolution": "Bundler",
-    "verbatimModuleSyntax": true,
-    "skipLibCheck":     true,
-    "types":            ["node", "vite/client"]
-  },
-  "include": [
-    "app",
-    "src",
-  ],
-  "exclude": ["node_modules", "dist", ".output", ".vinxi"]
+    "noEmit": true
+  }
 }

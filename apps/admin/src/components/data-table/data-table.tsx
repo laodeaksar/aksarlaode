@@ -1,11 +1,20 @@
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table"
 
 import { Button } from "@repo/ui/components/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@repo/ui/components/table"
 
 type Props<T> = {
   columns: ColumnDef<T>[]
@@ -30,6 +39,7 @@ export function DataTable<T>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel,
     manualPagination: true,
     pageCount: Math.ceil(total / pageSize),
   })
@@ -38,47 +48,46 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <div className="overflow-hidden rounded-md border">
+        <Table>
+          <TableHeader>
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
+              <TableRow key={hg.id}>
                 {hg.headers.map((h) => (
-                  <th
+                  <TableHead
                     key={h.id}
-                    className="px-4 py-3 text-left font-medium text-gray-600"
                   >
                     {flexRender(h.column.columnDef.header, h.getContext())}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+          </TableHead>
+          <TableBody>
             {isLoading
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
+                  <TableRow key={i}>
                     {columns.map((_, j) => (
-                      <td key={j} className="px-4 py-3">
+                      <TableCell key={j} className="px-4 py-3">
                         <div className="h-4 rounded bg-gray-100 animate-pulse" />
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))
               : table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-gray-700">
+                      <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
                         )}
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}
@@ -88,8 +97,8 @@ export function DataTable<T>({
           <Button
             variant="outline"
             size="sm"
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
           >
             ← Prev
           </Button>
@@ -99,8 +108,8 @@ export function DataTable<T>({
           <Button
             variant="outline"
             size="sm"
-            disabled={page >= totalPages}
-            onClick={() => onPageChange(page + 1)}
+            onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
           >
             Next →
           </Button>

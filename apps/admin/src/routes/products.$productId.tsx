@@ -15,7 +15,18 @@ export const Route = createFileRoute("/products/$productId")({
     }
   },
 
-  loader: ({ params }) => getProductFn({ data: { id: params.productId } }),
+  // ensureQueryData populates React Query cache directly.
+  // defaultPreload:'intent' calls this loader on hover → cache is warm by the
+  // time the user clicks, so the component renders from cache with no loading
+  // state.  On repeated visits within staleTime (60 s) no network request is
+  // made at all.
+  loader: ({ params, context }) => {
+    const { queryClient } = context as { queryClient: import("@tanstack/react-query").QueryClient }
+    return queryClient.ensureQueryData({
+      queryKey: ["product", params.productId],
+      queryFn: () => getProductFn({ data: { id: params.productId } }),
+    })
+  },
 
   head: ({ loaderData }) => ({
     meta: [
@@ -60,14 +71,14 @@ function EditProductSkeleton() {
 
 function EditProductPage() {
   const { productId } = Route.useParams()
-  const loaderProduct = Route.useLoaderData()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  // Data is already in cache from the loader's ensureQueryData call.
+  // No initialData needed — useQuery reads straight from cache.
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => getProductFn({ data: { id: productId } }),
-    initialData: loaderProduct ?? undefined,
   })
 
   const mutation = useMutation({

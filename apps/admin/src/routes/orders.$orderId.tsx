@@ -23,7 +23,13 @@ import { getOrderFn, updateOrderStatusFn } from "@/server/orders"
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
 
 export const Route = createFileRoute("/orders/$orderId")({
-  loader: ({ params }) => getOrderFn({ data: { id: params.orderId } }),
+  loader: ({ params, context }) => {
+    const { queryClient } = context as { queryClient: import("@tanstack/react-query").QueryClient }
+    return queryClient.ensureQueryData({
+      queryKey: ["order", params.orderId],
+      queryFn: () => getOrderFn({ data: { id: params.orderId } }),
+    })
+  },
   component: OrderDetailPage,
 })
 
@@ -87,7 +93,6 @@ function OrderDetailSkeleton() {
 
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
-  const loaderData = Route.useLoaderData()
   const queryClient = useQueryClient()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -95,10 +100,10 @@ function OrderDetailPage() {
   const role = session?.role ?? "CUSTOMER"
   const canWrite = can(role, "orders:write")
 
+  // Data is already in cache from the loader's ensureQueryData call.
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrderFn({ data: { id: orderId } }),
-    initialData: loaderData,
   })
 
   const {

@@ -5,7 +5,13 @@ import { Skeleton } from "@repo/ui/components/skeleton"
 import { getCustomerFn } from "@/server/customers"
 
 export const Route = createFileRoute("/customers/$userId")({
-  loader: ({ params }) => getCustomerFn({ data: { id: params.userId } }),
+  loader: ({ params, context }) => {
+    const { queryClient } = context as { queryClient: import("@tanstack/react-query").QueryClient }
+    return queryClient.ensureQueryData({
+      queryKey: ["customer", params.userId],
+      queryFn: () => getCustomerFn({ data: { id: params.userId } }),
+    })
+  },
   component: CustomerDetailPage,
 })
 
@@ -32,12 +38,11 @@ function CustomerDetailSkeleton() {
 
 function CustomerDetailPage() {
   const { userId } = Route.useParams()
-  const loaderData = Route.useLoaderData()
 
+  // Data is already in cache from the loader's ensureQueryData call.
   const { data: customer, isLoading } = useQuery({
     queryKey: ["customer", userId],
     queryFn: () => getCustomerFn({ data: { id: userId } }),
-    initialData: loaderData,
   })
 
   if (isLoading && !customer) return <CustomerDetailSkeleton />

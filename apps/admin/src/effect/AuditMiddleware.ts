@@ -31,17 +31,17 @@
 //   In both cases the audit write is fire-and-forget: a failure to reach
 //   the product service never aborts the primary operation.
 
-import { createMiddleware } from "@tanstack/react-start"
-import { getCookies } from "@tanstack/react-start/server"
+import { createMiddleware } from "@tanstack/react-start";
+import { getCookies } from "@tanstack/react-start/server";
 
-import type { Session } from "@/lib/auth"
+import type { Session } from "@/lib/auth";
 
 import {
   extractResourceId,
   fireAuditWrite,
   sanitizeInput,
   SERVER_FN_ACTION_MAP,
-} from "./Audit"
+} from "./Audit";
 
 // ── Session resolution ─────────────────────────────────────────────────────
 // Forward the request cookies to the backend's /auth/me endpoint to obtain
@@ -50,25 +50,25 @@ import {
 
 async function resolveSession(apiUrl: string): Promise<Session | null> {
   try {
-    const cookies = getCookies()
+    const cookies = getCookies();
     const cookieHeader = Object.entries(cookies)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-      .join("; ")
+      .join("; ");
 
-    if (!cookieHeader) return null
+    if (!cookieHeader) return null;
 
     const res = await fetch(`${apiUrl}/auth/me`, {
       headers: { Cookie: cookieHeader },
-    })
+    });
 
-    if (!res.ok) return null
+    if (!res.ok) return null;
 
-    const body = (await res.json()) as unknown
+    const body = (await res.json()) as unknown;
     const data =
-      (body as { data?: Session } | null)?.data ?? (body as Session | null)
-    return data ?? null
+      (body as { data?: Session } | null)?.data ?? (body as Session | null);
+    return data ?? null;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -76,27 +76,27 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
 
 export const auditMiddleware = createMiddleware().server(
   async ({ next, serverFnMeta, data }) => {
-    const fnName = serverFnMeta?.name ?? ""
-    const mapping = SERVER_FN_ACTION_MAP[fnName]
+    const fnName = serverFnMeta?.name ?? "";
+    const mapping = SERVER_FN_ACTION_MAP[fnName];
 
     // Not a mapped mutating function — pass through unchanged.
-    if (!mapping) return next()
+    if (!mapping) return next();
 
     // Resolve environment config from process.env (server-only).
-    const apiUrl = process.env["PUBLIC_API_URL"] ?? "http://localhost:3000"
-    const internalToken = process.env["INTERNAL_SERVICE_TOKEN"] ?? ""
+    const apiUrl = process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
+    const internalToken = process.env["INTERNAL_SERVICE_TOKEN"] ?? "";
 
     // Attempt session resolution — if it fails we still run the handler
     // but write the audit entry with a "system" fallback actor.
-    const session = await resolveSession(apiUrl)
-    const actorId = session?.id ?? "system"
-    const actorRole = session?.role ?? "ADMIN"
+    const session = await resolveSession(apiUrl);
+    const actorId = session?.id ?? "system";
+    const actorRole = session?.role ?? "ADMIN";
 
-    const startMs = performance.now()
+    const startMs = performance.now();
 
     // ── Happy path ──────────────────────────────────────────────────────
     try {
-      const result = await next()
+      const result = await next();
 
       fireAuditWrite(apiUrl, internalToken, {
         actorId,
@@ -111,9 +111,9 @@ export const auditMiddleware = createMiddleware().server(
           outcome: "ok",
           input: sanitizeInput(data),
         },
-      })
+      });
 
-      return result
+      return result;
 
       // ── Error path ──────────────────────────────────────────────────────
     } catch (err: unknown) {
@@ -131,24 +131,24 @@ export const auditMiddleware = createMiddleware().server(
           input: sanitizeInput(data),
           error: serializeErr(err),
         },
-      })
+      });
 
-      throw err
+      throw err;
     }
   }
-)
+);
 
 // ── Error serialisation ─────────────────────────────────────────────────────
 // Produces a compact, JSON-safe representation of any thrown value.
 
 function serializeErr(err: unknown): Record<string, unknown> {
-  if (err === null || typeof err !== "object") return { message: String(err) }
+  if (err === null || typeof err !== "object") return { message: String(err) };
 
-  const e = err as Record<string, unknown>
+  const e = err as Record<string, unknown>;
   return {
     _tag: typeof e["_tag"] === "string" ? e["_tag"] : "UnknownError",
     message:
       typeof e["message"] === "string" ? e["message"] : JSON.stringify(err),
     ...(typeof e["status"] === "number" ? { status: e["status"] } : {}),
-  }
+  };
 }

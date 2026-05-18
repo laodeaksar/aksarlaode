@@ -23,14 +23,14 @@
  * without seeing the full address.
  */
 export function maskEmail(email: string): string {
-  const atIndex = email.indexOf("@")
-  if (atIndex <= 0) return "***@***"
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0) return "***@***";
 
-  const local = email.slice(0, atIndex)
-  const domain = email.slice(atIndex + 1)
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
 
-  const visiblePrefix = local[0] ?? "*"
-  const starCount = Math.min(Math.max(local.length - 1, 1), 4)
+  const visiblePrefix = local[0] ?? "*";
+  const starCount = Math.min(Math.max(local.length - 1, 1), 4);
 
-  return `${visiblePrefix}${"*".repeat(starCount)}@${domain}`
+  return `${visiblePrefix}${"*".repeat(starCount)}@${domain}`;
 }

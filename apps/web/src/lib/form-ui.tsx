@@ -1,9 +1,9 @@
 type FieldProps = {
-  label: string
-  error?: string
-  children: React.ReactNode
-  className?: string
-}
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+};
 
 export function Field({ label, error, children, className }: FieldProps) {
   return (
@@ -14,7 +14,7 @@ export function Field({ label, error, children, className }: FieldProps) {
       {children}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
-  )
+  );
 }
 
 export const inputCls = (hasError: boolean) =>
@@ -24,4 +24,4 @@ export const inputCls = (hasError: boolean) =>
      hasError
        ? "border-red-400 bg-red-50 focus:ring-red-400"
        : "border-gray-300 bg-white focus:border-blue-500"
-   }`
+   }`;

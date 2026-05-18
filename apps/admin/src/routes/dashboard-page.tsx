@@ -1,14 +1,19 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/card";
 
-import { getDashboardStatsFn } from "@/server/dashboard"
-import type { DashboardStats, OrderSummary } from "@/effect/Services"
+import { getDashboardStatsFn } from "@/server/dashboard";
+import type { DashboardStats, OrderSummary } from "@/effect/Services";
 
-import { Route } from "./dashboard.route"
+import { Route } from "./dashboard.route";
 
 export default function DashboardPage() {
-  const loaderData = Route.useLoaderData()
+  const loaderData = Route.useLoaderData();
 
   const { data } = useQuery({
     queryKey: ["dashboard-stats"],
@@ -16,9 +21,9 @@ export default function DashboardPage() {
     initialData: loaderData,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
-  })
+  });
 
-  const stats: DashboardStats = data
+  const stats: DashboardStats = data;
 
   return (
     <div className="space-y-6">
@@ -54,7 +59,7 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
 
 function StatCard({ title, value }: { title: string; value: string | number }) {
@@ -69,12 +74,16 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
         <p className="text-2xl font-bold text-foreground">{value}</p>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
   if (orders.length === 0) {
-    return <p className="text-sm text-muted-foreground">Belum ada pesanan terbaru.</p>
+    return (
+      <p className="text-sm text-muted-foreground">
+        Belum ada pesanan terbaru.
+      </p>
+    );
   }
   return (
     <div className="space-y-2">
@@ -98,16 +107,18 @@ function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function TopProductsList({
   items,
 }: {
-  items: Array<{ id: string; name: string; salesCount: number }>
+  items: Array<{ id: string; name: string; salesCount: number }>;
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">Belum ada data produk.</p>
+    return (
+      <p className="text-sm text-muted-foreground">Belum ada data produk.</p>
+    );
   }
   return (
     <div className="space-y-2">
@@ -119,11 +130,13 @@ function TopProductsList({
           <span className="text-foreground">
             {i + 1}. {item.name}
           </span>
-          <span className="text-muted-foreground">{item.salesCount} terjual</span>
+          <span className="text-muted-foreground">
+            {item.salesCount} terjual
+          </span>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 export function DashboardSkeleton() {
@@ -136,5 +149,5 @@ export function DashboardSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }

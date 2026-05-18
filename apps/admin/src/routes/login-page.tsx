@@ -1,34 +1,37 @@
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { EyeIcon, EyeOffIcon } from "lucide-react"
-import { useMutation } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
-import { Button } from "@repo/ui/components/button"
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+
+import { Button } from "@repo/ui/components/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@repo/ui/components/card"
+} from "@repo/ui/components/card";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@repo/ui/components/field"
-import { Input } from "@repo/ui/components/input"
+} from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@repo/ui/components/input-group"
-import { Skeleton } from "@repo/ui/components/skeleton"
+} from "@repo/ui/components/input-group";
+import { Skeleton } from "@repo/ui/components/skeleton";
 
-import { loginFn } from "@/server/auth"
-import { effectResolver, toast } from "@/lib"
-import { LoginSchema, type LoginFields } from "@/schemas/forms"
+import { loginFn } from "@/server/auth";
+import { LoginSchema, type LoginFields } from "@/schemas/forms";
+import { effectResolver, toast } from "@/lib";
 
-import { Route } from "./login.route"
+import { Route } from "./login.route";
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 // Ditampilkan selama ?logout=1 diproses (useEffect belum jalan).
@@ -60,25 +63,25 @@ function LoginPageSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 // ── LoginPage ──────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const { logout } = Route.useSearch()
-  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate();
+  const { logout } = Route.useSearch();
+  const [showPassword, setShowPassword] = useState(false);
 
   // Saat user tiba dengan ?logout=1 (dikirim topbar setelah logout berhasil):
   //   1. Tampilkan skeleton (form belum di-render — tidak ada flash).
   //   2. useEffect jalan → toast konfirmasi muncul.
   //   3. URL dibersihkan → skeleton diganti form normal.
   useEffect(() => {
-    if (!logout) return
-    toast.success("Berhasil keluar dari akun")
-    void navigate({ to: "/login", search: {}, replace: true })
-  }, [logout, navigate])
+    if (!logout) return;
+    toast.success("Berhasil keluar dari akun");
+    void navigate({ to: "/login", search: {}, replace: true });
+  }, [logout, navigate]);
 
   const {
     register,
@@ -87,18 +90,18 @@ export default function LoginPage() {
   } = useForm<LoginFields>({
     resolver: effectResolver(LoginSchema),
     defaultValues: { email: "", password: "" },
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (data: LoginFields) => loginFn({ data }),
     onSuccess: () => {
-      navigate({ to: "/dashboard" })
+      navigate({ to: "/dashboard" });
     },
-  })
+  });
 
-  const onFormSubmit = handleSubmit((data) => mutation.mutate(data))
+  const onFormSubmit = handleSubmit((data) => mutation.mutate(data));
 
-  if (logout) return <LoginPageSkeleton />
+  if (logout) return <LoginPageSkeleton />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
@@ -120,9 +123,7 @@ export default function LoginPage() {
                   aria-invalid={!!errors.email}
                   disabled={mutation.isPending}
                 />
-                {errors.email && (
-                  <FieldError errors={[errors.email]} />
-                )}
+                {errors.email && <FieldError errors={[errors.email]} />}
               </Field>
 
               <Field data-invalid={!!errors.password}>
@@ -142,17 +143,21 @@ export default function LoginPage() {
                       type="button"
                       className="flex items-center justify-center text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      aria-label={
+                        showPassword
+                          ? "Sembunyikan password"
+                          : "Tampilkan password"
+                      }
                     >
-                      {showPassword
-                        ? <EyeOffIcon className="h-4 w-4" />
-                        : <EyeIcon    className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOffIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
                     </button>
                   </InputGroupAddon>
                 </InputGroup>
-                {errors.password && (
-                  <FieldError errors={[errors.password]} />
-                )}
+                {errors.password && <FieldError errors={[errors.password]} />}
               </Field>
             </FieldGroup>
 
@@ -175,5 +180,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

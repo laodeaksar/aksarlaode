@@ -1,6 +1,6 @@
-import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-import { users } from "./users"
+import { users } from "./users";
 
 export const paymentStatusEnum = pgEnum("payment_status", [
   "PENDING",
@@ -9,7 +9,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "CANCELLED",
   "EXPIRED",
   "REFUNDED",
-])
+]);
 
 export const payments = pgTable("payments", {
   id: text("id").primaryKey(),
@@ -27,7 +27,7 @@ export const payments = pgTable("payments", {
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+});
 
-export type Payment = typeof payments.$inferSelect
-export type NewPayment = typeof payments.$inferInsert
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;

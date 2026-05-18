@@ -1,30 +1,32 @@
-import { useCallback, useRef } from "react"
+import { useCallback, useRef } from "react";
 
-import { useQuery } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
-import type { ColumnDef } from "@tanstack/react-table"
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@repo/ui/components/badge"
-import { Input } from "@repo/ui/components/input"
+import { Badge } from "@repo/ui/components/badge";
+import { Input } from "@repo/ui/components/input";
 
-import { listCustomersFn } from "@/server/customers"
-import type { User } from "@/effect/Services"
-import { DataTable } from "@/components/data-table/data-table"
+import { listCustomersFn } from "@/server/customers";
+import type { User } from "@/effect/Services";
+import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./customers.route"
+import { Route } from "./customers.route";
 
 const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
   OWNER: "default",
   ADMIN: "default",
   CUSTOMER: "outline",
-}
+};
 
 const columns: ColumnDef<User>[] = [
   {
     accessorKey: "name",
     header: "Name",
     cell: ({ getValue }) => (
-      <span className="font-medium text-foreground">{getValue() as string}</span>
+      <span className="font-medium text-foreground">
+        {getValue() as string}
+      </span>
     ),
   },
   {
@@ -38,8 +40,8 @@ const columns: ColumnDef<User>[] = [
     accessorKey: "role",
     header: "Role",
     cell: ({ getValue }) => {
-      const role = getValue() as string
-      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>
+      const role = getValue() as string;
+      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>;
     },
   },
   {
@@ -55,13 +57,13 @@ const columns: ColumnDef<User>[] = [
       </Link>
     ),
   },
-]
+];
 
 export default function CustomersPage() {
-  const navigate = useNavigate()
-  const { page, search } = Route.useSearch()
-  const loaderData = Route.useLoaderData()
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const navigate = useNavigate();
+  const { page, search } = Route.useSearch();
+  const loaderData = Route.useLoaderData();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page, search }],
@@ -70,30 +72,30 @@ export default function CustomersPage() {
         data: { page, ...(search ? { search } : {}) },
       }),
     initialData: page === 1 && !search ? loaderData : undefined,
-  })
+  });
 
   const handleSearch = useCallback(
     (value: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         navigate({
           to: "/customers",
           search: (prev) => ({ ...prev, search: value, page: 1 }),
-        })
-      }, 300)
+        });
+      }, 300);
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   const handlePageChange = useCallback(
     (newPage: number) => {
       navigate({
         to: "/customers",
         search: (prev) => ({ ...prev, page: newPage }),
-      })
+      });
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   return (
     <div className="space-y-4">
@@ -115,5 +117,5 @@ export default function CustomersPage() {
         onPageChange={handlePageChange}
       />
     </div>
-  )
+  );
 }

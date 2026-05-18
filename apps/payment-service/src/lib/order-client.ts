@@ -1,15 +1,15 @@
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { env } from "@repo/env"
+import { env } from "@repo/env";
 
 class OrderClientError extends Data.TaggedError("OrderClientError")<{
-  status: number
+  status: number;
 }> {}
 
 const headers = () => ({
   "Content-Type": "application/json",
   "x-service-token": env.INTERNAL_SERVICE_TOKEN,
-})
+});
 
 export const orderClient = {
   updateStatus: (orderId: string, status: string) =>
@@ -22,8 +22,8 @@ export const orderClient = {
             headers: headers(),
             body: JSON.stringify({ status }),
           }
-        )
-        if (!res.ok) throw { status: res.status }
+        );
+        if (!res.ok) throw { status: res.status };
       },
       catch: (e: any) => new OrderClientError({ status: e.status ?? 500 }),
     }),
@@ -34,9 +34,9 @@ export const orderClient = {
         const res = await fetch(
           `${env.ORDER_SERVICE_URL}/orders/${orderId}/release-stock`,
           { method: "POST", headers: headers() }
-        )
-        if (!res.ok) throw { status: res.status }
+        );
+        if (!res.ok) throw { status: res.status };
       },
       catch: (e: any) => new OrderClientError({ status: e.status ?? 500 }),
     }),
-}
+};

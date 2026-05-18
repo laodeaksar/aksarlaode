@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Effect } from "effect"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
-import type { Product } from "@repo/common"
+import { Effect } from "effect";
 
-import { productsApi } from "@/lib/api/products"
-import { AppRuntime } from "@/lib/effect/runtime"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod/v4";
+
+import type { Product } from "@repo/common";
+
+import { productsApi } from "@/lib/api/products";
+import { AppRuntime } from "@/lib/effect/runtime";
 
 const filterSchema = z.object({
   search: z.string().optional(),
@@ -15,19 +17,19 @@ const filterSchema = z.object({
   maxPrice: z.coerce.number().min(0).optional(),
   inStock: z.boolean().optional(),
   sortBy: z.enum(["newest", "price_asc", "price_desc", "popular"]).optional(),
-})
+});
 
-type FilterValues = z.infer<typeof filterSchema>
+type FilterValues = z.infer<typeof filterSchema>;
 
 type Props = {
-  initialProducts: Product[]
-  total: number
-}
+  initialProducts: Product[];
+  total: number;
+};
 
 export function ProductFilters({ initialProducts, total }: Props) {
-  const [products, setProducts] = useState(initialProducts)
-  const [isLoading, setIsLoading] = useState(false)
-  const [resultTotal, setResultTotal] = useState(total)
+  const [products, setProducts] = useState(initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
+  const [resultTotal, setResultTotal] = useState(total);
 
   const {
     register,
@@ -38,19 +40,19 @@ export function ProductFilters({ initialProducts, total }: Props) {
   } = useForm<FilterValues>({
     resolver: zodResolver(filterSchema),
     defaultValues: { sortBy: "newest" },
-  })
+  });
 
   // Debounced live search
-  const searchValue = watch("search")
+  const searchValue = watch("search");
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleSubmit(fetchProducts)()
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [searchValue])
+      handleSubmit(fetchProducts)();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const fetchProducts = async (values: FilterValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     const exit = await AppRuntime.runPromiseExit(
       productsApi.list({
@@ -60,15 +62,15 @@ export function ProductFilters({ initialProducts, total }: Props) {
         inStock: values.inStock || undefined,
         sortBy: values.sortBy,
       })
-    )
+    );
 
-    setIsLoading(false)
+    setIsLoading(false);
 
     if (exit._tag === "Success") {
-      setProducts(exit.value.items)
-      setResultTotal(exit.value.total)
+      setProducts(exit.value.items);
+      setResultTotal(exit.value.total);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -125,8 +127,8 @@ export function ProductFilters({ initialProducts, total }: Props) {
                   type="checkbox"
                   checked={field.value ?? false}
                   onChange={(e) => {
-                    field.onChange(e.target.checked)
-                    handleSubmit(fetchProducts)()
+                    field.onChange(e.target.checked);
+                    handleSubmit(fetchProducts)();
                   }}
                   className="h-4 w-4 rounded"
                 />
@@ -162,7 +164,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function ProductCard({ product }: { product: Product }) {
@@ -193,5 +195,5 @@ function ProductCard({ product }: { product: Product }) {
         )}
       </div>
     </a>
-  )
+  );
 }

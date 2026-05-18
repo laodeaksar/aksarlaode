@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { cartStore } from "@/lib/store/cart"
+import { cartStore } from "@/lib/store/cart";
 
 export function CartDrawer() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    setCount(cartStore.getCount())
-    const handler = () => setCount(cartStore.getCount())
-    window.addEventListener("cart:updated", handler)
-    return () => window.removeEventListener("cart:updated", handler)
-  }, [])
+    setCount(cartStore.getCount());
+    const handler = () => setCount(cartStore.getCount());
+    window.addEventListener("cart:updated", handler);
+    return () => window.removeEventListener("cart:updated", handler);
+  }, []);
 
   return (
     <a
@@ -38,5 +38,5 @@ export function CartDrawer() {
         </span>
       )}
     </a>
-  )
+  );
 }

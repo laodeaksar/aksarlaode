@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { db, schema } from "@repo/database"
+import { eq } from "drizzle-orm";
+
+import { db, schema } from "@repo/database";
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -14,7 +15,7 @@ const create = (data: { token: string; userId: string; expiresAt: Date }) =>
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findByToken = (token: string) =>
   Effect.tryPromise({
@@ -26,7 +27,7 @@ const findByToken = (token: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const deleteByToken = (token: string) =>
   Effect.tryPromise({
@@ -35,7 +36,7 @@ const deleteByToken = (token: string) =>
         .delete(schema.passwordResetTokens)
         .where(eq(schema.passwordResetTokens.token, token)),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const deleteAllByUserId = (userId: string) =>
   Effect.tryPromise({
@@ -44,11 +45,11 @@ const deleteAllByUserId = (userId: string) =>
         .delete(schema.passwordResetTokens)
         .where(eq(schema.passwordResetTokens.userId, userId)),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 export const resetTokenRepository = {
   create,
   findByToken,
   deleteByToken,
   deleteAllByUserId,
-}
+};

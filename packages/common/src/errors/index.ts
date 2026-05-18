@@ -11,106 +11,106 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export abstract class AppError extends Error {
-  abstract readonly _tag: string
-  abstract readonly statusCode: number
+  abstract readonly _tag: string;
+  abstract readonly statusCode: number;
 
   toResponse(): Record<string, unknown> {
-    return { error: this.message }
+    return { error: this.message };
   }
 }
 
 // 400 Bad Request
 export class BadRequestError extends AppError {
-  readonly _tag = "BadRequestError" as const
-  readonly statusCode = 400
+  readonly _tag = "BadRequestError" as const;
+  readonly statusCode = 400;
   constructor(message = "Bad request") {
-    super(message)
+    super(message);
   }
 }
 
 // 401 Unauthorized
 export class AuthError extends AppError {
-  readonly _tag = "AuthError" as const
-  readonly statusCode = 401
+  readonly _tag = "AuthError" as const;
+  readonly statusCode = 401;
   constructor(message = "Unauthorized") {
-    super(message)
+    super(message);
   }
 }
 
 // 403 Forbidden
 export class ForbiddenError extends AppError {
-  readonly _tag = "ForbiddenError" as const
-  readonly statusCode = 403
+  readonly _tag = "ForbiddenError" as const;
+  readonly statusCode = 403;
   constructor(message = "Forbidden") {
-    super(message)
+    super(message);
   }
 }
 
 // 404 Not Found
 export class NotFoundError extends AppError {
-  readonly _tag = "NotFoundError" as const
-  readonly statusCode = 404
+  readonly _tag = "NotFoundError" as const;
+  readonly statusCode = 404;
   constructor(resource = "Resource") {
-    super(`${resource} not found`)
+    super(`${resource} not found`);
   }
 }
 
 // 409 Conflict
 export class ConflictError extends AppError {
-  readonly _tag = "ConflictError" as const
-  readonly statusCode = 409
+  readonly _tag = "ConflictError" as const;
+  readonly statusCode = 409;
   constructor(
     public readonly field: string,
     message?: string
   ) {
-    super(message ?? `${field} already exists`)
+    super(message ?? `${field} already exists`);
   }
   toResponse() {
-    return { error: this.message, field: this.field }
+    return { error: this.message, field: this.field };
   }
 }
 
 // 410 Gone — for expired resources (reset tokens, etc.)
 export class GoneError extends AppError {
-  readonly _tag = "GoneError" as const
-  readonly statusCode = 410
+  readonly _tag = "GoneError" as const;
+  readonly statusCode = 410;
   constructor(message = "Resource has expired") {
-    super(message)
+    super(message);
   }
 }
 
 // 422 Unprocessable Entity — for Zod / schema validation failures
 export class ValidationError extends AppError {
-  readonly _tag = "ValidationError" as const
-  readonly statusCode = 422
+  readonly _tag = "ValidationError" as const;
+  readonly statusCode = 422;
   constructor(
     public readonly details?: unknown,
     message = "Invalid input"
   ) {
-    super(message)
+    super(message);
   }
   toResponse() {
     return this.details
       ? { error: this.message, details: this.details }
-      : { error: this.message }
+      : { error: this.message };
   }
 }
 
 // 429 Too Many Requests
 export class TooManyRequestsError extends AppError {
-  readonly _tag = "TooManyRequestsError" as const
-  readonly statusCode = 429
+  readonly _tag = "TooManyRequestsError" as const;
+  readonly statusCode = 429;
   constructor(message = "Too many requests, please try again later") {
-    super(message)
+    super(message);
   }
 }
 
 // 500 Internal Server Error
 export class InternalError extends AppError {
-  readonly _tag = "InternalError" as const
-  readonly statusCode = 500
+  readonly _tag = "InternalError" as const;
+  readonly statusCode = 500;
   constructor(message = "Internal server error") {
-    super(message)
+    super(message);
   }
 }
 
@@ -119,11 +119,11 @@ export class InternalError extends AppError {
 // pass directly to c.json() in a Hono handler.
 // ─────────────────────────────────────────────────────────────────────────────
 export function toErrorResponse(err: unknown): {
-  body: Record<string, unknown>
-  status: number
+  body: Record<string, unknown>;
+  status: number;
 } {
   if (err instanceof AppError) {
-    return { body: err.toResponse(), status: err.statusCode }
+    return { body: err.toResponse(), status: err.statusCode };
   }
-  return { body: { error: "Internal server error" }, status: 500 }
+  return { body: { error: "Internal server error" }, status: 500 };
 }

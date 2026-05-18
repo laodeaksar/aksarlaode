@@ -1,10 +1,10 @@
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router";
 
-import { can, useSession } from "@/lib"
+import { can, useSession } from "@/lib";
 
 export function Sidebar() {
-  const { session } = useSession()
-  const role = session?.role ?? "CUSTOMER"
+  const { session } = useSession();
+  const role = session?.role ?? "CUSTOMER";
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
@@ -15,7 +15,7 @@ export function Sidebar() {
     ...(can(role, "audit:read")
       ? [{ href: "/audit-logs", label: "Audit Log" }]
       : []),
-  ]
+  ];
 
   return (
     <aside className="w-56 bg-gray-900 text-white flex flex-col shrink-0">
@@ -38,5 +38,5 @@ export function Sidebar() {
         ))}
       </nav>
     </aside>
-  )
+  );
 }

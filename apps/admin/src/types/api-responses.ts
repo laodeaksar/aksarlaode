@@ -14,45 +14,45 @@
 // totalAmount). Riconciliare con il team order-service prima di consolidare.
 
 export type OrderSummary = {
-  orderId: string
-  userId: string
-  status: string
-  grandTotal: number
-  createdAt: string
-}
+  orderId: string;
+  userId: string;
+  status: string;
+  grandTotal: number;
+  createdAt: string;
+};
 
 export type OrderDetail = OrderSummary & {
   items: Array<{
-    productId: string
-    productName: string
-    quantity: number
-    price: number
-    subtotal: number
-  }>
-  shippingAddress: Record<string, string>
-  statusHistory: Array<{ status: string; note?: string; timestamp: string }>
-}
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    subtotal: number;
+  }>;
+  shippingAddress: Record<string, string>;
+  statusHistory: Array<{ status: string; note?: string; timestamp: string }>;
+};
 
 export type DashboardStats = {
-  totalRevenue: number
-  totalOrders: number
-  totalCustomers: number
-  totalProducts: number
-  revenueToday: number
-  ordersToday: number
-  recentOrders: OrderSummary[]
-  topProducts: Array<{ id: string; name: string; salesCount: number }>
-}
+  totalRevenue: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalProducts: number;
+  revenueToday: number;
+  ordersToday: number;
+  recentOrders: OrderSummary[];
+  topProducts: Array<{ id: string; name: string; salesCount: number }>;
+};
 
 export type AuditLogEntry = {
-  id: string
-  actorId: string
-  actorRole: string
-  action: string
-  resource: string
-  resourceId: string
-  oldValue: Record<string, unknown> | null
-  newValue: Record<string, unknown> | null
-  metadata: Record<string, unknown> | null
-  createdAt: string
-}
+  id: string;
+  actorId: string;
+  actorRole: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+};

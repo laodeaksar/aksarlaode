@@ -1,40 +1,42 @@
-import { productRepository } from "@/repository/product.repository"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
+
+import type { Context } from "elysia";
+
+import { productRepository } from "@/repository/product.repository";
 
 // ── Input validation ──────────────────────────────────────────────────────────
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // FIX PRD-03: validate slug format before it reaches the DB layer.
 // Valid slug: lowercase letters, digits, hyphens. No path traversal (../),
 // null bytes, or special characters that could cause log injection or unexpected
 // query behaviour. Max 120 chars to prevent DoS via oversized strings.
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const SLUG_MAX = 120
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_MAX = 120;
 
 function isValidInput(idOrSlug: string): boolean {
-  if (!idOrSlug || idOrSlug.length > SLUG_MAX) return false
-  if (UUID_REGEX.test(idOrSlug)) return true
-  return SLUG_REGEX.test(idOrSlug)
+  if (!idOrSlug || idOrSlug.length > SLUG_MAX) return false;
+  if (UUID_REGEX.test(idOrSlug)) return true;
+  return SLUG_REGEX.test(idOrSlug);
 }
 
 export const getOneHandler = async ({ params, set }: Context) => {
-  const idOrSlug = params.id
+  const idOrSlug = params.id;
 
   if (!isValidInput(idOrSlug)) {
-    set.status = 400
-    return { error: "Invalid product identifier", code: "INVALID_IDENTIFIER" }
+    set.status = 400;
+    return { error: "Invalid product identifier", code: "INVALID_IDENTIFIER" };
   }
 
   const result = await Effect.runPromiseExit(
     productRepository.findByIdOrSlug(idOrSlug)
-  )
+  );
 
   if (result._tag === "Failure") {
-    set.status = 404
-    return { error: "Product not found" }
+    set.status = 404;
+    return { error: "Product not found" };
   }
 
-  return result.value
-}
+  return result.value;
+};

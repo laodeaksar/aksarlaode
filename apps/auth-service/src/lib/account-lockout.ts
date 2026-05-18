@@ -14,7 +14,7 @@
  * Fail-OPEN: same rationale as login — a Redis outage must not lock all users
  * out of password reset permanently.
  */
-import { redis } from "@/lib/redis"
+import { redis } from "@/lib/redis";
 
 // ── Shared atomic Lua sliding-window script ───────────────────────────────────
 // Identical to rate-limit.ts; duplicated to avoid a shared-lib dependency.
@@ -43,7 +43,7 @@ else
   redis.call('EXPIRE', key, ttl_sec)
   return {0, retry_ms}
 end
-` as const
+` as const;
 
 // ── Core sliding-window check ─────────────────────────────────────────────────
 async function checkSlidingWindow(
@@ -51,9 +51,9 @@ async function checkSlidingWindow(
   maxReq: number,
   windowSec: number
 ): Promise<{ allowed: boolean; retryAfterSec: number }> {
-  const now = Date.now()
-  const windowStart = now - windowSec * 1000
-  const member = `${now}:${crypto.randomUUID()}`
+  const now = Date.now();
+  const windowStart = now - windowSec * 1000;
+  const member = `${now}:${crypto.randomUUID()}`;
 
   try {
     const result = (await redis.eval(
@@ -65,22 +65,22 @@ async function checkSlidingWindow(
       String(maxReq),
       String(windowSec),
       member
-    )) as [number, number]
+    )) as [number, number];
 
-    const [allowed, retryMs] = result
-    return { allowed: allowed === 1, retryAfterSec: Math.ceil(retryMs / 1000) }
+    const [allowed, retryMs] = result;
+    return { allowed: allowed === 1, retryAfterSec: Math.ceil(retryMs / 1000) };
   } catch {
-    return { allowed: true, retryAfterSec: 0 } // fail-open
+    return { allowed: true, retryAfterSec: 0 }; // fail-open
   }
 }
 
 // ── Login lockout ─────────────────────────────────────────────────────────────
-const EMAIL_ATTEMPT_MAX = 20
-const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60 // 1 hour
+const EMAIL_ATTEMPT_MAX = 20;
+const EMAIL_ATTEMPT_WINDOW_SEC = 60 * 60; // 1 hour
 
 export type LockoutResult =
   | { locked: false }
-  | { locked: true; retryAfterSec: number }
+  | { locked: true; retryAfterSec: number };
 
 /**
  * Records a login attempt for the given email hash and checks whether the
@@ -96,9 +96,9 @@ export async function recordEmailAttempt(
     `lockout:email:${emailHash}`,
     EMAIL_ATTEMPT_MAX,
     EMAIL_ATTEMPT_WINDOW_SEC
-  )
-  if (!allowed) return { locked: true, retryAfterSec }
-  return { locked: false }
+  );
+  if (!allowed) return { locked: true, retryAfterSec };
+  return { locked: false };
 }
 
 // ── Forgot-password per-email rate gate ───────────────────────────────────────
@@ -106,12 +106,12 @@ export async function recordEmailAttempt(
 // 3 requests per 15 minutes per hashed email address.
 // Fail-OPEN: if Redis is unavailable, let the request through (the per-IP
 // forgotPasswordRateLimiter on the route still applies).
-const FORGOT_MAX = 3
-const FORGOT_WINDOW_SEC = 15 * 60 // 15 minutes
+const FORGOT_MAX = 3;
+const FORGOT_WINDOW_SEC = 15 * 60; // 15 minutes
 
 export type ForgotPasswordRateResult =
   | { limited: false }
-  | { limited: true; retryAfterSec: number }
+  | { limited: true; retryAfterSec: number };
 
 /**
  * Records a forgot-password attempt for the given email hash and returns
@@ -131,7 +131,7 @@ export async function recordForgotPasswordAttempt(
     `ratelimit:forgot:${emailHash}`,
     FORGOT_MAX,
     FORGOT_WINDOW_SEC
-  )
-  if (!allowed) return { limited: true, retryAfterSec }
-  return { limited: false }
+  );
+  if (!allowed) return { limited: true, retryAfterSec };
+  return { limited: false };
 }

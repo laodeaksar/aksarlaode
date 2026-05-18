@@ -1,9 +1,10 @@
-import type * as React from "react"
-import { mergeProps } from "@base-ui/react/merge-props"
-import { useRender } from "@base-ui/react/use-render"
-import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import type * as React from "react";
 
-import { cn } from "@repo/ui/lib/utils"
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
+
+import { cn } from "@repo/ui/lib/utils";
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -13,7 +14,7 @@ function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
       data-slot="breadcrumb"
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
@@ -26,7 +27,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
       data-slot="breadcrumb-list"
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -36,7 +37,7 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
       data-slot="breadcrumb-item"
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbLink({
@@ -56,7 +57,7 @@ function BreadcrumbLink({
     state: {
       slot: "breadcrumb-link",
     },
-  })
+  });
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
@@ -69,7 +70,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       role="link"
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbSeparator({
@@ -87,7 +88,7 @@ function BreadcrumbSeparator({
     >
       {children ?? <ChevronRightIcon />}
     </li>
-  )
+  );
 }
 
 function BreadcrumbEllipsis({
@@ -108,7 +109,7 @@ function BreadcrumbEllipsis({
       <MoreHorizontalIcon />
       <span className="sr-only">More</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -119,4 +120,4 @@ export {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-}
+};

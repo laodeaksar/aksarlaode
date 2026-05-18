@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto"
+import { timingSafeEqual } from "node:crypto";
 
-import { env } from "@repo/env/auth"
+import { env } from "@repo/env/auth";
 
 /**
  * Validates the x-service-token header using a constant-time comparison.
@@ -20,17 +20,17 @@ export const serviceTokenMiddleware = ({
   headers,
   set,
 }: {
-  headers: Record<string, string | undefined>
-  set: { status?: number; headers: Record<string, string> }
+  headers: Record<string, string | undefined>;
+  set: { status?: number; headers: Record<string, string> };
 }) => {
-  const provided = Buffer.from(headers["x-service-token"] ?? "", "utf8")
-  const expected = Buffer.from(env.INTERNAL_SERVICE_TOKEN, "utf8")
+  const provided = Buffer.from(headers["x-service-token"] ?? "", "utf8");
+  const expected = Buffer.from(env.INTERNAL_SERVICE_TOKEN, "utf8");
 
   const valid =
-    provided.length === expected.length && timingSafeEqual(provided, expected)
+    provided.length === expected.length && timingSafeEqual(provided, expected);
 
   if (!valid) {
-    set.status = 403
-    return { error: "Forbidden" }
+    set.status = 403;
+    return { error: "Forbidden" };
   }
-}
+};

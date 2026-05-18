@@ -1,6 +1,6 @@
-import { createContext, useContext } from "react"
+import { createContext, useContext } from "react";
 
-import type { Session } from "@/lib/auth"
+import type { Session } from "@/lib/auth";
 
 // ── Session Context ─────────────────────────────────────────────────────────
 // Seeded server-side from __root.tsx beforeLoad — zero client-side fetch.
@@ -9,15 +9,15 @@ import type { Session } from "@/lib/auth"
 //   2. useSession() always returning null on first render → RBAC always false
 
 type SessionContextValue = {
-  session: Session | null
-  loading: boolean
-}
+  session: Session | null;
+  loading: boolean;
+};
 
 export const SessionContext = createContext<SessionContextValue>({
   session: null,
   loading: false,
-})
+});
 
 export function useSession(): SessionContextValue {
-  return useContext(SessionContext)
+  return useContext(SessionContext);
 }

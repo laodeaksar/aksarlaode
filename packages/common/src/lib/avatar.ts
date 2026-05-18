@@ -36,10 +36,12 @@ export const STATIC_ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   // ── Social / OAuth provider avatars ─────────────────────────────────────
   "lh3.googleusercontent.com", // Google OAuth profile pictures
   "avatars.githubusercontent.com", // GitHub profile pictures
-])
+]);
 
 /** Human-readable comma-separated list — used in validation error messages. */
-export const ALLOWED_AVATAR_HOSTS: string = [...STATIC_ALLOWED_HOSTS].join(", ")
+export const ALLOWED_AVATAR_HOSTS: string = [...STATIC_ALLOWED_HOSTS].join(
+  ", "
+);
 
 // ── Blocklist (runs before allowlist) ─────────────────────────────────────────
 
@@ -51,7 +53,7 @@ const BLOCKED_HOSTNAMES: ReadonlySet<string> = new Set([
   "0.0.0.0",
   "169.254.169.254", // AWS / GCP / Azure instance metadata
   "metadata.google.internal",
-])
+]);
 
 /**
  * Returns true if the hostname looks like a raw IPv4 address (e.g. 192.168.1.1)
@@ -60,9 +62,9 @@ const BLOCKED_HOSTNAMES: ReadonlySet<string> = new Set([
  * loopback ranges.
  */
 function isRawIpAddress(hostname: string): boolean {
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) return true
-  if (/^[\da-f:]+$/i.test(hostname) && hostname.includes(":")) return true
-  return false
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) return true;
+  if (/^[\da-f:]+$/i.test(hostname) && hostname.includes(":")) return true;
+  return false;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -79,21 +81,21 @@ export function isAllowedAvatarUrl(
   raw: string,
   extraHosts: ReadonlySet<string> = new Set()
 ): boolean {
-  let url: URL
+  let url: URL;
   try {
-    url = new URL(raw)
+    url = new URL(raw);
   } catch {
-    return false
+    return false;
   }
 
-  if (url.protocol !== "https:") return false
+  if (url.protocol !== "https:") return false;
 
-  const host = url.hostname.toLowerCase()
+  const host = url.hostname.toLowerCase();
 
   // Blocklist check — always takes priority
-  if (BLOCKED_HOSTNAMES.has(host)) return false
-  if (isRawIpAddress(host)) return false
+  if (BLOCKED_HOSTNAMES.has(host)) return false;
+  if (isRawIpAddress(host)) return false;
 
   // Allowlist check
-  return STATIC_ALLOWED_HOSTS.has(host) || extraHosts.has(host)
+  return STATIC_ALLOWED_HOSTS.has(host) || extraHosts.has(host);
 }

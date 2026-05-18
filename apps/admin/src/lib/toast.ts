@@ -9,12 +9,12 @@
 //   toast.error("Gagal menghapus produk", err)   // err opsional
 //   toast.warning("Peringatan penting")
 
-import { toast as sonnerToast } from "sonner"
+import { toast as sonnerToast } from "sonner";
 
 function buildErrorMessage(base: string, err?: unknown): string {
-  if (!err) return base
-  const detail = err instanceof Error ? err.message : String(err)
-  return `${base}: ${detail}`
+  if (!err) return base;
+  const detail = err instanceof Error ? err.message : String(err);
+  return `${base}: ${detail}`;
 }
 
 export const toast = {
@@ -29,4 +29,4 @@ export const toast = {
   /** Peringatan — kuning, 4 detik */
   warning: (message: string) =>
     sonnerToast.warning(message, { duration: 4_000 }),
-}
+};

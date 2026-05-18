@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Environment variables required by order-service.
@@ -58,6 +58,6 @@ export const env = parseEnv(
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },
   "order-service"
-)
+);
 
-export type OrderEnv = typeof env
+export type OrderEnv = typeof env;

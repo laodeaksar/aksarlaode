@@ -1,4 +1,4 @@
-import Elysia from "elysia"
+import Elysia from "elysia";
 
 /**
  * Per-request structured logging + automatic x-request-id generation.
@@ -47,7 +47,7 @@ function emit(
       userRole,
       ...extra,
     })
-  )
+  );
 }
 
 export const requestLogger = new Elysia({ name: "request-logger" })
@@ -67,7 +67,7 @@ export const requestLogger = new Elysia({ name: "request-logger" })
     { as: "global" },
     ({ request, headers, set, _startTime, requestId }) => {
       // Echo the request ID back so clients can correlate without gateway support
-      set.headers["x-request-id"] = requestId
+      set.headers["x-request-id"] = requestId;
 
       emit(
         "request_completed",
@@ -78,7 +78,7 @@ export const requestLogger = new Elysia({ name: "request-logger" })
         requestId,
         (headers["x-user-id"] as string | undefined) ?? null,
         (headers["x-user-role"] as string | undefined) ?? null
-      )
+      );
     }
   )
 
@@ -89,11 +89,11 @@ export const requestLogger = new Elysia({ name: "request-logger" })
   .onError(
     { as: "global" },
     ({ request, headers, set, code, _startTime, requestId }) => {
-      const id = (requestId as string | undefined) ?? crypto.randomUUID()
-      const startTime = (_startTime as number | undefined) ?? Date.now()
+      const id = (requestId as string | undefined) ?? crypto.randomUUID();
+      const startTime = (_startTime as number | undefined) ?? Date.now();
 
       // Echo request ID even on error responses
-      set.headers["x-request-id"] = id
+      set.headers["x-request-id"] = id;
 
       const status =
         (set.status as number | undefined) ??
@@ -105,7 +105,7 @@ export const requestLogger = new Elysia({ name: "request-logger" })
               ? 400
               : code === "INVALID_COOKIE"
                 ? 400
-                : 500)
+                : 500);
 
       emit(
         "request_error",
@@ -117,6 +117,6 @@ export const requestLogger = new Elysia({ name: "request-logger" })
         (headers["x-user-id"] as string | undefined) ?? null,
         (headers["x-user-role"] as string | undefined) ?? null,
         { errorCode: code }
-      )
+      );
     }
-  )
+  );

@@ -15,66 +15,69 @@
  * OWNER. They must re-login (or wait for token expiry) for the new
  * role to be reflected. The response body communicates this clearly.
  */
-import { sessionRepository } from "@/repository/session.repository"
-import { userRepository } from "@/repository/user.repository"
-import type { HandlerCtx, UserRole } from "@/types"
-import { Effect } from "effect"
+import { Effect } from "effect";
 
-import { writeAuditLog } from "@/lib/audit-log"
-import { verifyPassword } from "@/lib/password"
-import { isAtLeastOwner } from "@/lib/role"
+import { writeAuditLog } from "@/lib/audit-log";
+import { verifyPassword } from "@/lib/password";
+import { isAtLeastOwner } from "@/lib/role";
+import { sessionRepository } from "@/repository/session.repository";
+import { userRepository } from "@/repository/user.repository";
+import type { HandlerCtx, UserRole } from "@/types";
 
 type TransferOwnershipBody = {
-  targetUserId: string
-  currentPassword: string
-}
+  targetUserId: string;
+  currentPassword: string;
+};
 
 export const transferOwnershipHandler = async ({
   body,
   headers,
   set,
 }: HandlerCtx) => {
-  const { targetUserId, currentPassword } = body as TransferOwnershipBody
-  const actorId = headers["x-user-id"]
-  const actorRole = headers["x-user-role"] as UserRole | undefined
+  const { targetUserId, currentPassword } = body as TransferOwnershipBody;
+  const actorId = headers["x-user-id"];
+  const actorRole = headers["x-user-role"] as UserRole | undefined;
 
   // ── Gate 1: caller must be OWNER ────────────────────────────────────────
   // The gateway route guard already enforces this via ROLE_HIERARCHY, but we
   // double-check here so the handler is safe if called directly in tests or
   // if the gateway config ever drifts.
   if (!actorId || !actorRole || !isAtLeastOwner(actorRole)) {
-    set.status = 403
-    return { error: "Only the OWNER can transfer ownership", code: "FORBIDDEN" }
+    set.status = 403;
+    return {
+      error: "Only the OWNER can transfer ownership",
+      code: "FORBIDDEN",
+    };
   }
 
   // ── Gate 2: cannot transfer to self ─────────────────────────────────────
   if (actorId === targetUserId) {
-    set.status = 422
+    set.status = 422;
     return {
       error: "Cannot transfer ownership to yourself",
       code: "INVALID_TARGET",
-    }
+    };
   }
 
   const program = Effect.gen(function* () {
     // ── Gate 3: re-authenticate the OWNER ─────────────────────────────────
-    const actor = yield* userRepository.findById(actorId)
+    const actor = yield* userRepository.findById(actorId);
     if (!actor) {
-      return yield* Effect.fail({ _tag: "AuthError" as const })
+      return yield* Effect.fail({ _tag: "AuthError" as const });
     }
 
     const passwordOk = yield* verifyPassword(
       currentPassword,
       actor.passwordHash
-    )
+    );
     if (!passwordOk) {
-      return yield* Effect.fail({ _tag: "AuthError" as const })
+      return yield* Effect.fail({ _tag: "AuthError" as const });
     }
 
     // ── Gate 4: target user must exist ────────────────────────────────────
-    const target = yield* userRepository.findById(targetUserId)
+    const target = yield* userRepository.findById(targetUserId);
     if (!target) {
-      return yield* Effect.fail({ _tag: "NotFoundError" as const })
+      return yield* Effect.fail({ _tag: "NotFoundError" as const });
     }
 
     // ── Atomic role swap ──────────────────────────────────────────────────
@@ -82,37 +85,37 @@ export const transferOwnershipHandler = async ({
     const result = yield* userRepository.transferOwnership(
       actorId,
       targetUserId
-    )
+    );
 
     // ── Invalidate all sessions for both parties ───────────────────────
     // Previous owner's sessions carry a JWT that still claims OWNER role.
     // Deleting them forces re-login and prevents privilege retention past
     // this point. New owner sessions are also cleared so their next login
     // issues a token that correctly reflects the OWNER role.
-    yield* sessionRepository.deleteAllByUserId(actorId)
-    yield* sessionRepository.deleteAllByUserId(targetUserId)
+    yield* sessionRepository.deleteAllByUserId(actorId);
+    yield* sessionRepository.deleteAllByUserId(targetUserId);
 
-    return result
-  })
+    return result;
+  });
 
-  const exit = await Effect.runPromiseExit(program)
+  const exit = await Effect.runPromiseExit(program);
 
   if (exit._tag === "Failure") {
-    const err = exit.cause.error as { _tag: string }
+    const err = exit.cause.error as { _tag: string };
 
     if (err._tag === "AuthError") {
-      set.status = 401
+      set.status = 401;
       return {
         error: "Password verification failed",
         code: "INVALID_CREDENTIALS",
-      }
+      };
     }
     if (err._tag === "NotFoundError") {
-      set.status = 404
-      return { error: "Target user not found", code: "USER_NOT_FOUND" }
+      set.status = 404;
+      return { error: "Target user not found", code: "USER_NOT_FOUND" };
     }
-    set.status = 500
-    return { error: "Failed to transfer ownership" }
+    set.status = 500;
+    return { error: "Failed to transfer ownership" };
   }
 
   // ── Audit log ─────────────────────────────────────────────────────────
@@ -121,7 +124,7 @@ export const transferOwnershipHandler = async ({
     actorId,
     targetId: targetUserId,
     meta: { previousRole: "OWNER", newRole: "ADMIN" },
-  })
+  });
 
   return {
     message:
@@ -134,5 +137,5 @@ export const transferOwnershipHandler = async ({
       id: exit.value.prevOwner.id,
       role: exit.value.prevOwner.role,
     },
-  }
-}
+  };
+};

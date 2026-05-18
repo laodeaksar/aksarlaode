@@ -1,4 +1,4 @@
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
 class HashError extends Data.TaggedError("HashError") {}
 class VerifyError extends Data.TaggedError("VerifyError") {}
@@ -20,7 +20,7 @@ export const hashPassword = (plain: string): Effect.Effect<string, HashError> =>
         timeCost: 3,
       }),
     catch: () => new HashError(),
-  })
+  });
 
 /**
  * Verify a password against a stored hash.
@@ -39,23 +39,23 @@ export const verifyPassword = (
   Effect.tryPromise({
     try: async () => {
       if (isArgon2Hash(stored)) {
-        return Bun.password.verify(plain, stored)
+        return Bun.password.verify(plain, stored);
       }
-      return verifyLegacyPbkdf2(plain, stored)
+      return verifyLegacyPbkdf2(plain, stored);
     },
     catch: () => new VerifyError(),
-  })
+  });
 
 /**
  * Returns true when the stored hash was produced by the legacy PBKDF2 path
  * and should be upgraded to Argon2id on the next successful authentication.
  * Detection is O(1): the PHC format always begins with '$argon2'.
  */
-export const needsRehash = (stored: string): boolean => !isArgon2Hash(stored)
+export const needsRehash = (stored: string): boolean => !isArgon2Hash(stored);
 
 // ── Format detection ──────────────────────────────────────────────────────────
 
-const isArgon2Hash = (s: string): boolean => s.startsWith("$argon2")
+const isArgon2Hash = (s: string): boolean => s.startsWith("$argon2");
 
 // ── Legacy PBKDF2-HMAC-SHA256 path (kept for migration, not for new hashes) ──
 
@@ -63,14 +63,14 @@ async function verifyLegacyPbkdf2(
   plain: string,
   stored: string
 ): Promise<boolean> {
-  const [saltHex, hashHex] = stored.split(":")
-  if (!saltHex || !hashHex) return false
+  const [saltHex, hashHex] = stored.split(":");
+  if (!saltHex || !hashHex) return false;
 
-  const salt = unhex(saltHex)
-  const key = await derivePbkdf2Key(plain, salt)
-  const candidate = new Uint8Array(await crypto.subtle.exportKey("raw", key))
+  const salt = unhex(saltHex);
+  const key = await derivePbkdf2Key(plain, salt);
+  const candidate = new Uint8Array(await crypto.subtle.exportKey("raw", key));
 
-  return constantTimeEqual(hex(candidate), hashHex)
+  return constantTimeEqual(hex(candidate), hashHex);
 }
 
 async function derivePbkdf2Key(
@@ -83,24 +83,24 @@ async function derivePbkdf2Key(
     "PBKDF2",
     false,
     ["deriveBits", "deriveKey"]
-  )
+  );
   return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
     base,
     { name: "HMAC", hash: "SHA-256", length: 256 },
     true,
     ["sign"]
-  )
+  );
 }
 
 const hex = (b: Uint8Array) =>
-  [...b].map((x) => x.toString(16).padStart(2, "0")).join("")
+  [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
 const unhex = (s: string) =>
-  new Uint8Array(s.match(/.{2}/g)!.map((h) => parseInt(h, 16)))
+  new Uint8Array(s.match(/.{2}/g)!.map((h) => parseInt(h, 16)));
 
 function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }

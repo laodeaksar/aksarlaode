@@ -1,11 +1,11 @@
-import { t } from "elysia"
+import { t } from "elysia";
 
 // ── Shared primitives ──────────────────────────────────────────────────────
 export const ProductStatusSchema = t.Union([
   t.Literal("DRAFT"),
   t.Literal("ACTIVE"),
   t.Literal("ARCHIVED"),
-])
+]);
 
 // ── Product response shape (mirrors DB select type) ────────────────────────
 export const ProductSchema = t.Object({
@@ -26,7 +26,7 @@ export const ProductSchema = t.Object({
   salesCount: t.Optional(t.Integer()),
   createdAt: t.Optional(t.String({ format: "date-time" })),
   updatedAt: t.Optional(t.String({ format: "date-time" })),
-})
+});
 
 // ── Paginated list response ────────────────────────────────────────────────
 export const ProductListResponseSchema = t.Object({
@@ -37,7 +37,7 @@ export const ProductListResponseSchema = t.Object({
   // FIX PRD-07: nextCursor is null for offset pagination or last pages;
   // non-null signals the client can fetch the next page with cursor=<value>.
   nextCursor: t.Union([t.String(), t.Null()]),
-})
+});
 
 // ── Query params for GET / (list) ──────────────────────────────────────────
 export const ProductListQuerySchema = t.Object({
@@ -78,12 +78,12 @@ export const ProductListQuerySchema = t.Object({
         "Cursor from previous page's nextCursor for efficient deep pagination",
     })
   ),
-})
+});
 
 // ── Path params ────────────────────────────────────────────────────────────
 export const ProductIdParamSchema = t.Object({
   id: t.String({ description: "Product UUID or slug" }),
-})
+});
 
 // ── Create body ────────────────────────────────────────────────────────────
 export const CreateProductBodySchema = t.Object({
@@ -100,17 +100,17 @@ export const CreateProductBodySchema = t.Object({
   categoryId: t.Optional(t.String({ format: "uuid" })),
   status: t.Optional(ProductStatusSchema),
   isDigital: t.Optional(t.Boolean()),
-})
+});
 
 // ── Update body (all fields optional) ─────────────────────────────────────
-export const UpdateProductBodySchema = t.Partial(CreateProductBodySchema)
+export const UpdateProductBodySchema = t.Partial(CreateProductBodySchema);
 
 // ── Stock check response ───────────────────────────────────────────────────
 export const StockResponseSchema = t.Object({
   productId: t.String({ format: "uuid" }),
   stock: t.Integer({ description: "Current available stock" }),
   inStock: t.Boolean({ description: "True when stock > 0" }),
-})
+});
 
 // ── Stock operation request body ───────────────────────────────────────────
 export const StockOperationBodySchema = t.Object({
@@ -118,32 +118,32 @@ export const StockOperationBodySchema = t.Object({
     minimum: 1,
     description: "Number of units to reserve or release",
   }),
-})
+});
 
 // ── Stock operation response ───────────────────────────────────────────────
 export const StockReserveResponseSchema = t.Object({
   productId: t.String({ format: "uuid" }),
   reserved: t.Integer(),
   remainingStock: t.Union([t.Integer(), t.Null()]),
-})
+});
 
 export const StockReleaseResponseSchema = t.Object({
   productId: t.String({ format: "uuid" }),
   released: t.Integer(),
   remainingStock: t.Union([t.Integer(), t.Null()]),
-})
+});
 
 // ── Insufficient stock error ───────────────────────────────────────────────
 export const InsufficientStockErrorSchema = t.Object({
   error: t.String(),
   code: t.Optional(t.Literal("INSUFFICIENT_STOCK")),
-})
+});
 
 // ── Generic error response ─────────────────────────────────────────────────
 export const ErrorSchema = t.Object({
   error: t.String(),
   code: t.Optional(t.String()),
-})
+});
 
 // ── Validation error response (422) ───────────────────────────────────────
 // Matches the structured payload returned by the global onError handler.
@@ -172,4 +172,4 @@ export const ValidationErrorSchema = t.Object({
     }),
     { description: "Per-field validation errors" }
   ),
-})
+});

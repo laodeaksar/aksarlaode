@@ -1,11 +1,12 @@
-import type * as React from "react"
-import { ChevronDownIcon } from "lucide-react"
+import type * as React from "react";
 
-import { cn } from "@repo/ui/lib/utils"
+import { ChevronDownIcon } from "lucide-react";
+
+import { cn } from "@repo/ui/lib/utils";
 
 type NativeSelectProps = Omit<React.ComponentProps<"select">, "size"> & {
-  size?: "sm" | "default"
-}
+  size?: "sm" | "default";
+};
 
 function NativeSelect({
   className,
@@ -33,7 +34,7 @@ function NativeSelect({
         data-slot="native-select-icon"
       />
     </div>
-  )
+  );
 }
 
 function NativeSelectOption({
@@ -46,7 +47,7 @@ function NativeSelectOption({
       data-slot="native-select-option"
       {...props}
     />
-  )
+  );
 }
 
 function NativeSelectOptGroup({
@@ -59,7 +60,7 @@ function NativeSelectOptGroup({
       data-slot="native-select-optgroup"
       {...props}
     />
-  )
+  );
 }
 
-export { NativeSelect, NativeSelectOptGroup, NativeSelectOption }
+export { NativeSelect, NativeSelectOptGroup, NativeSelectOption };

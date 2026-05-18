@@ -1,16 +1,18 @@
-import { auditLogHandler } from "@/handlers/audit-log"
-import { createHandler } from "@/handlers/create"
-import { deleteHandler } from "@/handlers/delete"
-import { getOneHandler } from "@/handlers/get-one"
-import { getStockHandler } from "@/handlers/get-stock"
-import { listHandler } from "@/handlers/list"
-import { releaseStockHandler } from "@/handlers/release-stock"
-import { reserveStockHandler } from "@/handlers/reserve-stock"
-import { updateHandler } from "@/handlers/update"
+import Elysia, { t } from "elysia";
+
+import { auditLogHandler } from "@/handlers/audit-log";
+import { createHandler } from "@/handlers/create";
+import { deleteHandler } from "@/handlers/delete";
+import { getOneHandler } from "@/handlers/get-one";
+import { getStockHandler } from "@/handlers/get-stock";
+import { listHandler } from "@/handlers/list";
+import { releaseStockHandler } from "@/handlers/release-stock";
+import { reserveStockHandler } from "@/handlers/reserve-stock";
+import { updateHandler } from "@/handlers/update";
 import {
   writeAuditLogHandler,
   type WriteAuditLogBody,
-} from "@/handlers/write-audit-log"
+} from "@/handlers/write-audit-log";
 import {
   CreateProductBodySchema,
   ErrorSchema,
@@ -25,12 +27,11 @@ import {
   StockResponseSchema,
   UpdateProductBodySchema,
   ValidationErrorSchema,
-} from "@/schemas"
-import Elysia, { t } from "elysia"
+} from "@/schemas";
 
-const ForbiddenSchema = ErrorSchema
+const ForbiddenSchema = ErrorSchema;
 const AdminDescription =
-  "Requires `x-user-role: ADMIN` header forwarded by the gateway."
+  "Requires `x-user-role: ADMIN` header forwarded by the gateway.";
 
 export const productRoutes = new Elysia({
   prefix: "/products",
@@ -202,4 +203,4 @@ export const productRoutes = new Elysia({
       summary: "List admin audit log",
       description: `Returns recent sensitive admin actions. ${AdminDescription} OWNER also permitted.`,
     },
-  })
+  });

@@ -1,78 +1,78 @@
-import { handleOrderCancelled } from "@/jobs/order-cancelled"
-import { handleOrderConfirmation } from "@/jobs/order-confirmation"
-import { handleOrderCreated } from "@/jobs/order-created"
-import { handlePasswordReset } from "@/jobs/password-reset"
-import { handleShippingUpdate } from "@/jobs/shipping-update"
-import { MailChannelsProvider } from "@/providers/mailchannels.provider"
-import type { EmailJobPayload, EmailJobType } from "@/queues/email.queue"
-import { Worker, type Job } from "bullmq"
+import { Worker, type Job } from "bullmq";
 
-import { env } from "@repo/env"
+import { env } from "@repo/env";
 
 // FIX EML-09: Prometheus counter helpers (no external dep).
-import { incrementCounter } from "@/lib/metrics"
-import { PAYLOAD_SCHEMAS } from "@/lib/payload-schemas"
+import { incrementCounter } from "@/lib/metrics";
+import { PAYLOAD_SCHEMAS } from "@/lib/payload-schemas";
+import { handleOrderCancelled } from "@/jobs/order-cancelled";
+import { handleOrderConfirmation } from "@/jobs/order-confirmation";
+import { handleOrderCreated } from "@/jobs/order-created";
+import { handlePasswordReset } from "@/jobs/password-reset";
+import { handleShippingUpdate } from "@/jobs/shipping-update";
+import { MailChannelsProvider } from "@/providers/mailchannels.provider";
+import type { EmailJobPayload, EmailJobType } from "@/queues/email.queue";
 
-const provider = new MailChannelsProvider()
+const provider = new MailChannelsProvider();
 
 const HANDLERS: {
   [K in EmailJobType]: (
     payload: EmailJobPayload[K],
     provider: MailChannelsProvider
-  ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>
+  ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>;
 } = {
   "order-created": handleOrderCreated,
   "order-confirmation": handleOrderConfirmation,
   "order-cancelled": handleOrderCancelled,
   "password-reset": handlePasswordReset,
   "shipping-update": handleShippingUpdate,
-}
+};
 
 // FIX EML-05: total retry attempts configured here — must match defaultJobOptions
 // in email.queue.ts so the "permanently failed" check is accurate.
-const MAX_ATTEMPTS = 3
+const MAX_ATTEMPTS = 3;
 
 export const emailWorker = new Worker(
   "email",
   async (job: Job<EmailJobPayload[EmailJobType]>) => {
-    const type = job.name as EmailJobType
-    const handler = HANDLERS[type]
+    const type = job.name as EmailJobType;
+    const handler = HANDLERS[type];
 
     if (!handler) {
       // Unknown job type — move to DLQ immediately, don't retry
       throw Object.assign(new Error(`Unknown job type: ${type}`), {
         retryable: false,
-      })
+      });
     }
 
     // FIX EML-07: Validate payload shape before dispatching to the handler.
     // A job enqueued with a missing or wrong-type field (e.g. userEmail is a
     // UUID instead of an address) will now fail immediately with a clear
     // ZodError message rather than crashing deep inside the template renderer.
-    const schema = PAYLOAD_SCHEMAS[type]
+    const schema = PAYLOAD_SCHEMAS[type];
     if (schema) {
-      const parsed = schema.safeParse(job.data)
+      const parsed = schema.safeParse(job.data);
       if (!parsed.success) {
         const message = parsed.error.errors
           .map((e) => `${e.path.join(".")}: ${e.message}`)
-          .join("; ")
+          .join("; ");
         throw Object.assign(
           new Error(`Invalid payload for job type "${type}": ${message}`),
           { retryable: false }
-        )
+        );
       }
     }
 
-    const result = await handler(job.data as any, provider)
+    const result = await handler(job.data as any, provider);
 
     if (!result.success) {
       const err = Object.assign(new Error(result.error ?? "Send failed"), {
         retryable: result.retryable ?? true,
-      })
-      throw err
+      });
+      throw err;
     }
 
-    return { sent: true, jobId: job.id, type }
+    return { sent: true, jobId: job.id, type };
   },
   {
     connection: {
@@ -83,12 +83,12 @@ export const emailWorker = new Worker(
     concurrency: 5,
     limiter: { max: 50, duration: 60_000 }, // 50 emails/min
   }
-)
+);
 
 // ── Lifecycle hooks ────────────────────────────────────────────────────────────
 emailWorker.on("completed", (job, result) => {
   // FIX EML-09: increment Prometheus counter for successful sends
-  incrementCounter("email_sent_total", { job_type: result.type ?? job.name })
+  incrementCounter("email_sent_total", { job_type: result.type ?? job.name });
 
   console.info(
     JSON.stringify({
@@ -96,18 +96,20 @@ emailWorker.on("completed", (job, result) => {
       jobId: job.id,
       type: result.type,
     })
-  )
-})
+  );
+});
 
 emailWorker.on("failed", (job, err: any) => {
-  const attempt = job?.attemptsMade ?? 0
-  const isPermanent = !err.retryable || attempt >= MAX_ATTEMPTS
+  const attempt = job?.attemptsMade ?? 0;
+  const isPermanent = !err.retryable || attempt >= MAX_ATTEMPTS;
 
   // FIX EML-09: increment the appropriate failure counter
   if (isPermanent) {
-    incrementCounter("email_retry_total", { job_type: job?.name ?? "unknown" })
+    incrementCounter("email_retry_total", { job_type: job?.name ?? "unknown" });
   } else {
-    incrementCounter("email_failed_total", { job_type: job?.name ?? "unknown" })
+    incrementCounter("email_failed_total", {
+      job_type: job?.name ?? "unknown",
+    });
   }
 
   // Always log the failure
@@ -127,7 +129,7 @@ emailWorker.on("failed", (job, err: any) => {
           }
         : null,
     })
-  )
+  );
 
   // FIX EML-05: emit a distinct CRITICAL log when a job is permanently dead.
   // This structured entry is designed to be picked up by log-based alerting
@@ -144,7 +146,7 @@ emailWorker.on("failed", (job, err: any) => {
         runbook:
           "Check BullMQ dashboard / Redis for job details. Re-queue via admin panel or CLI.",
       })
-    )
+    );
 
     // Optional: fire a webhook alert if ALERT_WEBHOOK_URL is configured.
     // Non-blocking — do not await or crash the worker on webhook failure.
@@ -164,7 +166,7 @@ emailWorker.on("failed", (job, err: any) => {
         console.warn(
           JSON.stringify({ event: "alert_webhook_failed", error: String(e) })
         )
-      )
+      );
     }
   }
-})
+});

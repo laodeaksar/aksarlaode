@@ -1,43 +1,44 @@
-import { orderRepository } from "@/repository/order.repository"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
 
-import { shapeOrder } from "@/lib/shape-order"
+import type { Context } from "elysia";
+
+import { shapeOrder } from "@/lib/shape-order";
+import { orderRepository } from "@/repository/order.repository";
 
 export const cancelHandler = async ({ params, headers, set }: Context) => {
-  const { orderId } = params as { orderId: string }
-  const userId = headers["x-user-id"]!
+  const { orderId } = params as { orderId: string };
+  const userId = headers["x-user-id"]!;
 
   const result = await Effect.runPromiseExit(
     Effect.gen(function* () {
-      const order = yield* orderRepository.checkOwnership(orderId, userId)
+      const order = yield* orderRepository.checkOwnership(orderId, userId);
 
       if (order.status !== "PENDING_PAYMENT" && order.status !== "PAID") {
-        return yield* Effect.fail({ _tag: "ConflictError" as const })
+        return yield* Effect.fail({ _tag: "ConflictError" as const });
       }
 
-      return yield* orderRepository.updateStatus(orderId, "CANCELLED")
+      return yield* orderRepository.updateStatus(orderId, "CANCELLED");
     })
-  )
+  );
 
   if (result._tag === "Failure") {
-    const err = result.cause.error as { _tag: string }
+    const err = result.cause.error as { _tag: string };
     if (err._tag === "OrderNotFoundError") {
-      set.status = 404
-      return { error: "Order not found", code: "ORDER_NOT_FOUND" }
+      set.status = 404;
+      return { error: "Order not found", code: "ORDER_NOT_FOUND" };
     }
     if (err._tag === "OrderConflictError" || err._tag === "ConflictError") {
-      set.status = 409
+      set.status = 409;
       return {
         error: "Cannot cancel order in its current status",
         code: "INVALID_STATUS_TRANSITION",
-      }
+      };
     }
-    set.status = 500
-    return { error: "Failed to cancel order" }
+    set.status = 500;
+    return { error: "Failed to cancel order" };
   }
 
-  const shaped = shapeOrder(result.value as Record<string, any>)
+  const shaped = shapeOrder(result.value as Record<string, any>);
 
   // Sanity-check: cancellation must always produce a cancelledAt timestamp
   if (!shaped.cancelledAt) {
@@ -47,8 +48,8 @@ export const cancelHandler = async ({ params, headers, set }: Context) => {
         orderId,
         status: shaped.status,
       })
-    )
+    );
   }
 
-  return shaped
-}
+  return shaped;
+};

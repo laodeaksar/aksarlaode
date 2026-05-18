@@ -1,4 +1,4 @@
-export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE";
 
 /**
  * Values injected by the withUserContext plugin via `.derive({ as: "global" })`.
@@ -7,7 +7,7 @@ export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
  *   async ({ body, set, userRole }: Context & DerivedContext) => { ... }
  */
 export type DerivedContext = {
-  userId: string | null
-  userRole: UserRole | null
-  requestId: string | null
-}
+  userId: string | null;
+  userRole: UserRole | null;
+  requestId: string | null;
+};

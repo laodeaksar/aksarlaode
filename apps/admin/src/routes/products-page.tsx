@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
-import type { ColumnDef } from "@tanstack/react-table"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 
-import type { Product } from "@repo/common"
+import type { Product } from "@repo/common";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,61 +15,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@repo/ui/components/alert-dialog"
-import { Badge } from "@repo/ui/components/badge"
-import { Button } from "@repo/ui/components/button"
-import { Input } from "@repo/ui/components/input"
+} from "@repo/ui/components/alert-dialog";
+import { Badge } from "@repo/ui/components/badge";
+import { Button } from "@repo/ui/components/button";
+import { Input } from "@repo/ui/components/input";
 
-import { deleteProductFn, listProductsFn } from "@/server/products"
-import { can, toast, useSession } from "@/lib"
-import { DataTable } from "@/components"
+import { deleteProductFn, listProductsFn } from "@/server/products";
+import { DataTable } from "@/components";
+import { can, toast, useSession } from "@/lib";
 
-import { Route } from "./products.route"
+import { Route } from "./products.route";
 
 export default function ProductsPage() {
-  const navigate = useNavigate()
-  const { page, search } = Route.useSearch()
-  const loaderData = Route.useLoaderData()
+  const navigate = useNavigate();
+  const { page, search } = Route.useSearch();
+  const loaderData = Route.useLoaderData();
 
   // Local state drives the visible input value (instant feedback).
   // URL search param drives the query — updated 300ms after typing stops.
-  const [inputValue, setInputValue] = useState(search)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [inputValue, setInputValue] = useState(search);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { session } = useSession()
-  const role = session?.role ?? "CUSTOMER"
-  const canWrite = can(role, "products:write")
+  const { session } = useSession();
+  const role = session?.role ?? "CUSTOMER";
+  const canWrite = can(role, "products:write");
 
   const handleSearch = useCallback(
     (value: string) => {
-      setInputValue(value)
-      if (debounceRef.current) clearTimeout(debounceRef.current)
+      setInputValue(value);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         navigate({
           to: "/products",
           search: (prev) => ({ ...prev, search: value, page: 1 }),
-        })
-      }, 300)
+        });
+      }, 300);
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   const handlePageChange = useCallback(
     (newPage: number) => {
       navigate({
         to: "/products",
         search: (prev) => ({ ...prev, page: newPage }),
-      })
+      });
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { page, search }],
     queryFn: () =>
-      listProductsFn({ data: { page, limit: 20, ...(search ? { search } : {}) } }),
+      listProductsFn({
+        data: { page, limit: 20, ...(search ? { search } : {}) },
+      }),
     initialData: page === 1 && !search ? loaderData : undefined,
-  })
+  });
 
   const columns = useMemo<ColumnDef<Product>[]>(
     () => [
@@ -90,7 +92,9 @@ export default function ProductsPage() {
             )}
             <div>
               <p className="font-medium">{row.original.name}</p>
-              <p className="text-xs text-muted-foreground">{row.original.sku}</p>
+              <p className="text-xs text-muted-foreground">
+                {row.original.sku}
+              </p>
             </div>
           </div>
         ),
@@ -105,7 +109,7 @@ export default function ProductsPage() {
         accessorKey: "stock",
         header: "Stock",
         cell: ({ getValue }) => {
-          const stock = getValue() as number
+          const stock = getValue() as number;
           return (
             <Badge
               variant={
@@ -118,26 +122,26 @@ export default function ProductsPage() {
             >
               {stock}
             </Badge>
-          )
+          );
         },
       },
       {
         accessorKey: "status",
         header: "Status",
         cell: ({ getValue }) => {
-          const status = getValue() as string
+          const status = getValue() as string;
           const variants = {
             ACTIVE: "default",
             DRAFT: "secondary",
             ARCHIVED: "outline",
-          } as const
+          } as const;
           return (
             <Badge
               variant={variants[status as keyof typeof variants] ?? "outline"}
             >
               {status}
             </Badge>
-          )
+          );
         },
       },
       ...(canWrite
@@ -165,8 +169,8 @@ export default function ProductsPage() {
           ]
         : []),
     ],
-    [canWrite],
-  )
+    [canWrite]
+  );
 
   return (
     <div className="space-y-4">
@@ -196,23 +200,23 @@ export default function ProductsPage() {
         onPageChange={handlePageChange}
       />
     </div>
-  )
+  );
 }
 
 function DeleteButton({ productId }: { productId: string }) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => deleteProductFn({ data: { id: productId } }),
 
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["products"] })
+      await queryClient.cancelQueries({ queryKey: ["products"] });
       const snapshots = queryClient.getQueriesData<{
-        items: Product[]
-        total: number
+        items: Product[];
+        total: number;
       }>({
         queryKey: ["products"],
-      })
+      });
       queryClient.setQueriesData<{ items: Product[]; total: number }>(
         { queryKey: ["products"] },
         (old) =>
@@ -221,24 +225,24 @@ function DeleteButton({ productId }: { productId: string }) {
                 items: old.items.filter((p) => p.id !== productId),
                 total: old.total - 1,
               }
-            : old,
-      )
-      return { snapshots }
+            : old
+      );
+      return { snapshots };
     },
 
     onSuccess: () => {
-      toast.success("Produk berhasil dihapus")
+      toast.success("Produk berhasil dihapus");
     },
 
     onError: (err, _vars, ctx) => {
       ctx?.snapshots.forEach(([key, data]) =>
-        queryClient.setQueryData(key, data),
-      )
-      toast.error("Gagal menghapus produk", err)
+        queryClient.setQueryData(key, data)
+      );
+      toast.error("Gagal menghapus produk", err);
     },
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
-  })
+  });
 
   return (
     <AlertDialog>
@@ -268,5 +272,5 @@ function DeleteButton({ productId }: { productId: string }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

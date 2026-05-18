@@ -1,33 +1,33 @@
-import { sessionRepository } from "@/repository/session.repository"
-import { userRepository } from "@/repository/user.repository"
-import { Effect } from "effect"
+import { Effect } from "effect";
 
 import {
   AuthError,
   NotFoundError,
   toErrorResponse,
   ValidationError,
-} from "@repo/common/errors"
-import { message } from "@repo/common/response"
+} from "@repo/common/errors";
+import { message } from "@repo/common/response";
 
-import { writeAuditLog } from "@/lib/audit-log"
-import { hashPassword, verifyPassword } from "@/lib/password"
+import { writeAuditLog } from "@/lib/audit-log";
+import { hashPassword, verifyPassword } from "@/lib/password";
+import { sessionRepository } from "@/repository/session.repository";
+import { userRepository } from "@/repository/user.repository";
 
 export const changePasswordHandler = async ({
   body,
   headers,
   set,
 }: {
-  body: { currentPassword: string; newPassword: string }
-  headers: Record<string, string | undefined>
-  set: any
+  body: { currentPassword: string; newPassword: string };
+  headers: Record<string, string | undefined>;
+  set: any;
 }) => {
-  const userId = headers["x-user-id"]
+  const userId = headers["x-user-id"];
 
   if (!userId) {
-    const { body: errBody, status } = toErrorResponse(new AuthError())
-    set.status = status
-    return errBody
+    const { body: errBody, status } = toErrorResponse(new AuthError());
+    set.status = status;
+    return errBody;
   }
 
   if (body.newPassword === body.currentPassword) {
@@ -35,41 +35,44 @@ export const changePasswordHandler = async ({
       new ValidationError(
         "New password must be different from current password"
       )
-    )
-    set.status = status
-    return errBody
+    );
+    set.status = status;
+    return errBody;
   }
 
   const program = Effect.gen(function* () {
-    const user = yield* userRepository.findById(userId)
-    if (!user) return yield* Effect.fail(new NotFoundError("User"))
+    const user = yield* userRepository.findById(userId);
+    if (!user) return yield* Effect.fail(new NotFoundError("User"));
 
-    const valid = yield* verifyPassword(body.currentPassword, user.passwordHash)
+    const valid = yield* verifyPassword(
+      body.currentPassword,
+      user.passwordHash
+    );
     if (!valid)
-      return yield* Effect.fail(new AuthError("Current password is incorrect"))
+      return yield* Effect.fail(new AuthError("Current password is incorrect"));
 
-    const newHash = yield* hashPassword(body.newPassword)
-    yield* userRepository.updatePasswordHash(userId, newHash)
+    const newHash = yield* hashPassword(body.newPassword);
+    yield* userRepository.updatePasswordHash(userId, newHash);
 
-    yield* sessionRepository.deleteAllByUserId(userId)
-  })
+    yield* sessionRepository.deleteAllByUserId(userId);
+  });
 
-  const result = await Effect.runPromiseExit(program)
+  const result = await Effect.runPromiseExit(program);
 
   if (result._tag === "Failure") {
-    const { body: errBody, status } = toErrorResponse(result.cause.error)
-    set.status = status
-    return errBody
+    const { body: errBody, status } = toErrorResponse(result.cause.error);
+    set.status = status;
+    return errBody;
   }
 
   writeAuditLog({
     event: "PASSWORD_CHANGED",
     actorId: userId,
     targetId: userId,
-  })
+  });
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
+    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`;
 
-  return message("Password changed. Please log in again.")
-}
+  return message("Password changed. Please log in again.");
+};

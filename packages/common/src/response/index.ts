@@ -10,30 +10,30 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface OkResponse<T> {
-  data: T
+  data: T;
 }
 
 export interface OkResponseWithMeta<T, M extends Record<string, unknown>> {
-  data: T
-  meta: M
+  data: T;
+  meta: M;
 }
 
 export interface PaginationMeta {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPrevPage: boolean
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export interface PaginatedResponse<T> {
-  data: T[]
-  meta: PaginationMeta
+  data: T[];
+  meta: PaginationMeta;
 }
 
 export interface MessageResponse {
-  message: string
+  message: string;
 }
 
 // ── Builders ──────────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ export interface MessageResponse {
  * return c.json(ok(user))
  * // → { data: { id: "...", name: "..." } }
  */
-export function ok<T>(data: T): OkResponse<T>
+export function ok<T>(data: T): OkResponse<T>;
 
 /**
  * Wrap a single resource with additional top-level meta fields.
@@ -57,13 +57,13 @@ export function ok<T>(data: T): OkResponse<T>
 export function ok<T, M extends Record<string, unknown>>(
   data: T,
   meta: M
-): OkResponseWithMeta<T, M>
+): OkResponseWithMeta<T, M>;
 
 export function ok<T, M extends Record<string, unknown>>(
   data: T,
   meta?: M
 ): OkResponse<T> | OkResponseWithMeta<T, M> {
-  return meta !== undefined ? { data, meta } : { data }
+  return meta !== undefined ? { data, meta } : { data };
 }
 
 /**
@@ -81,9 +81,9 @@ export function paginated<T>(
   data: T[],
   input: { page: number; limit: number; total: number }
 ): PaginatedResponse<T> {
-  const totalPages = Math.ceil(input.total / input.limit) || 1
-  const hasNextPage = input.page < totalPages
-  const hasPrevPage = input.page > 1
+  const totalPages = Math.ceil(input.total / input.limit) || 1;
+  const hasNextPage = input.page < totalPages;
+  const hasPrevPage = input.page > 1;
 
   return {
     data,
@@ -95,7 +95,7 @@ export function paginated<T>(
       hasNextPage,
       hasPrevPage,
     },
-  }
+  };
 }
 
 /**
@@ -106,5 +106,5 @@ export function paginated<T>(
  * // → { message: "Session revoked" }
  */
 export function message(text: string): MessageResponse {
-  return { message: text }
+  return { message: text };
 }

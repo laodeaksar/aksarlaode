@@ -1,22 +1,22 @@
-import { cors } from "@elysiajs/cors"
-import { swagger } from "@elysiajs/swagger"
-import Elysia from "elysia"
+import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
+import Elysia from "elysia";
 
-import { env } from "@repo/env/product"
+import { env } from "@repo/env/product";
 
-import { withUserContext } from "./plugins/user-context"
-import { productRoutes } from "./routes/product.routes"
+import { withUserContext } from "./plugins/user-context";
+import { productRoutes } from "./routes/product.routes";
 
-const PORT = parseInt(process.env["PORT"] ?? "3002", 10)
+const PORT = parseInt(process.env["PORT"] ?? "3002", 10);
 
 // ── Service token guard ────────────────────────────────────────────────────
 const serviceToken = (app: Elysia) =>
   app.onBeforeHandle(({ headers, set }) => {
     if (headers["x-service-token"] !== env.INTERNAL_SERVICE_TOKEN) {
-      set.status = 401
-      return { error: "Unauthorized", code: "UNAUTHORIZED" }
+      set.status = 401;
+      return { error: "Unauthorized", code: "UNAUTHORIZED" };
     }
-  })
+  });
 
 const app = new Elysia()
 
@@ -77,7 +77,7 @@ const app = new Elysia()
         requestId: headers["x-request-id"] ?? null,
         userId: headers["x-user-id"] ?? null,
       })
-    )
+    );
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
@@ -90,16 +90,16 @@ const app = new Elysia()
   .onError(({ code, error, set }) => {
     // Validation errors — structured per-field response
     if (code === "VALIDATION") {
-      set.status = 422
+      set.status = 422;
 
-      const err = error as any
-      const fields: Array<{ field: string; message: string }> = []
+      const err = error as any;
+      const fields: Array<{ field: string; message: string }> = [];
       if (err?.validator?.Errors) {
         for (const e of err.validator.Errors(err.value ?? {})) {
           fields.push({
             field: String(e.path).replace(/^\//, "") || "root",
             message: String(e.message),
-          })
+          });
         }
       }
 
@@ -109,39 +109,39 @@ const app = new Elysia()
           source: err?.on ?? "request",
           fields,
         })
-      )
+      );
 
       return {
         error: "Validation failed",
         code: "VALIDATION_ERROR",
         source: err?.on ?? "request",
         fields,
-      }
+      };
     }
 
     // Route not found
     if (code === "NOT_FOUND") {
-      set.status = 404
-      return { error: "Route not found", code: "NOT_FOUND" }
+      set.status = 404;
+      return { error: "Route not found", code: "NOT_FOUND" };
     }
 
     // Unhandled errors
     console.error(
       JSON.stringify({ event: "unhandled_error", code, message: error.message })
-    )
-    set.status = 500
-    return { error: "Internal server error", code: "INTERNAL_ERROR" }
+    );
+    set.status = 500;
+    return { error: "Internal server error", code: "INTERNAL_ERROR" };
   })
 
-  .listen(PORT)
+  .listen(PORT);
 
-console.info(`📦 product-service running on http://localhost:${PORT}`)
-console.info(`📄 API docs available at http://localhost:${PORT}/docs`)
+console.info(`📦 product-service running on http://localhost:${PORT}`);
+console.info(`📄 API docs available at http://localhost:${PORT}/docs`);
 
 const shutdown = async (signal: string) => {
-  console.info(`Received ${signal}, shutting down...`)
-  await app.stop()
-  process.exit(0)
-}
-process.on("SIGTERM", () => shutdown("SIGTERM"))
-process.on("SIGINT", () => shutdown("SIGINT"))
+  console.info(`Received ${signal}, shutting down...`);
+  await app.stop();
+  process.exit(0);
+};
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

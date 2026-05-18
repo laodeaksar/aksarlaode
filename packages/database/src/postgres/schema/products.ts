@@ -7,15 +7,15 @@ import {
   pgTable,
   text,
   timestamp,
-} from "drizzle-orm/pg-core"
+} from "drizzle-orm/pg-core";
 
-import { categories } from "./categories"
+import { categories } from "./categories";
 
 export const productStatusEnum = pgEnum("product_status", [
   "DRAFT",
   "ACTIVE",
   "ARCHIVED",
-])
+]);
 
 export const products = pgTable("products", {
   id: text("id").primaryKey(),
@@ -40,7 +40,7 @@ export const products = pgTable("products", {
   // FIX PRD-04: soft-delete; NULL = active, non-NULL = deleted.
   // Never hard-delete a product — order line items reference products by ID.
   deletedAt: timestamp("deleted_at"),
-})
+});
 
-export type Product = typeof products.$inferSelect
-export type NewProduct = typeof products.$inferInsert
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;

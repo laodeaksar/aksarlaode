@@ -1,4 +1,4 @@
-import { model, Schema, type Document } from "mongoose"
+import { model, Schema, type Document } from "mongoose";
 
 // ── Line item ─────────────────────────────────────────────
 const LineItemSchema = new Schema(
@@ -12,7 +12,7 @@ const LineItemSchema = new Schema(
     subtotal: { type: Number, required: true }, // price * quantity
   },
   { _id: false }
-)
+);
 
 // ── Shipping address ──────────────────────────────────────
 const AddressSchema = new Schema(
@@ -26,7 +26,7 @@ const AddressSchema = new Schema(
     country: { type: String, default: "ID" },
   },
   { _id: false }
-)
+);
 
 // ── Status history entry ──────────────────────────────────
 const StatusEventSchema = new Schema(
@@ -37,7 +37,7 @@ const StatusEventSchema = new Schema(
     timestamp: { type: Date, default: Date.now },
   },
   { _id: false }
-)
+);
 
 // ── Order root ────────────────────────────────────────────
 const OrderSchema = new Schema(
@@ -75,25 +75,25 @@ const OrderSchema = new Schema(
     timestamps: true, // createdAt, updatedAt
     versionKey: "__v", // optimistic concurrency
   }
-)
+);
 
 // Compound indexes for common query patterns
-OrderSchema.index({ userId: 1, createdAt: -1 })
-OrderSchema.index({ status: 1, createdAt: -1 })
+OrderSchema.index({ userId: 1, createdAt: -1 });
+OrderSchema.index({ status: 1, createdAt: -1 });
 
 export type OrderDocument = Document & {
-  orderId: string
-  userId: string
-  status: OrderStatus
-  items: LineItem[]
-  shippingAddress: Address
-  statusHistory: StatusEvent[]
-  totalAmount: number
-  shippingFee: number
-  discountAmount: number
-  grandTotal: number
-  notes?: string
-}
+  orderId: string;
+  userId: string;
+  status: OrderStatus;
+  items: LineItem[];
+  shippingAddress: Address;
+  statusHistory: StatusEvent[];
+  totalAmount: number;
+  shippingFee: number;
+  discountAmount: number;
+  grandTotal: number;
+  notes?: string;
+};
 
 export type OrderStatus =
   | "PENDING_PAYMENT"
@@ -102,33 +102,33 @@ export type OrderStatus =
   | "SHIPPED"
   | "DELIVERED"
   | "CANCELLED"
-  | "REFUNDED"
+  | "REFUNDED";
 
 export type LineItem = {
-  productId: string
-  productName: string
-  sku: string
-  price: number
-  quantity: number
-  subtotal: number
-  imageUrl?: string
-}
+  productId: string;
+  productName: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  imageUrl?: string;
+};
 
 export type Address = {
-  recipientName: string
-  phone: string
-  street: string
-  city: string
-  province: string
-  postalCode: string
-  country: string
-}
+  recipientName: string;
+  phone: string;
+  street: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+};
 
 export type StatusEvent = {
-  status: string
-  note?: string
-  changedBy: string
-  timestamp: Date
-}
+  status: string;
+  note?: string;
+  changedBy: string;
+  timestamp: Date;
+};
 
-export const OrderModel = model<OrderDocument>("Order", OrderSchema)
+export const OrderModel = model<OrderDocument>("Order", OrderSchema);

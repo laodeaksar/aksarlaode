@@ -1,9 +1,9 @@
-import type { MiddlewareHandler } from "hono"
+import type { MiddlewareHandler } from "hono";
 
-import { env } from "@repo/env/gateway"
+import { env } from "@repo/env/gateway";
 
-import type { AppEnv } from "@/types/context"
-import { getBreaker } from "@/lib/circuit-breaker"
+import { getBreaker } from "@/lib/circuit-breaker";
+import type { AppEnv } from "@/types/context";
 
 // Fetches the order owner from order-service and compares to the requesting user.
 // Admins and Owners bypass the check and pass through immediately.
@@ -14,20 +14,24 @@ import { getBreaker } from "@/lib/circuit-breaker"
 //      this call is cancelled when requestTimeout fires (no resource leak)
 //   3. Reports success/failure to the breaker so state transitions are accurate
 export const ownerOrAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const user = c.var.user
-  const orderId = c.req.param("id")
+  const user = c.var.user;
+  const orderId = c.req.param("id");
 
   if (!user) {
     return c.json(
-      { error: "Unauthorized", code: "UNAUTHORIZED", requestId: c.var.requestId },
+      {
+        error: "Unauthorized",
+        code: "UNAUTHORIZED",
+        requestId: c.var.requestId,
+      },
       401
-    )
+    );
   }
 
-  if (user.role === "ADMIN" || user.role === "OWNER") return next()
+  if (user.role === "ADMIN" || user.role === "OWNER") return next();
 
   // ── Circuit breaker check — fail fast if order-service is degraded ────────
-  const breaker = getBreaker("ORDER")
+  const breaker = getBreaker("ORDER");
   if (!breaker.allow()) {
     return c.json(
       {
@@ -36,7 +40,7 @@ export const ownerOrAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
         requestId: c.var.requestId,
       },
       503
-    )
+    );
   }
 
   try {
@@ -50,22 +54,22 @@ export const ownerOrAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
         },
         signal: c.var.abortSignal, // honours gateway-level timeout; no infinite hang
       }
-    )
+    );
 
     if (res.ok) {
-      breaker.success()
+      breaker.success();
     } else {
-      breaker.failure()
+      breaker.failure();
       return c.json(
         { error: "Forbidden", code: "FORBIDDEN", requestId: c.var.requestId },
         403
-      )
+      );
     }
   } catch (e) {
-    breaker.failure()
+    breaker.failure();
     // AbortError means requestTimeout fired — re-throw so requestTimeout middleware
     // can return the correct 504 response.
-    if (e instanceof Error && e.name === "AbortError") throw e
+    if (e instanceof Error && e.name === "AbortError") throw e;
     return c.json(
       {
         error: "Service unavailable",
@@ -73,8 +77,8 @@ export const ownerOrAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
         requestId: c.var.requestId,
       },
       502
-    )
+    );
   }
 
-  await next()
-}
+  await next();
+};

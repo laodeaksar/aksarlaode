@@ -1,31 +1,33 @@
-import { createHash } from "crypto"
+import { createHash } from "crypto";
+
+import { Effect } from "effect";
+
+import type { Context } from "elysia";
+
+import { env } from "@repo/env/order";
+
+import { productClient } from "@/lib/product-client";
+import { checkWebhookRateLimit } from "@/lib/rate-limiter";
+import { redis } from "@/lib/redis";
 import {
   InvalidTransitionError,
   orderRepository,
-} from "@/repository/order.repository"
-import { Effect } from "effect"
-import type { Context } from "elysia"
-
-import { env } from "@repo/env/order"
-
-import { productClient } from "@/lib/product-client"
-import { checkWebhookRateLimit } from "@/lib/rate-limiter"
-import { redis } from "@/lib/redis"
+} from "@/repository/order.repository";
 
 // ── Midtrans notification body (partial — only fields we use) ───────────────
 type MidtransNotification = {
-  order_id: string // maps to our orderId
-  transaction_id: string // Midtrans unique transaction ID (used as event nonce)
-  transaction_status: string // settlement | capture | cancel | deny | expire | failure | pending
-  status_code: string // "200", "201", "202", etc.
-  gross_amount: string // "10000.00"
-  fraud_status?: string // accept | challenge | deny
-  signature_key: string // SHA512(order_id + status_code + gross_amount + ServerKey)
-}
+  order_id: string; // maps to our orderId
+  transaction_id: string; // Midtrans unique transaction ID (used as event nonce)
+  transaction_status: string; // settlement | capture | cancel | deny | expire | failure | pending
+  status_code: string; // "200", "201", "202", etc.
+  gross_amount: string; // "10000.00"
+  fraud_status?: string; // accept | challenge | deny
+  signature_key: string; // SHA512(order_id + status_code + gross_amount + ServerKey)
+};
 
 // Midtrans transaction statuses that mean a successful payment
-const PAID_STATUSES = new Set(["capture", "settlement"])
-const FAILED_STATUSES = new Set(["cancel", "deny", "expire", "failure"])
+const PAID_STATUSES = new Set(["capture", "settlement"]);
+const FAILED_STATUSES = new Set(["cancel", "deny", "expire", "failure"]);
 
 // ── Signature verification ──────────────────────────────────────────────────
 function verifyMidtransSignature(notification: MidtransNotification): boolean {
@@ -33,16 +35,16 @@ function verifyMidtransSignature(notification: MidtransNotification): boolean {
     notification.order_id +
     notification.status_code +
     notification.gross_amount +
-    env.MIDTRANS_SERVER_KEY
-  const expected = createHash("sha512").update(payload).digest("hex")
+    env.MIDTRANS_SERVER_KEY;
+  const expected = createHash("sha512").update(payload).digest("hex");
 
   // Constant-time comparison to prevent timing attacks
-  if (expected.length !== notification.signature_key.length) return false
-  let diff = 0
+  if (expected.length !== notification.signature_key.length) return false;
+  let diff = 0;
   for (let i = 0; i < expected.length; i++) {
-    diff |= expected.charCodeAt(i) ^ notification.signature_key.charCodeAt(i)
+    diff |= expected.charCodeAt(i) ^ notification.signature_key.charCodeAt(i);
   }
-  return diff === 0
+  return diff === 0;
 }
 
 // ── Stock release helper ─────────────────────────────────────────────────────
@@ -52,7 +54,7 @@ async function releaseOrderStock(
 ): Promise<void> {
   const orderResult = await Effect.runPromiseExit(
     orderRepository.findByOrderId(orderId)
-  )
+  );
 
   if (orderResult._tag === "Failure") {
     console.error(
@@ -61,16 +63,16 @@ async function releaseOrderStock(
         orderId,
         transactionId,
       })
-    )
-    return
+    );
+    return;
   }
 
-  const order = orderResult.value
+  const order = orderResult.value;
 
   // Only release stock if the order was in a reservable state.
   // PAID orders have already been fulfilled — do not release.
   // DELIVERED / SHIPPED orders must go through a formal refund flow.
-  const RELEASABLE_STATUSES = new Set(["CANCELLED", "PENDING_PAYMENT"])
+  const RELEASABLE_STATUSES = new Set(["CANCELLED", "PENDING_PAYMENT"]);
   if (!RELEASABLE_STATUSES.has(order.status)) {
     console.warn(
       JSON.stringify({
@@ -79,8 +81,8 @@ async function releaseOrderStock(
         orderId,
         transactionId,
       })
-    )
-    return
+    );
+    return;
   }
 
   const releaseResult = await Effect.runPromiseExit(
@@ -90,7 +92,7 @@ async function releaseOrderStock(
       ),
       { concurrency: "unbounded" }
     )
-  )
+  );
 
   if (releaseResult._tag === "Failure") {
     // Log the failure but do NOT re-throw — we must still return 200 to Midtrans
@@ -103,8 +105,8 @@ async function releaseOrderStock(
         transactionId,
         itemCount: order.items.length,
       })
-    )
-    return
+    );
+    return;
   }
 
   console.info(
@@ -118,18 +120,18 @@ async function releaseOrderStock(
         quantity: i.quantity,
       })),
     })
-  )
+  );
 }
 
 // ── Source IP extraction — respects reverse-proxy forwarding headers ──────────
 function extractSourceIp(request: Request): string {
   // x-forwarded-for may contain a chain: "client, proxy1, proxy2" — take leftmost
-  const xff = request.headers.get("x-forwarded-for")
+  const xff = request.headers.get("x-forwarded-for");
   if (xff) {
-    const first = xff.split(",")[0]?.trim()
-    if (first) return first
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
   }
-  return request.headers.get("x-real-ip") ?? "unknown"
+  return request.headers.get("x-real-ip") ?? "unknown";
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -138,7 +140,7 @@ export const paymentWebhookHandler = async ({
   request,
   set,
 }: Context) => {
-  const notification = body as MidtransNotification
+  const notification = body as MidtransNotification;
 
   // ── 0. Rate limit — sliding window per source IP ──────────────────────────
   // Checked first — before signature verification — as a cheap gate against
@@ -147,8 +149,8 @@ export const paymentWebhookHandler = async ({
   // On rejection we return 200 (not 429) so Midtrans does not interpret the
   // response as a server error and keeps re-queuing legitimate retries.
   // The flood is absorbed silently; a warning is logged for alerting.
-  const sourceIp = extractSourceIp(request)
-  const rl = await checkWebhookRateLimit(sourceIp)
+  const sourceIp = extractSourceIp(request);
+  const rl = await checkWebhookRateLimit(sourceIp);
 
   if (!rl.allowed) {
     console.warn(
@@ -159,10 +161,10 @@ export const paymentWebhookHandler = async ({
         limit: rl.limit,
         resetMs: rl.resetMs,
       })
-    )
+    );
     // 200 ACK — Midtrans will not retry; the real Midtrans server will
     // naturally retry via its own schedule when the window resets.
-    return { ok: true, note: "rate_limited" }
+    return { ok: true, note: "rate_limited" };
   }
 
   // ── 1. Validate Midtrans HMAC signature ──────────────────────────────────
@@ -172,9 +174,9 @@ export const paymentWebhookHandler = async ({
         event: "webhook_invalid_signature",
         orderId: notification.order_id,
       })
-    )
-    set.status = 401
-    return { error: "Invalid signature" }
+    );
+    set.status = 401;
+    return { error: "Invalid signature" };
   }
 
   const {
@@ -182,38 +184,38 @@ export const paymentWebhookHandler = async ({
     transaction_id: transactionId,
     transaction_status,
     fraud_status,
-  } = notification
+  } = notification;
 
   // ── 2. Idempotency — reject already-processed events (replay attack guard) ─
-  const nonceKey = `webhook:processed:${transactionId}`
-  const lockAcquired = await redis.set(nonceKey, "1", "EX", 86_400, "NX")
+  const nonceKey = `webhook:processed:${transactionId}`;
+  const lockAcquired = await redis.set(nonceKey, "1", "EX", 86_400, "NX");
   if (!lockAcquired) {
     // NX failed → key already existed → duplicate delivery, safe to ack
-    return { ok: true, note: "already_processed" }
+    return { ok: true, note: "already_processed" };
   }
 
   // ── 3. Reject fraudulent transactions ────────────────────────────────────
   if (fraud_status === "deny") {
     console.warn(
       JSON.stringify({ event: "webhook_fraud_denied", orderId, transactionId })
-    )
+    );
     // Treat as a failed payment — cancel order and release stock
-    await releaseOrderStock(orderId, transactionId)
-    return { ok: true }
+    await releaseOrderStock(orderId, transactionId);
+    return { ok: true };
   }
 
   // ── 4. Map Midtrans status to our order status ────────────────────────────
-  let newStatus: "PAID" | "CANCELLED" | null = null
+  let newStatus: "PAID" | "CANCELLED" | null = null;
 
   if (PAID_STATUSES.has(transaction_status) && fraud_status !== "deny") {
-    newStatus = "PAID"
+    newStatus = "PAID";
   } else if (FAILED_STATUSES.has(transaction_status)) {
-    newStatus = "CANCELLED"
+    newStatus = "CANCELLED";
   }
 
   if (!newStatus) {
     // pending or other intermediate status — acknowledge without updating
-    return { ok: true }
+    return { ok: true };
   }
 
   // ── 5. Update order status ────────────────────────────────────────────────
@@ -224,10 +226,10 @@ export const paymentWebhookHandler = async ({
       `midtrans:${transaction_status}`,
       "service:midtrans"
     )
-  )
+  );
 
   if (result._tag === "Failure") {
-    const err = result.cause.error as { _tag: string }
+    const err = result.cause.error as { _tag: string };
     if (err._tag === "OrderNotFoundError") {
       console.error(
         JSON.stringify({
@@ -235,12 +237,12 @@ export const paymentWebhookHandler = async ({
           orderId,
           transactionId,
         })
-      )
+      );
       // Return 200 so Midtrans doesn't keep retrying for genuinely missing orders
-      return { ok: true }
+      return { ok: true };
     }
     if (err._tag === "InvalidTransitionError") {
-      const te = err as InstanceType<typeof InvalidTransitionError>
+      const te = err as InstanceType<typeof InvalidTransitionError>;
       console.warn(
         JSON.stringify({
           event: "webhook_transition_rejected",
@@ -250,15 +252,15 @@ export const paymentWebhookHandler = async ({
           to: te.to,
           note: "Order already in a terminal or incompatible state — skipping update",
         })
-      )
+      );
       // ACK with 200 — Midtrans should not retry; order is in a valid terminal state
-      return { ok: true }
+      return { ok: true };
     }
     console.error(
       JSON.stringify({ event: "webhook_update_failed", orderId, transactionId })
-    )
-    set.status = 500
-    return { error: "Failed to update order" }
+    );
+    set.status = 500;
+    return { error: "Failed to update order" };
   }
 
   // ── 6. Auto-release reserved stock on payment failure ────────────────────
@@ -266,7 +268,7 @@ export const paymentWebhookHandler = async ({
   //    CANCELLED orders: reserved stock must be returned to inventory so
   //    other buyers can purchase the same items immediately.
   if (newStatus === "CANCELLED") {
-    await releaseOrderStock(orderId, transactionId)
+    await releaseOrderStock(orderId, transactionId);
   }
 
   console.info(
@@ -277,7 +279,7 @@ export const paymentWebhookHandler = async ({
       newStatus,
       transactionStatus: transaction_status,
     })
-  )
+  );
 
-  return { ok: true }
-}
+  return { ok: true };
+};

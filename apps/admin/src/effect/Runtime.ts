@@ -1,6 +1,6 @@
-import { Layer, ManagedRuntime } from "effect"
+import { Layer, ManagedRuntime } from "effect";
 
-import { ApiClientService, ConfigService } from "./Services"
+import { ApiClientService, ConfigService } from "./Services";
 
 // ── Application Layer ──────────────────────────────────────────────────────
 // `ApiClientService.Default` requires `ConfigService` internally.
@@ -8,7 +8,7 @@ import { ApiClientService, ConfigService } from "./Services"
 
 export const AppLayer = ApiClientService.Default.pipe(
   Layer.provide(ConfigService.Default)
-)
+);
 
 // ── Server Runtime ─────────────────────────────────────────────────────────
 // `ManagedRuntime` is suitable for long-lived server processes.
@@ -21,9 +21,9 @@ export const AppLayer = ApiClientService.Default.pipe(
 // IMPORTANT: used exclusively inside TanStack Start server functions.
 // Never imported in client-side code.
 
-export const AppRuntime = ManagedRuntime.make(AppLayer)
+export const AppRuntime = ManagedRuntime.make(AppLayer);
 
 // ── Exported service type ─────────────────────────────────────────────────
 // Only ApiClientService is exposed as the public requirement type.
 // ConfigService is an internal dependency resolved by AppLayer.
-export type AppServices = ApiClientService
+export type AppServices = ApiClientService;

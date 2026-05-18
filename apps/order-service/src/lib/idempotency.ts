@@ -1,17 +1,17 @@
-import { redis } from "@/lib/redis"
+import { redis } from "@/lib/redis";
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const KEY_PREFIX = "idempotency:order:"
-const LOCK_TTL = 30 // seconds — max in-flight duration before lock expires
-const RESULT_TTL = 86_400 // seconds — 24 h result cache
+const KEY_PREFIX = "idempotency:order:";
+const LOCK_TTL = 30; // seconds — max in-flight duration before lock expires
+const RESULT_TTL = 86_400; // seconds — 24 h result cache
 
 // ── Types ──────────────────────────────────────────────────────────────────
-export type IdempotencyResult = { status: number; body: unknown }
+export type IdempotencyResult = { status: number; body: unknown };
 
 type IdempotencyState =
   | { state: "hit"; result: IdempotencyResult } // cached result exists
   | { state: "pending" } // another request in-flight
-  | { state: "free" } // new key, proceed normally
+  | { state: "free" }; // new key, proceed normally
 
 // ── Implementation ─────────────────────────────────────────────────────────
 export const idempotency = {
@@ -24,11 +24,11 @@ export const idempotency = {
    *             normally and call complete() or fail() when done.
    */
   getOrLock: async (key: string): Promise<IdempotencyState> => {
-    const raw = await redis.get(KEY_PREFIX + key)
+    const raw = await redis.get(KEY_PREFIX + key);
 
-    if (raw === "PENDING") return { state: "pending" }
+    if (raw === "PENDING") return { state: "pending" };
     if (raw !== null)
-      return { state: "hit", result: JSON.parse(raw) as IdempotencyResult }
+      return { state: "hit", result: JSON.parse(raw) as IdempotencyResult };
 
     // Atomic SETNX — only one concurrent caller wins the lock
     const claimed = await redis.set(
@@ -37,8 +37,8 @@ export const idempotency = {
       "EX",
       LOCK_TTL,
       "NX"
-    )
-    return claimed ? { state: "free" } : { state: "pending" }
+    );
+    return claimed ? { state: "free" } : { state: "pending" };
   },
 
   /**
@@ -46,7 +46,7 @@ export const idempotency = {
    * Call this after a successful order creation.
    */
   complete: async (key: string, result: IdempotencyResult): Promise<void> => {
-    await redis.set(KEY_PREFIX + key, JSON.stringify(result), "EX", RESULT_TTL)
+    await redis.set(KEY_PREFIX + key, JSON.stringify(result), "EX", RESULT_TTL);
   },
 
   /**
@@ -54,6 +54,6 @@ export const idempotency = {
    * Call this when order creation fails so the client can retry.
    */
   fail: async (key: string): Promise<void> => {
-    await redis.del(KEY_PREFIX + key)
+    await redis.del(KEY_PREFIX + key);
   },
-}
+};

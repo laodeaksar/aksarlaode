@@ -1,12 +1,13 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
-import { listCustomersFn } from "@/server/customers"
-import { can, type Session } from "@/lib"
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+
+import { listCustomersFn } from "@/server/customers";
+import { can, type Session } from "@/lib";
 
 export const Route = createFileRoute("/customers")({
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session }
+    const { session } = context as { session?: Session };
     if (!session || !can(session.role, "customers:read")) {
-      throw redirect({ to: "/dashboard" })
+      throw redirect({ to: "/dashboard" });
     }
   },
 
@@ -29,4 +30,4 @@ export const Route = createFileRoute("/customers")({
     }),
 
   component: () => <Outlet />,
-})
+});

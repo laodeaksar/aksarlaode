@@ -1,12 +1,13 @@
-import type { OrderStatus } from "@/models/order.model"
-import { orderRepository } from "@/repository/order.repository"
-import type { UpdateStatusBody } from "@/types"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
 
-import { env } from "@repo/env/order"
+import type { Context } from "elysia";
 
-import { shapeOrder } from "@/lib/shape-order"
+import { env } from "@repo/env/order";
+
+import { shapeOrder } from "@/lib/shape-order";
+import type { OrderStatus } from "@/models/order.model";
+import { orderRepository } from "@/repository/order.repository";
+import type { UpdateStatusBody } from "@/types";
 
 // FIX ORD-01: explicit state machine — only valid forward transitions are
 // permitted. Prevents admin from accidentally or maliciously moving an order
@@ -31,7 +32,7 @@ const VALID_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   PROCESSING: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "CANCELLED"],
   DELIVERED: ["REFUNDED"],
-}
+};
 
 export const updateStatusHandler = async ({
   params,
@@ -39,53 +40,53 @@ export const updateStatusHandler = async ({
   headers,
   set,
 }: Context) => {
-  const { orderId } = params as { orderId: string }
-  const { status, note } = body as UpdateStatusBody
+  const { orderId } = params as { orderId: string };
+  const { status, note } = body as UpdateStatusBody;
 
   // ── Authorization — admin role OR trusted internal service only ──────────
-  const role = headers["x-user-role"]
-  const serviceToken = headers["x-service-token"]
-  const isAdmin = role === "ADMIN" || role === "OWNER"
-  const isInternalCall = serviceToken === env.INTERNAL_SERVICE_TOKEN
+  const role = headers["x-user-role"];
+  const serviceToken = headers["x-service-token"];
+  const isAdmin = role === "ADMIN" || role === "OWNER";
+  const isInternalCall = serviceToken === env.INTERNAL_SERVICE_TOKEN;
 
   if (!isAdmin && !isInternalCall) {
-    set.status = 403
-    return { error: "Forbidden", code: "FORBIDDEN" }
+    set.status = 403;
+    return { error: "Forbidden", code: "FORBIDDEN" };
   }
 
   // Track who made the change for audit log
-  const userId = headers["x-user-id"]
+  const userId = headers["x-user-id"];
   const changedBy =
-    isInternalCall && !userId ? "service:internal" : (userId ?? "unknown")
+    isInternalCall && !userId ? "service:internal" : (userId ?? "unknown");
 
   // ── Fetch current order to validate state transition ─────────────────────
   const findResult = await Effect.runPromiseExit(
     orderRepository.findByOrderId(orderId)
-  )
+  );
 
   if (findResult._tag === "Failure") {
-    set.status = 404
-    return { error: "Order not found", code: "ORDER_NOT_FOUND" }
+    set.status = 404;
+    return { error: "Order not found", code: "ORDER_NOT_FOUND" };
   }
 
-  const currentStatus = findResult.value.status as OrderStatus
-  const allowed = VALID_TRANSITIONS[currentStatus]
+  const currentStatus = findResult.value.status as OrderStatus;
+  const allowed = VALID_TRANSITIONS[currentStatus];
 
   if (!allowed) {
     // currentStatus is a terminal state (CANCELLED or REFUNDED)
-    set.status = 409
+    set.status = 409;
     return {
       error: `Order is in terminal state '${currentStatus}' and cannot be updated`,
       code: "INVALID_STATUS_TRANSITION",
-    }
+    };
   }
 
   if (!allowed.includes(status as OrderStatus)) {
-    set.status = 422
+    set.status = 422;
     return {
       error: `Transition '${currentStatus}' → '${status}' is not allowed. Valid: [${allowed.join(", ")}]`,
       code: "INVALID_STATUS_TRANSITION",
-    }
+    };
   }
 
   // ── Apply the valid transition ────────────────────────────────────────────
@@ -96,17 +97,17 @@ export const updateStatusHandler = async ({
       note,
       changedBy
     )
-  )
+  );
 
   if (result._tag === "Failure") {
-    const err = result.cause.error as { _tag: string }
+    const err = result.cause.error as { _tag: string };
     if (err._tag === "OrderNotFoundError") {
-      set.status = 404
-      return { error: "Order not found", code: "ORDER_NOT_FOUND" }
+      set.status = 404;
+      return { error: "Order not found", code: "ORDER_NOT_FOUND" };
     }
-    set.status = 500
-    return { error: "Failed to update status" }
+    set.status = 500;
+    return { error: "Failed to update status" };
   }
 
-  return shapeOrder(result.value as Record<string, any>)
-}
+  return shapeOrder(result.value as Record<string, any>);
+};

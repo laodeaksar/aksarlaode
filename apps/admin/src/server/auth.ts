@@ -14,29 +14,30 @@
 //   silent token refresh → lib/api.ts (butuh window.location + client-side)
 //   semua data lainnya   → src/server/*.ts (Effect + ApiClientService)
 
-import { createServerFn } from "@tanstack/react-start"
-import { appendResponseHeader, getCookies } from "@tanstack/react-start/server"
-import { Schema } from "effect"
+import { createServerFn } from "@tanstack/react-start";
+import { appendResponseHeader, getCookies } from "@tanstack/react-start/server";
 
-import { decodeOrThrow } from "./_utils"
+import { Schema } from "effect";
+
+import { decodeOrThrow } from "./_utils";
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000"
+const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type LoginResult = {
-  accessToken: string
-  user: { id: string; email: string; name: string; role: string }
-}
+  accessToken: string;
+  user: { id: string; email: string; name: string; role: string };
+};
 
 // ── Input schema ───────────────────────────────────────────────────────────
 
 const LoginInputSchema = Schema.Struct({
   email: Schema.String.pipe(Schema.minLength(1)),
   password: Schema.String.pipe(Schema.minLength(1)),
-})
+});
 
 // ── Cookie forwarding helper ───────────────────────────────────────────────
 // Forward semua Set-Cookie header dari backend response ke browser.
@@ -48,12 +49,10 @@ function forwardSetCookie(headers: Headers): void {
   const values: string[] =
     typeof (headers as unknown as { getSetCookie?: () => string[] })
       .getSetCookie === "function"
-      ? (
-          headers as unknown as { getSetCookie: () => string[] }
-        ).getSetCookie()
-      : []
+      ? (headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
+      : [];
   for (const v of values) {
-    appendResponseHeader("set-cookie", v)
+    appendResponseHeader("set-cookie", v);
   }
 }
 
@@ -74,17 +73,17 @@ export const loginFn = createServerFn({ method: "POST" })
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    })
+    });
 
-    forwardSetCookie(res.headers)
+    forwardSetCookie(res.headers);
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }))
-      throw new Error((err as { error?: string }).error ?? "Login gagal")
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error((err as { error?: string }).error ?? "Login gagal");
     }
 
-    return (await res.json()) as LoginResult
-  })
+    return (await res.json()) as LoginResult;
+  });
 
 // ── logoutFn ───────────────────────────────────────────────────────────────
 // Meneruskan cookies browser ke backend logout endpoint, lalu meneruskan
@@ -92,10 +91,10 @@ export const loginFn = createServerFn({ method: "POST" })
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(
   async (): Promise<void> => {
-    const cookies = getCookies()
+    const cookies = getCookies();
     const cookieHeader = Object.entries(cookies)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-      .join("; ")
+      .join("; ");
 
     const res = await fetch(`${apiUrl()}/auth/logout`, {
       method: "POST",
@@ -103,8 +102,8 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(
         "Content-Type": "application/json",
         ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
-    })
+    });
 
-    forwardSetCookie(res.headers)
+    forwardSetCookie(res.headers);
   }
-)
+);

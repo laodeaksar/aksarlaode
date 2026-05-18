@@ -1,9 +1,9 @@
-import { defineMiddleware } from "astro:middleware"
+import { defineMiddleware } from "astro:middleware";
 
-import { authApi } from "./lib/api/auth"
-import { AppRuntime } from "./lib/effect/runtime"
+import { authApi } from "./lib/api/auth";
+import { AppRuntime } from "./lib/effect/runtime";
 
-const PROTECTED = ["/checkout", "/account/orders", "/orders"]
+const PROTECTED = ["/checkout", "/account/orders", "/orders"];
 
 // FIX WEB-04: state-mutating Astro API routes require CSRF protection.
 //
@@ -21,7 +21,7 @@ const PROTECTED = ["/checkout", "/account/orders", "/orders"]
 //
 // This combination defeats all standard CSRF attack vectors without requiring
 // a separate CSRF token or double-submit cookie.
-const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 // FIX WEB-07: Content Security Policy and security response headers.
 //
@@ -40,8 +40,10 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 //   object-src  'none'                 — block <object>/<embed> (XSS vector)
 //   base-uri    'self'                 — prevent base tag hijacking
 //   form-action 'self'                 — prevent form phishing to external URLs
-const MIDTRANS_APP = "https://app.midtrans.com https://app.sandbox.midtrans.com"
-const MIDTRANS_API = "https://api.midtrans.com https://api.sandbox.midtrans.com"
+const MIDTRANS_APP =
+  "https://app.midtrans.com https://app.sandbox.midtrans.com";
+const MIDTRANS_API =
+  "https://api.midtrans.com https://api.sandbox.midtrans.com";
 
 const CSP = [
   "default-src 'self'",
@@ -54,20 +56,20 @@ const CSP = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-].join("; ")
+].join("; ");
 
 function applySecurityHeaders(response: Response): Response {
   // Clone headers to avoid mutating a frozen Headers object on some runtimes.
-  const headers = new Headers(response.headers)
-  headers.set("Content-Security-Policy", CSP)
-  headers.set("X-Content-Type-Options", "nosniff")
-  headers.set("X-Frame-Options", "SAMEORIGIN")
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+  const headers = new Headers(response.headers);
+  headers.set("Content-Security-Policy", CSP);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "SAMEORIGIN");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers,
-  })
+  });
 }
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
@@ -76,8 +78,8 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     !SAFE_METHODS.has(ctx.request.method) &&
     ctx.url.pathname.startsWith("/api/")
   ) {
-    const origin = ctx.request.headers.get("origin")
-    const serverOrigin = ctx.url.origin // e.g. "https://mysite.com"
+    const origin = ctx.request.headers.get("origin");
+    const serverOrigin = ctx.url.origin; // e.g. "https://mysite.com"
 
     if (origin && origin !== serverOrigin) {
       return new Response(
@@ -90,27 +92,27 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
             "X-Content-Type-Options": "nosniff",
           },
         }
-      )
+      );
     }
   }
 
   // ── Auth guard for protected pages ─────────────────────────────────────────
-  const isProtected = PROTECTED.some((p) => ctx.url.pathname.startsWith(p))
+  const isProtected = PROTECTED.some((p) => ctx.url.pathname.startsWith(p));
   if (!isProtected) {
-    const response = await next()
-    return applySecurityHeaders(response)
+    const response = await next();
+    return applySecurityHeaders(response);
   }
 
-  const cookie = ctx.request.headers.get("cookie") ?? ""
+  const cookie = ctx.request.headers.get("cookie") ?? "";
 
-  const exit = await AppRuntime.runPromiseExit(authApi.me(cookie))
+  const exit = await AppRuntime.runPromiseExit(authApi.me(cookie));
 
   if (exit._tag === "Failure") {
-    const redirect = encodeURIComponent(ctx.url.pathname)
-    return ctx.redirect(`/account/login?redirect=${redirect}`)
+    const redirect = encodeURIComponent(ctx.url.pathname);
+    return ctx.redirect(`/account/login?redirect=${redirect}`);
   }
 
-  ctx.locals.user = exit.value
-  const response = await next()
-  return applySecurityHeaders(response)
-})
+  ctx.locals.user = exit.value;
+  const response = await next();
+  return applySecurityHeaders(response);
+});

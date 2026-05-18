@@ -1,7 +1,7 @@
-import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-import { payments } from "./payments"
-import { users } from "./users"
+import { payments } from "./payments";
+import { users } from "./users";
 
 // FIX PAY-08: Immutable append-only audit log for every payment status
 // transition. Only INSERTs are ever issued — no UPDATE or DELETE.
@@ -22,7 +22,7 @@ export const paymentAuditLog = pgTable("payment_audit_log", {
   paymentType: text("payment_type"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
 
-export type PaymentAuditLog = typeof paymentAuditLog.$inferSelect
-export type NewPaymentAuditLog = typeof paymentAuditLog.$inferInsert
+export type PaymentAuditLog = typeof paymentAuditLog.$inferSelect;
+export type NewPaymentAuditLog = typeof paymentAuditLog.$inferInsert;

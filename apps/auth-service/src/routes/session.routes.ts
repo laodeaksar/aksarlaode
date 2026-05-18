@@ -1,9 +1,9 @@
-import { listSessionsHandler } from "@/handlers/list-sessions"
-import { revokeSessionHandler } from "@/handlers/revoke-session"
-import { SessionQuery } from "@/schemas"
-import { Elysia } from "elysia"
+import { Elysia } from "elysia";
 
-import { isSessionDenied } from "@/lib/session-denylist"
+import { isSessionDenied } from "@/lib/session-denylist";
+import { listSessionsHandler } from "@/handlers/list-sessions";
+import { revokeSessionHandler } from "@/handlers/revoke-session";
+import { SessionQuery } from "@/schemas";
 
 const sessionRoutes = new Elysia({ prefix: "/session" })
   .get("/", listSessionsHandler, {
@@ -44,12 +44,12 @@ const sessionRoutes = new Elysia({ prefix: "/session" })
   .get(
     "/internal/:id/valid",
     async ({ params, set }) => {
-      const denied = await isSessionDenied(params.id)
+      const denied = await isSessionDenied(params.id);
       if (denied) {
-        set.status = 401
-        return { valid: false, reason: "session_revoked" }
+        set.status = 401;
+        return { valid: false, reason: "session_revoked" };
       }
-      return { valid: true }
+      return { valid: true };
     },
     {
       detail: {
@@ -59,6 +59,6 @@ const sessionRoutes = new Elysia({ prefix: "/session" })
           "Returns whether a sessionId is active in the denylist. Called by the API gateway to enforce immediate revocation of access tokens after logout or explicit session revocation. Requires x-service-token.",
       },
     }
-  )
+  );
 
-export default sessionRoutes
+export default sessionRoutes;

@@ -1,6 +1,6 @@
-import { env } from "@repo/env/order"
+import { env } from "@repo/env/order";
 
-import { redis } from "@/lib/redis"
+import { redis } from "@/lib/redis";
 
 /**
  * Sliding-window rate limiter backed by a Redis sorted set.
@@ -22,11 +22,11 @@ import { redis } from "@/lib/redis"
  */
 
 export type RateLimitResult = {
-  allowed: boolean
-  limit: number
-  remaining: number
-  resetMs: number
-}
+  allowed: boolean;
+  limit: number;
+  remaining: number;
+  resetMs: number;
+};
 
 // ── Lua script — all ops run atomically on the Redis server ───────────────────
 const SLIDING_WINDOW_SCRIPT = `
@@ -54,7 +54,7 @@ count = count + 1
 local oldest2 = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
 local reset2  = oldest2[2] and math.floor(tonumber(oldest2[2]) + window) or math.floor(now + window)
 return {1, count, reset2}
-`
+`;
 
 // ── Generic core — usable for any endpoint ────────────────────────────────────
 export async function slidingWindowRateLimit(
@@ -62,7 +62,7 @@ export async function slidingWindowRateLimit(
   limit: number,
   windowMs: number
 ): Promise<RateLimitResult> {
-  const now = Date.now()
+  const now = Date.now();
 
   const raw = (await redis.eval(
     SLIDING_WINDOW_SCRIPT,
@@ -71,16 +71,16 @@ export async function slidingWindowRateLimit(
     String(now),
     String(windowMs),
     String(limit)
-  )) as [number, number, number]
+  )) as [number, number, number];
 
-  const [allowedInt, count, resetMs] = raw
+  const [allowedInt, count, resetMs] = raw;
 
   return {
     allowed: allowedInt === 1,
     limit,
     remaining: Math.max(0, limit - count),
     resetMs,
-  }
+  };
 }
 
 // ── Per-endpoint helpers ──────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ export function checkOrderCreateRateLimit(
     `ratelimit:order:create:${userId}`,
     env.RATE_LIMIT_ORDER_CREATE_MAX,
     env.RATE_LIMIT_ORDER_CREATE_WINDOW_MS
-  )
+  );
 }
 
 /**
@@ -111,5 +111,5 @@ export function checkWebhookRateLimit(
     `ratelimit:webhook:payment:${sourceIp}`,
     env.RATE_LIMIT_WEBHOOK_MAX,
     env.RATE_LIMIT_WEBHOOK_WINDOW_MS
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Environment variables required by @repo/database.
@@ -19,6 +19,6 @@ export const env = parseEnv(
     MONGODB_URL: z.string().min(1, "MONGODB_URL is required"),
   },
   "@repo/database"
-)
+);
 
-export type DatabaseEnv = typeof env
+export type DatabaseEnv = typeof env;

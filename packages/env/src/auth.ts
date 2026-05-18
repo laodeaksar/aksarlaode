@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Environment variables required by auth-service.
@@ -54,6 +54,6 @@ export const env = parseEnv(
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },
   "auth-service"
-)
+);
 
-export type AuthEnv = typeof env
+export type AuthEnv = typeof env;

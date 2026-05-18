@@ -1,9 +1,11 @@
-import type { UserRole } from "@/types"
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { ConflictError } from "@repo/common/errors"
-import { db, schema } from "@repo/database"
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+
+import { ConflictError } from "@repo/common/errors";
+import { db, schema } from "@repo/database";
+
+import type { UserRole } from "@/types";
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -31,7 +33,7 @@ const SAFE_USER_COLUMNS = {
   createdAt: schema.users.createdAt,
   updatedAt: schema.users.updatedAt,
   deletedAt: schema.users.deletedAt,
-} as const
+} as const;
 
 // Postgres error code for unique constraint violation
 function isUniqueViolation(e: unknown): boolean {
@@ -40,7 +42,7 @@ function isUniqueViolation(e: unknown): boolean {
     e !== null &&
     "code" in e &&
     (e as { code: unknown }).code === "23505"
-  )
+  );
 }
 
 const findByEmail = (email: string) =>
@@ -55,7 +57,7 @@ const findByEmail = (email: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findById = (id: string) =>
   Effect.tryPromise({
@@ -67,7 +69,7 @@ const findById = (id: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /** Like findById but also returns soft-deleted users — used by the restore endpoint. */
 const findByIdIncludeDeleted = (id: string) =>
@@ -80,24 +82,24 @@ const findByIdIncludeDeleted = (id: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findAll = (opts: {
-  page: number
-  limit: number
-  role?: UserRole
-  includeDeleted?: boolean
+  page: number;
+  limit: number;
+  role?: UserRole;
+  includeDeleted?: boolean;
 }) =>
   Effect.tryPromise({
     try: async () => {
-      const offset = (opts.page - 1) * opts.limit
+      const offset = (opts.page - 1) * opts.limit;
 
       const conditions = [
         opts.role ? eq(schema.users.role, opts.role) : undefined,
         opts.includeDeleted ? undefined : isNull(schema.users.deletedAt),
-      ].filter(Boolean) as Parameters<typeof and>
+      ].filter(Boolean) as Parameters<typeof and>;
 
-      const condition = conditions.length > 0 ? and(...conditions) : undefined
+      const condition = conditions.length > 0 ? and(...conditions) : undefined;
 
       const [items, [countRow]] = await Promise.all([
         db
@@ -111,10 +113,10 @@ const findAll = (opts: {
           .select({ count: sql<number>`count(*)::int` })
           .from(schema.users)
           .where(condition),
-      ])
+      ]);
 
-      const total = countRow?.count ?? 0
-      const totalPages = Math.ceil(total / opts.limit)
+      const total = countRow?.count ?? 0;
+      const totalPages = Math.ceil(total / opts.limit);
 
       return {
         items,
@@ -124,16 +126,16 @@ const findAll = (opts: {
         totalPages,
         hasNext: opts.page < totalPages,
         hasPrev: opts.page > 1,
-      }
+      };
     },
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const create = (data: {
-  email: string
-  name: string
-  passwordHash: string
-  role: UserRole
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: UserRole;
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -148,7 +150,7 @@ const create = (data: {
       isUniqueViolation(e)
         ? new ConflictError("email")
         : new DbError({ cause: e }),
-  })
+  });
 
 const updatePasswordHash = (id: string, passwordHash: string) =>
   Effect.tryPromise({
@@ -160,7 +162,7 @@ const updatePasswordHash = (id: string, passwordHash: string) =>
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const update = (
   id: string,
@@ -175,7 +177,7 @@ const update = (
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /** Role mutation — explicitly separate so mutations are auditable. */
 const updateRole = (id: string, role: UserRole) =>
@@ -188,7 +190,7 @@ const updateRole = (id: string, role: UserRole) =>
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Hard-delete a user row.
@@ -204,7 +206,7 @@ const deleteById = (id: string) =>
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Soft-delete a user by setting deletedAt to now.
@@ -220,7 +222,7 @@ const softDeleteById = (id: string) =>
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Restore a previously soft-deleted user by clearing deletedAt.
@@ -235,7 +237,7 @@ const restoreById = (id: string) =>
         .returning()
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Atomically swap ownership: `fromId` → ADMIN, `toId` → OWNER.
@@ -245,29 +247,29 @@ const transferOwnership = (fromId: string, toId: string) =>
   Effect.tryPromise({
     try: async () => {
       return await db.transaction(async (tx) => {
-        const now = new Date()
+        const now = new Date();
 
         const [newOwner] = await tx
           .update(schema.users)
           .set({ role: "OWNER", updatedAt: now })
           .where(eq(schema.users.id, toId))
-          .returning()
+          .returning();
 
         const [prevOwner] = await tx
           .update(schema.users)
           .set({ role: "ADMIN", updatedAt: now })
           .where(eq(schema.users.id, fromId))
-          .returning()
+          .returning();
 
         if (!newOwner || !prevOwner) {
-          throw new Error("transferOwnership: one or both users not found")
+          throw new Error("transferOwnership: one or both users not found");
         }
 
-        return { newOwner, prevOwner }
-      })
+        return { newOwner, prevOwner };
+      });
     },
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 export const userRepository = {
   findByEmail,
@@ -282,4 +284,4 @@ export const userRepository = {
   softDeleteById,
   restoreById,
   transferOwnership,
-}
+};

@@ -30,4 +30,4 @@ export const shippingUpdateTemplate = `
   </p>
 </body>
 </html>
-`
+`;

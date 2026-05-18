@@ -1,9 +1,10 @@
-import { createMiddleware } from "@tanstack/react-start"
-import { ManagedRuntime } from "effect"
+import { createMiddleware } from "@tanstack/react-start";
 
-import { logError, logInfo } from "./Logger"
-import { AppRuntime } from "./Runtime"
-import type { AppServices } from "./Runtime"
+import { ManagedRuntime } from "effect";
+
+import { logError, logInfo } from "./Logger";
+import { AppRuntime } from "./Runtime";
+import type { AppServices } from "./Runtime";
 
 // ── Effect middleware for TanStack Start server functions ──────────────────
 //
@@ -36,50 +37,50 @@ import type { AppServices } from "./Runtime"
 // process — it is NOT re-created per request.
 
 export type EffectMiddlewareContext = {
-  runtime: ManagedRuntime.ManagedRuntime<AppServices, never>
-}
+  runtime: ManagedRuntime.ManagedRuntime<AppServices, never>;
+};
 
 export const effectMiddleware = createMiddleware().server(
   async ({ next, serverFnMeta }) => {
-    const startMs = performance.now()
+    const startMs = performance.now();
     // serverFnMeta is present for server-function calls and absent for plain
     // router requests — guard with fallbacks so the type stays narrowed.
-    const fn = serverFnMeta?.name ?? "(unknown)"
-    const file = serverFnMeta?.filename ?? "(unknown)"
+    const fn = serverFnMeta?.name ?? "(unknown)";
+    const file = serverFnMeta?.filename ?? "(unknown)";
 
     try {
       const result = await next({
         context: {
           runtime: AppRuntime,
         } satisfies EffectMiddlewareContext,
-      })
+      });
 
       logInfo({
         fn,
         file,
         durationMs: Math.round(performance.now() - startMs),
         status: "ok",
-      })
+      });
 
-      return result
+      return result;
     } catch (err: unknown) {
-      const durationMs = Math.round(performance.now() - startMs)
+      const durationMs = Math.round(performance.now() - startMs);
 
       // Serialise the error for structured logging.
       // Effect tagged errors carry `_tag` and `message`; HTTP errors also carry
       // `status`. Fall back gracefully for plain Error instances.
-      let errorPayload: Record<string, unknown>
+      let errorPayload: Record<string, unknown>;
 
       if (err !== null && typeof err === "object") {
-        const e = err as Record<string, unknown>
+        const e = err as Record<string, unknown>;
         errorPayload = {
           _tag: typeof e["_tag"] === "string" ? e["_tag"] : "UnknownError",
           message:
             typeof e["message"] === "string" ? e["message"] : String(err),
           ...(typeof e["status"] === "number" ? { status: e["status"] } : {}),
-        }
+        };
       } else {
-        errorPayload = { _tag: "UnknownError", message: String(err) }
+        errorPayload = { _tag: "UnknownError", message: String(err) };
       }
 
       logError({
@@ -88,10 +89,10 @@ export const effectMiddleware = createMiddleware().server(
         durationMs,
         status: "error",
         error: errorPayload,
-      })
+      });
 
       // Re-throw — TanStack Start serialises the error and sends it to the client.
-      throw err
+      throw err;
     }
   }
-)
+);

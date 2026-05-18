@@ -13,14 +13,14 @@
  *   on     — error handler registration on the Redis client instance.
  */
 
-const store = new Map<string, string>()
+const store = new Map<string, string>();
 
 export const redis = {
   eval: async (..._args: unknown[]): Promise<[number, number]> => [1, 0],
 
   setex: async (key: string, _ttl: number, value: string): Promise<"OK"> => {
-    store.set(key, value)
-    return "OK"
+    store.set(key, value);
+    return "OK";
   },
 
   get: async (key: string): Promise<string | null> => store.get(key) ?? null,
@@ -28,4 +28,4 @@ export const redis = {
   on: (_event: string, _handler: (...args: unknown[]) => void): void => {},
 
   quit: async (): Promise<void> => {},
-}
+};

@@ -1,11 +1,12 @@
-import { initiateHandler } from "@/handlers/initiate"
-import { statusHandler } from "@/handlers/status"
-import type { AppEnv } from "@/types"
-import { Hono } from "hono"
+import { Hono } from "hono";
 
-const router = new Hono<AppEnv>()
+import { initiateHandler } from "@/handlers/initiate";
+import { statusHandler } from "@/handlers/status";
+import type { AppEnv } from "@/types";
 
-router.post("/", initiateHandler)
-router.get("/:orderId/status", statusHandler)
+const router = new Hono<AppEnv>();
 
-export default router
+router.post("/", initiateHandler);
+router.get("/:orderId/status", statusHandler);
+
+export default router;

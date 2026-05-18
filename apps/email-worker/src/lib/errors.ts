@@ -4,7 +4,7 @@ export class EmailError extends Error {
     message: string,
     public readonly retryable = false
   ) {
-    super(message)
-    this.name = "EmailError"
+    super(message);
+    this.name = "EmailError";
   }
 }

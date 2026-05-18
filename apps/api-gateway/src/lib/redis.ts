@@ -5,11 +5,11 @@
  * All operations are fire-and-forget from the gateway's perspective — a Redis
  * outage degrades to in-memory-only behaviour without failing requests.
  */
-import Redis from "ioredis"
+import Redis from "ioredis";
 
-import { env } from "@repo/env/gateway"
+import { env } from "@repo/env/gateway";
 
-let _client: Redis | null = null
+let _client: Redis | null = null;
 
 export function getRedis(): Redis {
   if (!_client) {
@@ -21,7 +21,7 @@ export function getRedis(): Redis {
       enableOfflineQueue: false, // fail-fast: don't queue commands when disconnected
       maxRetriesPerRequest: 1, // one retry then give up — circuit breaker is resilient
       commandTimeout: 500, // 500 ms max per command
-    })
+    });
 
     _client.on("error", (err) => {
       console.warn(
@@ -29,8 +29,8 @@ export function getRedis(): Redis {
           event: "gateway_redis_error",
           message: err.message,
         })
-      )
-    })
+      );
+    });
   }
-  return _client
+  return _client;
 }

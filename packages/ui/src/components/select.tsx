@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Select as SelectPrimitive } from "@base-ui/react/select"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import type * as React from "react";
 
-import { cn } from "@repo/ui/lib/utils"
+import { Select as SelectPrimitive } from "@base-ui/react/select";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
-const Select = SelectPrimitive.Root
+import { cn } from "@repo/ui/lib/utils";
+
+const Select = SelectPrimitive.Root;
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -15,7 +16,7 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
       data-slot="select-group"
       {...props}
     />
-  )
+  );
 }
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
@@ -25,7 +26,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
       data-slot="select-value"
       {...props}
     />
-  )
+  );
 }
 
 function SelectTrigger({
@@ -34,7 +35,7 @@ function SelectTrigger({
   children,
   ...props
 }: SelectPrimitive.Trigger.Props & {
-  size?: "sm" | "default"
+  size?: "sm" | "default";
 }) {
   return (
     <SelectPrimitive.Trigger
@@ -53,7 +54,7 @@ function SelectTrigger({
         }
       />
     </SelectPrimitive.Trigger>
-  )
+  );
 }
 
 function SelectContent({
@@ -95,7 +96,7 @@ function SelectContent({
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
-  )
+  );
 }
 
 function SelectLabel({
@@ -108,7 +109,7 @@ function SelectLabel({
       data-slot="select-label"
       {...props}
     />
-  )
+  );
 }
 
 function SelectItem({
@@ -136,7 +137,7 @@ function SelectItem({
         <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
-  )
+  );
 }
 
 function SelectSeparator({
@@ -149,7 +150,7 @@ function SelectSeparator({
       data-slot="select-separator"
       {...props}
     />
-  )
+  );
 }
 
 function SelectScrollUpButton({
@@ -167,7 +168,7 @@ function SelectScrollUpButton({
     >
       <ChevronUpIcon />
     </SelectPrimitive.ScrollUpArrow>
-  )
+  );
 }
 
 function SelectScrollDownButton({
@@ -185,7 +186,7 @@ function SelectScrollDownButton({
     >
       <ChevronDownIcon />
     </SelectPrimitive.ScrollDownArrow>
-  )
+  );
 }
 
 export {
@@ -199,4 +200,4 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-}
+};

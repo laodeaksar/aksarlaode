@@ -1,13 +1,15 @@
-import { changePasswordHandler } from "@/handlers/change-password"
-import { forgotPasswordHandler } from "@/handlers/forgot-password"
-import { loginHandler } from "@/handlers/login"
-import { logoutHandler } from "@/handlers/logout"
-import { meHandler } from "@/handlers/me"
-import { refreshHandler } from "@/handlers/refresh"
-import { registerHandler } from "@/handlers/register"
-import { resetPasswordHandler } from "@/handlers/reset-password"
-import { transferOwnershipHandler } from "@/handlers/transfer-ownership"
-import { updateProfileHandler } from "@/handlers/update-profile"
+import { Elysia } from "elysia";
+
+import { changePasswordHandler } from "@/handlers/change-password";
+import { forgotPasswordHandler } from "@/handlers/forgot-password";
+import { loginHandler } from "@/handlers/login";
+import { logoutHandler } from "@/handlers/logout";
+import { meHandler } from "@/handlers/me";
+import { refreshHandler } from "@/handlers/refresh";
+import { registerHandler } from "@/handlers/register";
+import { resetPasswordHandler } from "@/handlers/reset-password";
+import { transferOwnershipHandler } from "@/handlers/transfer-ownership";
+import { updateProfileHandler } from "@/handlers/update-profile";
 import {
   changePasswordRateLimiter,
   forgotPasswordRateLimiter,
@@ -15,7 +17,7 @@ import {
   refreshRateLimiter,
   registerRateLimiter,
   resetPasswordRateLimiter,
-} from "@/middleware/rate-limit"
+} from "@/middleware/rate-limit";
 import {
   ChangePasswordBody,
   ForgotPasswordBody,
@@ -24,8 +26,7 @@ import {
   ResetPasswordBody,
   TransferOwnershipBody,
   UpdateProfileBody,
-} from "@/schemas"
-import { Elysia } from "elysia"
+} from "@/schemas";
 
 const authRoutes = new Elysia({ prefix: "/auth" })
   .post("/login", loginHandler, {
@@ -123,6 +124,6 @@ const authRoutes = new Elysia({ prefix: "/auth" })
       description:
         "Atomically promotes `targetUserId` to OWNER and demotes the current OWNER to ADMIN. Requires re-authentication via `currentPassword`. Only the current OWNER may call this endpoint.",
     },
-  })
+  });
 
-export default authRoutes
+export default authRoutes;

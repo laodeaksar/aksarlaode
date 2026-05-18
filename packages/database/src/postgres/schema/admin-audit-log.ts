@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // FIX ADM-06b: Immutable audit log for sensitive admin actions.
 // Append-only — only INSERTs are ever issued; no UPDATE or DELETE.
@@ -15,7 +15,7 @@ export const adminAuditLog = pgTable("admin_audit_log", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-})
+});
 
-export type AdminAuditLog = typeof adminAuditLog.$inferSelect
-export type NewAdminAuditLog = typeof adminAuditLog.$inferInsert
+export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+export type NewAdminAuditLog = typeof adminAuditLog.$inferInsert;

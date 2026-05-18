@@ -1,6 +1,6 @@
-import { env } from "@repo/env"
+import { env } from "@repo/env";
 
-type UserProfile = { id: string; name: string; email: string }
+type UserProfile = { id: string; name: string; email: string };
 
 // Simple internal call to auth-service to resolve a userId → email/name.
 // Uses x-service-token so auth-service treats it as an internal call.
@@ -17,25 +17,25 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
         Accept: "application/json",
       },
       signal: AbortSignal.timeout(5_000),
-    })
-    if (!res.ok) return null
-    const body = await res.json()
-    return (body?.data ?? body) as UserProfile
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return (body?.data ?? body) as UserProfile;
   } catch {
-    return null
+    return null;
   }
 }
 
 export async function fetchUserEmail(userId: string): Promise<string> {
-  const profile = await fetchProfile(userId)
+  const profile = await fetchProfile(userId);
   if (!profile?.email) {
-    console.warn(JSON.stringify({ event: "user_email_not_found", userId }))
-    return ""
+    console.warn(JSON.stringify({ event: "user_email_not_found", userId }));
+    return "";
   }
-  return profile.email
+  return profile.email;
 }
 
 export async function fetchUserName(userId: string): Promise<string> {
-  const profile = await fetchProfile(userId)
-  return profile?.name ?? "Customer"
+  const profile = await fetchProfile(userId);
+  return profile?.name ?? "Customer";
 }

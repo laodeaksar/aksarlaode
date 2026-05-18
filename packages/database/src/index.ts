@@ -1,6 +1,6 @@
-export { db } from "./postgres/client"
-export * as schema from "./postgres/schema"
-export { connectMongo } from "./mongodb/client"
+export { db } from "./postgres/client";
+export * as schema from "./postgres/schema";
+export { connectMongo } from "./mongodb/client";
 
 // Re-export Drizzle helpers consumers commonly need
 export {
@@ -14,4 +14,4 @@ export {
   asc,
   desc,
   inArray,
-} from "drizzle-orm"
+} from "drizzle-orm";

@@ -1,22 +1,22 @@
-import { Queue } from "bullmq"
+import { Queue } from "bullmq";
 
-import { env } from "@repo/env/order"
+import { env } from "@repo/env/order";
 
 const connection = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
   password: env.REDIS_PASSWORD || undefined,
-}
+};
 
 // Payload types kept in sync with email-worker's EmailJobPayload contract.
 type OrderCreatedPayload = {
-  orderId: string
-  userId: string
-  userEmail: string // FIX EML-03: required so email-worker skips auth-service round-trip
-  grandTotal: number
-}
+  orderId: string;
+  userId: string;
+  userEmail: string; // FIX EML-03: required so email-worker skips auth-service round-trip
+  grandTotal: number;
+};
 
-const queue = new Queue("email", { connection })
+const queue = new Queue("email", { connection });
 
 export const emailQueue = {
   /**
@@ -25,4 +25,4 @@ export const emailQueue = {
    */
   add: (type: "order-created", payload: OrderCreatedPayload) =>
     queue.add(type, payload),
-}
+};

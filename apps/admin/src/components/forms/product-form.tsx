@@ -1,17 +1,23 @@
-import { useForm } from "react-hook-form"
+import { useForm } from "react-hook-form";
 
-import { effectResolver } from "@/lib"
-import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms"
-import { Button } from "@repo/ui/components/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field"
-import { Input } from "@repo/ui/components/input"
-import { Textarea } from "@repo/ui/components/textarea"
+import { Button } from "@repo/ui/components/button";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@repo/ui/components/field";
+import { Input } from "@repo/ui/components/input";
+import { Textarea } from "@repo/ui/components/textarea";
+
+import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms";
+import { effectResolver } from "@/lib";
 
 interface Props {
-  defaultValues?: Partial<ProductFormValues>
-  onSubmit: (data: ProductFormValues) => void
-  isLoading: boolean
-  error: string | null
+  defaultValues?: Partial<ProductFormValues>;
+  onSubmit: (data: ProductFormValues) => void;
+  isLoading: boolean;
+  error: string | null;
 }
 
 // CONSISTENCY-FIX FORM-01: replaced raw HTML (<input>, <label>, <textarea>,
@@ -29,27 +35,30 @@ export function ProductForm({
   } = useForm<ProductFormValues>({
     resolver: effectResolver(ProductFormSchema),
     defaultValues: {
-      name:        defaultValues.name        ?? "",
-      price:       defaultValues.price       ?? 0,
-      stock:       defaultValues.stock       ?? 0,
-      sku:         defaultValues.sku         ?? "",
+      name: defaultValues.name ?? "",
+      price: defaultValues.price ?? 0,
+      stock: defaultValues.stock ?? 0,
+      sku: defaultValues.sku ?? "",
       description: defaultValues.description ?? "",
     },
-  })
+  });
 
   const onFormSubmit = handleSubmit((data) =>
     onSubmit({
       ...data,
-      name:        data.name.trim(),
-      sku:         data.sku.trim(),
+      name: data.name.trim(),
+      sku: data.sku.trim(),
       description: data.description?.trim() || "",
-    }),
-  )
+    })
+  );
 
   return (
     <form onSubmit={onFormSubmit} className="space-y-4">
       {error && (
-        <p role="alert" className="text-sm text-red-600 bg-red-50 rounded-lg p-3">
+        <p
+          role="alert"
+          className="text-sm text-red-600 bg-red-50 rounded-lg p-3"
+        >
           {error}
         </p>
       )}
@@ -57,21 +66,13 @@ export function ProductForm({
       <FieldGroup>
         <Field data-invalid={!!errors.name}>
           <FieldLabel htmlFor="pf-name">Name</FieldLabel>
-          <Input
-            id="pf-name"
-            aria-label="Product name"
-            {...register("name")}
-          />
+          <Input id="pf-name" aria-label="Product name" {...register("name")} />
           {errors.name && <FieldError errors={[errors.name]} />}
         </Field>
 
         <Field data-invalid={!!errors.sku}>
           <FieldLabel htmlFor="pf-sku">SKU</FieldLabel>
-          <Input
-            id="pf-sku"
-            aria-label="Product SKU"
-            {...register("sku")}
-          />
+          <Input id="pf-sku" aria-label="Product SKU" {...register("sku")} />
           {errors.sku && <FieldError errors={[errors.sku]} />}
         </Field>
 
@@ -114,5 +115,5 @@ export function ProductForm({
         {isLoading ? "Saving..." : "Save Product"}
       </Button>
     </form>
-  )
+  );
 }

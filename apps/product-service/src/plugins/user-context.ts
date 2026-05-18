@@ -1,5 +1,6 @@
-import type { UserRole } from "@/types"
-import Elysia from "elysia"
+import Elysia from "elysia";
+
+import type { UserRole } from "@/types";
 
 /**
  * Parses the forwarded user headers set by the API gateway after JWT verification.
@@ -19,4 +20,4 @@ export const withUserContext = new Elysia({ name: "user-context" }).derive(
     userRole: (headers["x-user-role"] as UserRole | undefined) ?? null,
     requestId: headers["x-request-id"] ?? null,
   })
-)
+);

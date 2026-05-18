@@ -20,78 +20,78 @@
 //     must not block gateway startup or request processing.
 //   • TTL: 24 hours — stale states are discarded automatically.
 
-import { getRedis } from "@/lib/redis"
+import { getRedis } from "@/lib/redis";
 
-type State = "CLOSED" | "OPEN" | "HALF_OPEN"
+type State = "CLOSED" | "OPEN" | "HALF_OPEN";
 
 interface Config {
   /** Number of failures within `windowMs` that trips the breaker. */
-  failureThreshold: number
+  failureThreshold: number;
   /** Rolling window for counting failures (ms). */
-  windowMs: number
+  windowMs: number;
   /** How long the breaker stays OPEN before allowing one probe (ms). */
-  cooldownMs: number
+  cooldownMs: number;
 }
 
 interface PersistedState {
-  state: State
-  lastOpenedAt: number
-  failures: number[] // timestamps
-  savedAt: number
+  state: State;
+  lastOpenedAt: number;
+  failures: number[]; // timestamps
+  savedAt: number;
 }
 
 // ── Per-service config overrides ──────────────────────────────────────────────
 const SERVICE_CONFIGS: Record<string, Partial<Config>> = {
   AUTH: { failureThreshold: 3, cooldownMs: 20_000 },
   PAYMENT: { failureThreshold: 8, windowMs: 120_000, cooldownMs: 60_000 },
-}
+};
 
 const DEFAULT_CONFIG: Config = {
   failureThreshold: 5,
   windowMs: 60_000,
   cooldownMs: 30_000,
-}
+};
 
-const REDIS_TTL_SEC = 86_400 // 24 hours
+const REDIS_TTL_SEC = 86_400; // 24 hours
 
 function redisKey(service: string) {
-  return `breaker:state:${service}`
+  return `breaker:state:${service}`;
 }
 
 // ── CircuitBreaker class ──────────────────────────────────────────────────────
 export class CircuitBreaker {
-  private state: State = "CLOSED"
-  private failures: number[] = []
-  private lastOpenedAt: number = 0
-  private probeInFlight: boolean = false
-  readonly config: Config
+  private state: State = "CLOSED";
+  private failures: number[] = [];
+  private lastOpenedAt: number = 0;
+  private probeInFlight: boolean = false;
+  readonly config: Config;
 
   constructor(
     public readonly name: string,
     overrides: Partial<Config> = {}
   ) {
-    this.config = { ...DEFAULT_CONFIG, ...overrides }
+    this.config = { ...DEFAULT_CONFIG, ...overrides };
   }
 
   // ── Restore persisted state from Redis (called once at startup) ──────────
   async restoreFromRedis(): Promise<void> {
     try {
-      const raw = await getRedis().get(redisKey(this.name))
-      if (!raw) return
+      const raw = await getRedis().get(redisKey(this.name));
+      if (!raw) return;
 
-      const saved = JSON.parse(raw) as PersistedState
+      const saved = JSON.parse(raw) as PersistedState;
 
       // Discard stale snapshots older than 2× the cooldown window.
       // If the gateway has been down longer than the cooldown, the breaker
       // should re-evaluate on live traffic rather than staying OPEN forever.
-      const age = Date.now() - saved.savedAt
-      if (age > this.config.cooldownMs * 2) return
+      const age = Date.now() - saved.savedAt;
+      if (age > this.config.cooldownMs * 2) return;
 
-      this.state = saved.state
-      this.lastOpenedAt = saved.lastOpenedAt
+      this.state = saved.state;
+      this.lastOpenedAt = saved.lastOpenedAt;
       this.failures = saved.failures.filter(
         (ts) => Date.now() - ts < this.config.windowMs
-      )
+      );
 
       if (this.state !== "CLOSED") {
         console.info(
@@ -101,7 +101,7 @@ export class CircuitBreaker {
             state: this.state,
             ageSec: Math.round(age / 1000),
           })
-        )
+        );
       }
     } catch {
       // Fail-open — Redis unavailable or corrupt snapshot; start from CLOSED.
@@ -115,12 +115,12 @@ export class CircuitBreaker {
       lastOpenedAt: this.lastOpenedAt,
       failures: this.failures,
       savedAt: Date.now(),
-    }
+    };
     getRedis()
       .set(redisKey(this.name), JSON.stringify(payload), "EX", REDIS_TTL_SEC)
       .catch(() => {
         /* non-critical — degraded to in-memory only */
-      })
+      });
   }
 
   /**
@@ -128,24 +128,24 @@ export class CircuitBreaker {
    * Call this BEFORE making the upstream request.
    */
   allow(): boolean {
-    const now = Date.now()
+    const now = Date.now();
 
     switch (this.state) {
       case "CLOSED":
-        return true
+        return true;
 
       case "OPEN":
-        if (now - this.lastOpenedAt < this.config.cooldownMs) return false
-        this.state = "HALF_OPEN"
-        this.probeInFlight = true
+        if (now - this.lastOpenedAt < this.config.cooldownMs) return false;
+        this.state = "HALF_OPEN";
+        this.probeInFlight = true;
         console.info(
           JSON.stringify({ event: "circuit_half_open", service: this.name })
-        )
-        this.persist()
-        return true
+        );
+        this.persist();
+        return true;
 
       case "HALF_OPEN":
-        return false
+        return false;
     }
   }
 
@@ -154,13 +154,13 @@ export class CircuitBreaker {
    */
   success(): void {
     if (this.state === "HALF_OPEN" || this.state === "OPEN") {
-      this.state = "CLOSED"
-      this.failures = []
-      this.probeInFlight = false
+      this.state = "CLOSED";
+      this.failures = [];
+      this.probeInFlight = false;
       console.info(
         JSON.stringify({ event: "circuit_closed", service: this.name })
-      )
-      this.persist()
+      );
+      this.persist();
     }
   }
 
@@ -168,23 +168,23 @@ export class CircuitBreaker {
    * Record a failure. Call this on 5xx responses, timeouts, or connection errors.
    */
   failure(): void {
-    const now = Date.now()
+    const now = Date.now();
 
     this.failures = this.failures.filter(
       (ts) => now - ts < this.config.windowMs
-    )
-    this.failures.push(now)
+    );
+    this.failures.push(now);
 
     if (this.state === "HALF_OPEN") {
-      this.trip(now)
-      return
+      this.trip(now);
+      return;
     }
 
     if (
       this.state === "CLOSED" &&
       this.failures.length >= this.config.failureThreshold
     ) {
-      this.trip(now)
+      this.trip(now);
     }
   }
 
@@ -195,13 +195,13 @@ export class CircuitBreaker {
       state: this.state,
       failures: this.failures.length,
       config: this.config,
-    }
+    };
   }
 
   private trip(now: number): void {
-    this.state = "OPEN"
-    this.lastOpenedAt = now
-    this.probeInFlight = false
+    this.state = "OPEN";
+    this.lastOpenedAt = now;
+    this.probeInFlight = false;
     console.error(
       JSON.stringify({
         event: "circuit_open",
@@ -209,25 +209,25 @@ export class CircuitBreaker {
         failures: this.failures.length,
         cooldownMs: this.config.cooldownMs,
       })
-    )
-    this.persist()
+    );
+    this.persist();
   }
 }
 
 // ── Singleton registry ────────────────────────────────────────────────────────
-const registry = new Map<string, CircuitBreaker>()
+const registry = new Map<string, CircuitBreaker>();
 
 export function getBreaker(service: string): CircuitBreaker {
-  let breaker = registry.get(service)
+  let breaker = registry.get(service);
   if (!breaker) {
-    breaker = new CircuitBreaker(service, SERVICE_CONFIGS[service] ?? {})
-    registry.set(service, breaker)
+    breaker = new CircuitBreaker(service, SERVICE_CONFIGS[service] ?? {});
+    registry.set(service, breaker);
   }
-  return breaker
+  return breaker;
 }
 
 export function getAllBreakerStatus() {
-  return Array.from(registry.values()).map((b) => b.status())
+  return Array.from(registry.values()).map((b) => b.status());
 }
 
 /**
@@ -236,8 +236,8 @@ export function getAllBreakerStatus() {
  * Failures are silently ignored — in-memory state is the fallback.
  */
 export async function restoreAllBreakers(): Promise<void> {
-  const knownServices = ["AUTH", "PRODUCT", "ORDER", "PAYMENT"]
+  const knownServices = ["AUTH", "PRODUCT", "ORDER", "PAYMENT"];
   await Promise.allSettled(
     knownServices.map((name) => getBreaker(name).restoreFromRedis())
-  )
+  );
 }

@@ -1,12 +1,13 @@
+import { Elysia } from "elysia";
+
 import {
   adminDeleteUserHandler,
   adminListUsersHandler,
   adminRestoreUserHandler,
   adminUpdateUserRoleHandler,
-} from "@/handlers/admin-users"
-import { serviceTokenMiddleware } from "@/middleware/service-token"
-import { AdminUserQuery, UpdateUserRoleBody } from "@/schemas"
-import { Elysia } from "elysia"
+} from "@/handlers/admin-users";
+import { serviceTokenMiddleware } from "@/middleware/service-token";
+import { AdminUserQuery, UpdateUserRoleBody } from "@/schemas";
 
 /**
  * Admin user management routes.
@@ -55,6 +56,6 @@ const adminRoutes = new Elysia({ prefix: "/admin" })
       description:
         "Clears the `deletedAt` timestamp, making the account active again. Returns 409 if the user is not currently soft-deleted. Requires OWNER role.",
     },
-  })
+  });
 
-export default adminRoutes
+export default adminRoutes;

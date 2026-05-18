@@ -1,15 +1,17 @@
-import { useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Effect } from "effect"
-import { useForm } from "react-hook-form"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { authApi } from "@/lib/api/auth"
-import { HttpError } from "@/lib/effect/errors"
-import { AppRuntime } from "@/lib/effect/runtime"
-import { registerSchema, type RegisterInput } from "@/lib/schemas/forms"
+import { Effect } from "effect";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { authApi } from "@/lib/api/auth";
+import { HttpError } from "@/lib/effect/errors";
+import { AppRuntime } from "@/lib/effect/runtime";
+import { registerSchema, type RegisterInput } from "@/lib/schemas/forms";
 
 export function RegisterForm() {
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -19,27 +21,27 @@ export function RegisterForm() {
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     mode: "onBlur", // validate on blur for better UX
-  })
+  });
 
   const onSubmit = async (values: RegisterInput) => {
-    setServerError(null)
+    setServerError(null);
 
-    const exit = await AppRuntime.runPromiseExit(authApi.register(values))
+    const exit = await AppRuntime.runPromiseExit(authApi.register(values));
 
     if (exit._tag === "Failure") {
-      const err = exit.cause.error
+      const err = exit.cause.error;
 
       if (err instanceof HttpError && err.status === 409) {
-        setError("email", { message: "This email is already registered" })
-        return
+        setError("email", { message: "This email is already registered" });
+        return;
       }
 
-      setServerError("Registration failed. Please try again.")
-      return
+      setServerError("Registration failed. Please try again.");
+      return;
     }
 
-    window.location.href = "/"
-  }
+    window.location.href = "/";
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -93,5 +95,5 @@ export function RegisterForm() {
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
     </form>
-  )
+  );
 }

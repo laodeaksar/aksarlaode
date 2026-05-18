@@ -1,25 +1,25 @@
-import { Data } from "effect"
+import { Data } from "effect";
 
 // ── API errors ────────────────────────────────────────────
 export class NetworkError extends Data.TaggedError("NetworkError")<{
-  message: string
+  message: string;
 }> {}
 
 export class HttpError extends Data.TaggedError("HttpError")<{
-  status: number
-  message: string
+  status: number;
+  message: string;
 }> {}
 
 export class ParseError extends Data.TaggedError("ParseError")<{
-  message: string
+  message: string;
 }> {}
 
 export class NotFoundError extends Data.TaggedError("NotFoundError")<{
-  resource: string
+  resource: string;
 }> {}
 
 export class AuthError extends Data.TaggedError("AuthError")<{
-  reason: "expired" | "invalid" | "forbidden"
+  reason: "expired" | "invalid" | "forbidden";
 }> {}
 
 // Union for convenience
@@ -28,4 +28,4 @@ export type ApiError =
   | HttpError
   | ParseError
   | NotFoundError
-  | AuthError
+  | AuthError;

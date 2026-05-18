@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis"
+import { redis } from "@/lib/redis";
 
 /**
  * Redis-backed sliding-window rate limiter.
@@ -86,7 +86,7 @@ else
   redis.call('EXPIRE', key, ttl_sec)
   return {0, retry_ms}
 end
-` as const
+` as const;
 
 // ── Factory ───────────────────────────────────────────────────────────────────
 function createRateLimiter(
@@ -98,24 +98,24 @@ function createRateLimiter(
     request,
     set,
   }: {
-    request: Request
-    set: { status?: number; headers: Record<string, string> }
+    request: Request;
+    set: { status?: number; headers: Record<string, string> };
   }) => {
     const ip =
       request.headers.get("x-real-ip") ??
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
+      "unknown";
 
-    const now = Date.now()
-    const windowMs = windowSec * 1000
-    const windowStart = now - windowMs
+    const now = Date.now();
+    const windowMs = windowSec * 1000;
+    const windowStart = now - windowMs;
 
     // Unique member prevents two concurrent requests at the same millisecond
     // from sharing a ZADD entry and under-counting the window.
     // crypto.randomUUID() uses CSPRNG — Math.random() is NOT cryptographically
     // secure and can produce collisions under concurrent load.
-    const member = `${now}:${crypto.randomUUID()}`
-    const key = `rate:sw:${label}:${ip}` // "sw" prefix distinguishes from old fixed-window keys
+    const member = `${now}:${crypto.randomUUID()}`;
+    const key = `rate:sw:${label}:${ip}`; // "sw" prefix distinguishes from old fixed-window keys
 
     try {
       const result = (await redis.eval(
@@ -127,20 +127,20 @@ function createRateLimiter(
         String(maxRequests), // ARGV[3]
         String(windowSec), // ARGV[4]
         member // ARGV[5]
-      )) as [number, number]
+      )) as [number, number];
 
-      const [allowed, retryMs] = result
+      const [allowed, retryMs] = result;
 
       if (!allowed) {
-        const retryAfterSec = Math.ceil(retryMs / 1000)
-        set.status = 429
-        set.headers["Retry-After"] = String(retryAfterSec)
-        set.headers["X-RateLimit-Limit"] = String(maxRequests)
-        set.headers["X-RateLimit-Window-Sec"] = String(windowSec)
+        const retryAfterSec = Math.ceil(retryMs / 1000);
+        set.status = 429;
+        set.headers["Retry-After"] = String(retryAfterSec);
+        set.headers["X-RateLimit-Limit"] = String(maxRequests);
+        set.headers["X-RateLimit-Window-Sec"] = String(windowSec);
         return {
           error: "Too many requests, please try again later",
           code: "RATE_LIMITED",
-        }
+        };
       }
     } catch (err) {
       console.error(
@@ -150,17 +150,17 @@ function createRateLimiter(
           ip,
           error: String(err),
         })
-      )
+      );
       // Fail-closed: block the request so a Redis outage cannot be exploited
       // to bypass brute-force protection on auth endpoints.
-      set.status = 503
-      set.headers["Retry-After"] = String(windowSec)
+      set.status = 503;
+      set.headers["Retry-After"] = String(windowSec);
       return {
         error: "Rate limiting service unavailable, please try again later",
         code: "SERVICE_UNAVAILABLE",
-      }
+      };
     }
-  }
+  };
 }
 
 // ── Per-endpoint limiters ─────────────────────────────────────────────────────
@@ -168,21 +168,21 @@ function createRateLimiter(
 // Login/change-password are tighter because a single valid credential can
 // cause real harm; refresh is more generous because it's lower-risk and
 // legitimate clients use it frequently.
-export const loginRateLimiter = createRateLimiter(10, 15 * 60, "login")
-export const registerRateLimiter = createRateLimiter(5, 60 * 60, "register")
+export const loginRateLimiter = createRateLimiter(10, 15 * 60, "login");
+export const registerRateLimiter = createRateLimiter(5, 60 * 60, "register");
 export const forgotPasswordRateLimiter = createRateLimiter(
   5,
   60 * 60,
   "forgot-password"
-)
+);
 export const changePasswordRateLimiter = createRateLimiter(
   5,
   15 * 60,
   "change-password"
-)
+);
 export const resetPasswordRateLimiter = createRateLimiter(
   10,
   60 * 60,
   "reset-password"
-)
-export const refreshRateLimiter = createRateLimiter(30, 15 * 60, "refresh")
+);
+export const refreshRateLimiter = createRateLimiter(30, 15 * 60, "refresh");

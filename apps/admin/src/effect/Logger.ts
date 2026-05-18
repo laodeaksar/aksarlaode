@@ -13,16 +13,16 @@
 //   service    "admin-ssr" (constant — identifies this app in multi-service logs)
 //   ...fields  caller-supplied key/value pairs
 
-export type LogLevel = "INFO" | "WARN" | "ERROR"
+export type LogLevel = "INFO" | "WARN" | "ERROR";
 
 export type LogEntry = {
-  timestamp: string
-  level: LogLevel
-  service: "admin-ssr"
-  [key: string]: unknown
-}
+  timestamp: string;
+  level: LogLevel;
+  service: "admin-ssr";
+  [key: string]: unknown;
+};
 
-const IS_DEV = process.env["NODE_ENV"] !== "production"
+const IS_DEV = process.env["NODE_ENV"] !== "production";
 
 /** Emit a single structured log line. */
 export function log(level: LogLevel, fields: Record<string, unknown>): void {
@@ -31,22 +31,22 @@ export function log(level: LogLevel, fields: Record<string, unknown>): void {
     level,
     service: "admin-ssr",
     ...fields,
-  }
+  };
 
-  const line = IS_DEV ? prettyDev(entry) : JSON.stringify(entry)
+  const line = IS_DEV ? prettyDev(entry) : JSON.stringify(entry);
 
   if (level === "ERROR" || level === "WARN") {
-    process.stderr.write(line + "\n")
+    process.stderr.write(line + "\n");
   } else {
-    process.stdout.write(line + "\n")
+    process.stdout.write(line + "\n");
   }
 }
 
 // Convenience wrappers
-export const logInfo = (fields: Record<string, unknown>) => log("INFO", fields)
-export const logWarn = (fields: Record<string, unknown>) => log("WARN", fields)
+export const logInfo = (fields: Record<string, unknown>) => log("INFO", fields);
+export const logWarn = (fields: Record<string, unknown>) => log("WARN", fields);
 export const logError = (fields: Record<string, unknown>) =>
-  log("ERROR", fields)
+  log("ERROR", fields);
 
 // ── Dev pretty-printer ─────────────────────────────────────────────────────
 // Renders a colourised, human-readable line in development so the Vinxi
@@ -60,9 +60,9 @@ const COLOURS: Record<LogLevel, string> = {
   INFO: "\x1b[32m", // green
   WARN: "\x1b[33m", // yellow
   ERROR: "\x1b[31m", // red
-}
-const RESET = "\x1b[0m"
-const DIM = "\x1b[2m"
+};
+const RESET = "\x1b[0m";
+const DIM = "\x1b[2m";
 
 function prettyDev(entry: LogEntry): string {
   const {
@@ -74,29 +74,29 @@ function prettyDev(entry: LogEntry): string {
     durationMs,
     error,
     ...rest
-  } = entry
+  } = entry;
 
-  const colour = COLOURS[level] ?? ""
-  const time = timestamp.slice(11, 23) // HH:MM:SS.mmm
-  const tag = `${colour}[${level.padEnd(5)}]${RESET}`
-  const fnStr = fn ? ` ${String(fn).padEnd(28)}` : ""
-  const fileStr = file ? ` ${DIM}(${file})${RESET}` : ""
-  const durStr = durationMs !== undefined ? ` ${String(durationMs)}ms` : ""
-  const errStr = error ? `  ${colour}${formatError(error)}${RESET}` : ""
+  const colour = COLOURS[level] ?? "";
+  const time = timestamp.slice(11, 23); // HH:MM:SS.mmm
+  const tag = `${colour}[${level.padEnd(5)}]${RESET}`;
+  const fnStr = fn ? ` ${String(fn).padEnd(28)}` : "";
+  const fileStr = file ? ` ${DIM}(${file})${RESET}` : "";
+  const durStr = durationMs !== undefined ? ` ${String(durationMs)}ms` : "";
+  const errStr = error ? `  ${colour}${formatError(error)}${RESET}` : "";
 
-  const extraKeys = Object.keys(rest)
+  const extraKeys = Object.keys(rest);
   const extraStr = extraKeys.length
     ? "  " + extraKeys.map((k) => `${k}=${JSON.stringify(rest[k])}`).join(" ")
-    : ""
+    : "";
 
-  return `${tag} ${time}${fnStr}${fileStr}${durStr}${errStr}${extraStr}`
+  return `${tag} ${time}${fnStr}${fileStr}${durStr}${errStr}${extraStr}`;
 }
 
 function formatError(err: unknown): string {
-  if (typeof err !== "object" || err === null) return String(err)
-  const e = err as Record<string, unknown>
-  const tag = typeof e["_tag"] === "string" ? e["_tag"] : "Error"
+  if (typeof err !== "object" || err === null) return String(err);
+  const e = err as Record<string, unknown>;
+  const tag = typeof e["_tag"] === "string" ? e["_tag"] : "Error";
   const msg =
-    typeof e["message"] === "string" ? e["message"] : JSON.stringify(err)
-  return `${tag}: ${msg}`
+    typeof e["message"] === "string" ? e["message"] : JSON.stringify(err);
+  return `${tag}: ${msg}`;
 }

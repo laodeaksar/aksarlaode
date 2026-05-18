@@ -1,11 +1,13 @@
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
-import { createRouter } from '@tanstack/react-router'
-import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
-import { toast } from 'sonner'
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { createRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
-import { routeTree } from './routeTree.gen'
-import { NotFound } from '@/components/not-found'
-import { silentRefresh } from '@/lib/api'
+import { toast } from "sonner";
+
+import { silentRefresh } from "@/lib/api";
+import { NotFound } from "@/components/not-found";
+
+import { routeTree } from "./routeTree.gen";
 
 // ── 401 detection ──────────────────────────────────────────────────────────
 // TanStack Start serialises Effect errors (ApiError, UnauthorizedError) as
@@ -13,12 +15,9 @@ import { silentRefresh } from '@/lib/api'
 // with just a `status: 401` for any non-Effect server functions.
 
 function is401(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false
-  const e = error as Record<string, unknown>
-  return (
-    e["status"] === 401 ||
-    e["_tag"] === "UnauthorizedError"
-  )
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  return e["status"] === 401 || e["_tag"] === "UnauthorizedError";
 }
 
 // ── Refresh state ──────────────────────────────────────────────────────────
@@ -28,8 +27,8 @@ function is401(error: unknown): boolean {
 // so multiple queries failing at the same instant only trigger one network
 // request to /auth/refresh.
 
-const REFRESH_COOLDOWN_MS = 10_000
-let lastRefreshAttempt = 0
+const REFRESH_COOLDOWN_MS = 10_000;
+let lastRefreshAttempt = 0;
 
 // ── Session-expired redirect ───────────────────────────────────────────────
 // Shows a warning toast so the user understands why the redirect is happening,
@@ -37,34 +36,34 @@ let lastRefreshAttempt = 0
 // `id` deduplicates: if multiple 401s fire simultaneously only one toast shows.
 
 async function redirectToLogin(): Promise<void> {
-  if (typeof window === "undefined") return
+  if (typeof window === "undefined") return;
   toast.warning("Sesi Anda telah berakhir. Mengarahkan ke halaman login...", {
     id: "session-expired",
     duration: 4_000,
-  })
-  await new Promise<void>((resolve) => setTimeout(resolve, 1_500))
-  window.location.href = "/login"
+  });
+  await new Promise<void>((resolve) => setTimeout(resolve, 1_500));
+  window.location.href = "/login";
 }
 
 async function handle401(queryClient: QueryClient): Promise<void> {
-  const now = Date.now()
+  const now = Date.now();
 
   if (now - lastRefreshAttempt < REFRESH_COOLDOWN_MS) {
     // Already refreshed (or tried) very recently but still getting 401 —
     // the session is truly expired.  Notify and redirect.
-    await redirectToLogin()
-    return
+    await redirectToLogin();
+    return;
   }
 
-  lastRefreshAttempt = now
-  const refreshed = await silentRefresh()
+  lastRefreshAttempt = now;
+  const refreshed = await silentRefresh();
 
   if (refreshed) {
     // New access token is in the cookie.  Invalidate every query so React
     // Query re-fetches with the fresh token on next render cycle.
-    await queryClient.invalidateQueries()
+    await queryClient.invalidateQueries();
   } else {
-    await redirectToLogin()
+    await redirectToLogin();
   }
 }
 
@@ -72,22 +71,22 @@ async function handle401(queryClient: QueryClient): Promise<void> {
 
 export function makeQueryClient() {
   // Declare first so the cache callbacks can close over it.
-  let queryClient: QueryClient
+  let queryClient: QueryClient;
 
   const queryCache = new QueryCache({
     onError: (error) => {
-      if (!is401(error)) return
+      if (!is401(error)) return;
       // Fire-and-forget — React Query does not await onError.
-      void handle401(queryClient)
+      void handle401(queryClient);
     },
-  })
+  });
 
   const mutationCache = new MutationCache({
     onError: (error) => {
-      if (!is401(error)) return
-      void handle401(queryClient)
+      if (!is401(error)) return;
+      void handle401(queryClient);
     },
-  })
+  });
 
   queryClient = new QueryClient({
     queryCache,
@@ -99,30 +98,30 @@ export function makeQueryClient() {
         refetchOnWindowFocus: false,
       },
     },
-  })
+  });
 
-  return queryClient
+  return queryClient;
 }
 
 export function getRouter() {
-  const queryClient = makeQueryClient()
+  const queryClient = makeQueryClient();
 
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    defaultPreload: 'intent',
+    defaultPreload: "intent",
     defaultNotFoundComponent: () => <NotFound />,
-  })
+  });
   setupRouterSsrQueryIntegration({
     router,
     queryClient,
-  })
+  });
 
-  return router
+  return router;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof getRouter>
+    router: ReturnType<typeof getRouter>;
   }
 }

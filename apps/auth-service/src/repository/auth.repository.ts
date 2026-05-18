@@ -1,9 +1,11 @@
-import type { UserRole } from "@/types"
-import { eq } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { ConflictError } from "@repo/common/errors"
-import { db, schema } from "@repo/database"
+import { eq } from "drizzle-orm";
+
+import { ConflictError } from "@repo/common/errors";
+import { db, schema } from "@repo/database";
+
+import type { UserRole } from "@/types";
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
@@ -13,7 +15,7 @@ function isUniqueViolation(e: unknown): boolean {
     e !== null &&
     "code" in e &&
     (e as { code: unknown }).code === "23505"
-  )
+  );
 }
 
 /**
@@ -40,17 +42,17 @@ function isUniqueViolation(e: unknown): boolean {
  */
 export const createUserWithSession = (
   userData: {
-    id: string
-    email: string
-    name: string
-    passwordHash: string
-    role: UserRole
+    id: string;
+    email: string;
+    name: string;
+    passwordHash: string;
+    role: UserRole;
   },
   sessionData: {
-    id: string
-    userId: string
-    token: string
-    expiresAt: Date
+    id: string;
+    userId: string;
+    token: string;
+    expiresAt: Date;
   }
 ) =>
   Effect.tryPromise({
@@ -59,24 +61,26 @@ export const createUserWithSession = (
         const [user] = await tx
           .insert(schema.users)
           .values(userData)
-          .returning()
+          .returning();
 
         const [session] = await tx
           .insert(schema.sessions)
           .values(sessionData)
-          .returning()
+          .returning();
 
         if (!user || !session) {
-          throw new Error("createUserWithSession: transaction produced no rows")
+          throw new Error(
+            "createUserWithSession: transaction produced no rows"
+          );
         }
 
-        return { user, session }
+        return { user, session };
       }),
     catch: (e) =>
       isUniqueViolation(e)
         ? new ConflictError("email")
         : new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Atomically consume a password-reset token and apply the new password hash.
@@ -115,23 +119,23 @@ export const consumeResetToken = (
         const deleted = await tx
           .delete(schema.passwordResetTokens)
           .where(eq(schema.passwordResetTokens.token, tokenHash))
-          .returning()
+          .returning();
 
         if (deleted.length === 0) {
-          throw new Error("TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED")
+          throw new Error("TOKEN_NOT_FOUND_OR_ALREADY_CONSUMED");
         }
 
         // 2. Update the password hash.
         await tx
           .update(schema.users)
           .set({ passwordHash: newPasswordHash, updatedAt: new Date() })
-          .where(eq(schema.users.id, userId))
+          .where(eq(schema.users.id, userId));
 
         // 3. Invalidate all active sessions so any stolen session cookie is
         //    immediately unusable.
         await tx
           .delete(schema.sessions)
-          .where(eq(schema.sessions.userId, userId))
+          .where(eq(schema.sessions.userId, userId));
       }),
     catch: (e) => {
       if (
@@ -141,8 +145,8 @@ export const consumeResetToken = (
         return new ConflictError(
           "token",
           "Reset token not found or already consumed"
-        )
+        );
       }
-      return new DbError({ cause: e })
+      return new DbError({ cause: e });
     },
-  })
+  });

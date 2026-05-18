@@ -1,7 +1,7 @@
-import { Component, type ErrorInfo, type ReactNode } from "react"
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
-type Props = { children: ReactNode; fallback?: ReactNode }
-type State = { error: Error | null }
+type Props = { children: ReactNode; fallback?: ReactNode };
+type State = { error: Error | null };
 
 // ── Global Error Boundary ──────────────────────────────────────────────────
 // FIX ADM-07: Prevents a single crashed component from blanking the entire
@@ -12,26 +12,26 @@ type State = { error: Error | null }
 
 export class ErrorBoundary extends Component<Props, State> {
   // `state` IS declared as `state: Readonly<S>` in Component — needs override.
-  override state: State = { error: null }
+  override state: State = { error: null };
 
   // getDerivedStateFromError lives on ComponentClass interface, not Component class —
   // TypeScript treats it as not-in-base, so omit `override`.
   static getDerivedStateFromError(error: Error): State {
-    return { error }
+    return { error };
   }
 
   // componentDidCatch IS declared in the ComponentLifecycle interface.
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[ErrorBoundary]", error, info.componentStack)
+    console.error("[ErrorBoundary]", error, info.componentStack);
   }
 
-  reset = () => this.setState({ error: null })
+  reset = () => this.setState({ error: null });
 
   override render() {
-    const { error } = this.state
+    const { error } = this.state;
 
     if (error) {
-      if (this.props.fallback) return this.props.fallback
+      if (this.props.fallback) return this.props.fallback;
 
       return (
         <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-8 text-center">
@@ -46,9 +46,9 @@ export class ErrorBoundary extends Component<Props, State> {
             Try again
           </button>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }

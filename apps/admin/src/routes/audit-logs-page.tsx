@@ -1,15 +1,15 @@
-import { useState } from "react"
+import { useState } from "react";
 
-import { useQuery } from "@tanstack/react-query"
-import type { ColumnDef } from "@tanstack/react-table"
+import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@repo/ui/components/badge"
+import { Badge } from "@repo/ui/components/badge";
 
-import { listAuditLogsFn } from "@/server/audit-logs"
-import type { AuditLogEntry } from "@/effect/Services"
-import { DataTable } from "@/components/data-table/data-table"
+import { listAuditLogsFn } from "@/server/audit-logs";
+import type { AuditLogEntry } from "@/effect/Services";
+import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./audit-logs.route"
+import { Route } from "./audit-logs.route";
 
 const ACTION_COLORS: Record<
   string,
@@ -18,7 +18,7 @@ const ACTION_COLORS: Record<
   product_deleted: "destructive",
   order_status_changed: "secondary",
   user_role_changed: "default",
-}
+};
 
 const columns: ColumnDef<AuditLogEntry>[] = [
   {
@@ -36,7 +36,9 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     cell: ({ row }) => (
       <div>
         <p className="font-mono text-xs">{row.original.actorId.slice(0, 8)}…</p>
-        <p className="text-xs text-muted-foreground">{row.original.actorRole}</p>
+        <p className="text-xs text-muted-foreground">
+          {row.original.actorRole}
+        </p>
       </div>
     ),
   },
@@ -44,12 +46,12 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     accessorKey: "action",
     header: "Action",
     cell: ({ getValue }) => {
-      const action = getValue() as string
+      const action = getValue() as string;
       return (
         <Badge variant={ACTION_COLORS[action] ?? "outline"}>
           {action.replace(/_/g, " ")}
         </Badge>
-      )
+      );
     },
   },
   {
@@ -68,27 +70,28 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     accessorKey: "metadata",
     header: "Metadata",
     cell: ({ getValue }) => {
-      const meta = getValue() as Record<string, unknown> | null
-      if (!meta) return <span className="text-muted-foreground text-xs">—</span>
+      const meta = getValue() as Record<string, unknown> | null;
+      if (!meta)
+        return <span className="text-muted-foreground text-xs">—</span>;
       return (
         <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-w-xs overflow-hidden">
           {JSON.stringify(meta, null, 2)}
         </pre>
-      )
+      );
     },
   },
-]
+];
 
 export default function AuditLogsPage() {
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(1);
 
-  const loaderData = Route.useLoaderData()
+  const loaderData = Route.useLoaderData();
 
   const { data, isLoading } = useQuery({
     queryKey: ["audit-logs", { page }],
     queryFn: () => listAuditLogsFn({ data: { page } }),
     initialData: page === 1 ? loaderData : undefined,
-  })
+  });
 
   return (
     <div className="space-y-4">
@@ -111,5 +114,5 @@ export default function AuditLogsPage() {
         onPageChange={setPage}
       />
     </div>
-  )
+  );
 }

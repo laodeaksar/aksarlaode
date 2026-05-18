@@ -42,7 +42,7 @@ const COMMON_PASSWORDS = new Set([
   "trustno1",
   "hello123",
   "welcome!",
-])
+]);
 
 /**
  * Returns an error message string if the password is in the common-password
@@ -51,7 +51,7 @@ const COMMON_PASSWORDS = new Set([
  */
 export function checkPasswordStrength(password: string): string | null {
   if (COMMON_PASSWORDS.has(password.toLowerCase())) {
-    return "Password is too common. Please choose a less predictable password."
+    return "Password is too common. Please choose a less predictable password.";
   }
-  return null
+  return null;
 }

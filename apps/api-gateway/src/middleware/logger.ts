@@ -1,11 +1,11 @@
-import type { MiddlewareHandler } from "hono"
+import type { MiddlewareHandler } from "hono";
 
-import type { AppEnv } from "@/types/context"
-import { getClientIp } from "@/lib/client-ip"
+import { getClientIp } from "@/lib/client-ip";
+import type { AppEnv } from "@/types/context";
 
 export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const { method, path } = c.req
-  const requestId = c.var.requestId
+  const { method, path } = c.req;
+  const requestId = c.var.requestId;
 
   console.info(
     JSON.stringify({
@@ -16,11 +16,11 @@ export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
       ip: getClientIp(c), // C-05: was missing .split(",")[0].trim() and "unknown" fallback
       userAgent: c.req.header("user-agent"),
     })
-  )
+  );
 
-  await next()
+  await next();
 
-  const duration = Date.now() - c.var.startTime
+  const duration = Date.now() - c.var.startTime;
   console.info(
     JSON.stringify({
       event: "request_out",
@@ -28,5 +28,5 @@ export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
       status: c.res.status,
       duration,
     })
-  )
-}
+  );
+};

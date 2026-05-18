@@ -1,8 +1,8 @@
-import type { APIRoute } from "astro"
+import type { APIRoute } from "astro";
 
-import { apiFetch } from "@/lib/api/client"
-import type { ApiError } from "@/lib/effect/errors"
-import { AppRuntime } from "@/lib/effect/runtime"
+import { apiFetch } from "@/lib/api/client";
+import type { ApiError } from "@/lib/effect/errors";
+import { AppRuntime } from "@/lib/effect/runtime";
 
 // FIX W-01: CheckoutForm.tsx was calling fetch("/api/payment/initiate") which
 // had no matching route in the Astro app — every checkout produced an orphaned
@@ -18,48 +18,54 @@ import { AppRuntime } from "@/lib/effect/runtime"
 // Never forward raw error internals (ECONNREFUSED URLs, stack traces, internal
 // service paths) — only the gateway-controlled HttpError message is forwarded.
 function sanitizeUpstreamError(err: unknown): {
-  status: number
-  message: string
+  status: number;
+  message: string;
 } {
-  const e = err as Partial<ApiError>
+  const e = err as Partial<ApiError>;
   switch (e._tag) {
     case "AuthError":
-      return { status: 401, message: "Authentication required" }
+      return { status: 401, message: "Authentication required" };
     case "NotFoundError":
       // Do NOT forward e.resource — it contains the internal gateway path
-      return { status: 404, message: "Payment resource not found" }
+      return { status: 404, message: "Payment resource not found" };
     case "HttpError":
       // message comes from upstream gateway's b.error field — controlled content
-      return { status: e.status ?? 502, message: e.message ?? "Upstream error" }
+      return {
+        status: e.status ?? 502,
+        message: e.message ?? "Upstream error",
+      };
     case "NetworkError":
       // e.message is String(fetchError) and may contain internal URLs/addresses
-      return { status: 503, message: "Payment service temporarily unavailable" }
+      return {
+        status: 503,
+        message: "Payment service temporarily unavailable",
+      };
     case "ParseError":
       // e.message is String(jsonParseError) — internal detail, replace it
-      return { status: 502, message: "Upstream returned an invalid response" }
+      return { status: 502, message: "Upstream returned an invalid response" };
     default:
-      return { status: 500, message: "Payment initiation failed" }
+      return { status: 500, message: "Payment initiation failed" };
   }
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const cookie = request.headers.get("cookie") ?? ""
+  const cookie = request.headers.get("cookie") ?? "";
 
-  let body: Record<string, unknown>
+  let body: Record<string, unknown>;
   try {
-    body = await request.json()
+    body = await request.json();
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
-    })
+    });
   }
 
   if (!body.orderId || typeof body.orderId !== "string") {
     return new Response(JSON.stringify({ error: "orderId is required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
-    })
+    });
   }
 
   const exit = await AppRuntime.runPromiseExit(
@@ -71,18 +77,18 @@ export const POST: APIRoute = async ({ request }) => {
         cookie,
       }
     )
-  )
+  );
 
   if (exit._tag === "Failure") {
-    const { status, message } = sanitizeUpstreamError(exit.cause.error)
+    const { status, message } = sanitizeUpstreamError(exit.cause.error);
     return new Response(JSON.stringify({ error: message }), {
       status,
       headers: { "Content-Type": "application/json" },
-    })
+    });
   }
 
   return new Response(JSON.stringify(exit.value), {
     status: 201,
     headers: { "Content-Type": "application/json" },
-  })
-}
+  });
+};

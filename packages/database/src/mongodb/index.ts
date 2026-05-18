@@ -1,1 +1,1 @@
-export { connectMongo, mongoose } from "./client"
+export { connectMongo, mongoose } from "./client";

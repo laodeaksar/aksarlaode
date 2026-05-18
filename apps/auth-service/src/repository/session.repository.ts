@@ -1,22 +1,23 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { db, schema } from "@repo/database"
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
+
+import { db, schema } from "@repo/database";
 
 export type NewSessionData = {
-  id: string
-  userId: string
-  token: string
-  expiresAt: Date
-}
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: Date;
+};
 
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
 const create = (data: {
-  id: string
-  userId: string
-  token: string
-  expiresAt: Date
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: Date;
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -26,7 +27,7 @@ const create = (data: {
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findByToken = (token: string) =>
   Effect.tryPromise({
@@ -38,21 +39,21 @@ const findByToken = (token: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const deleteByToken = (token: string) =>
   Effect.tryPromise({
     try: () =>
       db.delete(schema.sessions).where(eq(schema.sessions.token, token)),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const deleteAllByUserId = (userId: string) =>
   Effect.tryPromise({
     try: () =>
       db.delete(schema.sessions).where(eq(schema.sessions.userId, userId)),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findPageByUserId = (
   userId: string,
@@ -76,11 +77,11 @@ const findPageByUserId = (
           .select({ count: sql<number>`count(*)::int` })
           .from(schema.sessions)
           .where(eq(schema.sessions.userId, userId)),
-      ])
-      return { items, total: countRow?.count ?? 0 }
+      ]);
+      return { items, total: countRow?.count ?? 0 };
     },
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const findByIdAndUserId = (id: string, userId: string) =>
   Effect.tryPromise({
@@ -94,7 +95,7 @@ const findByIdAndUserId = (id: string, userId: string) =>
         .limit(1)
         .then((r) => r[0] ?? null),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 const deleteByIdAndUserId = (id: string, userId: string) =>
   Effect.tryPromise({
@@ -105,7 +106,7 @@ const deleteByIdAndUserId = (id: string, userId: string) =>
           and(eq(schema.sessions.id, id), eq(schema.sessions.userId, userId))
         ),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Lightweight session count — used by the login handler to enforce the
@@ -120,7 +121,7 @@ const countByUserId = (userId: string) =>
         .where(eq(schema.sessions.userId, userId))
         .then((r) => r[0]?.count ?? 0),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Delete the `count` oldest sessions for a user (ordered by createdAt ASC).
@@ -142,15 +143,15 @@ const deleteOldestByUserId = (userId: string, count: number) =>
         .from(schema.sessions)
         .where(eq(schema.sessions.userId, userId))
         .orderBy(asc(schema.sessions.createdAt))
-        .limit(count)
+        .limit(count);
 
-      if (oldest.length === 0) return
+      if (oldest.length === 0) return;
 
-      const ids = oldest.map((r) => r.id)
-      await db.delete(schema.sessions).where(inArray(schema.sessions.id, ids))
+      const ids = oldest.map((r) => r.id);
+      await db.delete(schema.sessions).where(inArray(schema.sessions.id, ids));
     },
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 /**
  * Atomically delete an old session and insert a new one in a single Postgres
@@ -178,21 +179,21 @@ const rotateSession = (oldTokenHash: string, newSessionData: NewSessionData) =>
       db.transaction(async (tx) => {
         await tx
           .delete(schema.sessions)
-          .where(eq(schema.sessions.token, oldTokenHash))
+          .where(eq(schema.sessions.token, oldTokenHash));
 
         const [session] = await tx
           .insert(schema.sessions)
           .values(newSessionData)
-          .returning()
+          .returning();
 
         if (!session) {
-          throw new Error("rotateSession: INSERT produced no rows")
+          throw new Error("rotateSession: INSERT produced no rows");
         }
 
-        return session
+        return session;
       }),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 export const sessionRepository = {
   create,
@@ -205,4 +206,4 @@ export const sessionRepository = {
   deleteByIdAndUserId,
   deleteAllByUserId,
   deleteOldestByUserId,
-}
+};

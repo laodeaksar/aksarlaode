@@ -9,7 +9,7 @@
 //   import { can } from "@/lib/rbac"
 //   if (!can(session.role, "products:write")) return <Forbidden />
 
-import type { UserRole } from "@/lib/auth"
+import type { UserRole } from "@/lib/auth";
 
 export type Permission =
   | "products:read"
@@ -19,7 +19,7 @@ export type Permission =
   | "customers:read"
   | "dashboard:read"
   | "users:manage"
-  | "audit:read" // FIX ADM-06b: audit log viewer access
+  | "audit:read"; // FIX ADM-06b: audit log viewer access
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OWNER: [
@@ -43,12 +43,12 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   FINANCE: ["orders:read", "customers:read", "dashboard:read"],
   CUSTOMER: [],
-}
+};
 
 export function can(role: UserRole, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false
+  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
 export function hasAnyAdminRole(role: UserRole): boolean {
-  return role === "ADMIN" || role === "OWNER" || role === "FINANCE"
+  return role === "ADMIN" || role === "OWNER" || role === "FINANCE";
 }

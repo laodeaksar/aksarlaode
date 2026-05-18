@@ -1,6 +1,6 @@
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-import { users } from "./users"
+import { users } from "./users";
 
 export const passwordResetTokens = pgTable(
   "password_reset_tokens",
@@ -15,7 +15,7 @@ export const passwordResetTokens = pgTable(
   (t) => ({
     userIdIdx: index("idx_prt_user_id").on(t.userId),
   })
-)
+);
 
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
-export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;

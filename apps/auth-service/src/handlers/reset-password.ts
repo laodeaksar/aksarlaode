@@ -1,7 +1,4 @@
-import { consumeResetToken } from "@/repository/auth.repository"
-import { resetTokenRepository } from "@/repository/reset-token.repository"
-import { userRepository } from "@/repository/user.repository"
-import { Effect } from "effect"
+import { Effect } from "effect";
 
 import {
   AuthError,
@@ -10,50 +7,54 @@ import {
   NotFoundError,
   toErrorResponse,
   ValidationError,
-} from "@repo/common/errors"
-import { message } from "@repo/common/response"
+} from "@repo/common/errors";
+import { message } from "@repo/common/response";
 
-import { writeAuditLog } from "@/lib/audit-log"
-import { hashPassword } from "@/lib/password"
-import { checkPasswordStrength } from "@/lib/password-strength"
-import { hashToken } from "@/lib/token-hash"
+import { writeAuditLog } from "@/lib/audit-log";
+import { hashPassword } from "@/lib/password";
+import { checkPasswordStrength } from "@/lib/password-strength";
+import { hashToken } from "@/lib/token-hash";
+import { consumeResetToken } from "@/repository/auth.repository";
+import { resetTokenRepository } from "@/repository/reset-token.repository";
+import { userRepository } from "@/repository/user.repository";
 
 export const resetPasswordHandler = async ({
   body,
   set,
 }: {
-  body: { token: string; newPassword: string }
-  set: any
+  body: { token: string; newPassword: string };
+  set: any;
 }) => {
   const program = Effect.gen(function* () {
     const tokenHash = yield* Effect.tryPromise({
       try: () => hashToken(body.token),
       catch: () => new AuthError("Invalid reset token"),
-    })
+    });
 
     // Validate the token exists and has not expired BEFORE hashing the new
     // password (Argon2id is expensive — no point running it on invalid tokens).
-    const record = yield* resetTokenRepository.findByToken(tokenHash)
-    if (!record) return yield* Effect.fail(new AuthError("Invalid reset token"))
+    const record = yield* resetTokenRepository.findByToken(tokenHash);
+    if (!record)
+      return yield* Effect.fail(new AuthError("Invalid reset token"));
 
     if (record.expiresAt < new Date()) {
       // Best-effort cleanup of the expired token. orElse: a DB hiccup here
       // must not mask the real error returned to the client.
       yield* resetTokenRepository
         .deleteByToken(tokenHash)
-        .pipe(Effect.orElse(() => Effect.void))
-      return yield* Effect.fail(new GoneError("Reset token has expired"))
+        .pipe(Effect.orElse(() => Effect.void));
+      return yield* Effect.fail(new GoneError("Reset token has expired"));
     }
 
-    const user = yield* userRepository.findById(record.userId)
-    if (!user) return yield* Effect.fail(new NotFoundError("User"))
+    const user = yield* userRepository.findById(record.userId);
+    if (!user) return yield* Effect.fail(new NotFoundError("User"));
 
     // ── Common-password denylist ─────────────────────────────────────────────
-    const weakMsg = checkPasswordStrength(body.newPassword)
+    const weakMsg = checkPasswordStrength(body.newPassword);
     if (weakMsg)
-      return yield* Effect.fail(new ValidationError(undefined, weakMsg))
+      return yield* Effect.fail(new ValidationError(undefined, weakMsg));
 
-    const newHash = yield* hashPassword(body.newPassword)
+    const newHash = yield* hashPassword(body.newPassword);
 
     // ── Atomic: consume token + update password + invalidate sessions ─────────
     // consumeResetToken runs all three writes in a single Postgres transaction.
@@ -68,29 +69,29 @@ export const resetPasswordHandler = async ({
       Effect.mapError((e) =>
         e instanceof ConflictError ? new AuthError("Invalid reset token") : e
       )
-    )
+    );
 
-    return { userId: user.id }
-  })
+    return { userId: user.id };
+  });
 
-  const result = await Effect.runPromiseExit(program)
+  const result = await Effect.runPromiseExit(program);
 
   if (result._tag === "Failure") {
-    const { body: errBody, status } = toErrorResponse(result.cause.error)
-    set.status = status
-    return errBody
+    const { body: errBody, status } = toErrorResponse(result.cause.error);
+    set.status = status;
+    return errBody;
   }
 
   writeAuditLog({
     event: "PASSWORD_RESET",
     actorId: result.value.userId,
     targetId: result.value.userId,
-  })
+  });
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`
+    `ec_refresh=; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=0`;
 
   return message(
     "Password reset successful. Please log in with your new password."
-  )
-}
+  );
+};

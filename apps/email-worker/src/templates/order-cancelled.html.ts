@@ -11,4 +11,4 @@ export const orderCancelledTemplate = `
   <p style="color:#6b7280;font-size:12px">{{ storeName }}</p>
 </body>
 </html>
-`
+`;

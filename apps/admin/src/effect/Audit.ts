@@ -3,7 +3,7 @@
 // These are the canonical types used by auditMiddleware when constructing
 // entries before sending them to POST /products/audit-logs.
 
-import { logWarn } from "./Logger"
+import { logWarn } from "./Logger";
 
 // ── Domain action catalogue ────────────────────────────────────────────────
 // Maps TanStack Start server function names to (action, resource) pairs that
@@ -17,14 +17,14 @@ export type AuditAction =
   | "product_updated"
   | "product_deleted"
   | "order_status_changed"
-  | "user_role_changed"
+  | "user_role_changed";
 
-export type AuditResource = "product" | "order" | "user"
+export type AuditResource = "product" | "order" | "user";
 
 export type ActionMapping = {
-  action: AuditAction
-  resource: AuditResource
-}
+  action: AuditAction;
+  resource: AuditResource;
+};
 
 export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
   createProductFn: { action: "product_created", resource: "product" },
@@ -32,55 +32,55 @@ export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
   deleteProductFn: { action: "product_deleted", resource: "product" },
   updateOrderStatusFn: { action: "order_status_changed", resource: "order" },
   changeUserRoleFn: { action: "user_role_changed", resource: "user" },
-}
+};
 
 // ── Audit entry input ──────────────────────────────────────────────────────
 
 export type AuditEntryInput = {
-  actorId: string
-  actorRole: string
-  action: AuditAction
-  resource: AuditResource
-  resourceId: string
-  oldValue?: Record<string, unknown>
-  newValue?: Record<string, unknown>
-  metadata?: Record<string, unknown>
-}
+  actorId: string;
+  actorRole: string;
+  action: AuditAction;
+  resource: AuditResource;
+  resourceId: string;
+  oldValue?: Record<string, unknown>;
+  newValue?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+};
 
 // ── Input sanitization ─────────────────────────────────────────────────────
 // Removes values whose key matches a sensitive-key pattern and truncates
 // strings and arrays to reasonable lengths. Used to build metadata.input.
 
-const SENSITIVE_KEY_RE = /^(password|token|secret|key|auth|cvv|cvc|pin|card)/i
-const MAX_STRING_LEN = 200
-const MAX_ARRAY_ITEMS = 10
+const SENSITIVE_KEY_RE = /^(password|token|secret|key|auth|cvv|cvc|pin|card)/i;
+const MAX_STRING_LEN = 200;
+const MAX_ARRAY_ITEMS = 10;
 
 export function sanitizeInput(value: unknown, depth = 0): unknown {
-  if (depth > 4) return "[truncated]"
-  if (value === null) return null
+  if (depth > 4) return "[truncated]";
+  if (value === null) return null;
   if (typeof value !== "object" && typeof value !== "bigint") {
     if (typeof value === "string" && value.length > MAX_STRING_LEN) {
-      return value.slice(0, MAX_STRING_LEN) + "…"
+      return value.slice(0, MAX_STRING_LEN) + "…";
     }
-    return value
+    return value;
   }
 
   if (Array.isArray(value)) {
     const items = value
       .slice(0, MAX_ARRAY_ITEMS)
-      .map((v) => sanitizeInput(v, depth + 1))
+      .map((v) => sanitizeInput(v, depth + 1));
     return value.length > MAX_ARRAY_ITEMS
       ? [...items, `…+${value.length - MAX_ARRAY_ITEMS} more`]
-      : items
+      : items;
   }
 
-  const out: Record<string, unknown> = {}
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
     out[k] = SENSITIVE_KEY_RE.test(k)
       ? "[REDACTED]"
-      : sanitizeInput(v, depth + 1)
+      : sanitizeInput(v, depth + 1);
   }
-  return out
+  return out;
 }
 
 // ── Resource-ID extraction ─────────────────────────────────────────────────
@@ -100,17 +100,17 @@ export function extractResourceId(
     result !== null &&
     typeof result === "object"
   ) {
-    const r = result as Record<string, unknown>
-    if (typeof r["id"] === "string") return r["id"]
+    const r = result as Record<string, unknown>;
+    if (typeof r["id"] === "string") return r["id"];
   }
 
   if (data !== null && typeof data === "object") {
-    const d = data as Record<string, unknown>
-    if (typeof d["id"] === "string") return d["id"]
-    if (typeof d["resourceId"] === "string") return d["resourceId"]
+    const d = data as Record<string, unknown>;
+    if (typeof d["id"] === "string") return d["id"];
+    if (typeof d["resourceId"] === "string") return d["resourceId"];
   }
 
-  return "(unknown)"
+  return "(unknown)";
 }
 
 // ── Fire-and-forget write ──────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export function fireAuditWrite(
   internalToken: string,
   entry: AuditEntryInput
 ): void {
-  const body = JSON.stringify(entry)
+  const body = JSON.stringify(entry);
 
   fetch(`${apiUrl}/products/audit-logs`, {
     method: "POST",
@@ -142,7 +142,7 @@ export function fireAuditWrite(
           event: "audit_write_http_error",
           status: res.status,
           fn: entry.metadata?.["fn"] as string | undefined,
-        })
+        });
       }
     })
     .catch((err: unknown) => {
@@ -150,6 +150,6 @@ export function fireAuditWrite(
         event: "audit_write_network_error",
         message: err instanceof Error ? err.message : String(err),
         fn: entry.metadata?.["fn"] as string | undefined,
-      })
-    })
+      });
+    });
 }

@@ -1,10 +1,11 @@
-import { eq, sql } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { db, schema } from "@repo/database"
+import { eq, sql } from "drizzle-orm";
 
-import { cacheKey, productCache } from "@/lib/product-cache"
-import { buildProductQuery, type ProductFilters } from "@/lib/query-builder"
+import { db, schema } from "@repo/database";
+
+import { cacheKey, productCache } from "@/lib/product-cache";
+import { buildProductQuery, type ProductFilters } from "@/lib/query-builder";
 
 // ── Error types ────────────────────────────────────────────────────────────
 export class ProductNotFoundError extends Data.TaggedError(
@@ -14,16 +15,16 @@ export class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 export class InsufficientStockError extends Data.TaggedError(
   "InsufficientStockError"
 )<{
-  productId: string
-  requested: number
-  available: number
+  productId: string;
+  requested: number;
+  available: number;
 }> {}
 
-type NewProduct = typeof schema.products.$inferInsert
-type UpdateProduct = Partial<Omit<NewProduct, "id" | "createdAt">>
+type NewProduct = typeof schema.products.$inferInsert;
+type UpdateProduct = Partial<Omit<NewProduct, "id" | "createdAt">>;
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ── list ───────────────────────────────────────────────────────────────────
 // FIX PRD-04: filter deleted_at IS NULL so soft-deleted products are excluded.
@@ -31,7 +32,7 @@ const list = (filters: ProductFilters) =>
   Effect.tryPromise({
     try: async () => {
       const { where, orderBy, limit, offset, cursor } =
-        buildProductQuery(filters)
+        buildProductQuery(filters);
 
       const [items, [{ count }]] = await Promise.all([
         db
@@ -45,18 +46,18 @@ const list = (filters: ProductFilters) =>
           .select({ count: sql<number>`count(*)` })
           .from(schema.products)
           .where(where),
-      ])
+      ]);
 
       // FIX PRD-07: cursor-based pagination response
-      let nextCursor: string | null = null
-      let pageItems = items
+      let nextCursor: string | null = null;
+      let pageItems = items;
 
       if (cursor !== null && items.length > limit) {
-        pageItems = items.slice(0, limit)
-        const last = pageItems[pageItems.length - 1]!
+        pageItems = items.slice(0, limit);
+        const last = pageItems[pageItems.length - 1]!;
         nextCursor = Buffer.from(
           `${last.createdAt.toISOString()}:${last.id}`
-        ).toString("base64url")
+        ).toString("base64url");
       }
 
       return {
@@ -65,10 +66,10 @@ const list = (filters: ProductFilters) =>
         page: filters.page ?? 1,
         limit,
         nextCursor,
-      }
+      };
     },
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 // ── findById ───────────────────────────────────────────────────────────────
 const findById = (id: string) =>
@@ -76,8 +77,8 @@ const findById = (id: string) =>
     // FIX PRD-05: check in-process cache first
     const cached = productCache.get<typeof schema.products.$inferSelect>(
       cacheKey.byId(id)
-    )
-    if (cached) return cached
+    );
+    if (cached) return cached;
 
     const result = yield* Effect.tryPromise({
       try: () =>
@@ -88,44 +89,44 @@ const findById = (id: string) =>
           // FIX PRD-04: exclude soft-deleted products
           .limit(1),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
     // FIX PRD-04: treat soft-deleted rows as not found
-    const row = result.find((r) => r.deletedAt == null)
-    if (!row) return yield* Effect.fail(new ProductNotFoundError({ id }))
+    const row = result.find((r) => r.deletedAt == null);
+    if (!row) return yield* Effect.fail(new ProductNotFoundError({ id }));
 
-    productCache.set(cacheKey.byId(id), row)
-    return row
-  })
+    productCache.set(cacheKey.byId(id), row);
+    return row;
+  });
 
 // ── findByIdOrSlug ─────────────────────────────────────────────────────────
 const findByIdOrSlug = (idOrSlug: string) =>
   Effect.gen(function* () {
-    const isUuid = UUID_REGEX.test(idOrSlug)
+    const isUuid = UUID_REGEX.test(idOrSlug);
 
     // FIX PRD-05: check in-process cache first
-    const ck = isUuid ? cacheKey.byId(idOrSlug) : cacheKey.bySlug(idOrSlug)
-    const cached = productCache.get<typeof schema.products.$inferSelect>(ck)
-    if (cached) return cached
+    const ck = isUuid ? cacheKey.byId(idOrSlug) : cacheKey.bySlug(idOrSlug);
+    const cached = productCache.get<typeof schema.products.$inferSelect>(ck);
+    if (cached) return cached;
 
     const condition = isUuid
       ? eq(schema.products.id, idOrSlug)
-      : eq(schema.products.slug, idOrSlug)
+      : eq(schema.products.slug, idOrSlug);
 
     const result = yield* Effect.tryPromise({
       try: () => db.select().from(schema.products).where(condition).limit(1),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
     // FIX PRD-04: treat soft-deleted rows as not found
-    const row = result.find((r) => r.deletedAt == null)
+    const row = result.find((r) => r.deletedAt == null);
     if (!row)
-      return yield* Effect.fail(new ProductNotFoundError({ id: idOrSlug }))
+      return yield* Effect.fail(new ProductNotFoundError({ id: idOrSlug }));
 
-    productCache.set(cacheKey.byId(row.id), row)
-    productCache.set(cacheKey.bySlug(row.slug), row)
-    return row
-  })
+    productCache.set(cacheKey.byId(row.id), row);
+    productCache.set(cacheKey.bySlug(row.slug), row);
+    return row;
+  });
 
 // ── create ─────────────────────────────────────────────────────────────────
 const create = (data: NewProduct) =>
@@ -133,14 +134,14 @@ const create = (data: NewProduct) =>
     const result = yield* Effect.tryPromise({
       try: () => db.insert(schema.products).values(data).returning(),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
     if (!result[0])
       return yield* Effect.fail(
         new DbError({ cause: "Insert returned no rows" })
-      )
-    return result[0]
-  })
+      );
+    return result[0];
+  });
 
 // ── update ─────────────────────────────────────────────────────────────────
 // FIX PRD-01b: uses RETURNING to detect no-op updates; returns ProductNotFoundError
@@ -157,15 +158,15 @@ const update = (id: string, data: UpdateProduct) =>
           )
           .returning(),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
-    if (!result[0]) return yield* Effect.fail(new ProductNotFoundError({ id }))
+    if (!result[0]) return yield* Effect.fail(new ProductNotFoundError({ id }));
 
     // FIX PRD-05: invalidate cache entries for this product
-    productCache.invalidate(result[0].id, result[0].slug)
+    productCache.invalidate(result[0].id, result[0].slug);
 
-    return result[0]
-  })
+    return result[0];
+  });
 
 // ── deleteById ─────────────────────────────────────────────────────────────
 // FIX PRD-04: soft-delete — set deleted_at instead of issuing DELETE.
@@ -183,13 +184,13 @@ const deleteById = (id: string) =>
           )
           .returning({ id: schema.products.id, slug: schema.products.slug }),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
-    if (!result[0]) return yield* Effect.fail(new ProductNotFoundError({ id }))
+    if (!result[0]) return yield* Effect.fail(new ProductNotFoundError({ id }));
 
     // Invalidate cache so subsequent reads don't return the deleted product
-    productCache.invalidate(id, result[0].slug)
-  })
+    productCache.invalidate(id, result[0].slug);
+  });
 
 // ── reserveStock ───────────────────────────────────────────────────────────
 // FIX PRD-01: single atomic UPDATE with RETURNING — no TOCTOU window.
@@ -208,7 +209,7 @@ const reserveStock = (productId: string, quantity: number) =>
           )
           .returning({ id: schema.products.id, stock: schema.products.stock }),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
     if (updated.length === 0) {
       const check = yield* Effect.tryPromise({
@@ -222,10 +223,10 @@ const reserveStock = (productId: string, quantity: number) =>
             .where(eq(schema.products.id, productId))
             .limit(1),
         catch: (e) => new DbError({ cause: e }),
-      })
+      });
 
       if (check.length === 0 || check[0]!.deletedAt != null) {
-        return yield* Effect.fail(new ProductNotFoundError({ id: productId }))
+        return yield* Effect.fail(new ProductNotFoundError({ id: productId }));
       }
 
       return yield* Effect.fail(
@@ -234,13 +235,13 @@ const reserveStock = (productId: string, quantity: number) =>
           requested: quantity,
           available: check[0]!.stock,
         })
-      )
+      );
     }
 
     // Invalidate cache — stock changed
-    productCache.invalidate(productId)
-    return updated[0]!
-  })
+    productCache.invalidate(productId);
+    return updated[0]!;
+  });
 
 // ── releaseStock ───────────────────────────────────────────────────────────
 const releaseStock = (productId: string, quantity: number) =>
@@ -252,10 +253,10 @@ const releaseStock = (productId: string, quantity: number) =>
           .set({ stock: sql`${schema.products.stock} + ${quantity}` })
           .where(eq(schema.products.id, productId)),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
     // Invalidate cache — stock changed
-    productCache.invalidate(productId)
-  })
+    productCache.invalidate(productId);
+  });
 
 // ── Exports ────────────────────────────────────────────────────────────────
 export const productRepository = {
@@ -267,4 +268,4 @@ export const productRepository = {
   deleteById,
   reserveStock,
   releaseStock,
-}
+};

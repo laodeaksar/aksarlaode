@@ -7,10 +7,10 @@
  *  - Ed25519 keypairs are still generated fresh so every test run uses
  *    isolated, ephemeral signing keys with no production value.
  */
-import { generateKeyPairSync } from "node:crypto"
+import { generateKeyPairSync } from "node:crypto";
 
 function makeKeypair() {
-  const { privateKey, publicKey } = generateKeyPairSync("ed25519")
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
   return {
     privateKey: privateKey
       .export({ type: "pkcs8", format: "der" })
@@ -18,11 +18,11 @@ function makeKeypair() {
     publicKey: publicKey
       .export({ type: "spki", format: "der" })
       .toString("base64"),
-  }
+  };
 }
 
-const access = makeKeypair()
-const refresh = makeKeypair()
+const access = makeKeypair();
+const refresh = makeKeypair();
 
 export const env = {
   NODE_ENV: "test" as const,
@@ -38,4 +38,4 @@ export const env = {
   REDIS_PASSWORD: "",
   WEB_URL: "http://localhost:3000",
   ADMIN_URL: "http://localhost:3001",
-}
+};

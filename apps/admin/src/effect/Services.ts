@@ -7,6 +7,6 @@
 //   import { ProductSchema }    from "@/effect/Services.schemas"
 //   import { ApiClientService } from "@/effect/Services.api"
 
-export * from "./Services.config"
-export * from "./Services.schemas"
-export * from "./Services.api"
+export * from "./Services.config";
+export * from "./Services.schemas";
+export * from "./Services.api";

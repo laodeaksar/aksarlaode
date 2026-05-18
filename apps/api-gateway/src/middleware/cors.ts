@@ -1,6 +1,6 @@
-import { cors as honoCors } from "hono/cors"
+import { cors as honoCors } from "hono/cors";
 
-import { env } from "@repo/env/gateway"
+import { env } from "@repo/env/gateway";
 
 export const cors = honoCors({
   origin: [env.WEB_URL, env.ADMIN_URL],
@@ -14,4 +14,4 @@ export const cors = honoCors({
   exposeHeaders: ["x-request-id", "x-response-time", "Idempotency-Replayed"],
   credentials: true,
   maxAge: 600,
-})
+});

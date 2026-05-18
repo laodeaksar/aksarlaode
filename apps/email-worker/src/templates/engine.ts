@@ -9,7 +9,7 @@ function escapeHtml(raw: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
+    .replace(/'/g, "&#039;");
 }
 
 export function render(
@@ -17,8 +17,8 @@ export function render(
   data: Record<string, string | number | undefined>
 ): string {
   return template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
-    const value = data[key]
-    if (value === undefined) return ""
-    return escapeHtml(String(value))
-  })
+    const value = data[key];
+    if (value === undefined) return "";
+    return escapeHtml(String(value));
+  });
 }

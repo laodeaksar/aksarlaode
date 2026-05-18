@@ -9,22 +9,27 @@
 // Questo barrel è solo per i CONSUMER esterni (route, componenti, ecc).
 
 // ── api ────────────────────────────────────────────────────────────────────
-export { silentRefresh } from "./api"
-export type { AuditLogEntry, DashboardStats, OrderSummary, OrderDetail } from "./api"
+export { silentRefresh } from "./api";
+export type {
+  AuditLogEntry,
+  DashboardStats,
+  OrderSummary,
+  OrderDetail,
+} from "./api";
 
 // ── toast ──────────────────────────────────────────────────────────────────
-export { toast } from "./toast"
+export { toast } from "./toast";
 
 // ── auth ───────────────────────────────────────────────────────────────────
-export { getSession } from "./auth"
-export type { Session, UserRole } from "./auth"
+export { getSession } from "./auth";
+export type { Session, UserRole } from "./auth";
 
 // ── effect-resolver ────────────────────────────────────────────────────────
-export { effectResolver } from "./effect-resolver"
+export { effectResolver } from "./effect-resolver";
 
 // ── rbac ───────────────────────────────────────────────────────────────────
-export { can, hasAnyAdminRole } from "./rbac"
-export type { Permission } from "./rbac"
+export { can, hasAnyAdminRole } from "./rbac";
+export type { Permission } from "./rbac";
 
 // ── session-context ────────────────────────────────────────────────────────
-export { SessionContext, useSession } from "./session-context"
+export { SessionContext, useSession } from "./session-context";

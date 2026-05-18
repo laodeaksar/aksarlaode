@@ -9,31 +9,31 @@
 //
 // TYPE-04 selesai: 4 response types dipindah ke src/types/api-responses.ts.
 
-import { env } from "@repo/env/admin"
+import { env } from "@repo/env/admin";
 
 // FIX ADM-02: token refresh state — one in-flight refresh at a time.
 // If multiple requests 401 simultaneously, only one refresh call is made;
 // the others wait for the same promise.
-let refreshPromise: Promise<boolean> | null = null
+let refreshPromise: Promise<boolean> | null = null;
 
 export async function silentRefresh(): Promise<boolean> {
-  if (refreshPromise) return refreshPromise
+  if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
     try {
       const res = await fetch(`${env.PUBLIC_API_URL}/auth/refresh`, {
         method: "POST",
         credentials: "include",
-      })
-      return res.ok
+      });
+      return res.ok;
     } catch {
-      return false
+      return false;
     } finally {
-      refreshPromise = null
+      refreshPromise = null;
     }
-  })()
+  })();
 
-  return refreshPromise
+  return refreshPromise;
 }
 
 // ── Response types ─────────────────────────────────────────────────────────
@@ -45,4 +45,4 @@ export type {
   DashboardStats,
   OrderDetail,
   OrderSummary,
-} from "@/types"
+} from "@/types";

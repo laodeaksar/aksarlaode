@@ -1,5 +1,6 @@
-import { resolve } from "path"
-import { defineConfig } from "vitest/config"
+import { resolve } from "path";
+
+import { defineConfig } from "vitest/config";
 
 /**
  * Separate Vitest config for integration / smoke tests.
@@ -21,7 +22,7 @@ import { defineConfig } from "vitest/config"
  *   pnpm --filter auth-service test:integration
  */
 
-const MOCKS = resolve(__dirname, "src/__tests__/integration/__mocks__")
+const MOCKS = resolve(__dirname, "src/__tests__/integration/__mocks__");
 
 export default defineConfig({
   resolve: {
@@ -49,4 +50,4 @@ export default defineConfig({
     pool: "forks",
     poolOptions: { forks: { singleFork: true } },
   },
-})
+});

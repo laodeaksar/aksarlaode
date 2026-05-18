@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Full environment schema for the API gateway.
@@ -60,6 +60,6 @@ export const env = parseEnv(
     MAIL_FROM_NAME: z.string().min(1, "MAIL_FROM_NAME is required"),
   },
   "api-gateway"
-)
+);
 
-export type GatewayEnv = typeof env
+export type GatewayEnv = typeof env;

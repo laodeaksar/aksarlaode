@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis"
+import { redis } from "@/lib/redis";
 
 /**
  * Redis-backed session denylist.
@@ -24,9 +24,9 @@ import { redis } from "@/lib/redis"
  * ────────────────────────────────────────────────────────────────────────────
  */
 
-const ACCESS_TOKEN_TTL_SECONDS = 5 * 60 // Must match token.ts signToken() call
+const ACCESS_TOKEN_TTL_SECONDS = 5 * 60; // Must match token.ts signToken() call
 
-const denylistKey = (sessionId: string) => `denylist:session:${sessionId}`
+const denylistKey = (sessionId: string) => `denylist:session:${sessionId}`;
 
 /**
  * Mark a session as revoked for the duration of the access token lifetime.
@@ -37,7 +37,7 @@ const denylistKey = (sessionId: string) => `denylist:session:${sessionId}`
  */
 export async function denySession(sessionId: string): Promise<void> {
   try {
-    await redis.setex(denylistKey(sessionId), ACCESS_TOKEN_TTL_SECONDS, "1")
+    await redis.setex(denylistKey(sessionId), ACCESS_TOKEN_TTL_SECONDS, "1");
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -45,7 +45,7 @@ export async function denySession(sessionId: string): Promise<void> {
         sessionId,
         error: String(err),
       })
-    )
+    );
   }
 }
 
@@ -57,9 +57,9 @@ export async function denySession(sessionId: string): Promise<void> {
  */
 export async function isSessionDenied(sessionId: string): Promise<boolean> {
   try {
-    const val = await redis.get(denylistKey(sessionId))
-    return val === "1"
+    const val = await redis.get(denylistKey(sessionId));
+    return val === "1";
   } catch {
-    return true // fail-closed
+    return true; // fail-closed
   }
 }

@@ -1,6 +1,6 @@
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { db, eq, schema, sql } from "@repo/database"
+import { db, eq, schema, sql } from "@repo/database";
 
 class StockError extends Data.TaggedError("StockError")<{ reason: string }> {}
 
@@ -14,7 +14,7 @@ export const decrementStock = (productId: string, quantity: number) =>
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new StockError({ reason: String(e) }),
-  })
+  });
 
 export const incrementStock = (productId: string, quantity: number) =>
   Effect.tryPromise({
@@ -26,4 +26,4 @@ export const incrementStock = (productId: string, quantity: number) =>
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new StockError({ reason: String(e) }),
-  })
+  });

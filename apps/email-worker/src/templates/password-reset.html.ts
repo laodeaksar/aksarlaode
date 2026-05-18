@@ -14,4 +14,4 @@ export const passwordResetTemplate = `
   </p>
 </body>
 </html>
-`
+`;

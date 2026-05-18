@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { ALLOWED_AVATAR_HOSTS, isAllowedAvatarUrl } from "../lib/avatar"
+import { ALLOWED_AVATAR_HOSTS, isAllowedAvatarUrl } from "../lib/avatar";
 
 export const InitiatePaymentSchema = z.object({
   orderId: z.string().uuid(),
@@ -17,27 +17,27 @@ export const InitiatePaymentSchema = z.object({
       })
     )
     .min(1),
-})
+});
 
 export const RegisterSchema = z.object({
   email: z.email(),
   name: z.string().min(2).max(100),
   password: z.string().min(8).max(72),
-})
+});
 
 export const LoginSchema = z.object({
   email: z.email(),
   password: z.string().min(1),
-})
+});
 
 export const ForgotPasswordSchema = z.object({
   email: z.email(),
-})
+});
 
 export const ResetPasswordSchema = z.object({
   token: z.string().min(1),
   newPassword: z.string().min(8).max(72),
-})
+});
 
 export const ChangePasswordSchema = z
   .object({
@@ -47,7 +47,7 @@ export const ChangePasswordSchema = z
   .refine((data) => data.currentPassword !== data.newPassword, {
     message: "New password must be different from current password",
     path: ["newPassword"],
-  })
+  });
 
 export const UpdateProfileSchema = z
   .object({
@@ -82,7 +82,7 @@ export const UpdateProfileSchema = z
     (data) =>
       Object.keys(data).some((k) => data[k as keyof typeof data] !== undefined),
     { message: "At least one field must be provided" }
-  )
+  );
 
 export const ProductFiltersSchema = z.object({
   search: z.string().optional(),
@@ -97,7 +97,7 @@ export const ProductFiltersSchema = z.object({
   // When provided, `page` is ignored and the result set starts after the
   // item represented by the cursor (base64url-encoded createdAt + id).
   cursor: z.string().optional(),
-})
+});
 
 // ── Create order ───────────────────────────────────────────────────────────
 export const CreateOrderSchema = z.object({
@@ -125,6 +125,6 @@ export const CreateOrderSchema = z.object({
   shippingFee: z.number().min(0).optional(),
   discountAmount: z.number().min(0).optional(),
   notes: z.string().optional(),
-})
+});
 
-export type CreateOrderInput = z.infer<typeof CreateOrderSchema>
+export type CreateOrderInput = z.infer<typeof CreateOrderSchema>;

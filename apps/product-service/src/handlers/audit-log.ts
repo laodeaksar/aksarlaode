@@ -1,13 +1,14 @@
 // FIX ADM-06b: Exposes a read endpoint for the admin_audit_log table.
 // Only ADMIN or OWNER roles may access this endpoint; FINANCE is read-only
 // by design and doesn't need direct audit access via this service route.
-import type { DerivedContext } from "@/types"
-import { and, desc, eq, gte, sql } from "drizzle-orm"
-import type { Context } from "elysia"
+import { and, desc, eq, gte, sql } from "drizzle-orm";
+import type { Context } from "elysia";
 
-import { db, schema } from "@repo/database"
+import { db, schema } from "@repo/database";
 
-const PAGE_SIZE = 50
+import type { DerivedContext } from "@/types";
+
+const PAGE_SIZE = 50;
 
 export const auditLogHandler = async ({
   query,
@@ -15,23 +16,23 @@ export const auditLogHandler = async ({
   userRole,
 }: Context & DerivedContext) => {
   if (userRole !== "ADMIN" && userRole !== "OWNER") {
-    set.status = 403
+    set.status = 403;
     return {
       error: "Forbidden: ADMIN or OWNER role required",
       code: "FORBIDDEN",
-    }
+    };
   }
 
-  const page = Math.max(1, Number(query.page ?? 1))
-  const action = query.action as string | undefined
-  const since = query.since as string | undefined // ISO datetime
+  const page = Math.max(1, Number(query.page ?? 1));
+  const action = query.action as string | undefined;
+  const since = query.since as string | undefined; // ISO datetime
 
-  const conditions = []
-  if (action) conditions.push(eq(schema.adminAuditLog.action, action))
+  const conditions = [];
+  if (action) conditions.push(eq(schema.adminAuditLog.action, action));
   if (since)
-    conditions.push(gte(schema.adminAuditLog.createdAt, new Date(since)))
+    conditions.push(gte(schema.adminAuditLog.createdAt, new Date(since)));
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const [rows, [{ count }]] = await Promise.all([
     db
@@ -45,12 +46,12 @@ export const auditLogHandler = async ({
       .select({ count: sql<number>`count(*)` })
       .from(schema.adminAuditLog)
       .where(where),
-  ])
+  ]);
 
   return {
     items: rows,
     total: Number(count),
     page,
     limit: PAGE_SIZE,
-  }
-}
+  };
+};

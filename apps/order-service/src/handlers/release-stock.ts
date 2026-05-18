@@ -1,36 +1,37 @@
-import { orderRepository } from "@/repository/order.repository"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
 
-import { env } from "@repo/env/order"
+import type { Context } from "elysia";
 
-import { productClient } from "@/lib/product-client"
+import { env } from "@repo/env/order";
+
+import { productClient } from "@/lib/product-client";
+import { orderRepository } from "@/repository/order.repository";
 
 export const releaseStockHandler = async ({
   params,
   headers,
   set,
 }: Context) => {
-  const { orderId } = params as { orderId: string }
+  const { orderId } = params as { orderId: string };
 
   // ── Authorization — internal service calls only ──────────────────────────
-  const serviceToken = headers["x-service-token"]
+  const serviceToken = headers["x-service-token"];
   if (serviceToken !== env.INTERNAL_SERVICE_TOKEN) {
-    set.status = 403
-    return { error: "Forbidden", code: "FORBIDDEN" }
+    set.status = 403;
+    return { error: "Forbidden", code: "FORBIDDEN" };
   }
 
   // Fetch order to get line items
   const orderResult = await Effect.runPromiseExit(
     orderRepository.findByOrderId(orderId)
-  )
+  );
 
   if (orderResult._tag === "Failure") {
-    set.status = 404
-    return { error: "Order not found" }
+    set.status = 404;
+    return { error: "Order not found" };
   }
 
-  const order = orderResult.value
+  const order = orderResult.value;
 
   // Release stock for every line item in parallel
   const releaseResult = await Effect.runPromiseExit(
@@ -40,12 +41,12 @@ export const releaseStockHandler = async ({
       ),
       { concurrency: "unbounded" }
     )
-  )
+  );
 
   if (releaseResult._tag === "Failure") {
-    set.status = 502
-    return { error: "Failed to release stock to product service" }
+    set.status = 502;
+    return { error: "Failed to release stock to product service" };
   }
 
-  return { message: "Stock released", orderId, itemCount: order.items.length }
-}
+  return { message: "Stock released", orderId, itemCount: order.items.length };
+};

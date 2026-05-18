@@ -1,27 +1,29 @@
-import { effectMiddleware } from "@/effect/Middleware"
-import { ApiClientService } from "@/effect/Services"
-import type { OrderDetail, OrderSummary } from "@/effect/Services"
-import { createServerFn } from "@tanstack/react-start"
-import { Effect, Schema } from "effect"
+import { createServerFn } from "@tanstack/react-start";
 
-import { decodeOrThrow } from "./_utils"
+import { Effect, Schema } from "effect";
+
+import { effectMiddleware } from "@/effect/Middleware";
+import { ApiClientService } from "@/effect/Services";
+import type { OrderDetail, OrderSummary } from "@/effect/Services";
+
+import { decodeOrThrow } from "./_utils";
 
 // ── Input schemas ──────────────────────────────────────────────────────────
 
 const ListOrdersParamsSchema = Schema.Struct({
   page: Schema.optionalWith(Schema.NumberFromString, { default: () => 1 }),
   status: Schema.optional(Schema.String),
-})
+});
 
 const OrderIdSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
-})
+});
 
 const UpdateOrderStatusSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
   status: Schema.String.pipe(Schema.minLength(1)),
   note: Schema.optional(Schema.String),
-})
+});
 
 // ── GET /orders — list with pagination & optional status filter ────────────
 // Used as the SSR loader in `routes/orders/index.tsx` and re-called from
@@ -42,13 +44,13 @@ export const listOrdersFn = createServerFn({ method: "GET" })
     }): Promise<{ items: OrderSummary[]; total: number }> =>
       context.runtime.runPromise(
         Effect.gen(function* () {
-          const api = yield* ApiClientService
-          const params: { page: number; status?: string } = { page: data.page }
-          if (data.status !== undefined) params.status = data.status
-          return yield* api.orders.list(params)
+          const api = yield* ApiClientService;
+          const params: { page: number; status?: string } = { page: data.page };
+          if (data.status !== undefined) params.status = data.status;
+          return yield* api.orders.list(params);
         })
       )
-  )
+  );
 
 // ── PATCH /orders/:id/status — update order status ────────────────────────
 // Replaces the legacy client-side `ordersApi.updateStatus()` call.
@@ -67,15 +69,11 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
     async ({ data, context }): Promise<void> =>
       context.runtime.runPromise(
         Effect.gen(function* () {
-          const api = yield* ApiClientService
-          yield* api.orders.updateStatus(
-            data.id,
-            data.status,
-            data.note
-          )
+          const api = yield* ApiClientService;
+          yield* api.orders.updateStatus(data.id, data.status, data.note);
         })
       )
-  )
+  );
 
 // ── GET /orders/:id — single order detail ─────────────────────────────────
 // Used as the SSR loader in `routes/orders.$orderId.tsx` and re-called by
@@ -93,8 +91,8 @@ export const getOrderFn = createServerFn({ method: "GET" })
     async ({ data, context }): Promise<OrderDetail> =>
       context.runtime.runPromise(
         Effect.gen(function* () {
-          const api = yield* ApiClientService
-          return yield* api.orders.getOne(data.id)
+          const api = yield* ApiClientService;
+          return yield* api.orders.getOne(data.id);
         })
       )
-  )
+  );

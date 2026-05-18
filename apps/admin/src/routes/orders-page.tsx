@@ -1,16 +1,16 @@
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo } from "react";
 
-import { useQuery } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
-import type { ColumnDef } from "@tanstack/react-table"
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@repo/ui/components/badge"
+import { Badge } from "@repo/ui/components/badge";
 
-import { listOrdersFn } from "@/server/orders"
-import type { OrderSummary } from "@/effect/Services"
-import { DataTable } from "@/components/data-table/data-table"
+import { listOrdersFn } from "@/server/orders";
+import type { OrderSummary } from "@/effect/Services";
+import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./orders.route"
+import { Route } from "./orders.route";
 
 const STATUS_VARIANTS: Record<
   string,
@@ -23,7 +23,7 @@ const STATUS_VARIANTS: Record<
   DELIVERED: "outline",
   CANCELLED: "destructive",
   REFUNDED: "secondary",
-}
+};
 
 const ORDER_STATUSES = [
   "PENDING_PAYMENT",
@@ -33,7 +33,7 @@ const ORDER_STATUSES = [
   "DELIVERED",
   "CANCELLED",
   "REFUNDED",
-] as const
+] as const;
 
 // Defined outside component — never changes, no memoization needed
 const columns: ColumnDef<OrderSummary>[] = [
@@ -50,12 +50,12 @@ const columns: ColumnDef<OrderSummary>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ getValue }) => {
-      const status = getValue() as string
+      const status = getValue() as string;
       return (
         <Badge variant={STATUS_VARIANTS[status] ?? "outline"}>
           {status.replace(/_/g, " ")}
         </Badge>
-      )
+      );
     },
   },
   {
@@ -83,12 +83,12 @@ const columns: ColumnDef<OrderSummary>[] = [
       </Link>
     ),
   },
-]
+];
 
 export default function OrdersPage() {
-  const navigate = useNavigate()
-  const { page, status } = Route.useSearch()
-  const loaderData = Route.useLoaderData()
+  const navigate = useNavigate();
+  const { page, status } = Route.useSearch();
+  const loaderData = Route.useLoaderData();
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders", { page, status }],
@@ -97,27 +97,27 @@ export default function OrdersPage() {
         data: { page, ...(status ? { status } : {}) },
       }),
     initialData: loaderData,
-  })
+  });
 
   const handleStatusChange = useCallback(
     (value: string) => {
       navigate({
         to: "/orders",
         search: (prev) => ({ ...prev, status: value, page: 1 }),
-      })
+      });
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   const handlePageChange = useCallback(
     (newPage: number) => {
       navigate({
         to: "/orders",
         search: (prev) => ({ ...prev, page: newPage }),
-      })
+      });
     },
-    [navigate],
-  )
+    [navigate]
+  );
 
   return (
     <div className="space-y-4">
@@ -148,5 +148,5 @@ export default function OrdersPage() {
         onPageChange={handlePageChange}
       />
     </div>
-  )
+  );
 }

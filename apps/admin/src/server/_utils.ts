@@ -1,22 +1,23 @@
 // ── Shared server-function utilities ───────────────────────────────────────
 // Imported by all files in src/server/. Do NOT import in client-side code.
 
-import { ValidationError } from "@/effect/Errors"
-import { Schema } from "effect"
+import { Schema } from "effect";
+
+import { ValidationError } from "@/effect/Errors";
 
 /**
  * Decode `input` via Effect.Schema, throwing a typed `ValidationError` on
  * failure. Used as the body of every `.inputValidator()` call.
  */
 export function decodeOrThrow<A, I>(schema: Schema.Schema<A, I>, input: I): A {
-  const result = Schema.decodeUnknownEither(schema)(input)
+  const result = Schema.decodeUnknownEither(schema)(input);
   if (result._tag === "Left") {
     throw new ValidationError({
       message: result.left.message ?? "Invalid input",
       input,
-    })
+    });
   }
-  return result.right
+  return result.right;
 }
 
 /**
@@ -29,5 +30,5 @@ export function decodeOrThrow<A, I>(schema: Schema.Schema<A, I>, input: I): A {
 export function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
-  ) as T
+  ) as T;
 }

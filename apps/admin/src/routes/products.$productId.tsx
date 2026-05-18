@@ -1,17 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { Skeleton } from "@repo/ui/components/skeleton"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
-import { getProductFn, updateProductFn } from "@/server/products"
-import type { UpdateProductInput } from "@/effect/Services"
-import { can, toast, type Session } from "@/lib"
-import { ProductForm } from "@/components/forms/product-form"
+import { Skeleton } from "@repo/ui/components/skeleton";
+
+import { getProductFn, updateProductFn } from "@/server/products";
+import type { UpdateProductInput } from "@/effect/Services";
+import { ProductForm } from "@/components/forms/product-form";
+import { can, toast, type Session } from "@/lib";
 
 export const Route = createFileRoute("/products/$productId")({
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session }
+    const { session } = context as { session?: Session };
     if (!session || !can(session.role, "products:write")) {
-      throw redirect({ to: "/products" as any })
+      throw redirect({ to: "/products" as any });
     }
   },
 
@@ -21,11 +22,13 @@ export const Route = createFileRoute("/products/$productId")({
   // state.  On repeated visits within staleTime (60 s) no network request is
   // made at all.
   loader: ({ params, context }) => {
-    const { queryClient } = context as { queryClient: import("@tanstack/react-query").QueryClient }
+    const { queryClient } = context as {
+      queryClient: import("@tanstack/react-query").QueryClient;
+    };
     return queryClient.ensureQueryData({
       queryKey: ["product", params.productId],
       queryFn: () => getProductFn({ data: { id: params.productId } }),
-    })
+    });
   },
 
   head: ({ loaderData }) => ({
@@ -39,7 +42,7 @@ export const Route = createFileRoute("/products/$productId")({
   }),
 
   component: EditProductPage,
-})
+});
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 // Mirrors the Edit Product form shape: heading + 5 fields (Name, SKU, Price,
@@ -64,64 +67,64 @@ function EditProductSkeleton() {
       </div>
       <Skeleton className="h-9 w-full" />
     </div>
-  )
+  );
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
 function EditProductPage() {
-  const { productId } = Route.useParams()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const { productId } = Route.useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Data is already in cache from the loader's ensureQueryData call.
   // No initialData needed — useQuery reads straight from cache.
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => getProductFn({ data: { id: productId } }),
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (body: UpdateProductInput) =>
       updateProductFn({ data: { id: productId, body } }),
 
     onMutate: async (updatedFields) => {
-      await queryClient.cancelQueries({ queryKey: ["product", productId] })
-      const previous = queryClient.getQueryData(["product", productId])
+      await queryClient.cancelQueries({ queryKey: ["product", productId] });
+      const previous = queryClient.getQueryData(["product", productId]);
 
       queryClient.setQueryData(["product", productId], (old: typeof product) =>
         old ? { ...old, ...updatedFields } : old
-      )
+      );
 
-      return { previous }
+      return { previous };
     },
 
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(["product", productId], ctx.previous)
+        queryClient.setQueryData(["product", productId], ctx.previous);
       }
-      toast.error("Gagal memperbarui produk", err)
+      toast.error("Gagal memperbarui produk", err);
     },
 
     onSuccess: () => {
-      toast.success("Produk berhasil diperbarui")
-      queryClient.invalidateQueries({ queryKey: ["products"] })
-      queryClient.invalidateQueries({ queryKey: ["product", productId] })
-      navigate({ to: "/products" })
+      toast.success("Produk berhasil diperbarui");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      navigate({ to: "/products" });
     },
-  })
+  });
 
-  if (isLoading && !product) return <EditProductSkeleton />
+  if (isLoading && !product) return <EditProductSkeleton />;
 
   if (!product) {
-    return <p className="p-6 text-red-500">Product not found.</p>
+    return <p className="p-6 text-red-500">Product not found.</p>;
   }
 
   const errorMessage = mutation.error
     ? mutation.error instanceof Error
       ? mutation.error.message
       : "Gagal mengupdate produk. Silakan coba lagi."
-    : null
+    : null;
 
   return (
     <div className="space-y-4 max-w-xl">
@@ -141,5 +144,5 @@ function EditProductPage() {
         error={errorMessage}
       />
     </div>
-  )
+  );
 }

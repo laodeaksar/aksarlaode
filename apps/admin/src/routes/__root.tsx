@@ -1,25 +1,33 @@
 /// <reference types="vite/client" />
+import * as React from "react";
+
+import type { QueryClient } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
-  Scripts,
-  createRootRouteWithContext,
   redirect,
+  Scripts,
   useRouterState,
-} from '@tanstack/react-router'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-import * as React from 'react'
-import type { QueryClient } from '@tanstack/react-query'
-import { Toaster } from 'sonner'
+} from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import appCss from "@repo/ui/globals.css?url"
+import { Toaster } from "sonner";
 
-import { getSession, hasAnyAdminRole, silentRefresh, SessionContext, type Session } from "@/lib"
-import { ErrorBoundary, Sidebar, Topbar } from "@/components"
+import appCss from "@repo/ui/globals.css?url";
+
+import { ErrorBoundary, Sidebar, Topbar } from "@/components";
+import {
+  getSession,
+  hasAnyAdminRole,
+  SessionContext,
+  silentRefresh,
+  type Session,
+} from "@/lib";
 
 export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient
+  queryClient: QueryClient;
 }>()({
   head: () => ({
     meta: [
@@ -36,26 +44,26 @@ export const Route = createRootRouteWithContext<{
   }),
 
   beforeLoad: async ({ location }) => {
-    if (location.pathname.startsWith("/login")) return
+    if (location.pathname.startsWith("/login")) return;
 
     // Attempt 1: normal session check.
-    let session = await getSession()
+    let session = await getSession();
 
     // Attempt 2: jika session null (access token mungkin expired), coba
     // silent refresh sekali. Kalau berhasil, ulangi session check.
     // Kalau gagal (refresh token juga expired) → redirect ke login seperti biasa.
     if (!session) {
-      const refreshed = await silentRefresh()
+      const refreshed = await silentRefresh();
       if (refreshed) {
-        session = await getSession()
+        session = await getSession();
       }
     }
 
     if (!session || !hasAnyAdminRole(session.role)) {
-      throw redirect({ to: "/login" as any })
+      throw redirect({ to: "/login" as any });
     }
 
-    return { session }
+    return { session };
   },
 
   errorComponent: ({ error }) => (
@@ -82,21 +90,21 @@ export const Route = createRootRouteWithContext<{
   ),
 
   shellComponent: RootComponent,
-})
+});
 
 function RootComponent() {
   return (
     <RootDocument>
       <Outlet />
     </RootDocument>
-  )
+  );
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const routeCtx = Route.useRouteContext() as { session?: Session }
-  const session = routeCtx.session ?? null
+  const routeCtx = Route.useRouteContext() as { session?: Session };
+  const session = routeCtx.session ?? null;
 
   if (pathname.startsWith("/login")) {
     return (
@@ -104,7 +112,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster position="top-center" richColors />
       </div>
-    )
+    );
   }
 
   return (
@@ -144,5 +152,5 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         </body>
       </html>
     </SessionContext.Provider>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-import { useState } from "react"
+import { useState } from "react";
 
-import { cartStore } from "@/lib/store/cart"
+import { cartStore } from "@/lib/store/cart";
 
 interface Props {
-  productId: string
-  name: string
-  price: number
-  imageUrl?: string
-  slug: string
-  inStock: boolean
+  productId: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+  slug: string;
+  inStock: boolean;
 }
 
 export function AddToCartButton({
@@ -19,7 +19,7 @@ export function AddToCartButton({
   slug,
   inStock,
 }: Props) {
-  const [added, setAdded] = useState(false)
+  const [added, setAdded] = useState(false);
 
   if (!inStock) {
     return (
@@ -29,7 +29,7 @@ export function AddToCartButton({
       >
         Out of Stock
       </button>
-    )
+    );
   }
 
   const handleAdd = () => {
@@ -40,10 +40,10 @@ export function AddToCartButton({
       quantity: 1,
       imageUrl,
       slug,
-    })
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
-  }
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   return (
     <button
@@ -56,5 +56,5 @@ export function AddToCartButton({
     >
       {added ? "Added to Cart!" : "Add to Cart"}
     </button>
-  )
+  );
 }

@@ -1,16 +1,18 @@
-import { auditMiddleware } from "@/effect/AuditMiddleware"
-import { NotFoundError } from "@/effect/Errors"
-import { effectMiddleware } from "@/effect/Middleware"
+import { createServerFn } from "@tanstack/react-start";
+
+import { Effect, Schema } from "effect";
+
+import { auditMiddleware } from "@/effect/AuditMiddleware";
+import { NotFoundError } from "@/effect/Errors";
+import { effectMiddleware } from "@/effect/Middleware";
 import {
   ApiClientService,
   NewProductSchema,
   UpdateProductSchema,
   type NewProduct,
-} from "@/effect/Services"
-import { createServerFn } from "@tanstack/react-start"
-import { Effect, Schema } from "effect"
+} from "@/effect/Services";
 
-import { decodeOrThrow, stripUndefined } from "./_utils"
+import { decodeOrThrow, stripUndefined } from "./_utils";
 
 // ── Input schemas ──────────────────────────────────────────────────────────
 
@@ -18,11 +20,11 @@ const ListParamsSchema = Schema.Struct({
   page: Schema.optionalWith(Schema.NumberFromString, { default: () => 1 }),
   limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 20 }),
   search: Schema.optional(Schema.String),
-})
+});
 
 const ProductIdSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
-})
+});
 
 // ── GET /products — list with pagination & search ─────────────────────────
 
@@ -38,16 +40,16 @@ export const listProductsFn = createServerFn({ method: "GET" })
     const params: { page: number; limit: number; search?: string } = {
       page: data.page,
       limit: data.limit,
-    }
-    if (data.search !== undefined) params.search = data.search
+    };
+    if (data.search !== undefined) params.search = data.search;
 
     return context.runtime.runPromise(
       Effect.gen(function* () {
-        const api = yield* ApiClientService
-        return yield* api.products.list(params)
+        const api = yield* ApiClientService;
+        return yield* api.products.list(params);
       })
-    )
-  })
+    );
+  });
 
 // ── GET /products/:id — fetch single product ──────────────────────────────
 
@@ -62,19 +64,19 @@ export const getProductFn = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
-        const api = yield* ApiClientService
-        const product = yield* api.products.getOne(data.id)
+        const api = yield* ApiClientService;
+        const product = yield* api.products.getOne(data.id);
 
         if (!product) {
           yield* Effect.fail(
             new NotFoundError({ resource: "Product", id: data.id })
-          )
+          );
         }
 
-        return product
+        return product;
       })
     )
-  )
+  );
 
 // ── POST /products — create product ───────────────────────────────────────
 
@@ -89,22 +91,22 @@ export const createProductFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
-        const api = yield* ApiClientService
+        const api = yield* ApiClientService;
         return yield* api.products.create(
           stripUndefined(
             data as unknown as Record<string, unknown>
           ) as NewProduct
-        )
+        );
       })
     )
-  )
+  );
 
 // ── PUT /products/:id — update product ────────────────────────────────────
 
 const UpdateParamsSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
   body: UpdateProductSchema,
-})
+});
 
 export const updateProductFn = createServerFn({ method: "POST" })
   .middleware([effectMiddleware, auditMiddleware])
@@ -117,16 +119,16 @@ export const updateProductFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
-        const api = yield* ApiClientService
+        const api = yield* ApiClientService;
         return yield* api.products.update(
           data.id,
           stripUndefined(
             data.body as unknown as Record<string, unknown>
           ) as Partial<NewProduct>
-        )
+        );
       })
     )
-  )
+  );
 
 // ── DELETE /products/:id ──────────────────────────────────────────────────
 
@@ -141,8 +143,8 @@ export const deleteProductFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     context.runtime.runPromise(
       Effect.gen(function* () {
-        const api = yield* ApiClientService
-        return yield* api.products.delete(data.id)
+        const api = yield* ApiClientService;
+        return yield* api.products.delete(data.id);
       })
     )
-  )
+  );

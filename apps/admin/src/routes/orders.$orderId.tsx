@@ -1,12 +1,9 @@
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { Skeleton } from "@repo/ui/components/skeleton"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { Badge } from "@repo/ui/components/badge"
-import { Button } from "@repo/ui/components/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,22 +13,33 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@repo/ui/components/alert-dialog"
+} from "@repo/ui/components/alert-dialog";
+import { Badge } from "@repo/ui/components/badge";
+import { Button } from "@repo/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/card";
+import { Skeleton } from "@repo/ui/components/skeleton";
 
-import { can, effectResolver, toast, useSession } from "@/lib"
-import { getOrderFn, updateOrderStatusFn } from "@/server/orders"
-import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
+import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
+import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
+import { can, effectResolver, toast, useSession } from "@/lib";
 
 export const Route = createFileRoute("/orders/$orderId")({
   loader: ({ params, context }) => {
-    const { queryClient } = context as { queryClient: import("@tanstack/react-query").QueryClient }
+    const { queryClient } = context as {
+      queryClient: import("@tanstack/react-query").QueryClient;
+    };
     return queryClient.ensureQueryData({
       queryKey: ["order", params.orderId],
       queryFn: () => getOrderFn({ data: { id: params.orderId } }),
-    })
+    });
   },
   component: OrderDetailPage,
-})
+});
 
 const ORDER_STATUSES = [
   "PENDING_PAYMENT",
@@ -40,7 +48,7 @@ const ORDER_STATUSES = [
   "SHIPPED",
   "DELIVERED",
   "CANCELLED",
-] as const
+] as const;
 
 const STATUS_COLOR: Record<
   string,
@@ -52,7 +60,7 @@ const STATUS_COLOR: Record<
   SHIPPED: "secondary",
   PENDING_PAYMENT: "outline",
   CANCELLED: "destructive",
-}
+};
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 // Mirrors the order detail layout: header (title + badge) + 2-col grid of
@@ -86,25 +94,25 @@ function OrderDetailSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
 function OrderDetailPage() {
-  const { orderId } = Route.useParams()
-  const queryClient = useQueryClient()
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const { orderId } = Route.useParams();
+  const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const { session } = useSession()
-  const role = session?.role ?? "CUSTOMER"
-  const canWrite = can(role, "orders:write")
+  const { session } = useSession();
+  const role = session?.role ?? "CUSTOMER";
+  const canWrite = can(role, "orders:write");
 
   // Data is already in cache from the loader's ensureQueryData call.
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrderFn({ data: { id: orderId } }),
-  })
+  });
 
   const {
     register,
@@ -115,9 +123,9 @@ function OrderDetailPage() {
   } = useForm<StatusFormFields>({
     resolver: effectResolver(StatusUpdateSchema),
     defaultValues: { nextStatus: "", note: "" },
-  })
+  });
 
-  const watchedNextStatus = watch("nextStatus")
+  const watchedNextStatus = watch("nextStatus");
 
   const { mutate: executeUpdate, isPending } = useMutation({
     mutationFn: ({ nextStatus, note }: StatusFormFields) =>
@@ -130,53 +138,56 @@ function OrderDetailPage() {
       }),
 
     onMutate: async ({ nextStatus, note }) => {
-      await queryClient.cancelQueries({ queryKey: ["order", orderId] })
-      const previous = queryClient.getQueryData(["order", orderId])
+      await queryClient.cancelQueries({ queryKey: ["order", orderId] });
+      const previous = queryClient.getQueryData(["order", orderId]);
 
-      queryClient.setQueryData(["order", orderId], (old: typeof order | undefined) => {
-        if (!old) return old
-        return {
-          ...old,
-          status: nextStatus,
-          statusHistory: [
-            ...old.statusHistory,
-            {
-              status: nextStatus,
-              note: note?.trim() || undefined,
-              timestamp: new Date().toISOString(),
-            },
-          ],
+      queryClient.setQueryData(
+        ["order", orderId],
+        (old: typeof order | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            status: nextStatus,
+            statusHistory: [
+              ...old.statusHistory,
+              {
+                status: nextStatus,
+                note: note?.trim() || undefined,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          };
         }
-      })
+      );
 
-      return { previous }
+      return { previous };
     },
 
     onError: (err, _vars, ctx) => {
       if (ctx?.previous !== undefined) {
-        queryClient.setQueryData(["order", orderId], ctx.previous)
+        queryClient.setQueryData(["order", orderId], ctx.previous);
       }
-      toast.error("Gagal mengubah status pesanan", err)
+      toast.error("Gagal mengubah status pesanan", err);
     },
 
     onSuccess: () => {
-      toast.success("Status pesanan berhasil diperbarui")
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] })
-      queryClient.invalidateQueries({ queryKey: ["orders"] })
-      reset()
-      setConfirmOpen(false)
+      toast.success("Status pesanan berhasil diperbarui");
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      reset();
+      setConfirmOpen(false);
     },
-  })
+  });
 
   const onStatusSubmit = handleSubmit((data) => {
     if (data.nextStatus === "CANCELLED") {
-      setConfirmOpen(true)
+      setConfirmOpen(true);
     } else {
-      executeUpdate(data)
+      executeUpdate(data);
     }
-  })
+  });
 
-  if (isLoading) return <OrderDetailSkeleton />
+  if (isLoading) return <OrderDetailSkeleton />;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -234,7 +245,8 @@ function OrderDetailPage() {
           <CardContent className="text-sm space-y-1">
             {Object.entries(order.shippingAddress).map(([k, v]) => (
               <p key={k}>
-                <span className="capitalize text-muted-foreground">{k}:</span> {v}
+                <span className="capitalize text-muted-foreground">{k}:</span>{" "}
+                {v}
               </p>
             ))}
           </CardContent>
@@ -251,7 +263,9 @@ function OrderDetailPage() {
                 <li key={i} className="ml-4">
                   <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-blue-500" />
                   <p className="text-sm font-medium">{e.status}</p>
-                  {e.note && <p className="text-xs text-muted-foreground">{e.note}</p>}
+                  {e.note && (
+                    <p className="text-xs text-muted-foreground">{e.note}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {new Date(e.timestamp).toLocaleString("id-ID")}
                   </p>
@@ -285,7 +299,7 @@ function OrderDetailPage() {
                         <option key={s} value={s}>
                           {s.replace(/_/g, " ")}
                         </option>
-                      ),
+                      )
                     )}
                   </select>
                   {errors.nextStatus && (
@@ -337,8 +351,8 @@ function OrderDetailPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                const { nextStatus, note } = watch()
-                executeUpdate({ nextStatus, note })
+                const { nextStatus, note } = watch();
+                executeUpdate({ nextStatus, note });
               }}
             >
               Ya, Batalkan Pesanan
@@ -347,5 +361,5 @@ function OrderDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

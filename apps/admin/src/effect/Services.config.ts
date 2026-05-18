@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect } from "effect";
 
 // ── ConfigService ──────────────────────────────────────────────────────────
 // Reads env vars once at runtime init. Server-only — never bundled to client.

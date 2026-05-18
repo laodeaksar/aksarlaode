@@ -1,21 +1,21 @@
-import { cors } from "@elysiajs/cors"
-import { swagger } from "@elysiajs/swagger"
-import Elysia, { t } from "elysia"
+import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
+import Elysia, { t } from "elysia";
 
-import { connectMongo } from "@repo/database"
-import { env } from "@repo/env/order"
+import { connectMongo } from "@repo/database";
+import { env } from "@repo/env/order";
 
-import { healthHandler } from "./handlers/health"
-import { paymentWebhookHandler } from "./handlers/payment-webhook"
-import { requestLogger } from "./lib/request-logger"
-import { adminRoutes } from "./routes/admin.routes"
-import { orderRoutes } from "./routes/order.routes"
+import { healthHandler } from "./handlers/health";
+import { paymentWebhookHandler } from "./handlers/payment-webhook";
+import { requestLogger } from "./lib/request-logger";
+import { adminRoutes } from "./routes/admin.routes";
+import { orderRoutes } from "./routes/order.routes";
 import {
   createReconciliationWorker,
   scheduleReconciliationJob,
-} from "./workers/reconciliation.worker"
+} from "./workers/reconciliation.worker";
 
-const PORT = Number(process.env.PORT) || 3003
+const PORT = Number(process.env.PORT) || 3003;
 
 const app = new Elysia()
 
@@ -135,51 +135,51 @@ const app = new Elysia()
   // ── Error response shaper — logging is handled by requestLogger plugin ────
   .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
-      set.status = 404
-      return { error: "Route not found", code: "NOT_FOUND" }
+      set.status = 404;
+      return { error: "Route not found", code: "NOT_FOUND" };
     }
     if (code === "VALIDATION") {
-      set.status = 422
+      set.status = 422;
       return {
         error: "Validation failed",
         code: "VALIDATION",
         detail: error.message,
-      }
+      };
     }
     if (code === "PARSE") {
-      set.status = 400
-      return { error: "Invalid request body", code: "PARSE_ERROR" }
+      set.status = 400;
+      return { error: "Invalid request body", code: "PARSE_ERROR" };
     }
-    set.status = 500
-    return { error: "Internal server error", code: "INTERNAL_ERROR" }
-  })
+    set.status = 500;
+    return { error: "Internal server error", code: "INTERNAL_ERROR" };
+  });
 
 async function main() {
-  await connectMongo()
+  await connectMongo();
 
   // ── Start reconciliation worker + schedule repeatable sweep job ───────────
-  const reconciliationWorker = createReconciliationWorker()
-  await scheduleReconciliationJob()
+  const reconciliationWorker = createReconciliationWorker();
+  await scheduleReconciliationJob();
 
-  app.listen(PORT)
-  console.info(`📦 order-service running on port ${PORT}`)
+  app.listen(PORT);
+  console.info(`📦 order-service running on port ${PORT}`);
   console.info(
     `📄 API docs available at http://localhost:${PORT}${env.NODE_ENV === "production" ? "/_internal/docs" : "/docs"}`
-  )
+  );
 
   // ── Graceful shutdown ─────────────────────────────────────────────────────
   const shutdown = async (signal: string) => {
-    console.info(`Received ${signal}, shutting down...`)
-    await reconciliationWorker.close()
-    await app.stop()
-    process.exit(0)
-  }
+    console.info(`Received ${signal}, shutting down...`);
+    await reconciliationWorker.close();
+    await app.stop();
+    process.exit(0);
+  };
 
-  process.on("SIGTERM", () => shutdown("SIGTERM"))
-  process.on("SIGINT", () => shutdown("SIGINT"))
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 main().catch((err) => {
-  console.error("Failed to start order-service:", err)
-  process.exit(1)
-})
+  console.error("Failed to start order-service:", err);
+  process.exit(1);
+});

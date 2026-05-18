@@ -1,20 +1,21 @@
-import { Effect } from "effect"
-import type { MiddlewareHandler } from "hono"
+import { Effect } from "effect";
 
-import type { AppEnv } from "@/types/context"
-import { verifyHmac } from "@/lib/hmac"
-import { verifyJwt } from "@/lib/jwt"
-import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions"
+import type { MiddlewareHandler } from "hono";
+
+import { verifyHmac } from "@/lib/hmac";
+import { verifyJwt } from "@/lib/jwt";
+import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions";
+import type { AppEnv } from "@/types/context";
 
 export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const path = c.req.path
-  const method = c.req.method
+  const path = c.req.path;
+  const method = c.req.method;
 
   // ── 1. Public routes — pass straight through ──────────────────────────────
   if (isPublic(path, method)) {
-    c.set("authPayload", null)
-    c.set("webhookRawBody", null)
-    return next()
+    c.set("authPayload", null);
+    c.set("webhookRawBody", null);
+    return next();
   }
 
   // ── 2. Webhook routes — HMAC signature only ───────────────────────────────
@@ -22,10 +23,10 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     // FIX GW-04: read body once and cache it in context so proxy.ts can forward
     // it without trying to re-read the already-consumed stream (which yields an
     // empty body and silently breaks every downstream webhook handler).
-    const body = await c.req.text()
-    const signature = c.req.header("x-midtrans-signature") ?? ""
+    const body = await c.req.text();
+    const signature = c.req.header("x-midtrans-signature") ?? "";
 
-    const verified = await Effect.runPromiseExit(verifyHmac(body, signature))
+    const verified = await Effect.runPromiseExit(verifyHmac(body, signature));
 
     if (verified._tag === "Failure") {
       return c.json(
@@ -35,19 +36,19 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
           requestId: c.var.requestId,
         },
         401
-      )
+      );
     }
 
-    c.set("authPayload", { type: "webhook" })
-    c.set("webhookRawBody", body)
-    return next()
+    c.set("authPayload", { type: "webhook" });
+    c.set("webhookRawBody", body);
+    return next();
   }
 
   // ── 3. Protected routes — Bearer JWT ─────────────────────────────────────
-  c.set("webhookRawBody", null)
+  c.set("webhookRawBody", null);
 
-  const authHeader = c.req.header("Authorization")
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+  const authHeader = c.req.header("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (!token) {
     return c.json(
@@ -57,21 +58,21 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
         requestId: c.var.requestId,
       },
       401
-    )
+    );
   }
 
-  const result = await Effect.runPromiseExit(verifyJwt(token))
+  const result = await Effect.runPromiseExit(verifyJwt(token));
 
   if (result._tag === "Failure") {
-    const tag = (result.cause.error as { _tag?: string })?._tag ?? ""
-    const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED"
+    const tag = (result.cause.error as { _tag?: string })?._tag ?? "";
+    const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED";
     return c.json(
       { error: "Invalid or expired token", code, requestId: c.var.requestId },
       401
-    )
+    );
   }
 
-  c.set("authPayload", result.value)
+  c.set("authPayload", result.value);
 
   // ── Session denylist check (recommended for production) ───────────────────
   // To enforce immediate revocation after logout/session-revoke, call:
@@ -90,16 +91,16 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   // between auth-service and the gateway's deployment environment.
   // ─────────────────────────────────────────────────────────────────────────
 
-  await next()
-}
+  await next();
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function isPublic(path: string, method: string): boolean {
   return PUBLIC_ROUTES.some(
     (r) => r.path === path && (r.method === method || r.method === "*")
-  )
+  );
 }
 
 function isWebhook(path: string): boolean {
-  return WEBHOOK_ROUTES.some((r) => path.startsWith(r))
+  return WEBHOOK_ROUTES.some((r) => path.startsWith(r));
 }

@@ -1,7 +1,9 @@
-import { productRepository } from "@/repository/product.repository"
-import type { DerivedContext } from "@/types"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
+
+import type { Context } from "elysia";
+
+import { productRepository } from "@/repository/product.repository";
+import type { DerivedContext } from "@/types";
 
 export const createHandler = async ({
   body,
@@ -11,24 +13,24 @@ export const createHandler = async ({
   requestId,
 }: Context & DerivedContext) => {
   if (userRole !== "ADMIN") {
-    set.status = 403
-    return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" }
+    set.status = 403;
+    return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" };
   }
 
-  const data = body as Record<string, unknown>
+  const data = body as Record<string, unknown>;
 
   // FIX PRD-06b: price must be a positive integer (stored as smallest currency unit).
   // A zero or negative price would allow free/negative-value orders downstream.
   if (typeof data.price !== "number" || data.price <= 0) {
-    set.status = 422
-    return { error: "Price must be a positive number", code: "INVALID_PRICE" }
+    set.status = 422;
+    return { error: "Price must be a positive number", code: "INVALID_PRICE" };
   }
 
-  const result = await Effect.runPromiseExit(productRepository.create(body))
+  const result = await Effect.runPromiseExit(productRepository.create(body));
 
   if (result._tag === "Failure") {
-    set.status = 500
-    return { error: "Failed to create product" }
+    set.status = 500;
+    return { error: "Failed to create product" };
   }
 
   console.info(
@@ -38,8 +40,8 @@ export const createHandler = async ({
       userId,
       requestId,
     })
-  )
+  );
 
-  set.status = 201
-  return result.value
-}
+  set.status = 201;
+  return result.value;
+};

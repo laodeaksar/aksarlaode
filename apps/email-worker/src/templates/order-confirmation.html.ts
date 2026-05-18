@@ -32,4 +32,4 @@ export const orderConfirmationTemplate = `
   </p>
 </body>
 </html>
-`
+`;

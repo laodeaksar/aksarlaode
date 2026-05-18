@@ -53,5 +53,5 @@ export function shapeOrder(doc: Record<string, any>) {
     cancelledAt: doc.cancelledAt
       ? new Date(doc.cancelledAt).toISOString()
       : null,
-  }
+  };
 }

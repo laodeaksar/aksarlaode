@@ -1,6 +1,6 @@
-import type { Context } from "hono"
+import type { Context } from "hono";
 
-import type { AppEnv } from "@/types/context"
+import type { AppEnv } from "@/types/context";
 
 /**
  * Returns the best-effort client IP address.
@@ -23,5 +23,5 @@ export function getClientIp(c: Context<AppEnv>): string {
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
     c.req.header("x-real-ip") ??
     "unknown"
-  )
+  );
 }

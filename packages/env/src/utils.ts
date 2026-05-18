@@ -1,4 +1,4 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
 /**
  * Parse process.env against a Zod schema.
@@ -9,19 +9,19 @@ export function parseEnv<T extends z.ZodRawShape>(
   shape: T,
   serviceName: string
 ): z.infer<z.ZodObject<T>> {
-  const result = z.object(shape).safeParse(process.env)
+  const result = z.object(shape).safeParse(process.env);
 
   if (!result.success) {
-    const fields = result.error.flatten().fieldErrors
+    const fields = result.error.flatten().fieldErrors;
     const lines = Object.entries(fields)
       .map(([key, errors]) => `   ${key.padEnd(30)} ${errors?.join(", ")}`)
-      .join("\n")
+      .join("\n");
 
-    console.error(`\n❌  [${serviceName}] Invalid environment variables:\n`)
-    console.error(lines)
-    console.error("\n   Check your .env file against .env.example\n")
-    process.exit(1)
+    console.error(`\n❌  [${serviceName}] Invalid environment variables:\n`);
+    console.error(lines);
+    console.error("\n   Check your .env file against .env.example\n");
+    process.exit(1);
   }
 
-  return result.data
+  return result.data;
 }

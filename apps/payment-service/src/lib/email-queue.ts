@@ -1,25 +1,26 @@
-import { Queue } from "bullmq"
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { env } from "@repo/env"
+import { Queue } from "bullmq";
+
+import { env } from "@repo/env";
 
 class EmailQueueError extends Data.TaggedError("EmailQueueError")<{
-  cause: unknown
+  cause: unknown;
 }> {}
 
 // Payload types that match email-worker's EmailJobPayload contract.
 // userEmail is required so the worker can send without an auth-service round-trip.
 type OrderConfirmationPayload = {
-  orderId: string
-  userEmail: string
-  amount: number
-}
+  orderId: string;
+  userEmail: string;
+  amount: number;
+};
 
 type OrderCancelledPayload = {
-  orderId: string
-  userEmail: string
-  reason: string
-}
+  orderId: string;
+  userEmail: string;
+  reason: string;
+};
 
 const queue = new Queue("email", {
   connection: {
@@ -33,13 +34,13 @@ const queue = new Queue("email", {
     removeOnComplete: { count: 100 },
     removeOnFail: { count: 500 },
   },
-})
+});
 
 function addEffect<T>(jobName: string, payload: T) {
   return Effect.tryPromise({
     try: () => queue.add(jobName, payload).then(() => undefined),
     catch: (e) => new EmailQueueError({ cause: e }),
-  })
+  });
 }
 
 // Effect-based producers used with yield* inside Effect.gen blocks.
@@ -49,4 +50,4 @@ export const emailQueue = {
 
   addCancelled: (payload: OrderCancelledPayload) =>
     addEffect("order-cancelled", payload),
-}
+};

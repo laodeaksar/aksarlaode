@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Environment variables required by admin.
@@ -27,6 +27,6 @@ export const env = parseEnv(
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },
   "admin"
-)
+);
 
-export type DatabaseEnv = typeof env
+export type DatabaseEnv = typeof env;

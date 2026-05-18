@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
   // logout=1 dikirim oleh topbar setelah logout berhasil.
@@ -7,4 +7,4 @@ export const Route = createFileRoute("/login")({
     logout: search["logout"] === "1",
   }),
   component: () => <Outlet />,
-})
+});

@@ -1,4 +1,4 @@
-import { env } from "@repo/env/gateway"
+import { env } from "@repo/env/gateway";
 
 // ── Service registry ──────────────────────────────────────────────────────────
 // Each entry maps:
@@ -24,10 +24,10 @@ export const SERVICE_REGISTRY = {
     prefix: "/payments",
     timeoutMs: 30_000,
   },
-} as const
+} as const;
 
 // Webhooks are not a proxied service but share the payment timeout budget.
-export const WEBHOOK_TIMEOUT_MS = 30_000
-export const DEFAULT_TIMEOUT_MS = 15_000
+export const WEBHOOK_TIMEOUT_MS = 30_000;
+export const DEFAULT_TIMEOUT_MS = 15_000;
 
-export type ServiceName = keyof typeof SERVICE_REGISTRY
+export type ServiceName = keyof typeof SERVICE_REGISTRY;

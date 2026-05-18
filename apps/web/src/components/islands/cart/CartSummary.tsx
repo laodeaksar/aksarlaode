@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-import { cartStore, type CartItem } from "@/lib/store/cart"
+import { cartStore, type CartItem } from "@/lib/store/cart";
 
 export function CartSummary() {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [items, setItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    setItems(cartStore.getItems())
-    const handler = () => setItems(cartStore.getItems())
-    window.addEventListener("cart:updated", handler)
-    return () => window.removeEventListener("cart:updated", handler)
-  }, [])
+    setItems(cartStore.getItems());
+    const handler = () => setItems(cartStore.getItems());
+    window.addEventListener("cart:updated", handler);
+    return () => window.removeEventListener("cart:updated", handler);
+  }, []);
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   if (items.length === 0) {
     return (
@@ -25,7 +25,7 @@ export function CartSummary() {
           Browse Products
         </a>
       </div>
-    )
+    );
   }
 
   return (
@@ -91,5 +91,5 @@ export function CartSummary() {
         </a>
       </div>
     </div>
-  )
+  );
 }

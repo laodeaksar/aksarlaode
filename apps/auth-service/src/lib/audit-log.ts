@@ -29,14 +29,14 @@ export type AuditEventName =
   | "SESSION_REVOKED" // a specific session was revoked via the sessions API
   // ── Credential changes ───────────────────────────────────────────────────
   | "PASSWORD_CHANGED" // password changed via change-password endpoint
-  | "PASSWORD_RESET" // password reset via forgot/reset-password flow
+  | "PASSWORD_RESET"; // password reset via forgot/reset-password flow
 
 export type AuditEntry = {
-  event: AuditEventName
-  actorId: string
-  targetId: string
-  meta?: Record<string, string>
-}
+  event: AuditEventName;
+  actorId: string;
+  targetId: string;
+  meta?: Record<string, string>;
+};
 
 export const writeAuditLog = ({
   event,
@@ -51,7 +51,7 @@ export const writeAuditLog = ({
     targetId,
     ...meta,
     timestamp: new Date().toISOString(),
-  }
+  };
   // Use process.stdout.write to bypass any request-logger interception
-  process.stdout.write(JSON.stringify(entry) + "\n")
-}
+  process.stdout.write(JSON.stringify(entry) + "\n");
+};

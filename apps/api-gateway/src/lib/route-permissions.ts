@@ -16,10 +16,10 @@ export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
   { path: "/products/:id", method: "GET" },
   { path: "/products/:id/stock", method: "GET" }, // C-02: stock check — dipakai order-service & storefront
   { path: "/products/slug/:slug", method: "GET" },
-]
+];
 
 // ── Webhook routes (HMAC-verified, no JWT) ────────────────────────────────────
-export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks"]
+export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks"];
 
 // ── Role hierarchy (higher number = more privileged) ─────────────────────────
 //
@@ -31,16 +31,16 @@ export const ROLE_HIERARCHY = {
   ADMIN: 1,
   OWNER: 2,
   SERVICE: 3,
-} as const
+} as const;
 
 // ── RBAC rules — first matching rule wins ─────────────────────────────────────
 // pattern: regex tested against c.req.path
 // method:  HTTP verb or "*" for any
 // minRole: minimum role required
 export const ROUTE_PERMISSIONS: ReadonlyArray<{
-  pattern: RegExp
-  method: string
-  minRole: keyof typeof ROLE_HIERARCHY
+  pattern: RegExp;
+  method: string;
+  minRole: keyof typeof ROLE_HIERARCHY;
 }> = [
   // ── Owner-exclusive routes ────────────────────────────────────────────────
   // Transfer ownership — only the current OWNER can initiate
@@ -75,4 +75,4 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   { pattern: /^\/auth\/me/, method: "*", minRole: "CUSTOMER" },
   { pattern: /^\/auth\/logout/, method: "POST", minRole: "CUSTOMER" },
   { pattern: /^\/auth\/change-password/, method: "POST", minRole: "CUSTOMER" },
-]
+];

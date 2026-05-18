@@ -1,33 +1,35 @@
-import { useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Effect, pipe } from "effect"
-import { useForm } from "react-hook-form"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { ordersApi } from "@/lib/api/orders"
-import { HttpError, NetworkError } from "@/lib/effect/errors"
-import { AppRuntime } from "@/lib/effect/runtime"
-import { checkoutSchema, type CheckoutInput } from "@/lib/schemas/forms"
-import { useCart } from "@/lib/store/cart"
+import { Effect, pipe } from "effect";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { ordersApi } from "@/lib/api/orders";
+import { HttpError, NetworkError } from "@/lib/effect/errors";
+import { AppRuntime } from "@/lib/effect/runtime";
+import { checkoutSchema, type CheckoutInput } from "@/lib/schemas/forms";
+import { useCart } from "@/lib/store/cart";
 
 type Props = {
-  userId: string
-}
+  userId: string;
+};
 
-type CheckoutStep = "address" | "review" | "payment"
+type CheckoutStep = "address" | "review" | "payment";
 
 // FIX WEB-07b: Distinguish between server errors (order/payment initiation)
 // and Snap errors (user interaction with Midtrans modal).  The payment step
 // now shows a dedicated retry card so the user is never left with a blank
 // screen or a silent failure.
-type PaymentStatus = "idle" | "failed" | "cancelled"
+type PaymentStatus = "idle" | "failed" | "cancelled";
 
 export function CheckoutForm({ userId }: Props) {
-  const { items, totalAmount, clearCart } = useCart()
-  const [step, setStep] = useState<CheckoutStep>("address")
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle")
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [snapToken, setSnapToken] = useState<string | null>(null)
+  const { items, totalAmount, clearCart } = useCart();
+  const [step, setStep] = useState<CheckoutStep>("address");
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [snapToken, setSnapToken] = useState<string | null>(null);
 
   const {
     register,
@@ -38,9 +40,9 @@ export function CheckoutForm({ userId }: Props) {
   } = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
     mode: "onChange",
-  })
+  });
 
-  const watchedValues = watch()
+  const watchedValues = watch();
 
   // Step 1 → Step 2: validate address fields only
   const proceedToReview = async () => {
@@ -51,14 +53,14 @@ export function CheckoutForm({ userId }: Props) {
       "city",
       "province",
       "postalCode",
-    ]
-    const valid = await trigger(addressFields)
-    if (valid) setStep("review")
-  }
+    ];
+    const valid = await trigger(addressFields);
+    if (valid) setStep("review");
+  };
 
   // Step 2 → Step 3: create order + initiate payment
   const proceedToPayment = async (values: CheckoutInput) => {
-    setServerError(null)
+    setServerError(null);
 
     const program = Effect.gen(function* () {
       // 1. Create order
@@ -84,7 +86,7 @@ export function CheckoutForm({ userId }: Props) {
           shippingFee: 15_000,
         },
         document.cookie
-      )
+      );
 
       // 2. Initiate payment
       const payment = yield* pipe(
@@ -110,54 +112,54 @@ export function CheckoutForm({ userId }: Props) {
             }).then((r) => r.json() as Promise<{ snapToken: string }>),
           catch: (e) => new NetworkError({ message: String(e) }),
         })
-      )
+      );
 
-      return { orderId: order.orderId, snapToken: payment.snapToken }
-    })
+      return { orderId: order.orderId, snapToken: payment.snapToken };
+    });
 
-    const exit = await AppRuntime.runPromiseExit(program)
+    const exit = await AppRuntime.runPromiseExit(program);
 
     if (exit._tag === "Failure") {
-      const err = exit.cause.error
+      const err = exit.cause.error;
       if (err instanceof HttpError && err.status === 409) {
-        setServerError("Some items are out of stock. Please update your cart.")
-        return
+        setServerError("Some items are out of stock. Please update your cart.");
+        return;
       }
       // FIX WEB-07b: surface a clear, retry-able error message.
-      setServerError("We couldn't complete your order. Please try again.")
-      return
+      setServerError("We couldn't complete your order. Please try again.");
+      return;
     }
 
-    setOrderId(exit.value.orderId)
-    setSnapToken(exit.value.snapToken)
-    setPaymentStatus("idle")
-    setStep("payment")
-  }
+    setOrderId(exit.value.orderId);
+    setSnapToken(exit.value.snapToken);
+    setPaymentStatus("idle");
+    setStep("payment");
+  };
 
   // Step 3: open Midtrans Snap
   const openSnap = () => {
-    if (!snapToken) return
-    setPaymentStatus("idle")
+    if (!snapToken) return;
+    setPaymentStatus("idle");
 
     // @ts-ignore — Midtrans Snap global
     window.snap.pay(snapToken, {
       onSuccess: () => {
-        clearCart()
-        window.location.href = `/orders/${orderId}?status=success`
+        clearCart();
+        window.location.href = `/orders/${orderId}?status=success`;
       },
       onPending: () => {
-        window.location.href = `/orders/${orderId}?status=pending`
+        window.location.href = `/orders/${orderId}?status=pending`;
       },
       // FIX WEB-07b: set paymentStatus so the payment step renders a retry card
       // instead of silently going back to the review step.
       onError: () => {
-        setPaymentStatus("failed")
+        setPaymentStatus("failed");
       },
       onClose: () => {
-        setPaymentStatus("cancelled")
+        setPaymentStatus("cancelled");
       },
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -407,7 +409,7 @@ export function CheckoutForm({ userId }: Props) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function StepIndicator({ current }: { current: CheckoutStep }) {
@@ -415,8 +417,8 @@ function StepIndicator({ current }: { current: CheckoutStep }) {
     { key: "address", label: "Address" },
     { key: "review", label: "Review" },
     { key: "payment", label: "Payment" },
-  ]
-  const idx = steps.findIndex((s) => s.key === current)
+  ];
+  const idx = steps.findIndex((s) => s.key === current);
 
   return (
     <ol className="flex items-center gap-2 text-sm">
@@ -437,7 +439,7 @@ function StepIndicator({ current }: { current: CheckoutStep }) {
         </li>
       ))}
     </ol>
-  )
+  );
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -447,7 +449,7 @@ function inputCls(hasError: boolean) {
       hasError
         ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
         : "border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    }`
+    }`;
 }
 
 function Field({
@@ -456,10 +458,10 @@ function Field({
   children,
   className = "",
 }: {
-  label: string
-  error?: string
-  children: React.ReactNode
-  className?: string
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <div className={className}>
@@ -469,5 +471,5 @@ function Field({
       {children}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
-  )
+  );
 }

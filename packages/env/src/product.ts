@@ -1,6 +1,6 @@
-import { z } from "zod/v4"
+import { z } from "zod/v4";
 
-import { parseEnv } from "./utils"
+import { parseEnv } from "./utils";
 
 /**
  * Environment variables required by product-service.
@@ -22,6 +22,6 @@ export const env = parseEnv(
     ADMIN_URL: z.url("ADMIN_URL must be a valid URL"),
   },
   "product-service"
-)
+);
 
-export type ProductEnv = typeof env
+export type ProductEnv = typeof env;

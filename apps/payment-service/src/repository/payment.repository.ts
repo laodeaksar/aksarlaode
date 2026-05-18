@@ -1,27 +1,27 @@
-import { Data, Effect } from "effect"
+import { Data, Effect } from "effect";
 
-import { db, eq, schema } from "@repo/database"
+import { db, eq, schema } from "@repo/database";
 
 class PaymentNotFoundError extends Data.TaggedError("PaymentNotFoundError")<{
-  id: string
+  id: string;
 }> {}
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 
 export type NewPayment = {
-  id: string
-  orderId: string
-  userId: string
-  snapToken: string
-  snapUrl: string
-  amount: number
-  status: string
-}
+  id: string;
+  orderId: string;
+  userId: string;
+  snapToken: string;
+  snapUrl: string;
+  amount: number;
+  status: string;
+};
 
 export type PaymentUpdate = {
-  status: string
-  paymentType?: string | null
-  paidAt?: Date | null
-}
+  status: string;
+  paymentType?: string | null;
+  paidAt?: Date | null;
+};
 
 // ── findByOrderId ─────────────────────────────────────────────────────────
 const findByOrderId = (orderId: string) =>
@@ -34,12 +34,12 @@ const findByOrderId = (orderId: string) =>
           .where(eq(schema.payments.orderId, orderId))
           .limit(1),
       catch: (e) => new DbError({ cause: e }),
-    })
-    const row = rows[0]
+    });
+    const row = rows[0];
     if (!row)
-      return yield* Effect.fail(new PaymentNotFoundError({ id: orderId }))
-    return row
-  })
+      return yield* Effect.fail(new PaymentNotFoundError({ id: orderId }));
+    return row;
+  });
 
 // ── create ────────────────────────────────────────────────────────────────
 const create = (data: NewPayment) =>
@@ -51,7 +51,7 @@ const create = (data: NewPayment) =>
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 // ── updateStatus ──────────────────────────────────────────────────────────
 const updateStatus = (orderId: string, status: string) =>
@@ -64,18 +64,18 @@ const updateStatus = (orderId: string, status: string) =>
         .returning()
         .then((r) => r[0]!),
     catch: (e) => new DbError({ cause: e }),
-  })
+  });
 
 // FIX PAY-02: upsert — create payment record on first initiation, refresh the
 // snapToken on subsequent calls for the same order (idempotent).
 // FIX PAY-07: accept userEmail so it is stored at initiation time.
 const upsert = (data: {
-  orderId: string
-  userId: string
-  amount: number
-  snapToken: string
-  status: string
-  userEmail?: string
+  orderId: string;
+  userId: string;
+  amount: number;
+  snapToken: string;
+  status: string;
+  userEmail?: string;
 }) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
@@ -102,13 +102,13 @@ const upsert = (data: {
           })
           .returning(),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
-    const row = rows[0]
+    const row = rows[0];
     if (!row)
       return yield* Effect.fail(
         new DbError({ cause: "Upsert returned no rows" })
-      )
+      );
 
     // FIX PAY-08: write immutable audit entry for initiation
     yield* insertAuditLog({
@@ -120,24 +120,24 @@ const upsert = (data: {
       newStatus: row.status,
       amount: row.amount,
       paymentType: null,
-    })
+    });
 
-    return row
-  })
+    return row;
+  });
 
 // FIX PAY-02: updateByOrderId — updates payment status, paymentType, and paidAt
 // after a Midtrans webhook notification.
 const updateByOrderId = (orderId: string, data: PaymentUpdate) =>
   Effect.gen(function* () {
     // Fetch current status for audit log before update
-    const existing = yield* findByOrderId(orderId)
+    const existing = yield* findByOrderId(orderId);
 
     const set: Record<string, unknown> = {
       status: data.status,
       updatedAt: new Date(),
-    }
-    if (data.paymentType !== undefined) set.paymentType = data.paymentType
-    if (data.paidAt !== undefined) set.paidAt = data.paidAt
+    };
+    if (data.paymentType !== undefined) set.paymentType = data.paymentType;
+    if (data.paidAt !== undefined) set.paidAt = data.paidAt;
 
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -147,11 +147,11 @@ const updateByOrderId = (orderId: string, data: PaymentUpdate) =>
           .where(eq(schema.payments.orderId, orderId))
           .returning(),
       catch: (e) => new DbError({ cause: e }),
-    })
+    });
 
-    const row = rows[0]
+    const row = rows[0];
     if (!row)
-      return yield* Effect.fail(new PaymentNotFoundError({ id: orderId }))
+      return yield* Effect.fail(new PaymentNotFoundError({ id: orderId }));
 
     // FIX PAY-08: write immutable audit entry for every status transition
     yield* insertAuditLog({
@@ -163,25 +163,25 @@ const updateByOrderId = (orderId: string, data: PaymentUpdate) =>
       newStatus: row.status,
       amount: row.amount,
       paymentType: data.paymentType ?? null,
-    })
+    });
 
-    return row
-  })
+    return row;
+  });
 
 // ── insertAuditLog ────────────────────────────────────────────────────────
 // FIX PAY-08: append-only audit log for forensic reconciliation.
 // Failures are logged but never propagate — the audit trail must never
 // cause a payment flow to fail.
 const insertAuditLog = (entry: {
-  paymentId: string
-  orderId: string
-  userId: string
-  event: string
-  oldStatus: string | null
-  newStatus: string
-  amount: number
-  paymentType: string | null
-  metadata?: Record<string, unknown>
+  paymentId: string;
+  orderId: string;
+  userId: string;
+  event: string;
+  oldStatus: string | null;
+  newStatus: string;
+  amount: number;
+  paymentType: string | null;
+  metadata?: Record<string, unknown>;
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -204,10 +204,10 @@ const insertAuditLog = (entry: {
           orderId: entry.orderId,
           error: String(e),
         })
-      )
-      return new DbError({ cause: e })
+      );
+      return new DbError({ cause: e });
     },
-  }).pipe(Effect.orElse(() => Effect.void))
+  }).pipe(Effect.orElse(() => Effect.void));
 
 export const paymentRepository = {
   findByOrderId,
@@ -215,4 +215,4 @@ export const paymentRepository = {
   updateStatus,
   upsert, // FIX PAY-02
   updateByOrderId, // FIX PAY-02
-}
+};

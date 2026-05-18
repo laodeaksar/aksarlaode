@@ -1,17 +1,18 @@
-import { adminOrderExportHandler } from "@/handlers/admin-order-export"
-import { adminOrderNoteHandler } from "@/handlers/admin-order-note"
-import { adminOrderTimelineHandler } from "@/handlers/admin-order-timeline"
-import { adminListOrdersHandler } from "@/handlers/admin-orders"
-import { adminOrdersSummaryHandler } from "@/handlers/admin-orders-summary"
-import { adminReconciliationHandler } from "@/handlers/admin-reconciliation"
-import Elysia, { t } from "elysia"
+import Elysia, { t } from "elysia";
 
-import { env } from "@repo/env/order"
+import { env } from "@repo/env/order";
+
+import { adminOrderExportHandler } from "@/handlers/admin-order-export";
+import { adminOrderNoteHandler } from "@/handlers/admin-order-note";
+import { adminOrderTimelineHandler } from "@/handlers/admin-order-timeline";
+import { adminListOrdersHandler } from "@/handlers/admin-orders";
+import { adminOrdersSummaryHandler } from "@/handlers/admin-orders-summary";
+import { adminReconciliationHandler } from "@/handlers/admin-reconciliation";
 
 const ErrorSchema = t.Object({
   error: t.String(),
   code: t.Optional(t.String()),
-})
+});
 
 const SweepResultSchema = t.Object({
   triggeredBy: t.String(),
@@ -25,16 +26,16 @@ const SweepResultSchema = t.Object({
   stockFailed: t.Integer(),
   alreadyHandled: t.Integer(),
   skipped: t.Integer(),
-})
+});
 
 export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 
   // ── Service token guard — all /admin routes require a trusted gateway token ─
   .onBeforeHandle(({ headers, set }) => {
-    const serviceToken = headers["x-service-token"]
+    const serviceToken = headers["x-service-token"];
     if (serviceToken !== env.INTERNAL_SERVICE_TOKEN) {
-      set.status = 401
-      return { error: "Unauthorized", code: "MISSING_SERVICE_TOKEN" }
+      set.status = 401;
+      return { error: "Unauthorized", code: "MISSING_SERVICE_TOKEN" };
     }
   })
 
@@ -374,12 +375,12 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
   .get(
     "/reconciliation/status",
     async () => {
-      const { redis } = await import("@/lib/redis")
-      const lockHolder = await redis.get("reconciliation:sweep:lock")
+      const { redis } = await import("@/lib/redis");
+      const lockHolder = await redis.get("reconciliation:sweep:lock");
       return {
         sweepInProgress: lockHolder !== null,
         lockedBy: lockHolder ?? null,
-      }
+      };
     },
     {
       response: {
@@ -394,4 +395,4 @@ export const adminRoutes = new Elysia({ prefix: "/admin", tags: ["Admin"] })
           "Returns whether a sweep is currently in progress and who triggered it.",
       },
     }
-  )
+  );

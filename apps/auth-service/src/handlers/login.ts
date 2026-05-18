@@ -1,15 +1,15 @@
-import { sessionRepository } from "@/repository/session.repository"
-import { userRepository } from "@/repository/user.repository"
-import { Effect } from "effect"
+import { Effect } from "effect";
 
-import { AuthError, toErrorResponse } from "@repo/common/errors"
+import { AuthError, toErrorResponse } from "@repo/common/errors";
 
-import { recordEmailAttempt } from "@/lib/account-lockout"
-import { writeAuditLog } from "@/lib/audit-log"
-import { hashPassword, needsRehash, verifyPassword } from "@/lib/password"
-import { maskEmail } from "@/lib/pii"
-import { issueTokenPair } from "@/lib/token"
-import { hashToken } from "@/lib/token-hash"
+import { recordEmailAttempt } from "@/lib/account-lockout";
+import { writeAuditLog } from "@/lib/audit-log";
+import { hashPassword, needsRehash, verifyPassword } from "@/lib/password";
+import { maskEmail } from "@/lib/pii";
+import { issueTokenPair } from "@/lib/token";
+import { hashToken } from "@/lib/token-hash";
+import { sessionRepository } from "@/repository/session.repository";
+import { userRepository } from "@/repository/user.repository";
 
 /**
  * Maximum number of concurrent sessions allowed per user.
@@ -24,7 +24,7 @@ import { hashToken } from "@/lib/token-hash"
  * enough for legitimate users, low enough to make mass session accumulation
  * (e.g. after credential stuffing) visible in the sessions list.
  */
-const MAX_SESSIONS_PER_USER = 5
+const MAX_SESSIONS_PER_USER = 5;
 
 // FIX AUTH-06: Extract IP and User-Agent from request headers so they appear
 // in every LOGIN_FAILED and LOGIN_SUCCESS audit entry.  IP is read from
@@ -34,7 +34,7 @@ function extractClientIp(request: Request): string {
     request.headers.get("x-real-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     "unknown"
-  )
+  );
 }
 
 export const loginHandler = async ({
@@ -42,12 +42,12 @@ export const loginHandler = async ({
   set,
   request,
 }: {
-  body: { email: string; password: string }
-  set: any
-  request: Request
+  body: { email: string; password: string };
+  set: any;
+  request: Request;
 }) => {
-  const ip = extractClientIp(request)
-  const userAgent = request.headers.get("user-agent") ?? "unknown"
+  const ip = extractClientIp(request);
+  const userAgent = request.headers.get("user-agent") ?? "unknown";
   // ── Per-email account lockout ─────────────────────────────────────────────
   // Check and record this attempt BEFORE any DB query. Both successful and
   // failed attempts count so an attacker cannot work around the limit by
@@ -56,25 +56,25 @@ export const loginHandler = async ({
   //
   // This is orthogonal to the per-IP rate limiter: an attacker using 1,000
   // IPs is still bounded to 20 attempts per hour against this specific email.
-  const emailHash = await hashToken(body.email.toLowerCase().trim())
-  const lockoutCheck = await recordEmailAttempt(emailHash)
+  const emailHash = await hashToken(body.email.toLowerCase().trim());
+  const lockoutCheck = await recordEmailAttempt(emailHash);
 
   if (lockoutCheck.locked) {
-    set.status = 429
-    set.headers["Retry-After"] = String(lockoutCheck.retryAfterSec)
+    set.status = 429;
+    set.headers["Retry-After"] = String(lockoutCheck.retryAfterSec);
     return {
       error: "Too many login attempts. Please try again later.",
       code: "ACCOUNT_LOCKED",
-    }
+    };
   }
 
   const program = Effect.gen(function* () {
     // ── 1. Verify credentials ───────────────────────────────────────────────
-    const user = yield* userRepository.findByEmail(body.email)
-    if (!user) return yield* Effect.fail(new AuthError("Invalid credentials"))
+    const user = yield* userRepository.findByEmail(body.email);
+    if (!user) return yield* Effect.fail(new AuthError("Invalid credentials"));
 
-    const valid = yield* verifyPassword(body.password, user.passwordHash)
-    if (!valid) return yield* Effect.fail(new AuthError("Invalid credentials"))
+    const valid = yield* verifyPassword(body.password, user.passwordHash);
+    if (!valid) return yield* Effect.fail(new AuthError("Invalid credentials"));
 
     // ── 2. Transparent Argon2id upgrade ─────────────────────────────────────
     // If the stored hash uses the legacy PBKDF2 format, re-hash with Argon2id
@@ -86,7 +86,7 @@ export const loginHandler = async ({
           userRepository.updatePasswordHash(user.id, newHash)
         ),
         Effect.orElse(() => Effect.void)
-      )
+      );
     }
 
     // ── 3. Enforce per-user session cap ─────────────────────────────────────
@@ -95,13 +95,13 @@ export const loginHandler = async ({
     // login — worst case the user briefly exceeds the cap by 1.
     const sessionCount = yield* sessionRepository
       .countByUserId(user.id)
-      .pipe(Effect.orElse(() => Effect.succeed(0)))
+      .pipe(Effect.orElse(() => Effect.succeed(0)));
 
     if (sessionCount >= MAX_SESSIONS_PER_USER) {
-      const excess = sessionCount - MAX_SESSIONS_PER_USER + 1 // +1 for the session we're about to create
+      const excess = sessionCount - MAX_SESSIONS_PER_USER + 1; // +1 for the session we're about to create
       yield* sessionRepository
         .deleteOldestByUserId(user.id, excess)
-        .pipe(Effect.orElse(() => Effect.void))
+        .pipe(Effect.orElse(() => Effect.void));
 
       console.info(
         JSON.stringify({
@@ -110,29 +110,29 @@ export const loginHandler = async ({
           evicted: excess,
           cap: MAX_SESSIONS_PER_USER,
         })
-      )
+      );
     }
 
     // ── 4. Issue tokens and create new session ───────────────────────────────
-    const sessionId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID();
     const tokens = yield* issueTokenPair(
       user.id,
       user.role,
       sessionId,
       user.email
-    )
+    );
 
     const refreshTokenHash = yield* Effect.tryPromise({
       try: () => hashToken(tokens.refreshToken),
       catch: () => new AuthError("Internal error"),
-    })
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     yield* sessionRepository.create({
       id: sessionId,
       userId: user.id,
       token: refreshTokenHash,
       expiresAt,
-    })
+    });
 
     return {
       user: {
@@ -142,10 +142,10 @@ export const loginHandler = async ({
         role: user.role,
       },
       tokens,
-    }
-  })
+    };
+  });
 
-  const result = await Effect.runPromiseExit(program)
+  const result = await Effect.runPromiseExit(program);
 
   if (result._tag === "Failure") {
     // FIX AUTH-06: Include ip and userAgent so log aggregators can correlate
@@ -160,14 +160,14 @@ export const loginHandler = async ({
         ip,
         userAgent,
       },
-    })
+    });
 
-    const { body: errBody, status } = toErrorResponse(result.cause.error)
-    set.status = status
-    return errBody
+    const { body: errBody, status } = toErrorResponse(result.cause.error);
+    set.status = status;
+    return errBody;
   }
 
-  const { user, tokens } = result.value
+  const { user, tokens } = result.value;
 
   // FIX AUTH-06: ip and userAgent added to LOGIN_SUCCESS as well so the same
   // session can be traced across both success and failure events.  Email is
@@ -177,18 +177,18 @@ export const loginHandler = async ({
     actorId: user.id,
     targetId: user.id,
     meta: { role: user.role, ip, userAgent },
-  })
+  });
 
   if (user.role === "OWNER") {
     writeAuditLog({
       event: "OWNER_LOGIN",
       actorId: user.id,
       targetId: user.id,
-    })
+    });
   }
 
   set.headers["Set-Cookie"] =
-    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=${60 * 60 * 24 * 7}`
+    `ec_refresh=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/auth; Max-Age=${60 * 60 * 24 * 7}`;
 
-  return { user, accessToken: tokens.accessToken }
-}
+  return { user, accessToken: tokens.accessToken };
+};

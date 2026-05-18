@@ -1,6 +1,6 @@
-import type { Context } from "hono"
+import type { Context } from "hono";
 
-import type { AppEnv } from "@/types/context"
+import type { AppEnv } from "@/types/context";
 
 export function errorBoundary(err: Error, c: Context<AppEnv>) {
   console.error(
@@ -10,7 +10,7 @@ export function errorBoundary(err: Error, c: Context<AppEnv>) {
       message: err.message,
       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     })
-  )
+  );
 
   return c.json(
     {
@@ -19,5 +19,5 @@ export function errorBoundary(err: Error, c: Context<AppEnv>) {
       requestId: c.var.requestId,
     },
     500
-  )
+  );
 }

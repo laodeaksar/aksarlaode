@@ -1,8 +1,10 @@
-import { productRepository } from "@/repository/product.repository"
-import { Effect } from "effect"
-import type { Context } from "elysia"
+import { Effect } from "effect";
 
-import { ProductFiltersSchema } from "@repo/common"
+import type { Context } from "elysia";
+
+import { ProductFiltersSchema } from "@repo/common";
+
+import { productRepository } from "@/repository/product.repository";
 
 export const listHandler = async ({ query, set }: Context) => {
   const program = Effect.gen(function* () {
@@ -19,17 +21,17 @@ export const listHandler = async ({ query, set }: Context) => {
           cursor: query.cursor ? String(query.cursor) : undefined,
         }),
       catch: () => ({ _tag: "ValidationError" as const }),
-    })
+    });
 
-    return yield* productRepository.list(filters)
-  })
+    return yield* productRepository.list(filters);
+  });
 
-  const result = await Effect.runPromiseExit(program)
+  const result = await Effect.runPromiseExit(program);
 
   if (result._tag === "Failure") {
-    set.status = 422
-    return { error: "Failed to fetch products", code: "INTERNAL_ERROR" }
+    set.status = 422;
+    return { error: "Failed to fetch products", code: "INTERNAL_ERROR" };
   }
 
-  return result.value
-}
+  return result.value;
+};

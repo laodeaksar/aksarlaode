@@ -1,16 +1,18 @@
-import { useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Effect } from "effect"
-import { useForm } from "react-hook-form"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { authApi } from "@/lib/api/auth"
-import { AuthError } from "@/lib/effect/errors"
-import { AppRuntime } from "@/lib/effect/runtime"
-import { loginSchema, type LoginInput } from "@/lib/schemas/forms"
+import { Effect } from "effect";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { authApi } from "@/lib/api/auth";
+import { AuthError } from "@/lib/effect/errors";
+import { AppRuntime } from "@/lib/effect/runtime";
+import { loginSchema, type LoginInput } from "@/lib/schemas/forms";
 
 export function LoginForm() {
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
@@ -19,42 +21,42 @@ export function LoginForm() {
     setError,
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
   const onSubmit = async (values: LoginInput) => {
-    setServerError(null)
+    setServerError(null);
 
     const program = Effect.gen(function* () {
-      const result = yield* authApi.login(values)
-      return result
-    })
+      const result = yield* authApi.login(values);
+      return result;
+    });
 
-    const exit = await AppRuntime.runPromiseExit(program)
+    const exit = await AppRuntime.runPromiseExit(program);
 
     if (exit._tag === "Failure") {
-      const err = exit.cause.error
+      const err = exit.cause.error;
 
       // Classify error → field error vs server error
       if (err instanceof AuthError) {
-        setError("password", { message: "Invalid email or password" })
-        return
+        setError("password", { message: "Invalid email or password" });
+        return;
       }
 
-      setServerError("Login failed. Please try again.")
-      return
+      setServerError("Login failed. Please try again.");
+      return;
     }
 
-    setIsSuccess(true)
+    setIsSuccess(true);
     // Let Astro middleware handle redirect after cookie is set
-    window.location.href = "/"
-  }
+    window.location.href = "/";
+  };
 
   if (isSuccess) {
     return (
       <div className="text-center text-green-600 font-medium py-8">
         Logged in! Redirecting...
       </div>
-    )
+    );
   }
 
   return (
@@ -101,5 +103,5 @@ export function LoginForm() {
         </a>
       </p>
     </form>
-  )
+  );
 }

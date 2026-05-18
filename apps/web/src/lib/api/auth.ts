@@ -1,11 +1,11 @@
-import type { LoginInput, RegisterInput } from "@/schemas/forms"
+import type { LoginInput, RegisterInput } from "@/schemas/forms";
 
-import { apiFetch } from "./client"
+import { apiFetch } from "./client";
 
 export type AuthResponse = {
-  user: { id: string; name: string; email: string; role: string }
-  accessToken: string
-}
+  user: { id: string; name: string; email: string; role: string };
+  accessToken: string;
+};
 
 export const authApi = {
   login: (body: LoginInput) =>
@@ -21,4 +21,4 @@ export const authApi = {
   me: (cookie: string) =>
     apiFetch<AuthResponse["user"]>("/auth/me", { cookie }),
   logout: () => apiFetch<void>("/auth/logout", { method: "POST" }),
-}
+};

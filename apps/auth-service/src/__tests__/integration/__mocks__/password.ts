@@ -10,21 +10,22 @@
  * Security note: SHA-256 is NOT a suitable password hash for production.
  * This file is only ever imported via the vitest.integration.config.ts alias.
  */
-import { createHash } from "node:crypto"
-import { Effect } from "effect"
+import { createHash } from "node:crypto";
+
+import { Effect } from "effect";
 
 function sha256Hex(input: string) {
-  return createHash("sha256").update(input).digest("hex")
+  return createHash("sha256").update(input).digest("hex");
 }
 
 export function hashPassword(password: string) {
-  return Effect.sync(() => `sha256:${sha256Hex(password)}`)
+  return Effect.sync(() => `sha256:${sha256Hex(password)}`);
 }
 
 export function verifyPassword(password: string, hash: string) {
-  return Effect.sync(() => hash === `sha256:${sha256Hex(password)}`)
+  return Effect.sync(() => hash === `sha256:${sha256Hex(password)}`);
 }
 
 export function needsRehash(_hash: string) {
-  return Effect.succeed(false)
+  return Effect.succeed(false);
 }

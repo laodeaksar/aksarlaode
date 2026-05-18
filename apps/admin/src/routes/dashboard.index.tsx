@@ -1,8 +1,9 @@
-import { lazy } from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { lazy } from "react";
 
-const DashboardPage = lazy(() => import("./dashboard-page"))
+import { createFileRoute } from "@tanstack/react-router";
+
+const DashboardPage = lazy(() => import("./dashboard-page"));
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
-})
+});

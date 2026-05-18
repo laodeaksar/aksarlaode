@@ -1,8 +1,8 @@
-import { db, schema } from "@repo/database"
-import { connectMongo } from "@repo/database/mongodb"
+import { db, schema } from "@repo/database";
+import { connectMongo } from "@repo/database/mongodb";
 
 async function seed() {
-  console.log("🌱 Seeding database...")
+  console.log("🌱 Seeding database...");
 
   // ── Admin user ─────────────────────────────────────────
   await db
@@ -14,7 +14,7 @@ async function seed() {
       passwordHash: "REPLACE_WITH_HASHED_PASSWORD",
       role: "ADMIN",
     })
-    .onConflictDoNothing()
+    .onConflictDoNothing();
 
   // ── Categories ─────────────────────────────────────────
   const [electronics] = await db
@@ -35,7 +35,7 @@ async function seed() {
       { id: crypto.randomUUID(), name: "Books", slug: "books", sortOrder: 3 },
     ])
     .returning()
-    .onConflictDoNothing()
+    .onConflictDoNothing();
 
   // ── Products ───────────────────────────────────────────
   await db
@@ -67,13 +67,13 @@ async function seed() {
         description: "Tenkeyless mechanical keyboard with RGB backlight.",
       },
     ])
-    .onConflictDoNothing()
+    .onConflictDoNothing();
 
-  console.log("✅ Seed complete!")
-  process.exit(0)
+  console.log("✅ Seed complete!");
+  process.exit(0);
 }
 
 seed().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+  console.error(e);
+  process.exit(1);
+});

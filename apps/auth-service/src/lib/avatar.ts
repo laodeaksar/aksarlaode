@@ -1,10 +1,10 @@
 import {
   ALLOWED_AVATAR_HOSTS,
   isAllowedAvatarUrl as coreIsAllowedAvatarUrl,
-} from "@repo/common/lib/avatar"
-import { env } from "@repo/env/auth"
+} from "@repo/common/lib/avatar";
+import { env } from "@repo/env/auth";
 
-export { ALLOWED_AVATAR_HOSTS }
+export { ALLOWED_AVATAR_HOSTS };
 
 /**
  * Auth-service avatar URL validator.
@@ -18,7 +18,7 @@ export { ALLOWED_AVATAR_HOSTS }
  * localhost is still blocked.
  */
 export function isAllowedAvatarUrl(raw: string): boolean {
-  return coreIsAllowedAvatarUrl(raw, appAllowedHosts())
+  return coreIsAllowedAvatarUrl(raw, appAllowedHosts());
 }
 
 /**
@@ -27,13 +27,13 @@ export function isAllowedAvatarUrl(raw: string): boolean {
  * in practice env is static after startup so the cost is negligible.
  */
 function appAllowedHosts(): ReadonlySet<string> {
-  const hosts = new Set<string>()
+  const hosts = new Set<string>();
   for (const raw of [env.WEB_URL, env.ADMIN_URL]) {
     try {
-      hosts.add(new URL(raw).hostname.toLowerCase())
+      hosts.add(new URL(raw).hostname.toLowerCase());
     } catch {
       // ignore — misconfigured URLs are caught at startup by parseEnv()
     }
   }
-  return hosts
+  return hosts;
 }

@@ -1,11 +1,12 @@
-import { paymentRepository } from "@/repository/payment.repository"
-import type { AppEnv } from "@/types"
-import { Effect } from "effect"
-import type { Context } from "hono"
+import { Effect } from "effect";
 
-import { emailQueue } from "@/lib/email-queue"
-import type { MidtransNotification } from "@/lib/midtrans"
-import { orderClient } from "@/lib/order-client"
+import type { Context } from "hono";
+
+import { emailQueue } from "@/lib/email-queue";
+import type { MidtransNotification } from "@/lib/midtrans";
+import { orderClient } from "@/lib/order-client";
+import { paymentRepository } from "@/repository/payment.repository";
+import type { AppEnv } from "@/types";
 
 // FIX PAY-04: split into two maps.
 //
@@ -27,7 +28,7 @@ const PAYMENT_STATUS_MAP: Record<string, string> = {
   cancel: "CANCELLED",
   expire: "EXPIRED",
   refund: "REFUNDED",
-}
+};
 
 const ORDER_STATUS_MAP: Record<string, string | null> = {
   capture: "PAID",
@@ -37,17 +38,17 @@ const ORDER_STATUS_MAP: Record<string, string | null> = {
   cancel: "CANCELLED",
   expire: "CANCELLED", // was "EXPIRED" — invalid OrderStatus → 422
   refund: "REFUNDED",
-}
+};
 
 export const webhookHandler = async (c: Context<AppEnv>) => {
   // Body is forwarded intact by api-gateway after the GW-04 fix (body cached
   // in context.webhookRawBody and re-used by the proxy before forwarding).
-  const notification = await c.req.json<MidtransNotification>()
+  const notification = await c.req.json<MidtransNotification>();
 
   const program = Effect.gen(function* () {
-    const txStatus = notification.transaction_status ?? ""
-    const paymentStatus = PAYMENT_STATUS_MAP[txStatus] ?? "UNKNOWN"
-    const orderStatus = ORDER_STATUS_MAP[txStatus] // null = skip
+    const txStatus = notification.transaction_status ?? "";
+    const paymentStatus = PAYMENT_STATUS_MAP[txStatus] ?? "UNKNOWN";
+    const orderStatus = ORDER_STATUS_MAP[txStatus]; // null = skip
 
     // ── FIX PAY-05: Idempotency guard ────────────────────────────────────────
     // Midtrans may deliver the same notification more than once. Fetch the
@@ -60,10 +61,10 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     // crashing the flow.
     const existingResult = yield* paymentRepository
       .findByOrderId(notification.order_id)
-      .pipe(Effect.either)
+      .pipe(Effect.either);
 
     const existingStatus =
-      existingResult._tag === "Right" ? existingResult.right.status : null
+      existingResult._tag === "Right" ? existingResult.right.status : null;
 
     if (existingStatus === paymentStatus) {
       console.info(
@@ -74,8 +75,8 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
           paymentStatus,
           note: "Status already matches — skipping side effects",
         })
-      )
-      return { received: true }
+      );
+      return { received: true };
     }
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -90,8 +91,8 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
     if (existingResult._tag === "Right") {
       const notificationAmount = Math.round(
         parseFloat(notification.gross_amount ?? "0")
-      )
-      const dbAmount = existingResult.right.amount
+      );
+      const dbAmount = existingResult.right.amount;
 
       if (notificationAmount !== dbAmount) {
         console.error(
@@ -105,8 +106,8 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
             txStatus,
             note: "Rejecting webhook — gross_amount does not match stored payment amount. Possible tampered notification.",
           })
-        )
-        return { received: true }
+        );
+        return { received: true };
       }
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -119,25 +120,25 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
         paymentType: notification.payment_type,
         paidAt: paymentStatus === "PAID" ? new Date() : undefined,
       }
-    )
+    );
 
     // 2. Sync order-service — only when there is a meaningful order status change
     if (orderStatus !== null) {
-      yield* orderClient.updateStatus(notification.order_id, orderStatus)
+      yield* orderClient.updateStatus(notification.order_id, orderStatus);
     }
 
     // 3. Side effects — enqueue email jobs (fire-and-forget via BullMQ)
     //    userEmail comes from the payment record's associated user.
     //    If the user email is not stored on the payment, the email-worker will
     //    fall back to fetching it from auth-service using the userId.
-    const userEmail = payment.userEmail ?? ""
+    const userEmail = payment.userEmail ?? "";
 
     if (paymentStatus === "PAID") {
       yield* emailQueue.add("order-confirmation", {
         orderId: notification.order_id,
         userEmail,
         amount: payment.amount,
-      })
+      });
     }
 
     if (
@@ -145,19 +146,19 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
       paymentStatus === "CANCELLED" ||
       paymentStatus === "FAILED"
     ) {
-      yield* orderClient.releaseStock(notification.order_id)
+      yield* orderClient.releaseStock(notification.order_id);
 
       yield* emailQueue.addCancelled({
         orderId: notification.order_id,
         userEmail,
         reason: paymentStatus,
-      })
+      });
     }
 
-    return { received: true }
-  })
+    return { received: true };
+  });
 
-  const result = await Effect.runPromiseExit(program)
+  const result = await Effect.runPromiseExit(program);
 
   // Always return 200 to Midtrans — if we 5xx it retries indefinitely.
   if (result._tag === "Failure") {
@@ -168,9 +169,9 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
         txStatus: notification?.transaction_status,
         cause: String(result.cause),
       })
-    )
-    return c.json({ received: false }, 200)
+    );
+    return c.json({ received: false }, 200);
   }
 
-  return c.json(result.value, 200)
-}
+  return c.json(result.value, 200);
+};

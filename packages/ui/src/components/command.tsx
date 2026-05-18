@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Command as CommandPrimitive } from "cmdk"
-import { CheckIcon, SearchIcon } from "lucide-react"
+import type * as React from "react";
+
+import { Command as CommandPrimitive } from "cmdk";
+import { CheckIcon, SearchIcon } from "lucide-react";
 
 import {
   Dialog,
@@ -10,9 +11,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@repo/ui/components/dialog"
-import { InputGroup, InputGroupAddon } from "@repo/ui/components/input-group"
-import { cn } from "@repo/ui/lib/utils"
+} from "@repo/ui/components/dialog";
+import { InputGroup, InputGroupAddon } from "@repo/ui/components/input-group";
+import { cn } from "@repo/ui/lib/utils";
 
 function Command({
   className,
@@ -27,7 +28,7 @@ function Command({
       data-slot="command"
       {...props}
     />
-  )
+  );
 }
 
 function CommandDialog({
@@ -38,11 +39,11 @@ function CommandDialog({
   showCloseButton = false,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
-  title?: string
-  description?: string
-  className?: string
-  showCloseButton?: boolean
-  children: React.ReactNode
+  title?: string;
+  description?: string;
+  className?: string;
+  showCloseButton?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <Dialog {...props}>
@@ -60,7 +61,7 @@ function CommandDialog({
         {children}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function CommandInput({
@@ -83,7 +84,7 @@ function CommandInput({
         </InputGroupAddon>
       </InputGroup>
     </div>
-  )
+  );
 }
 
 function CommandList({
@@ -99,7 +100,7 @@ function CommandList({
       data-slot="command-list"
       {...props}
     />
-  )
+  );
 }
 
 function CommandEmpty({
@@ -112,7 +113,7 @@ function CommandEmpty({
       data-slot="command-empty"
       {...props}
     />
-  )
+  );
 }
 
 function CommandGroup({
@@ -128,7 +129,7 @@ function CommandGroup({
       data-slot="command-group"
       {...props}
     />
-  )
+  );
 }
 
 function CommandSeparator({
@@ -141,7 +142,7 @@ function CommandSeparator({
       data-slot="command-separator"
       {...props}
     />
-  )
+  );
 }
 
 function CommandItem({
@@ -161,7 +162,7 @@ function CommandItem({
       {children}
       <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
-  )
+  );
 }
 
 function CommandShortcut({
@@ -177,7 +178,7 @@ function CommandShortcut({
       data-slot="command-shortcut"
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -190,4 +191,4 @@ export {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-}
+};

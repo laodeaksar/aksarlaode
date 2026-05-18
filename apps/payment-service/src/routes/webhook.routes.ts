@@ -1,9 +1,10 @@
-import { webhookHandler } from "@/handlers/webhook"
-import type { AppEnv } from "@/types"
-import { Hono } from "hono"
+import { Hono } from "hono";
 
-const router = new Hono<AppEnv>()
+import { webhookHandler } from "@/handlers/webhook";
+import type { AppEnv } from "@/types";
 
-router.post("/midtrans", webhookHandler)
+const router = new Hono<AppEnv>();
 
-export default router
+router.post("/midtrans", webhookHandler);
+
+export default router;

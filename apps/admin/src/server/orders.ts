@@ -17,6 +17,12 @@ const OrderIdSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
 })
 
+const UpdateOrderStatusSchema = Schema.Struct({
+  id: Schema.String.pipe(Schema.minLength(1)),
+  status: Schema.String.pipe(Schema.minLength(1)),
+  note: Schema.optional(Schema.String),
+})
+
 // ── GET /orders — list with pagination & optional status filter ────────────
 // Used as the SSR loader in `routes/orders/index.tsx` and re-called from
 // `orders-page.tsx` whenever page or status filter changes.
@@ -40,6 +46,33 @@ export const listOrdersFn = createServerFn({ method: "GET" })
           const params: { page: number; status?: string } = { page: data.page }
           if (data.status !== undefined) params.status = data.status
           return yield* api.orders.list(params)
+        })
+      )
+  )
+
+// ── PATCH /orders/:id/status — update order status ────────────────────────
+// Replaces the legacy client-side `ordersApi.updateStatus()` call.
+// Runs server-side so the service-to-service token is never exposed to the
+// browser. On success the caller invalidates ["order", orderId] in the cache.
+
+export const updateOrderStatusFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
+  .inputValidator((raw: unknown) =>
+    decodeOrThrow(
+      UpdateOrderStatusSchema,
+      raw as Schema.Schema.Encoded<typeof UpdateOrderStatusSchema>
+    )
+  )
+  .handler(
+    async ({ data, context }): Promise<void> =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService
+          yield* api.orders.updateStatus(
+            data.id,
+            data.status,
+            data.note
+          )
         })
       )
   )

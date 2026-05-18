@@ -17,11 +17,10 @@ import {
   AlertDialogTitle,
 } from "@repo/ui/components/alert-dialog"
 
-import { ordersApi } from "@/lib/api"
 import { effectResolver } from "@/lib/effect-resolver"
 import { can } from "@/lib/rbac"
 import { useSession } from "@/lib/session-context"
-import { getOrderFn } from "@/server/orders"
+import { getOrderFn, updateOrderStatusFn } from "@/server/orders"
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
 
 export const Route = createFileRoute("/orders/$orderId")({
@@ -81,7 +80,13 @@ function OrderDetailPage() {
 
   const { mutate: executeUpdate, isPending } = useMutation({
     mutationFn: ({ nextStatus, note }: StatusFormFields) =>
-      ordersApi.updateStatus(orderId, nextStatus, note || undefined),
+      updateOrderStatusFn({
+        data: {
+          id: orderId,
+          status: nextStatus,
+          ...(note ? { note } : {}),
+        },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] })
       reset()

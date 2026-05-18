@@ -100,6 +100,14 @@
     (field `productName` vs `name`, tidak ada `totalAmount`) — reconcile dengan
     order-service team saat TYPE-03.
 
+- [x] **REFRESH-01** `silentRefresh` interceptor dipasang di dua titik:
+  - `__root.tsx` `beforeLoad` — jika `getSession()` null, coba refresh dulu sebelum
+    redirect ke login. Token kedaluwarsa tidak langsung logout user.
+  - `router.tsx` `QueryCache` + `MutationCache` `onError` — setiap query/mutation yang
+    gagal dengan 401 (`ApiError.status === 401` atau `UnauthorizedError`) otomatis
+    memanggil `silentRefresh()` + `queryClient.invalidateQueries()`. Cooldown 10 detik
+    mencegah refresh loop; jika masih 401 setelahnya → `window.location.href = "/login"`.
+
 - [x] **LAYER-01** Migrasi `authApi` dari `lib/api.ts` ke server function di
   `src/server/auth.ts`. `loginFn` dan `logoutFn` dibuat dengan cookie forwarding
   via `appendResponseHeader` + `getCookies` dari `@tanstack/react-start/server`.

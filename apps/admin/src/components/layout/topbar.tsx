@@ -9,7 +9,15 @@ export function Topbar() {
 
   const mutation = useMutation({
     mutationFn: () => logoutFn(),
-    onSettled: () => {
+
+    // Sukses: bawa flag logout=1 agar login-page menampilkan toast konfirmasi.
+    onSuccess: () => {
+      queryClient.clear()
+      navigate({ to: "/login", search: { logout: "1" } })
+    },
+
+    // Error (misal: network): tetap redirect ke login tanpa toast.
+    onError: () => {
       queryClient.clear()
       navigate({ to: "/login" })
     },

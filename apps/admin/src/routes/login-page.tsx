@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
@@ -24,12 +24,24 @@ import {
 } from "@repo/ui/components/input-group"
 
 import { loginFn } from "@/server/auth"
-import { effectResolver } from "@/lib"
+import { effectResolver, toast } from "@/lib"
 import { LoginSchema, type LoginFields } from "@/schemas/forms"
+
+import { Route } from "./login.route"
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { logout } = Route.useSearch()
   const [showPassword, setShowPassword] = useState(false)
+
+  // Saat user tiba di halaman ini dengan ?logout=1 (dikirim oleh topbar setelah
+  // logout berhasil), tampilkan toast konfirmasi lalu hapus param dari URL agar
+  // refresh halaman tidak menampilkan toast lagi.
+  useEffect(() => {
+    if (!logout) return
+    toast.success("Berhasil keluar dari akun")
+    void navigate({ to: "/login", search: {}, replace: true })
+  }, [logout, navigate])
 
   const {
     register,
@@ -110,7 +122,7 @@ export default function LoginPage() {
                 {mutation.error instanceof Error
                   ? mutation.error.message
                   : "Login gagal. Periksa email dan password."}
-            </p>
+              </p>
             )}
 
             <Button

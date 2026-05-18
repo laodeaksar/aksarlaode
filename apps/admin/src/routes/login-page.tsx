@@ -22,6 +22,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@repo/ui/components/input-group"
+import { Skeleton } from "@repo/ui/components/skeleton"
 
 import { loginFn } from "@/server/auth"
 import { effectResolver, toast } from "@/lib"
@@ -29,14 +30,50 @@ import { LoginSchema, type LoginFields } from "@/schemas/forms"
 
 import { Route } from "./login.route"
 
+// ── Skeleton ───────────────────────────────────────────────────────────────
+// Ditampilkan selama ?logout=1 diproses (useEffect belum jalan).
+// Bentuknya mirror persis Card login agar tidak ada flash layout saat toast
+// muncul dan URL dibersihkan.
+
+function LoginPageSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <Skeleton className="h-6 w-28 mx-auto" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            {/* Email field */}
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+            {/* Password field */}
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          </div>
+          {/* Submit button */}
+          <Skeleton className="h-9 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── LoginPage ──────────────────────────────────────────────────────────────
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { logout } = Route.useSearch()
   const [showPassword, setShowPassword] = useState(false)
 
-  // Saat user tiba di halaman ini dengan ?logout=1 (dikirim oleh topbar setelah
-  // logout berhasil), tampilkan toast konfirmasi lalu hapus param dari URL agar
-  // refresh halaman tidak menampilkan toast lagi.
+  // Saat user tiba dengan ?logout=1 (dikirim topbar setelah logout berhasil):
+  //   1. Tampilkan skeleton (form belum di-render — tidak ada flash).
+  //   2. useEffect jalan → toast konfirmasi muncul.
+  //   3. URL dibersihkan → skeleton diganti form normal.
   useEffect(() => {
     if (!logout) return
     toast.success("Berhasil keluar dari akun")
@@ -60,6 +97,8 @@ export default function LoginPage() {
   })
 
   const onFormSubmit = handleSubmit((data) => mutation.mutate(data))
+
+  if (logout) return <LoginPageSkeleton />
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">

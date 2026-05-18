@@ -4,8 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
 
-import { effectResolver } from "@/lib/effect-resolver"
-import { authApi } from "@/lib/api"
+import { authApi, effectResolver } from "@/lib"
 import { LoginSchema, type LoginFields } from "@/schemas/forms"
 import { Button } from "@repo/ui/components/button"
 import {

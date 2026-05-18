@@ -17,9 +17,7 @@ import {
   AlertDialogTitle,
 } from "@repo/ui/components/alert-dialog"
 
-import { effectResolver } from "@/lib/effect-resolver"
-import { can } from "@/lib/rbac"
-import { useSession } from "@/lib/session-context"
+import { can, effectResolver, useSession } from "@/lib"
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders"
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms"
 

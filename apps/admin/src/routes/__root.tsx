@@ -14,12 +14,8 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import appCss from "@repo/ui/globals.css?url"
 
-import { getSession, type Session } from "@/lib/auth"
-import { hasAnyAdminRole } from "@/lib/rbac"
-import { SessionContext } from "@/lib/session-context"
-import { ErrorBoundary } from "@/components/error-boundary"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Topbar } from "@/components/layout/topbar"
+import { getSession, hasAnyAdminRole, SessionContext, type Session } from "@/lib"
+import { ErrorBoundary, Sidebar, Topbar } from "@/components"
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient

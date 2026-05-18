@@ -21,9 +21,8 @@ import { Button } from "@repo/ui/components/button"
 import { Input } from "@repo/ui/components/input"
 
 import { deleteProductFn, listProductsFn } from "@/server/products"
-import { can } from "@/lib/rbac"
-import { useSession } from "@/lib/session-context"
-import { DataTable } from "@/components/data-table/data-table"
+import { can, useSession } from "@/lib"
+import { DataTable } from "@/components"
 
 import { Route } from "./products.route"
 

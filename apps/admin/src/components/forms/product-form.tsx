@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form"
 
-import { effectResolver } from "@/lib/effect-resolver"
+import { effectResolver } from "@/lib"
 import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms"
 import { Button } from "@repo/ui/components/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field"

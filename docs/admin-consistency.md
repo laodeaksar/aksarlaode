@@ -127,8 +127,14 @@
   **SKIP**: `sidebar.tsx` — palette dark (`bg-gray-900`, `bg-gray-800`, `text-gray-300`,
   `border-gray-800`) adalah desain sidebar yang disengaja, bukan hardcoded accidental.
 
-- [ ] **BARREL-01** Tambah barrel export `src/components/index.ts` dan `src/lib/index.ts`
-  — opsional, tapi memudahkan refactor besar. Hanya kalau team setuju dengan pattern ini.
+- [x] **BARREL-01** Barrel exports dibuat dan semua consumer dimigrasikan:
+  - `src/components/index.ts` — re-ekspor `ErrorBoundary`, `NotFound`, `DataTable`,
+    `ProductForm`, `Sidebar`, `Topbar`
+  - `src/lib/index.ts` — re-ekspor semua dari `api`, `auth`, `effect-resolver`,
+    `rbac`, `session-context` (values + types)
+  - 13 file consumer (routes + components) diupdate ke `from "@/lib"` / `from "@/components"`
+  - **SKIP** file internal lib (`session-context.tsx` → `@/lib/auth`) — import diretto
+    dipertahankan untuk menghindari circular dependency.
 
 ---
 

@@ -1,7 +1,6 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import { listOrdersFn } from "@/server/orders"
-import type { Session } from "@/lib/auth"
-import { can } from "@/lib/rbac"
+import { can, type Session } from "@/lib"
 
 export const Route = createFileRoute("/orders")({
   beforeLoad: ({ context }) => {

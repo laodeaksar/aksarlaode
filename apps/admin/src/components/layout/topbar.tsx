@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 
-import { authApi } from "@/lib/api"
+import { authApi } from "@/lib"
 
 export function Topbar() {
   const navigate    = useNavigate()

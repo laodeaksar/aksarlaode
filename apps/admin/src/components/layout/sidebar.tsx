@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router"
 
-import { can } from "@/lib/rbac"
-import { useSession } from "@/lib/session-context"
+import { can, useSession } from "@/lib"
 
 export function Sidebar() {
   const { session } = useSession()

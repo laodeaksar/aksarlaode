@@ -3,8 +3,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
 import { createProductFn } from "@/server/products"
 import type { NewProductInput } from "@/effect/Services"
-import type { Session } from "@/lib/auth"
-import { can } from "@/lib/rbac"
+import { can, type Session } from "@/lib"
 import { ProductForm } from "@/components/forms/product-form"
 
 export const Route = createFileRoute("/products/new")({

@@ -2,8 +2,7 @@ import { Outlet } from "@tanstack/react-router"
 import { listAuditLogsFn } from "@/server/audit-logs"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import type { Session } from "@/lib/auth"
-import { can } from "@/lib/rbac"
+import { can, type Session } from "@/lib"
 
 export const Route = createFileRoute("/audit-logs")({
   beforeLoad: ({ context }) => {

@@ -1,13 +1,12 @@
 import { useState } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
+import { useMutation } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 
 import { effectResolver } from "@/lib/effect-resolver"
-import { env } from "@repo/env/admin"
-import { useNavigate } from "@tanstack/react-router"
-import { EyeOffIcon } from "lucide-react"
-
-import { LoginSchema, type LoginFields} from "@/schemas/forms"
-import
+import { authApi } from "@/lib/api"
+import { LoginSchema, type LoginFields } from "@/schemas/forms"
 import { Button } from "@repo/ui/components/button"
 import {
   Card,
@@ -17,7 +16,6 @@ import {
 } from "@repo/ui/components/card"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -26,53 +24,34 @@ import { Input } from "@repo/ui/components/input"
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupInput
+  InputGroupInput,
 } from "@repo/ui/components/input-group"
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-const { register,
+  const {
+    register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFields>({
     resolver: effectResolver(LoginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
+    defaultValues: { email: "", password: "" },
+  })
+
+  const mutation = useMutation({
+    mutationFn: async (data: LoginFields) => {
+      const result = await authApi.login(data)
+      if (result.error) throw new Error(result.error)
+      return result.data!
+    },
+    onSuccess: () => {
+      navigate({ to: "/dashboard" })
     },
   })
 
-  const onFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      const res = await fetch(`${env.PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        setError(body?.message ?? "Login gagal. Periksa email dan password.")
-        return
-      }
-
-      navigate({ to: "/dashboard" })
-    } catch {
-      setError("Tidak dapat terhubung ke server. Coba lagi.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const onFormSubmit = handleSubmit((data) => mutation.mutate(data))
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -81,102 +60,69 @@ const { register,
           <CardTitle className="text-xl text-center">Admin Login</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-          <FieldGroup>
-            <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    Email address
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id={field.name}
-                      aria-invalid={fieldState.invalid}
-                    placeholder="example@mail.com"
-                    autoComplete="off"
+          <form onSubmit={onFormSubmit} className="space-y-4">
+            <FieldGroup>
+              <Field data-invalid={!!errors.email}>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  {...register("email")}
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="example@mail.com"
+                  aria-invalid={!!errors.email}
+                  disabled={mutation.isPending}
+                />
+                {errors.email && (
+                  <FieldError errors={[errors.email]} />
+                )}
+              </Field>
+
+              <Field data-invalid={!!errors.password}>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    {...register("password")}
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    aria-invalid={!!errors.password}
+                    disabled={mutation.isPending}
                   />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-            <Controller
-              name="password"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}
-                   Password
-                  </FieldLabel>
-                  <InputGroup>
-                    <InputGroupInput
-                      {...field}
-                      id={field.name}
-                      placeholder="*********"
-                      type="password"
-                      aria-invalid={fieldState.invalid}
-                    />
-                    <InputGroupAddon align="inline-end">
-          <EyeOffIcon />
-        </InputGroupAddon>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-          </FieldGroup>
+                  <InputGroupAddon align="inline-end">
+                    <button
+                      type="button"
+                      className="flex items-center justify-center text-gray-400 hover:text-gray-600"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showPassword
+                        ? <EyeOffIcon className="h-4 w-4" />
+                        : <EyeIcon    className="h-4 w-4" />}
+                    </button>
+                  </InputGroupAddon>
+                </InputGroup>
+                {errors.password && (
+                  <FieldError errors={[errors.password]} />
+                )}
+              </Field>
+            </FieldGroup>
 
-          {/*<div className="space-y-1">
-              <label
-                htmlFor="login-email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                required
-                className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="login-password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>*/}
-
-            {error && (
+            {mutation.isError && (
               <p role="alert" className="text-sm text-red-600">
-                {error}
+                {mutation.error instanceof Error
+                  ? mutation.error.message
+                  : "Login gagal. Periksa email dan password."}
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Masuk..." : "Masuk"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Masuk..." : "Masuk"}
             </Button>
           </form>
         </CardContent>

@@ -81,6 +81,15 @@ async function request<T>(
   }
 }
 
+// ── Auth ──────────────────────────────────────────────────
+export const authApi = {
+  login: (body: { email: string; password: string }) =>
+    request<{ accessToken: string; user: { id: string; email: string; name: string; role: string } }>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+}
+
 // ── Products ──────────────────────────────────────────────
 export const productsApi = {
   list: (params?: string) =>

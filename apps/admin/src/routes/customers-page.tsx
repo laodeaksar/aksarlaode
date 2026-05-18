@@ -5,6 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@repo/ui/components/badge"
+import { Input } from "@repo/ui/components/input"
 
 import { listCustomersFn } from "@/server/customers"
 import type { User } from "@/effect/Services"
@@ -63,7 +64,7 @@ export default function CustomersPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data, isLoading } = useQuery({
-    queryKey: ["customers", page, search],
+    queryKey: ["customers", { page, search }],
     queryFn: () =>
       listCustomersFn({
         data: { page, ...(search ? { search } : {}) },
@@ -98,8 +99,8 @@ export default function CustomersPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
 
-      <input
-        className="w-64 rounded border px-3 py-2 text-sm"
+      <Input
+        className="w-64"
         placeholder="Search by name or email..."
         defaultValue={search}
         onChange={(e) => handleSearch(e.target.value)}

@@ -85,7 +85,7 @@ export default function AuditLogsPage() {
   const loaderData = Route.useLoaderData()
 
   const { data, isLoading } = useQuery({
-    queryKey: ["audit-logs", page],
+    queryKey: ["audit-logs", { page }],
     queryFn: () => listAuditLogsFn({ data: { page } }),
     initialData: page === 1 ? loaderData : undefined,
   })

@@ -91,7 +91,7 @@ export default function OrdersPage() {
   const loaderData = Route.useLoaderData()
 
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", page, status],
+    queryKey: ["orders", { page, status }],
     queryFn: () =>
       listOrdersFn({
         data: { page, ...(status ? { status } : {}) },

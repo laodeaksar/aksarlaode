@@ -1,8 +1,16 @@
-import { Outlet } from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import { listOrdersFn } from "@/server/orders"
-import { createFileRoute } from "@tanstack/react-router"
+import type { Session } from "@/lib/auth"
+import { can } from "@/lib/rbac"
 
 export const Route = createFileRoute("/orders")({
+  beforeLoad: ({ context }) => {
+    const { session } = context as { session?: Session }
+    if (!session || !can(session.role, "orders:read")) {
+      throw redirect({ to: "/dashboard" })
+    }
+  },
+
   validateSearch: (search: Record<string, unknown>) => ({
     page: Math.max(1, Number(search.page) || 1),
     status: typeof search.status === "string" ? search.status : "",

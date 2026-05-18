@@ -51,24 +51,24 @@
   pnpm run format:write
   ```
 
-- [ ] **QK-01** Standardisasi format query key ke object form di semua `*-page.tsx`:
+- [x] **QK-01** Standardisasi format query key ke object form di semua `*-page.tsx`:
   ```ts
   // Sebelum
   queryKey: ["products", page, search]
   // Sesudah
   queryKey: ["products", { page, search }]
   ```
-  Berlaku untuk: `products-page`, `orders-page`, `customers-page`, `audit-logs-page`,
-  `dashboard-page`.
+  Difix di: `products-page`, `orders-page`, `customers-page`, `audit-logs-page`.
+  `dashboard-page` tidak perlu — `queryKey: ["dashboard-stats"]` sudah final (tanpa param).
 
-- [ ] **SEARCH-01** Ganti raw `<input>` di `products-page.tsx` (search bar) dan
-  `customers-page.tsx` dengan `@repo/ui Input` — saat ini satu-satunya raw input yang
-  tersisa di page-level.
+- [x] **SEARCH-01** Ganti raw `<input>` di `products-page.tsx` (search bar) dan
+  `customers-page.tsx` dengan `@repo/ui Input` — kedua file selesai. `className` Tailwind
+  inline dihapus; styling diserahkan ke design system.
 
-- [ ] **RBAC-01** Tambah `beforeLoad` RBAC guard di `orders.route.tsx`,
-  `customers.route.tsx`, `audit-logs.route.tsx` — saat ini hanya `products.route.tsx`
-  yang punya per-route RBAC check eksplisit. Root guard yang ada memang sudah melindungi,
-  tapi per-route guard lebih explicit dan mudah di-audit.
+- [x] **RBAC-01** `beforeLoad` RBAC guard ditambahkan ke `orders.route.tsx`
+  (`orders:read`) dan `customers.route.tsx` (`customers:read`) mengikuti pola persis dari
+  `products.route.tsx`. `audit-logs.route.tsx` sudah punya guard (`audit:read`) — sisa
+  `as any` cast pada `redirect` juga dihapus sekalian.
 
 - [ ] **HOOK-01** Tambah Husky + lint-staged ke root `package.json` agar `prettier` +
   `eslint` berjalan otomatis setiap commit:

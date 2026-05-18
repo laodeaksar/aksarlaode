@@ -18,6 +18,7 @@ import {
 } from "@repo/ui/components/alert-dialog"
 import { Badge } from "@repo/ui/components/badge"
 import { Button } from "@repo/ui/components/button"
+import { Input } from "@repo/ui/components/input"
 
 import { deleteProductFn, listProductsFn } from "@/server/products"
 import { can } from "@/lib/rbac"
@@ -65,7 +66,7 @@ export default function ProductsPage() {
   )
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", page, search],
+    queryKey: ["products", { page, search }],
     queryFn: () =>
       listProductsFn({ data: { page, limit: 20, ...(search ? { search } : {}) } }),
     initialData: page === 1 && !search ? loaderData : undefined,
@@ -179,8 +180,8 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <input
-        className="w-64 rounded border px-3 py-2 text-sm"
+      <Input
+        className="w-64"
         placeholder="Search products..."
         aria-label="Search products"
         value={inputValue}

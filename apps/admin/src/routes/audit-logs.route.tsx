@@ -9,7 +9,7 @@ export const Route = createFileRoute("/audit-logs")({
   beforeLoad: ({ context }) => {
     const { session } = context as { session?: Session }
     if (!session || !can(session.role, "audit:read")) {
-      throw redirect({ to: "/dashboard" as any })
+      throw redirect({ to: "/dashboard" })
     }
   },
 

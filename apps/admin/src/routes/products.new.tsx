@@ -1,8 +1,8 @@
-import type { NewProductInput } from "@/effect/Services"
-import { createProductFn } from "@/server/products"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 
+import { createProductFn } from "@/server/products"
+import type { NewProductInput } from "@/effect/Services"
 import type { Session } from "@/lib/auth"
 import { can } from "@/lib/rbac"
 import { ProductForm } from "@/components/forms/product-form"

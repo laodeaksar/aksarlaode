@@ -7,20 +7,35 @@ module.exports = {
   trailingComma: "es5",
   printWidth: 80,
   importOrder: [
+    // 1. React core + react-*
     "^(react/(.*)$)|^(react$)",
+    "^(react-(.*)$)",
+    "",
+    // 2. TanStack ecosystem (router, query, table, start)
+    "^@tanstack/(.*)$",
+    "",
+    // 3. Effect ecosystem
+    "^effect(.*)$",
+    "",
+    // 4. Other third-party (react-hook-form, lucide-react, zod, etc.)
     "<THIRD_PARTY_MODULES>",
     "",
+    // 5. Workspace packages (@repo/*)
     "^@repo/(.*)$",
     "",
-    "^types$",
-    "^@/types/(.*)$",
-    "^@/config/(.*)$",
+    // 6. App-internal absolute imports — ordered by architectural layer
+    "^@/server/(.*)$",
+    "^@/effect/(.*)$",
     "^@/lib/(.*)$",
     "^@/hooks/(.*)$",
+    "^@/schemas/(.*)$",
+    "^@/types/(.*)$",
+    "^@/config/(.*)$",
     "^@/components/ui/(.*)$",
     "^@/components/(.*)$",
-    "^@/styles/(.*)$",
+    "^@/(.*)$",
     "",
+    // 7. Relative imports (./Route self-reference goes here last)
     "^[./]",
   ],
   importOrderParserPlugins: ["typescript", "jsx", "decorators-legacy"],

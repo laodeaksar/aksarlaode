@@ -1,11 +1,12 @@
 import { useState } from "react"
-import type { AuditLogEntry } from "@/effect/Services"
-import { listAuditLogsFn } from "@/server/audit-logs"
+
 import { useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@repo/ui/components/badge"
 
+import { listAuditLogsFn } from "@/server/audit-logs"
+import type { AuditLogEntry } from "@/effect/Services"
 import { DataTable } from "@/components/data-table/data-table"
 
 import { Route } from "./audit-logs.route"

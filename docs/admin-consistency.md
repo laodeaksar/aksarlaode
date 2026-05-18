@@ -43,13 +43,13 @@
 
 ## P2 — Harus Dikerjakan Sprint Ini
 
-- [ ] **IMPORT-01** Konfigurasi `importOrder` di `prettier.config.cjs` dengan urutan resmi:
+- [x] **IMPORT-01** Konfigurasi `importOrder` di `prettier.config.cjs` — sudah diupdate
+  dengan 7 grup resmi. Import order di semua route dan page files sudah difix manual.
+  Jalankan perintah berikut sekali saat `pnpm install` berhasil untuk otomatisasi
+  sisa file (server/, effect/, lib/, components/):
+  ```bash
+  pnpm run format:write
   ```
-  React → react-* → @tanstack/* → effect → lucide-react → @repo/* →
-  @/server/* → @/effect/* → @/lib/* → @/schemas/* → @/components/* →
-  @/ → relatif (./Route selalu terakhir)
-  ```
-  Lalu jalankan: `pnpm --filter admin prettier --write "src/**/*.{ts,tsx}"`
 
 - [ ] **QK-01** Standardisasi format query key ke object form di semua `*-page.tsx`:
   ```ts

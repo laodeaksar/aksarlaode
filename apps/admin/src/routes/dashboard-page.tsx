@@ -1,8 +1,8 @@
-import { getDashboardStatsFn } from "@/server/dashboard"
 import { useQuery } from "@tanstack/react-query"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card"
 
+import { getDashboardStatsFn } from "@/server/dashboard"
 import type { DashboardStats, OrderSummary } from "@/effect/Services"
 
 import { Route } from "./dashboard.route"

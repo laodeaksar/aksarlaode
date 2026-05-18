@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react"
-import { deleteProductFn, listProductsFn } from "@/server/products"
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -19,6 +19,7 @@ import {
 import { Badge } from "@repo/ui/components/badge"
 import { Button } from "@repo/ui/components/button"
 
+import { deleteProductFn, listProductsFn } from "@/server/products"
 import { can } from "@/lib/rbac"
 import { useSession } from "@/lib/session-context"
 import { DataTable } from "@/components/data-table/data-table"

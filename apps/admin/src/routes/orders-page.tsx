@@ -1,12 +1,13 @@
 import { useCallback, useMemo } from "react"
-import type { OrderSummary } from "@/effect/Services"
-import { listOrdersFn } from "@/server/orders"
+
 import { useQuery } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@repo/ui/components/badge"
 
+import { listOrdersFn } from "@/server/orders"
+import type { OrderSummary } from "@/effect/Services"
 import { DataTable } from "@/components/data-table/data-table"
 
 import { Route } from "./orders.route"

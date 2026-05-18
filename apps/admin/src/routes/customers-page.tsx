@@ -1,12 +1,13 @@
 import { useCallback, useRef } from "react"
-import type { User } from "@/effect/Services"
-import { listCustomersFn } from "@/server/customers"
+
 import { useQuery } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@repo/ui/components/badge"
 
+import { listCustomersFn } from "@/server/customers"
+import type { User } from "@/effect/Services"
 import { DataTable } from "@/components/data-table/data-table"
 
 import { Route } from "./customers.route"

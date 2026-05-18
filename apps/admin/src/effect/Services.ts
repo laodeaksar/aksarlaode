@@ -214,6 +214,7 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
         list: (params: { page?: number; search?: string }) => {
           const qs = new URLSearchParams({
             page: String(params.page ?? 1),
+            ...(params.search ? { search: params.search } : {}),
           }).toString()
           return request<{ items: User[]; total: number }>(
             `/admin/customers?${qs}`

@@ -88,6 +88,8 @@ export const authApi = {
       "/auth/login",
       { method: "POST", body: JSON.stringify(body) },
     ),
+  logout: () =>
+    request<void>("/auth/logout", { method: "POST" }),
 }
 
 // ── Products ──────────────────────────────────────────────

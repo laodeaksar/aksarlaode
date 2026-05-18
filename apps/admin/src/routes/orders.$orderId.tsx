@@ -123,15 +123,43 @@ function OrderDetailPage() {
           ...(note ? { note } : {}),
         },
       }),
+
+    onMutate: async ({ nextStatus, note }) => {
+      await queryClient.cancelQueries({ queryKey: ["order", orderId] })
+      const previous = queryClient.getQueryData(["order", orderId])
+
+      queryClient.setQueryData(["order", orderId], (old: typeof order | undefined) => {
+        if (!old) return old
+        return {
+          ...old,
+          status: nextStatus,
+          statusHistory: [
+            ...old.statusHistory,
+            {
+              status: nextStatus,
+              note: note?.trim() || undefined,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }
+      })
+
+      return { previous }
+    },
+
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) {
+        queryClient.setQueryData(["order", orderId], ctx.previous)
+      }
+      toast.error("Gagal mengubah status pesanan", err)
+    },
+
     onSuccess: () => {
       toast.success("Status pesanan berhasil diperbarui")
       queryClient.invalidateQueries({ queryKey: ["order", orderId] })
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
       reset()
       setConfirmOpen(false)
-    },
-
-    onError: (err) => {
-      toast.error("Gagal mengubah status pesanan", err)
     },
   })
 

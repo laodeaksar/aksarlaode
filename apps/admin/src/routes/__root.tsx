@@ -14,7 +14,7 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import appCss from "@repo/ui/globals.css?url"
 
-import { getSession, hasAnyAdminRole, SessionContext, type Session } from "@/lib"
+import { getSession, hasAnyAdminRole, silentRefresh, SessionContext, type Session } from "@/lib"
 import { ErrorBoundary, Sidebar, Topbar } from "@/components"
 
 export const Route = createRootRouteWithContext<{
@@ -37,7 +37,19 @@ export const Route = createRootRouteWithContext<{
   beforeLoad: async ({ location }) => {
     if (location.pathname.startsWith("/login")) return
 
-    const session = await getSession()
+    // Attempt 1: normal session check.
+    let session = await getSession()
+
+    // Attempt 2: jika session null (access token mungkin expired), coba
+    // silent refresh sekali. Kalau berhasil, ulangi session check.
+    // Kalau gagal (refresh token juga expired) → redirect ke login seperti biasa.
+    if (!session) {
+      const refreshed = await silentRefresh()
+      if (refreshed) {
+        session = await getSession()
+      }
+    }
+
     if (!session || !hasAnyAdminRole(session.role)) {
       throw redirect({ to: "/login" as any })
     }

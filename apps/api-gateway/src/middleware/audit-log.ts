@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from "hono"
 
 import type { AppEnv } from "@/types/context"
+import { getClientIp } from "@/lib/client-ip"
 
 // ── Sanitization ──────────────────────────────────────────────────────────────
 // Any object key matching this pattern has its value replaced with "[REDACTED]".
@@ -102,10 +103,7 @@ export const auditLog: MiddlewareHandler<AppEnv> = async (c, next) => {
     sessionId: user?.sessionId ?? null,
 
     // Client
-    ip:
-      c.req.header("cf-connecting-ip") ??
-      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown",
+    ip: getClientIp(c), // C-05
     ua: c.req.header("user-agent") ?? null,
   }
 

@@ -4,6 +4,7 @@ import { env } from "@repo/env/gateway"
 
 import type { AppEnv } from "@/types/context"
 import { getBreaker } from "@/lib/circuit-breaker"
+import { getClientIp } from "@/lib/client-ip"
 
 import { SERVICE_REGISTRY } from "./service-registry"
 
@@ -124,8 +125,7 @@ function buildUpstreamHeaders(c: Context<AppEnv>): Headers {
   headers.delete("Authorization")
   headers.delete("Cookie")
 
-  const clientIp =
-    c.req.header("cf-connecting-ip") ?? c.req.header("x-real-ip") ?? "unknown"
+  const clientIp = getClientIp(c) // C-05: was using x-real-ip fallback instead of x-forwarded-for split
 
   headers.delete("x-forwarded-for")
   headers.delete("x-forwarded-host")

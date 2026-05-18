@@ -2,6 +2,7 @@ import { Effect } from "effect"
 import type { MiddlewareHandler } from "hono"
 
 import type { AppEnv } from "@/types/context"
+import { getClientIp } from "@/lib/client-ip"
 
 // ── In-memory sliding window rate limiter ─────────────────────────────────────
 // Single-instance implementation. For multi-instance deployments, swap the
@@ -53,10 +54,7 @@ export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (
   c,
   next
 ) => {
-  const ip =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
+  const ip = getClientIp(c) // C-05
 
   const result = await Effect.runPromiseExit(
     incrementWindow(ip, "products:1m", 60_000, PRODUCT_LIST_LIMIT)
@@ -79,11 +77,7 @@ export const publicProductsRateLimiter: MiddlewareHandler<AppEnv> = async (
 
 // ── Global rate limiter middleware ────────────────────────────────────────────
 export const rateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
-  // Prefer Cloudflare real IP, fall back to forwarded IP or socket IP
-  const ip =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
+  const ip = getClientIp(c) // C-05
 
   const check = Effect.gen(function* () {
     const perSecond = yield* incrementWindow(ip, "1s", 1_000, BURST_LIMIT)

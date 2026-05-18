@@ -14,6 +14,7 @@ export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
   // Product catalogue — read-only public
   { path: "/products", method: "GET" },
   { path: "/products/:id", method: "GET" },
+  { path: "/products/:id/stock", method: "GET" }, // C-02: stock check — dipakai order-service & storefront
   { path: "/products/slug/:slug", method: "GET" },
 ]
 

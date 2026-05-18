@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from "hono"
 
 import type { AppEnv } from "@/types/context"
+import { getClientIp } from "@/lib/client-ip"
 
 export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
   const { method, path } = c.req
@@ -12,7 +13,7 @@ export const logger: MiddlewareHandler<AppEnv> = async (c, next) => {
       requestId,
       method,
       path,
-      ip: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      ip: getClientIp(c), // C-05: was missing .split(",")[0].trim() and "unknown" fallback
       userAgent: c.req.header("user-agent"),
     })
   )

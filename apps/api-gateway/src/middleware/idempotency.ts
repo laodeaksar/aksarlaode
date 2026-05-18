@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from "hono"
 
 import type { AppEnv } from "@/types/context"
+import { getClientIp } from "@/lib/client-ip"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const TTL_MS = 24 * 60 * 60 * 1000 // 24 h — matches Stripe / Braintree standard
@@ -69,10 +70,7 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
     )
   }
 
-  const ip =
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
+  const ip = getClientIp(c) // C-05
   const key = scopedKey(rawKey, c.var.user?.id ?? null, ip)
   const now = Date.now()
 

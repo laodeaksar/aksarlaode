@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto"
+
 import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 
@@ -27,42 +29,51 @@ import type { AppEnv } from "./types/context"
 const app = new Hono<AppEnv>()
 
 // ── Health check — before all middleware so it always responds ────────────────
+// C-06: always return 200 — load balancers and monitoring probes interpret any
+// 2xx as healthy; signal degraded state via the `status` field in the body.
+// 207 (Multi-Status / WebDAV) was wrong and caused probes to miss degraded state.
 app.get("/health", (c) => {
   const circuits = getAllBreakerStatus()
   const degraded = circuits.some((b) => b.state !== "CLOSED")
-  return c.json(
-    {
-      status: degraded ? "degraded" : "ok",
-      service: "api-gateway",
-      ts: new Date().toISOString(),
-      circuits,
-    },
-    degraded ? 207 : 200
-  )
+  return c.json({
+    status: degraded ? "degraded" : "ok",
+    service: "api-gateway",
+    ts: new Date().toISOString(),
+    circuits,
+  })
 })
 
-// FIX GW-07: Internal-only circuit breaker state endpoint.
-// Protected by x-service-token (timing-safe compare via constant-time string
-// equality is sufficient here; full crypto.timingSafeEqual would require
-// equal-length buffers — we rely on the secret being ≥32 chars).
+// Internal-only circuit breaker state endpoint.
+// C-04: uses timingSafeEqual to prevent timing side-channel attacks — a simple
+// string !== comparison leaks information character-by-character via response
+// time differences, allowing an attacker to brute-force the token.
 // Not mounted under the global middleware chain to avoid rate-limiter /
 // auth-resolver adding overhead to ops tooling calls.
 app.get("/internal/health/breakers", (c) => {
   const token = c.req.header("x-service-token") ?? ""
-  if (!token || token !== env.INTERNAL_SERVICE_TOKEN) {
+  const expected = env.INTERNAL_SERVICE_TOKEN
+
+  // timingSafeEqual requires equal-length Buffers — pad the received token
+  // to the expected length before comparing so the function never throws.
+  // A length mismatch is still correctly detected because we compare lengths
+  // separately (the pad fill character "\0" cannot appear in a real token).
+  const tokenBuf    = Buffer.from(token.padEnd(expected.length, "\0"))
+  const expectedBuf = Buffer.from(expected)
+  const valid = token.length === expected.length && timingSafeEqual(tokenBuf, expectedBuf)
+
+  if (!valid) {
     return c.json({ error: "Unauthorized", code: "INVALID_SERVICE_TOKEN" }, 401)
   }
+
   const circuits = getAllBreakerStatus()
   const degraded = circuits.some((b) => b.state !== "CLOSED")
-  return c.json(
-    {
-      status: degraded ? "degraded" : "ok",
-      service: "api-gateway",
-      ts: new Date().toISOString(),
-      circuits,
-    },
-    degraded ? 207 : 200
-  )
+  // C-06: consistent with /health — always 200, caller checks `status` field
+  return c.json({
+    status: degraded ? "degraded" : "ok",
+    service: "api-gateway",
+    ts: new Date().toISOString(),
+    circuits,
+  })
 })
 
 // ── Global middleware (order is strict) ───────────────────────────────────────

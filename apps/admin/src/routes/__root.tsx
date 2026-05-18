@@ -90,7 +90,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const session = routeCtx.session ?? null
 
   if (pathname.startsWith("/login")) {
-    return <div className="min-h-screen bg-gray-50">{children}</div>
+    return <div className="min-h-screen bg-muted/40">{children}</div>
   }
 
   return (
@@ -100,7 +100,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body>
-          <div className="flex h-screen bg-gray-50">
+          <div className="flex h-screen bg-muted/40">
             <Sidebar />
             <div className="flex flex-col flex-1 overflow-hidden">
               <Topbar />
@@ -108,7 +108,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <ErrorBoundary>
                   <React.Suspense
                     fallback={
-                      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+                      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
                         Loading…
                       </div>
                     }

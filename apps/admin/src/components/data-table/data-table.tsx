@@ -69,7 +69,7 @@ export function DataTable<T>({
                   <TableRow key={i}>
                     {columns.map((_, j) => (
                       <TableCell key={j} className="px-4 py-3">
-                        <div className="h-4 rounded bg-gray-100 animate-pulse" />
+                        <div className="h-4 rounded bg-muted animate-pulse" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -91,7 +91,7 @@ export function DataTable<T>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <p>{total} total records</p>
         <div className="flex items-center gap-2">
           <Button

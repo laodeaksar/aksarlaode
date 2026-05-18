@@ -77,7 +77,7 @@ function EditProductPage() {
   })
 
   if (isLoading && !product) {
-    return <p className="p-6 text-gray-500">Loading product...</p>
+    return <p className="p-6 text-muted-foreground">Loading product...</p>
   }
 
   if (!product) {
@@ -92,7 +92,7 @@ function EditProductPage() {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-gray-900">Edit Product</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Edit Product</h1>
       <ProductForm
         defaultValues={{
           name: product.name,

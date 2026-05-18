@@ -114,10 +114,18 @@
   Semua 11 importer lama (`from "@/effect/Services"`) tetap berjalan tanpa perubahan.
   Kode baru sebaiknya import langsung dari sub-module yang relevan.
 
-- [ ] **TOKEN-01** Ganti hardcoded `text-gray-*` / `bg-gray-*` / `border-gray-*` di
-  semua component dan page files dengan semantic Tailwind v4 tokens:
-  `text-foreground`, `bg-background`, `border-border`, `text-muted-foreground`.
-  Tailwind v4 + CSS variables dari `@repo/ui/globals.css` sudah mendukung ini.
+- [x] **TOKEN-01** Semua hardcoded `text-gray-*` / `bg-gray-*` / `border-gray-*` di
+  14 files (route + component) diganti dengan semantic Tailwind v4 tokens.
+  Mapping yang digunakan:
+  - `text-gray-{900,800,700}` → `text-foreground`
+  - `text-gray-{600,500,400}` → `text-muted-foreground`
+  - `bg-gray-{100,200}` → `bg-muted` (skeleton/surface)
+  - `bg-gray-50` → `bg-muted/40` (page background)
+  - `border-gray-200` → `border-border`
+  - `bg-white border-gray-200` (card pattern) → `bg-card border-border`
+  - `dark:text-gray-400` dihapus (semantic token sudah adapt dark mode)
+  **SKIP**: `sidebar.tsx` — palette dark (`bg-gray-900`, `bg-gray-800`, `text-gray-300`,
+  `border-gray-800`) adalah desain sidebar yang disengaja, bukan hardcoded accidental.
 
 - [ ] **BARREL-01** Tambah barrel export `src/components/index.ts` dan `src/lib/index.ts`
   — opsional, tapi memudahkan refactor besar. Hanya kalau team setuju dengan pattern ini.

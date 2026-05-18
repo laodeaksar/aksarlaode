@@ -24,14 +24,14 @@ const columns: ColumnDef<User>[] = [
     accessorKey: "name",
     header: "Name",
     cell: ({ getValue }) => (
-      <span className="font-medium text-gray-900">{getValue() as string}</span>
+      <span className="font-medium text-foreground">{getValue() as string}</span>
     ),
   },
   {
     accessorKey: "email",
     header: "Email",
     cell: ({ getValue }) => (
-      <span className="text-gray-600">{getValue() as string}</span>
+      <span className="text-muted-foreground">{getValue() as string}</span>
     ),
   },
   {
@@ -97,7 +97,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
 
       <Input
         className="w-64"

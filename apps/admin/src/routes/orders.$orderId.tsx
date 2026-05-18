@@ -108,7 +108,7 @@ function OrderDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{order.orderId}</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             {new Date(order.createdAt).toLocaleString("id-ID")}
           </p>
         </div>
@@ -134,7 +134,7 @@ function OrderDetailPage() {
               >
                 <div>
                   <p className="font-medium">{item.productName}</p>
-                  <p className="text-gray-500">
+                  <p className="text-muted-foreground">
                     x{item.quantity} @ Rp {item.price.toLocaleString("id-ID")}
                   </p>
                 </div>
@@ -158,7 +158,7 @@ function OrderDetailPage() {
           <CardContent className="text-sm space-y-1">
             {Object.entries(order.shippingAddress).map(([k, v]) => (
               <p key={k}>
-                <span className="capitalize text-gray-500">{k}:</span> {v}
+                <span className="capitalize text-muted-foreground">{k}:</span> {v}
               </p>
             ))}
           </CardContent>
@@ -170,13 +170,13 @@ function OrderDetailPage() {
             <CardTitle>Status History</CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="relative border-l border-gray-200 ml-3 space-y-4">
+            <ol className="relative border-l border-border ml-3 space-y-4">
               {order.statusHistory.map((e, i) => (
                 <li key={i} className="ml-4">
                   <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-blue-500" />
                   <p className="text-sm font-medium">{e.status}</p>
-                  {e.note && <p className="text-xs text-gray-500">{e.note}</p>}
-                  <p className="text-xs text-gray-400">
+                  {e.note && <p className="text-xs text-muted-foreground">{e.note}</p>}
+                  <p className="text-xs text-muted-foreground">
                     {new Date(e.timestamp).toLocaleString("id-ID")}
                   </p>
                 </li>

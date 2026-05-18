@@ -36,7 +36,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     cell: ({ row }) => (
       <div>
         <p className="font-mono text-xs">{row.original.actorId.slice(0, 8)}…</p>
-        <p className="text-xs text-gray-500">{row.original.actorRole}</p>
+        <p className="text-xs text-muted-foreground">{row.original.actorRole}</p>
       </div>
     ),
   },
@@ -58,7 +58,7 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     cell: ({ row }) => (
       <div>
         <p className="text-xs capitalize">{row.original.resource}</p>
-        <p className="font-mono text-xs text-gray-500">
+        <p className="font-mono text-xs text-muted-foreground">
           {row.original.resourceId.slice(0, 8)}…
         </p>
       </div>
@@ -69,9 +69,9 @@ const columns: ColumnDef<AuditLogEntry>[] = [
     header: "Metadata",
     cell: ({ getValue }) => {
       const meta = getValue() as Record<string, unknown> | null
-      if (!meta) return <span className="text-gray-400 text-xs">—</span>
+      if (!meta) return <span className="text-muted-foreground text-xs">—</span>
       return (
-        <pre className="text-xs text-gray-600 whitespace-pre-wrap max-w-xs overflow-hidden">
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-w-xs overflow-hidden">
           {JSON.stringify(meta, null, 2)}
         </pre>
       )
@@ -95,7 +95,7 @@ export default function AuditLogsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Audit Log</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Sensitive admin actions — product deletes, order status changes,
             role changes.
           </p>

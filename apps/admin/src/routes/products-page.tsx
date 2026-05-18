@@ -91,7 +91,7 @@ export default function ProductsPage() {
             )}
             <div>
               <p className="font-medium">{row.original.name}</p>
-              <p className="text-xs text-gray-500">{row.original.sku}</p>
+              <p className="text-xs text-muted-foreground">{row.original.sku}</p>
             </div>
           </div>
         ),

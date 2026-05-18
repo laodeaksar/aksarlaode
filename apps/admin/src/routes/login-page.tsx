@@ -54,7 +54,7 @@ export default function LoginPage() {
   const onFormSubmit = handleSubmit((data) => mutation.mutate(data))
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl text-center">Admin Login</CardTitle>
@@ -93,7 +93,7 @@ export default function LoginPage() {
                   <InputGroupAddon align="inline-end">
                     <button
                       type="button"
-                      className="flex items-center justify-center text-gray-400 hover:text-gray-600"
+                      className="flex items-center justify-center text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                     >

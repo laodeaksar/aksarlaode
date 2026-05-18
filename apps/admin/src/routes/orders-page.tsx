@@ -41,7 +41,7 @@ const columns: ColumnDef<OrderSummary>[] = [
     accessorKey: "orderId",
     header: "Order ID",
     cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-gray-800">
+      <span className="font-mono text-xs text-foreground">
         {getValue() as string}
       </span>
     ),
@@ -121,7 +121,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
 
       <div className="flex items-center gap-3">
         <select

@@ -83,7 +83,7 @@ function NewProductPage() {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-gray-900">New Product</h1>
+      <h1 className="text-2xl font-semibold text-foreground">New Product</h1>
       <ProductForm
         onSubmit={(data) =>
           mutation.mutate({

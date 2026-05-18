@@ -22,7 +22,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+      <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -61,12 +61,12 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-gray-500">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-2xl font-bold text-foreground">{value}</p>
       </CardContent>
     </Card>
   )
@@ -74,7 +74,7 @@ function StatCard({ title, value }: { title: string; value: string | number }) {
 
 function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
   if (orders.length === 0) {
-    return <p className="text-sm text-gray-500">Belum ada pesanan terbaru.</p>
+    return <p className="text-sm text-muted-foreground">Belum ada pesanan terbaru.</p>
   }
   return (
     <div className="space-y-2">
@@ -83,7 +83,7 @@ function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
           key={order.orderId}
           className="flex items-center justify-between text-sm"
         >
-          <span className="font-mono text-xs text-gray-600">
+          <span className="font-mono text-xs text-muted-foreground">
             {order.orderId.slice(0, 12)}…
           </span>
           <span
@@ -107,7 +107,7 @@ function TopProductsList({
   items: Array<{ id: string; name: string; salesCount: number }>
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-gray-500">Belum ada data produk.</p>
+    return <p className="text-sm text-muted-foreground">Belum ada data produk.</p>
   }
   return (
     <div className="space-y-2">
@@ -116,10 +116,10 @@ function TopProductsList({
           key={item.id}
           className="flex items-center justify-between text-sm"
         >
-          <span className="text-gray-700">
+          <span className="text-foreground">
             {i + 1}. {item.name}
           </span>
-          <span className="text-gray-500">{item.salesCount} terjual</span>
+          <span className="text-muted-foreground">{item.salesCount} terjual</span>
         </div>
       ))}
     </div>
@@ -129,10 +129,10 @@ function TopProductsList({
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 rounded bg-gray-200" />
+      <div className="h-8 w-48 rounded bg-muted" />
       <div className="grid grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-lg bg-gray-200" />
+          <div key={i} className="h-24 rounded-lg bg-muted" />
         ))}
       </div>
     </div>

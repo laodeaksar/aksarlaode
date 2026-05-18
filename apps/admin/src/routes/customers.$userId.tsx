@@ -19,29 +19,29 @@ function CustomerDetailPage() {
   })
 
   if (isLoading && !customer)
-    return <p className="p-6 text-gray-500">Loading customer...</p>
+    return <p className="p-6 text-muted-foreground">Loading customer...</p>
   if (!customer)
     return <p className="p-6 text-red-500">Customer not found.</p>
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-gray-900">Customer Detail</h1>
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+      <h1 className="text-2xl font-semibold text-foreground">Customer Detail</h1>
+      <div className="bg-card rounded-xl border border-border p-6 space-y-3">
         <div className="flex justify-between">
-          <span className="text-gray-500 text-sm">Name</span>
-          <span className="font-medium text-gray-900">{customer.name}</span>
+          <span className="text-muted-foreground text-sm">Name</span>
+          <span className="font-medium text-foreground">{customer.name}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500 text-sm">Email</span>
-          <span className="font-medium text-gray-900">{customer.email}</span>
+          <span className="text-muted-foreground text-sm">Email</span>
+          <span className="font-medium text-foreground">{customer.email}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500 text-sm">Role</span>
-          <span className="font-medium text-gray-900">{customer.role}</span>
+          <span className="text-muted-foreground text-sm">Role</span>
+          <span className="font-medium text-foreground">{customer.role}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500 text-sm">ID</span>
-          <span className="font-mono text-xs text-gray-600">{customer.id}</span>
+          <span className="text-muted-foreground text-sm">ID</span>
+          <span className="font-mono text-xs text-muted-foreground">{customer.id}</span>
         </div>
       </div>
     </div>

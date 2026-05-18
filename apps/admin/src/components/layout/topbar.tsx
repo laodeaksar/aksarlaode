@@ -16,12 +16,12 @@ export function Topbar() {
   })
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-end px-6">
+    <header className="h-14 bg-white border-b border-border flex items-center justify-end px-6">
       <button
         aria-label="Logout"
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending}
-        className="text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         {mutation.isPending ? "Keluar..." : "Logout"}
       </button>

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/products")({
   beforeLoad: ({ context }) => {
     const { session } = context as { session?: Session }
     if (!session || !can(session.role, "products:read")) {
-      throw redirect({ to: "/dashboard" as any })
+      throw redirect({ to: "/dashboard" })
     }
   },
 

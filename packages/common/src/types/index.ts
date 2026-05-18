@@ -1,4 +1,5 @@
-export type UserRole = "CUSTOMER" | "ADMIN"
+// CONSISTENCY-FIX TYPE-01: added OWNER + FINANCE so admin RBAC covers all roles.
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE"
 
 export type User = {
   id: string
@@ -8,6 +9,10 @@ export type User = {
   createdAt?: string
 }
 
+// CONSISTENCY-FIX TYPE-01: added ProductStatus + status field so admin services
+// don't need to redefine this type locally.
+export type ProductStatus = "ACTIVE" | "DRAFT" | "ARCHIVED"
+
 export type Product = {
   id: string
   name: string
@@ -16,6 +21,7 @@ export type Product = {
   description?: string
   price: number
   stock: number
+  status?: ProductStatus
   imageUrls?: string[]
   categoryId?: string
   isActive?: boolean

@@ -2,6 +2,10 @@ import { useForm } from "react-hook-form"
 
 import { effectResolver } from "@/lib/effect-resolver"
 import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms"
+import { Button } from "@repo/ui/components/button"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field"
+import { Input } from "@repo/ui/components/input"
+import { Textarea } from "@repo/ui/components/textarea"
 
 interface Props {
   defaultValues?: Partial<ProductFormValues>
@@ -10,6 +14,8 @@ interface Props {
   error: string | null
 }
 
+// CONSISTENCY-FIX FORM-01: replaced raw HTML (<input>, <label>, <textarea>,
+// <button>) with @repo/ui design-system components — same pattern as login-page.tsx.
 export function ProductForm({
   defaultValues = {},
   onSubmit,
@@ -23,10 +29,10 @@ export function ProductForm({
   } = useForm<ProductFormValues>({
     resolver: effectResolver(ProductFormSchema),
     defaultValues: {
-      name: defaultValues.name ?? "",
-      price: defaultValues.price ?? 0,
-      stock: defaultValues.stock ?? 0,
-      sku: defaultValues.sku ?? "",
+      name:        defaultValues.name        ?? "",
+      price:       defaultValues.price       ?? 0,
+      stock:       defaultValues.stock       ?? 0,
+      sku:         defaultValues.sku         ?? "",
       description: defaultValues.description ?? "",
     },
   })
@@ -34,120 +40,79 @@ export function ProductForm({
   const onFormSubmit = handleSubmit((data) =>
     onSubmit({
       ...data,
-      name: data.name.trim(),
-      sku: data.sku.trim(),
+      name:        data.name.trim(),
+      sku:         data.sku.trim(),
       description: data.description?.trim() || "",
     }),
   )
 
   return (
-    <form
-      onSubmit={onFormSubmit}
-      className="bg-white rounded-xl border border-gray-200 p-6 space-y-4"
-    >
+    <form onSubmit={onFormSubmit} className="space-y-4">
       {error && (
-        <p className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{error}</p>
+        <p role="alert" className="text-sm text-red-600 bg-red-50 rounded-lg p-3">
+          {error}
+        </p>
       )}
 
-      <div>
-        <label
-          htmlFor="pf-name"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Name
-        </label>
-        <input
-          id="pf-name"
-          aria-label="Product name"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          {...register("name")}
-        />
-        {errors.name && (
-          <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
-        )}
-      </div>
+      <FieldGroup>
+        <Field data-invalid={!!errors.name}>
+          <FieldLabel htmlFor="pf-name">Name</FieldLabel>
+          <Input
+            id="pf-name"
+            aria-label="Product name"
+            {...register("name")}
+          />
+          {errors.name && <FieldError errors={[errors.name]} />}
+        </Field>
 
-      <div>
-        <label
-          htmlFor="pf-sku"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          SKU
-        </label>
-        <input
-          id="pf-sku"
-          aria-label="Product SKU"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          {...register("sku")}
-        />
-        {errors.sku && (
-          <p className="text-red-500 text-xs mt-1">{errors.sku.message}</p>
-        )}
-      </div>
+        <Field data-invalid={!!errors.sku}>
+          <FieldLabel htmlFor="pf-sku">SKU</FieldLabel>
+          <Input
+            id="pf-sku"
+            aria-label="Product SKU"
+            {...register("sku")}
+          />
+          {errors.sku && <FieldError errors={[errors.sku]} />}
+        </Field>
 
-      <div>
-        <label
-          htmlFor="pf-price"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Price (IDR)
-        </label>
-        <input
-          id="pf-price"
-          type="number"
-          min={1}
-          aria-label="Product price"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          {...register("price", { valueAsNumber: true })}
-        />
-        {errors.price && (
-          <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>
-        )}
-      </div>
+        <Field data-invalid={!!errors.price}>
+          <FieldLabel htmlFor="pf-price">Price (IDR)</FieldLabel>
+          <Input
+            id="pf-price"
+            type="number"
+            min={1}
+            aria-label="Product price"
+            {...register("price", { valueAsNumber: true })}
+          />
+          {errors.price && <FieldError errors={[errors.price]} />}
+        </Field>
 
-      <div>
-        <label
-          htmlFor="pf-stock"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Stock
-        </label>
-        <input
-          id="pf-stock"
-          type="number"
-          min={0}
-          aria-label="Product stock"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          {...register("stock", { valueAsNumber: true })}
-        />
-        {errors.stock && (
-          <p className="text-red-500 text-xs mt-1">{errors.stock.message}</p>
-        )}
-      </div>
+        <Field data-invalid={!!errors.stock}>
+          <FieldLabel htmlFor="pf-stock">Stock</FieldLabel>
+          <Input
+            id="pf-stock"
+            type="number"
+            min={0}
+            aria-label="Product stock"
+            {...register("stock", { valueAsNumber: true })}
+          />
+          {errors.stock && <FieldError errors={[errors.stock]} />}
+        </Field>
 
-      <div>
-        <label
-          htmlFor="pf-description"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Description
-        </label>
-        <textarea
-          id="pf-description"
-          rows={3}
-          aria-label="Product description"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
-          {...register("description")}
-        />
-      </div>
+        <Field data-invalid={!!errors.description}>
+          <FieldLabel htmlFor="pf-description">Description</FieldLabel>
+          <Textarea
+            id="pf-description"
+            rows={3}
+            aria-label="Product description"
+            {...register("description")}
+          />
+        </Field>
+      </FieldGroup>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full bg-gray-900 text-white font-semibold py-2 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
-      >
+      <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Saving..." : "Save Product"}
-      </button>
+      </Button>
     </form>
   )
 }

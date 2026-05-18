@@ -98,9 +98,13 @@
   (client-side fetch). Setelah migrasi, `lib/api.ts` bisa di-scope hanya untuk
   `silentRefresh` interceptor.
 
-- [ ] **LAYER-02** Migrasi `auditLogsApi` dan `dashboardApi` ke server functions —
-  keduanya sudah ada di `ApiClientService` (Effect layer) tapi page-nya masih pakai
-  `lib/api.ts` langsung.
+- [x] **LAYER-02** Migrasi selesai — semua page (`audit-logs-page`, `dashboard-page`,
+  `orders-page`, `orders.$orderId`, `products-page`, `customers-page`) sudah menggunakan
+  server functions dari `src/server/*.ts` (Effect + `ApiClientService`). Dead code
+  `productsApi`, `ordersApi`, `customersApi`, `dashboardApi`, `auditLogsApi` dihapus dari
+  `lib/api.ts`. File sekarang hanya berisi `authApi` (butuh cookie + `window.location`)
+  dan 4 type definitions (`OrderSummary`, `OrderDetail`, `DashboardStats`, `AuditLogEntry`)
+  yang masih di-re-ekspor oleh `Services.schemas.ts` (akan dipindahkan saat TYPE-04).
 
 - [x] **SPLIT-01** `src/effect/Services.ts` (261 baris) dipecah menjadi 3 file:
   - `Services.config.ts` (19 baris) — `ConfigService` + env var reads

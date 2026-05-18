@@ -1,4 +1,18 @@
-import type { NewProduct, Payment, Product, User } from "@repo/common"
+// ── lib/api.ts — LAYER-02 cleanup ─────────────────────────────────────────
+//
+// Scope post-LAYER-02: SOLO auth (login / logout / silent-refresh).
+// Tutte le altre API sono migrate a server functions in src/server/*.ts che
+// usano ApiClientService (Effect layer) con service-to-service token.
+//
+// Regola definitiva (da admin-consistency.md):
+//   login / logout / refresh  → qui (window.location + cookie handling)
+//   semua data lainnya        → src/server/*.ts (Effect server function)
+//
+// TODO(TYPE-04): i 4 type di risposta (OrderSummary, OrderDetail,
+// DashboardStats, AuditLogEntry) vengono ancora re-esportati da
+// Services.schemas.ts → lib/api.ts. Spostare le definizioni in @repo/common
+// o src/types/ per eliminare questa dipendenza inversa.
+
 import { env } from "@repo/env/admin"
 
 type ApiResponse<T> = { data: T; error: null } | { data: null; error: string }
@@ -59,11 +73,9 @@ async function request<T>(
         const refreshed = await silentRefresh()
 
         if (refreshed) {
-          // Retry the original request with the new access token in the cookie
           return request<T>(path, options, true)
         }
 
-        // Refresh failed — session is dead, redirect to login
         window.location.href = "/login"
         return { data: null, error: "Session expired" }
       }
@@ -81,78 +93,23 @@ async function request<T>(
   }
 }
 
-// ── Auth ──────────────────────────────────────────────────
+// ── Auth ───────────────────────────────────────────────────────────────────
+// login + logout pakai client-side fetch karena butuh cookie credentials dan
+// window.location redirect — tidak bisa dijalankan di server function.
 export const authApi = {
   login: (body: { email: string; password: string }) =>
-    request<{ accessToken: string; user: { id: string; email: string; name: string; role: string } }>(
-      "/auth/login",
-      { method: "POST", body: JSON.stringify(body) },
-    ),
-  logout: () =>
-    request<void>("/auth/logout", { method: "POST" }),
-}
-
-// ── Products ──────────────────────────────────────────────
-export const productsApi = {
-  list: (params?: string) =>
-    request<{ items: Product[]; total: number }>(`/products?${params ?? ""}`),
-  getOne: (id: string) => request<Product>(`/products/${id}`),
-  create: (body: NewProduct) =>
-    request<Product>("/products", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  update: (id: string, body: Partial<NewProduct>) =>
-    request<Product>(`/products/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
-  delete: (id: string) =>
-    request<void>(`/products/${id}`, { method: "DELETE" }),
-}
-
-// ── Orders ────────────────────────────────────────────────
-export const ordersApi = {
-  list: (params?: string) =>
-    request<{ items: OrderSummary[]; total: number }>(
-      `/orders?${params ?? ""}`
-    ),
-  getOne: (id: string) => request<OrderDetail>(`/orders/${id}`),
-  updateStatus: (id: string, status: string, note?: string) =>
-    request<void>(`/orders/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status, note }),
-    }),
-}
-
-// ── Customers ─────────────────────────────────────────────
-export const customersApi = {
-  list: (params?: string) =>
-    request<{ items: User[]; total: number }>(
-      `/admin/customers?${params ?? ""}`
-    ),
-  getOne: (id: string) => request<User>(`/admin/customers/${id}`),
-}
-
-// ── Dashboard ─────────────────────────────────────────────
-export const dashboardApi = {
-  stats: () => request<DashboardStats>("/admin/dashboard/stats"),
-}
-
-// ── Audit logs ────────────────────────────────────────────
-// FIX ADM-06b: Reads the immutable admin audit log via the product-service
-// endpoint proxied through the gateway at /products/audit-logs.
-export const auditLogsApi = {
-  list: (page = 1) =>
     request<{
-      items: AuditLogEntry[]
-      total: number
-      page: number
-      limit: number
-    }>(`/products/audit-logs?page=${page}`),
+      accessToken: string
+      user: { id: string; email: string; name: string; role: string }
+    }>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
+
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
 }
 
-// ── Types ─────────────────────────────────────────────────
+// ── Response types ─────────────────────────────────────────────────────────
+// TODO(TYPE-04): pindahkan ke @repo/common atau src/types/ agar
+// Services.schemas.ts tidak lagi bergantung pada layer client ini.
+
 export type AuditLogEntry = {
   id: string
   actorId: string

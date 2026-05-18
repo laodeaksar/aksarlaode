@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
+import { Skeleton } from "@repo/ui/components/skeleton"
 
 import { getProductFn, updateProductFn } from "@/server/products"
 import type { UpdateProductInput } from "@/effect/Services"
@@ -7,8 +8,6 @@ import { can, toast, type Session } from "@/lib"
 import { ProductForm } from "@/components/forms/product-form"
 
 export const Route = createFileRoute("/products/$productId")({
-  // Route-level RBAC: editing requires products:write (ADMIN / OWNER only).
-  // A FINANCE user who navigates here directly is sent back to the list.
   beforeLoad: ({ context }) => {
     const { session } = context as { session?: Session }
     if (!session || !can(session.role, "products:write")) {
@@ -16,8 +15,6 @@ export const Route = createFileRoute("/products/$productId")({
     }
   },
 
-  // SSR loader: fetch the product server-side so the page is fully rendered
-  // on first load — no client-visible loading spinner on navigation.
   loader: ({ params }) => getProductFn({ data: { id: params.productId } }),
 
   head: ({ loaderData }) => ({
@@ -33,13 +30,40 @@ export const Route = createFileRoute("/products/$productId")({
   component: EditProductPage,
 })
 
+// ── Skeleton ───────────────────────────────────────────────────────────────
+// Mirrors the Edit Product form shape: heading + 5 fields (Name, SKU, Price,
+// Stock, Description) + submit button.
+
+function EditProductSkeleton() {
+  return (
+    <div className="space-y-4 max-w-xl">
+      <Skeleton className="h-8 w-32" />
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ))}
+        {/* Description textarea — 3 rows */}
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-[76px] w-full" />
+        </div>
+      </div>
+      <Skeleton className="h-9 w-full" />
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+
 function EditProductPage() {
   const { productId } = Route.useParams()
   const loaderProduct = Route.useLoaderData()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  // Hydrate React Query cache from SSR loader data to avoid a second fetch
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => getProductFn({ data: { id: productId } }),
@@ -50,7 +74,6 @@ function EditProductPage() {
     mutationFn: (body: UpdateProductInput) =>
       updateProductFn({ data: { id: productId, body } }),
 
-    // Optimistic update in the cache
     onMutate: async (updatedFields) => {
       await queryClient.cancelQueries({ queryKey: ["product", productId] })
       const previous = queryClient.getQueryData(["product", productId])
@@ -77,9 +100,7 @@ function EditProductPage() {
     },
   })
 
-  if (isLoading && !product) {
-    return <p className="p-6 text-muted-foreground">Loading product...</p>
-  }
+  if (isLoading && !product) return <EditProductSkeleton />
 
   if (!product) {
     return <p className="p-6 text-red-500">Product not found.</p>
@@ -100,8 +121,6 @@ function EditProductPage() {
           price: product.price,
           stock: product.stock,
           sku: product.sku,
-          // exactOptionalPropertyTypes: spread only when defined to avoid
-          // `description: string | undefined` vs `description?: string` mismatch.
           ...(product.description !== undefined && {
             description: product.description,
           }),

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { Skeleton } from "@repo/ui/components/skeleton"
 
 import { Badge } from "@repo/ui/components/badge"
 import { Button } from "@repo/ui/components/button"
@@ -47,6 +48,43 @@ const STATUS_COLOR: Record<
   CANCELLED: "destructive",
 }
 
+// ── Skeleton ───────────────────────────────────────────────────────────────
+// Mirrors the order detail layout: header (title + badge) + 2-col grid of
+// 4 cards (Items, Shipping, Status History, Update Status).
+
+function OrderDetailSkeleton() {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-36" />
+        </div>
+        <Skeleton className="h-6 w-28 rounded-full" />
+      </div>
+
+      {/* Cards grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-5 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-3/5" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
   const loaderData = Route.useLoaderData()
@@ -57,7 +95,7 @@ function OrderDetailPage() {
   const role = session?.role ?? "CUSTOMER"
   const canWrite = can(role, "orders:write")
 
-  const { data: order } = useQuery({
+  const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: () => getOrderFn({ data: { id: orderId } }),
     initialData: loaderData,
@@ -104,6 +142,8 @@ function OrderDetailPage() {
       executeUpdate(data)
     }
   })
+
+  if (isLoading) return <OrderDetailSkeleton />
 
   return (
     <div className="space-y-6 max-w-4xl">

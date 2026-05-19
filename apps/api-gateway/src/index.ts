@@ -20,10 +20,10 @@ import { requestTimeout } from "./middleware/request-timeout";
 import { responseNormalizer } from "./middleware/response-normalizer";
 import { routeGuard } from "./middleware/route-guard";
 import authRoutes from "./routes/auth.routes";
-import orderRoutes from "./routes/order.routes";
-import paymentRoutes from "./routes/payment.routes";
-import productRoutes from "./routes/product.routes";
-import webhookRoutes from "./routes/webhook.routes";
+import orderRoutes from "./routes/orders.routes";
+import paymentRoutes from "./routes/payments.routes";
+import productRoutes from "./routes/products.routes";
+import webhookRoutes from "./routes/webhooks.routes";
 import type { AppEnv } from "./types/context";
 
 const app = new Hono<AppEnv>();
@@ -95,6 +95,16 @@ app.use("*", routeGuard); // RBAC enforcement
 app.use("*", responseNormalizer); // sets x-request-id / x-response-time headers
 
 // ── Route tree ────────────────────────────────────────────────────────────────
+// C-09: Routes are mounted under both /v1 (new canonical) and / (legacy, deprecated).
+// Clients should migrate to /v1 endpoints. The unversioned mounts will be removed
+// once all consumers have updated. Log a deprecation warning if needed via logger.
+app.route("/v1/auth", authRoutes);
+app.route("/v1/products", productRoutes);
+app.route("/v1/orders", orderRoutes);
+app.route("/v1/payments", paymentRoutes);
+app.route("/v1/webhooks", webhookRoutes);
+
+// Legacy unversioned mounts — deprecated, kept for backward compatibility
 app.route("/auth", authRoutes);
 app.route("/products", productRoutes);
 app.route("/orders", orderRoutes);

@@ -19,8 +19,10 @@ router.post("/:id/stock/reserve", (c) => proxyTo("PRODUCT", c));
 router.post("/:id/stock/release", (c) => proxyTo("PRODUCT", c));
 
 // Admin writes (routeGuard enforces ADMIN role)
+// C-08: PUT /:id removed — PATCH /:id is the single update verb (partial update).
+// Full-replace semantics are not exposed at the gateway; product-service handles
+// field defaulting internally. Document any full-replace use-case in product-service README.
 router.post("/", (c) => proxyTo("PRODUCT", c));
-router.put("/:id", (c) => proxyTo("PRODUCT", c));
 router.patch("/:id", (c) => proxyTo("PRODUCT", c));
 router.delete("/:id", (c) => proxyTo("PRODUCT", c));
 router.post("/:id/images", (c) => proxyTo("PRODUCT", c));

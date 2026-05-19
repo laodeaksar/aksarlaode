@@ -1,5 +1,6 @@
 // ── Public routes (no JWT required) ──────────────────────────────────────────
 // Method "*" means any HTTP method is public for that path.
+// C-09: Each public route is registered for both /v1 (canonical) and / (legacy).
 export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
   // Health check
   { path: "/health", method: "*" },
@@ -11,15 +12,29 @@ export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
   { path: "/auth/forgot-password", method: "POST" },
   { path: "/auth/reset-password", method: "POST" },
 
+  // Auth — unauthenticated flows (v1)
+  { path: "/v1/auth/login", method: "POST" },
+  { path: "/v1/auth/register", method: "POST" },
+  { path: "/v1/auth/refresh", method: "POST" },
+  { path: "/v1/auth/forgot-password", method: "POST" },
+  { path: "/v1/auth/reset-password", method: "POST" },
+
   // Product catalogue — read-only public
   { path: "/products", method: "GET" },
   { path: "/products/:id", method: "GET" },
   { path: "/products/:id/stock", method: "GET" }, // C-02: stock check — dipakai order-service & storefront
   { path: "/products/slug/:slug", method: "GET" },
+
+  // Product catalogue — read-only public (v1)
+  { path: "/v1/products", method: "GET" },
+  { path: "/v1/products/:id", method: "GET" },
+  { path: "/v1/products/:id/stock", method: "GET" },
+  { path: "/v1/products/slug/:slug", method: "GET" },
 ];
 
 // ── Webhook routes (HMAC-verified, no JWT) ────────────────────────────────────
-export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks"];
+// C-09: Both versioned and legacy webhook paths are HMAC-verified.
+export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks", "/v1/webhooks"];
 
 // ── Role hierarchy (higher number = more privileged) ─────────────────────────
 //
@@ -37,6 +52,12 @@ export const ROLE_HIERARCHY = {
 // pattern: regex tested against c.req.path
 // method:  HTTP verb or "*" for any
 // minRole: minimum role required
+//
+// C-09: All patterns use (?:\/v1)? so they match both /v1/... (canonical) and
+// /... (legacy) without duplicating rules. Remove the optional group once the
+// legacy unversioned mounts are retired.
+//
+// C-08: PUT /products/:id rule removed — PATCH is the single update verb.
 export const ROUTE_PERMISSIONS: ReadonlyArray<{
   pattern: RegExp;
   method: string;
@@ -44,35 +65,34 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
 }> = [
   // ── Owner-exclusive routes ────────────────────────────────────────────────
   // Transfer ownership — only the current OWNER can initiate
-  { pattern: /^\/auth\/owner\//, method: "*", minRole: "OWNER" },
+  { pattern: /^(?:\/v1)?\/auth\/owner\//, method: "*", minRole: "OWNER" },
   // Role mutation — must precede the /admin catch-all
-  { pattern: /^\/admin\/users\/.+\/role$/, method: "PATCH", minRole: "OWNER" },
+  { pattern: /^(?:\/v1)?\/admin\/users\/.+\/role$/, method: "PATCH", minRole: "OWNER" },
   // Hard-delete user (cascade-invalidates sessions) — must precede /admin catch-all
-  { pattern: /^\/admin\/users\/.+$/, method: "DELETE", minRole: "OWNER" },
+  { pattern: /^(?:\/v1)?\/admin\/users\/.+$/, method: "DELETE", minRole: "OWNER" },
 
   // ── Admin panel ───────────────────────────────────────────────────────────
-  { pattern: /^\/admin/, method: "*", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/admin/, method: "*", minRole: "ADMIN" },
 
   // ── Products — writes are admin-only, reads are public (handled above) ────
-  { pattern: /^\/products/, method: "POST", minRole: "ADMIN" },
-  { pattern: /^\/products\/.+/, method: "PUT", minRole: "ADMIN" },
-  { pattern: /^\/products\/.+/, method: "PATCH", minRole: "ADMIN" },
-  { pattern: /^\/products\/.+/, method: "DELETE", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/products/, method: "POST", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/products\/.+/, method: "PATCH", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/products\/.+/, method: "DELETE", minRole: "ADMIN" },
 
   // ── Orders ────────────────────────────────────────────────────────────────
   // Customers can create and view their own; ownerOrAdmin middleware handles row-level
-  { pattern: /^\/orders$/, method: "POST", minRole: "CUSTOMER" },
-  { pattern: /^\/orders\/.+/, method: "GET", minRole: "CUSTOMER" },
-  { pattern: /^\/orders\/.+\/cancel/, method: "POST", minRole: "CUSTOMER" },
-  { pattern: /^\/orders$/, method: "GET", minRole: "ADMIN" },
-  { pattern: /^\/orders\/.+\/status/, method: "PATCH", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/orders$/, method: "POST", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/orders\/.+/, method: "GET", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/orders\/.+\/cancel/, method: "POST", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/orders$/, method: "GET", minRole: "ADMIN" },
+  { pattern: /^(?:\/v1)?\/orders\/.+\/status/, method: "PATCH", minRole: "ADMIN" },
 
   // ── Payments ──────────────────────────────────────────────────────────────
-  { pattern: /^\/payments/, method: "*", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/payments/, method: "*", minRole: "CUSTOMER" },
 
   // ── Auth — session management requires login ──────────────────────────────
-  { pattern: /^\/auth\/sessions/, method: "*", minRole: "CUSTOMER" },
-  { pattern: /^\/auth\/me/, method: "*", minRole: "CUSTOMER" },
-  { pattern: /^\/auth\/logout/, method: "POST", minRole: "CUSTOMER" },
-  { pattern: /^\/auth\/change-password/, method: "POST", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/auth\/sessions/, method: "*", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/auth\/me/, method: "*", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/auth\/logout/, method: "POST", minRole: "CUSTOMER" },
+  { pattern: /^(?:\/v1)?\/auth\/change-password/, method: "POST", minRole: "CUSTOMER" },
 ];

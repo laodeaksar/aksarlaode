@@ -45,20 +45,20 @@ Format: `[status]` = `[ ]` belum, `[x]` selesai.
 
 ## P2 — Developer Experience & Maintainability
 
-- [ ] **C-07** `lib/effect-runner.ts` — Hapus file (dead code)
+- [x] **C-07** `lib/effect-runner.ts` — Hapus file (dead code)
   - **Masalah**: File ini tidak diimport oleh module manapun; berisi `as any` cast yang unsafe
   - **Fix**: `git rm apps/api-gateway/src/lib/effect-runner.ts`
 
-- [ ] **C-08** `routes/product.routes.ts` — Pilih satu dari `PUT /:id` / `PATCH /:id`, dokumentasikan contract-nya
+- [x] **C-08** `routes/product.routes.ts` — Pilih satu dari `PUT /:id` / `PATCH /:id`, dokumentasikan contract-nya
   - **Masalah**: Kedua `PUT` dan `PATCH` terdaftar untuk update produk tanpa dokumentasi kapan pakai mana
   - **Rekomendasi**: Hapus `PUT /:id`, pertahankan `PATCH /:id` untuk partial update. Jika full-replace diperlukan, dokumentasikan di README
 
-- [ ] **C-09** Semua routes — Tambah `/v1` prefix (API versioning)
+- [x] **C-09** Semua routes — Tambah `/v1` prefix (API versioning)
   - **Masalah**: Tidak ada versioning sama sekali — zero ability to evolve contract tanpa breaking change
   - **Strategi non-breaking**: Mount kedua `/v1` dan `/` selama periode migrasi, deprecate `/` setelah semua client update
   - **Files**: `index.ts` (route mounting), semua `route-permissions.ts` patterns
 
-- [ ] **C-10** `routes/*.routes.ts` — Rename file ke plural agar konsisten dengan path
+- [x] **C-10** `routes/*.routes.ts` — Rename file ke plural agar konsisten dengan path
   - **Masalah**: `order.routes.ts` → `/orders`, `product.routes.ts` → `/products` dll. — singular vs plural
   - **Fix**: Rename: `order.routes.ts` → `orders.routes.ts`, `product.routes.ts` → `products.routes.ts`, `payment.routes.ts` → `payments.routes.ts`, `webhook.routes.ts` → `webhooks.routes.ts`
 

@@ -102,8 +102,27 @@ export default function ProductsPage() {
       {
         accessorKey: "price",
         header: "Price",
-        cell: ({ getValue }) =>
-          `Rp ${(getValue() as number).toLocaleString("id-ID")}`,
+        cell: ({ row }) => {
+          const price = row.original.price;
+          const comparePrice = row.original.comparePrice;
+          return comparePrice ? (
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground line-through">
+                Rp {comparePrice.toLocaleString("id-ID")}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium">
+                  Rp {price.toLocaleString("id-ID")}
+                </span>
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  Sale
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <span>Rp {price.toLocaleString("id-ID")}</span>
+          );
+        },
       },
       {
         accessorKey: "stock",

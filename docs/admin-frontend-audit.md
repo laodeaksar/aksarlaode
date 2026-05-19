@@ -178,9 +178,9 @@ description: data.description?.trim() || undefined
 
 ---
 
-### A-22 · `ServerContext.ts` — `runServerEffect` / `runServerEffectSafe` are unused ⬜ DOCUMENTED
+### A-22 · `ServerContext.ts` — `runServerEffect` / `runServerEffectSafe` are unused ✅ FIXED
 
-**Status:** `runServerEffect` and `runServerEffectSafe` are never called — all server function handlers use `context.runtime.runPromise(...)` via `effectMiddleware`. Left as available utilities rather than deleted; can be removed in a cleanup pass if confirmed unused after future features are added.
+**Fix applied:** Confirmed zero call-site usages across the entire codebase. Deleted `src/effect/ServerContext.ts`, removed `export * from "./ServerContext"` from `effect/index.ts`, and updated the stale comment in `Middleware.ts` that referenced `runServerEffect`. All server function handlers continue to use `context.runtime.runPromise(...)` via `effectMiddleware` unchanged.
 
 ---
 
@@ -206,12 +206,12 @@ P1 — All 9 fixed ✅
   A-14  Fixed encodeURIComponent on cookie names (auth.ts + AuditMiddleware.ts)
   A-15  Removed stale Sidebar/Topbar from components barrel
 
-P2 — 5 fixed ✅ · 2 documented ⬜
+P2 — All 7 fixed ✅
   A-16  ✅ Persisted audit-logs page in URL (validateSearch + loaderDeps)
   A-17  ✅ Removed remaining `as any` redirects in products.new + products.$productId
   A-18  ✅ Fixed uncontrolled search input in customers page
   A-19  ✅ Mapped empty description to undefined before API call
   A-20  ✅ RouterContext interface — eliminated all unsafe context casts (9 files)
   A-21  ✅ Cached session via queryClient.fetchQuery (staleTime 5 min)
-  A-22  ⬜ Documented: runServerEffect unused utility
+  A-22  ✅ Deleted ServerContext.ts (runServerEffect / runServerEffectSafe unused)
 ```

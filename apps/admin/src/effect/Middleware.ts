@@ -25,8 +25,8 @@ import type { AppServices } from "./Runtime";
 // What this middleware does (in order):
 //
 //   1. Records the wall-clock start time via `performance.now()`.
-//   2. Injects `AppRuntime` into `context.runtime` so handlers don't need to
-//      import or call `runServerEffect` manually.
+//   2. Injects `AppRuntime` into `context.runtime` so handlers access the
+//      runtime via `context.runtime.runPromise(...)` without extra imports.
 //   3. Awaits `next()` — all downstream middleware and the handler itself run.
 //   4. On success  → emits an INFO log: fn name, file, duration in ms.
 //   5. On any throw → emits an ERROR log with the same fields plus a

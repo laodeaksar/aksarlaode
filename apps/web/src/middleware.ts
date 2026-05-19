@@ -1,6 +1,8 @@
+import { Cause } from "effect";
 import { defineMiddleware } from "astro:middleware";
 
 import { authApi } from "./lib/api/auth";
+import { NetworkError } from "./lib/effect/errors";
 import { AppRuntime } from "./lib/effect/runtime";
 
 const PROTECTED = ["/checkout", "/account/orders", "/orders"];
@@ -108,6 +110,17 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   const exit = await AppRuntime.runPromiseExit(authApi.me(cookie));
 
   if (exit._tag === "Failure") {
+    // Fail-open on NetworkError: if the auth service is temporarily unreachable
+    // (e.g. gateway restart, rolling deploy) do not wrongly redirect the user
+    // to the login page.  Let the request through — the downstream page will
+    // show its own error state or retry.  Auth errors and invalid tokens still
+    // redirect to login as before.
+    const maybeErr = Cause.failureOption(exit.cause);
+    if (maybeErr._tag === "Some" && maybeErr.value instanceof NetworkError) {
+      const response = await next();
+      return applySecurityHeaders(response);
+    }
+
     const redirect = encodeURIComponent(ctx.url.pathname);
     return ctx.redirect(`/account/login?redirect=${redirect}`);
   }

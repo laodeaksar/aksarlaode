@@ -5,8 +5,7 @@ import ProductCard from "@/components/ui/ProductCard.astro"
 import { AppRuntime } from "@/lib/effect/runtime"
 import { productsApi } from "@/lib/api/products"
 
-const cookie = Astro.request.headers.get("cookie") ?? ""
-const exit   = await AppRuntime.runPromiseExit(productsApi.list({ limit: 8 }, cookie))
+const exit = await AppRuntime.runPromiseExit(productsApi.list({ limit: 8 }))
 const products = exit._tag === "Success" ? exit.value.items : []
 ---
 <!DOCTYPE html>

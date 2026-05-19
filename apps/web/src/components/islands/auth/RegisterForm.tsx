@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Effect } from "effect";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { authApi } from "@/lib/api/auth";
 import { HttpError } from "@/lib/effect/errors";
 import { AppRuntime } from "@/lib/effect/runtime";
 import { registerSchema, type RegisterInput } from "@/lib/schemas/forms";
+import { Field, inputCls } from "@/lib/form-ui";
 
 export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -20,7 +19,7 @@ export function RegisterForm() {
     setError,
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    mode: "onBlur", // validate on blur for better UX
+    mode: "onBlur",
   });
 
   const onSubmit = async (values: RegisterInput) => {
@@ -40,13 +39,21 @@ export function RegisterForm() {
       return;
     }
 
+    // W-11: persist display name so Navbar can show "Hi, {name}" without an API call
+    try {
+      localStorage.setItem(
+        "ec_user",
+        JSON.stringify({ name: exit.value.user.name })
+      );
+    } catch { /* storage unavailable — non-critical */ }
+
     window.location.href = "/";
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       {serverError && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
           {serverError}
         </div>
       )}
@@ -56,6 +63,7 @@ export function RegisterForm() {
           {...register("name")}
           className={inputCls(!!errors.name)}
           placeholder="Budi Santoso"
+          autoComplete="name"
         />
       </Field>
 
@@ -63,6 +71,7 @@ export function RegisterForm() {
         <input
           {...register("email")}
           type="email"
+          autoComplete="email"
           className={inputCls(!!errors.email)}
           placeholder="you@example.com"
         />
@@ -72,6 +81,7 @@ export function RegisterForm() {
         <input
           {...register("password")}
           type="password"
+          autoComplete="new-password"
           className={inputCls(!!errors.password)}
           placeholder="Min 8 characters"
         />
@@ -81,6 +91,7 @@ export function RegisterForm() {
         <input
           {...register("confirmPassword")}
           type="password"
+          autoComplete="new-password"
           className={inputCls(!!errors.confirmPassword)}
           placeholder="Repeat password"
         />
@@ -92,7 +103,7 @@ export function RegisterForm() {
         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white
                    hover:bg-blue-700 disabled:opacity-60 transition-colors"
       >
-        {isSubmitting ? "Creating account..." : "Create Account"}
+        {isSubmitting ? "Creating account…" : "Create Account"}
       </button>
     </form>
   );

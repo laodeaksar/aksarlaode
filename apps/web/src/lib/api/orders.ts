@@ -18,8 +18,29 @@ export type OrderDetail = {
   createdAt: string;
 };
 
+// Typed body for order creation — replaces the previous `body: any`
+export type CreateOrderBody = {
+  items: Array<{
+    productId: string;
+    productName: string;
+    price: number;
+    quantity: number;
+  }>;
+  shippingAddress: {
+    recipientName: string;
+    phone: string;
+    street: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    country: string;
+  };
+  notes?: string;
+  shippingFee: number;
+};
+
 export const ordersApi = {
-  create: (body: any, cookie: string) =>
+  create: (body: CreateOrderBody, cookie: string) =>
     apiFetch<{ orderId: string; grandTotal: number }>("/orders", {
       method: "POST",
       body: JSON.stringify(body),
@@ -29,9 +50,7 @@ export const ordersApi = {
   getOne: (orderId: string, cookie: string) =>
     apiFetch<OrderDetail>(`/orders/${orderId}`, { cookie }),
 
+  // listMine was identical to list — removed as dead code
   list: (cookie: string) =>
-    apiFetch<{ items: OrderDetail[] }>("/orders", { cookie }),
-
-  listMine: (cookie: string) =>
     apiFetch<{ items: OrderDetail[] }>("/orders", { cookie }),
 };

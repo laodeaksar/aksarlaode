@@ -13,6 +13,7 @@ import { useCart } from "@/lib/store/cart";
 
 type Props = {
   userId: string;
+  userEmail: string;
 };
 
 type CheckoutStep = "address" | "review" | "payment";
@@ -23,7 +24,7 @@ type CheckoutStep = "address" | "review" | "payment";
 // screen or a silent failure.
 type PaymentStatus = "idle" | "failed" | "cancelled";
 
-export function CheckoutForm({ userId }: Props) {
+export function CheckoutForm({ userId, userEmail }: Props) {
   const { items, totalAmount, clearCart } = useCart();
   const [step, setStep] = useState<CheckoutStep>("address");
   const [serverError, setServerError] = useState<string | null>(null);
@@ -97,9 +98,7 @@ export function CheckoutForm({ userId }: Props) {
               body: JSON.stringify({
                 orderId: order.orderId,
                 amount: order.grandTotal,
-                customerEmail: (
-                  document.querySelector("[data-user-email]") as HTMLElement
-                )?.dataset.userEmail,
+                customerEmail: userEmail,
                 customerName: values.recipientName,
                 items: items.map((i) => ({
                   id: i.id,

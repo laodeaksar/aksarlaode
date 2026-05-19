@@ -1,18 +1,13 @@
 ---
-import { AppRuntime } from "@/lib/effect/runtime"
-import { authApi }    from "@/lib/api/auth"
 import { CheckoutForm } from "@/components/islands/checkout/CheckoutForm"
 import Layout from "@/layouts/Layout.astro"
 
-const cookie = Astro.request.headers.get("cookie") ?? ""
-
-// Guard: must be logged in
-const exit = await AppRuntime.runPromiseExit(authApi.me(cookie))
-if (exit._tag === "Failure") {
+// Middleware already guards /checkout and sets Astro.locals.user.
+// This is a safety net in case the PROTECTED list and this page drift apart.
+const user = Astro.locals.user
+if (!user) {
   return Astro.redirect("/account/login?redirect=/checkout")
 }
-
-const user = exit.value
 ---
 
 <Layout title="Checkout">
@@ -26,12 +21,10 @@ const user = exit.value
   <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-bold mb-8">Checkout</h1>
 
-    <!-- Pass userId + hidden user email for Midtrans -->
-    <span data-user-email={user.email} class="hidden" />
-
     <CheckoutForm
       client:load
       userId={user.id}
+      userEmail={user.email}
     />
   </div>
 </Layout>

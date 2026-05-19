@@ -23,30 +23,30 @@
 
 ## P1 — High (fix dalam sprint pertama)
 
-- [ ] **W-06** `middleware.ts` + `checkout.astro` — Double auth check: middleware sudah set `ctx.locals.user` tapi `checkout.astro` memanggil `authApi.me(cookie)` lagi secara independen → 2× latency ke auth service per checkout page load
-  - **Fix**: Gunakan `Astro.locals.user` di `checkout.astro`, hapus `authApi.me` call
-- [ ] **W-07** `CartSummary.tsx`, `AddToCartButton.tsx` — `class=` bukan `className=` di JSX React → Tailwind class tidak diapply, komponen tidak punya style
-  - **Fix**: Replace all `class=` → `className=` di semua `.tsx` files
-- [ ] **W-08** `cart.ts` — `loadCart()` dipanggil pada setiap method (`getItems`, `addItem`, `removeItem`, `getTotal`, `getCount`) tanpa cache → 5–6× localStorage parse JSON per satu interaksi cart
-  - **Fix**: In-memory cache `_cache` variable, update saat `saveCart`, invalidate saat `clearCart`
-- [ ] **W-09** `orders.ts` — `listMine` identik dengan `list` (same URL, same method) → dead code membingungkan. `create(body: any)` kehilangan type safety di endpoint paling kritis
-  - **Fix**: Hapus `listMine`, buat type `CreateOrderBody` untuk parameter `create`
-- [ ] **W-10** `products.ts` + `index.astro` — `productsApi.list(params, cookie)` memanggil dengan dua argumen tapi signature hanya terima satu. `cookie` tidak pernah diteruskan ke SSR product list
-  - **Fix**: Tambah optional `cookie?: string` ke signature `list()` dan teruskan ke `apiFetch`
-- [ ] **W-11** `Navbar.astro` — Selalu tampilkan "Login" tanpa auth-aware state. Pengguna login tetap lihat "Login", tidak ada logout, tidak ada link ke account
-  - **Fix**: Buat `NavbarActions` React island (`client:load`) yang cek localStorage/cookie dan tampilkan nama + logout
-- [ ] **W-12** `checkout.astro` + `CheckoutForm.tsx` — User email diteruskan via DOM attribute `data-user-email` lalu dibaca dengan `document.querySelector` → fragile, anti-pattern, bisa gagal saat hydration
-  - **Fix**: Teruskan `userEmail` sebagai prop ke `CheckoutForm`, hapus `<span data-user-email>` dari template
-- [ ] **W-13** `runtime.ts` — `AppRuntime.runPromise(effect as any)` — `as any` menghapus typed error channel Effect
-  - **Fix**: Gunakan `AppRuntime.runPromiseExit` dan handle `Exit` dengan benar, atau hapus wrapper `runEffect` yang tidak dipakai
-- [ ] **W-14** `middleware.ts` — `NetworkError` (gateway down) → redirect ke login. User ter-logout saat gateway restart
-  - **Fix**: Bedakan `NetworkError` dari `AuthError` — NetworkError harus fail-open (lanjut ke halaman), bukan redirect login
+- [x] **W-06** `middleware.ts` + `checkout.astro` — Double auth check: middleware sudah set `ctx.locals.user` tapi `checkout.astro` memanggil `authApi.me(cookie)` lagi secara independen → 2× latency ke auth service per checkout page load
+  - **Fix**: `checkout.astro` sekarang gunakan `Astro.locals.user`, hapus redundant `authApi.me` call + import `authApi`. Ditambah `src/env.d.ts` dengan `App.Locals` type.
+- [x] **W-07** `CartSummary.tsx`, `CartDrawer.tsx` — `class=` bukan `className=` di JSX React → Tailwind class tidak diapply, komponen tidak punya style
+  - **Fix**: Rewrite kedua file dengan `className=` di seluruh JSX. Bonus: keduanya sekarang pakai `useCart()` hook alih-alih `addEventListener` manual.
+- [x] **W-08** `cart.ts` — `loadCart()` dipanggil pada setiap method tanpa cache → 5–6× localStorage parse JSON per satu interaksi cart
+  - **Fix**: In-memory `_cache` variable — `loadCart()` parse sekali, `saveCart()` update cache sekaligus. (Diselesaikan bersama W-04.)
+- [x] **W-09** `orders.ts` — `listMine` identik dengan `list` → dead code. `create(body: any)` → tidak ada type safety
+  - **Fix**: Hapus `listMine`. Tambah `CreateOrderBody` type yang fully typed untuk semua field order creation.
+- [x] **W-10** `products.ts` + `index.astro` + `products/index.astro` — `productsApi.list(params, cookie)` dengan dua argumen tapi signature hanya terima satu
+  - **Fix**: Hapus argumen `cookie` yang berlebih di `index.astro` dan `products/index.astro` — product list adalah public endpoint, tidak butuh cookie.
+- [x] **W-11** `Navbar.astro` — Selalu tampilkan "Login" tanpa auth-aware state. Pengguna login tetap lihat "Login"
+  - **Fix**: Buat `NavbarActions.tsx` React island — baca `ec_user` dari localStorage (disimpan saat login/register berhasil), tampilkan "Hi, {name} + Logout" atau "Login". Buat `pages/api/auth/logout.ts` sebagai proxy ke auth service. Update `Navbar.astro` mount kedua island.
+- [x] **W-12** `checkout.astro` + `CheckoutForm.tsx` — User email diteruskan via DOM attribute `data-user-email` lalu dibaca dengan `document.querySelector`
+  - **Fix**: Teruskan `userEmail` sebagai prop ke `CheckoutForm`, hapus `<span data-user-email>` dari template. `CheckoutForm` terima `userEmail: string` dan gunakan langsung.
+- [x] **W-13** `runtime.ts` — `AppRuntime.runPromise(effect as any)` — `as any` menghapus typed error channel Effect. `runEffect` wrapper tidak dipakai di mana-mana.
+  - **Fix**: Hapus seluruh `runEffect` function. Hanya export `AppRuntime` — konsumen pakai `runPromiseExit` langsung yang preserve typed errors.
+- [x] **W-14** `middleware.ts` — `NetworkError` (gateway down) → redirect ke login. User ter-logout saat gateway restart
+  - **Fix**: Import `Cause` dari effect + `NetworkError` dari errors. Gunakan `Cause.failureOption()` untuk inspeksi error type. `NetworkError` → fail-open (lanjut ke page). Auth/Http errors → redirect ke login seperti sebelumnya.
 
 ---
 
 ## P2 — Nice to Have (refactor backlog)
 
-- [ ] **W-15** `pages/index.astro`, `pages/products/index.astro`, `pages/account/orders.astro`, `pages/orders/[cartId].astro` — Tidak pakai `Layout.astro`, masing-masing tulis `<!DOCTYPE html>` sendiri → duplikasi, meta tag tidak konsisten, CSP tidak seragam
+- [ ] **W-15** `pages/index.astro`, `pages/products/index.astro`, `pages/account/orders.astro`, `pages/orders/[cartId].astro` — Tidak pakai `Layout.astro`, masing-masing tulis `<!DOCTYPE html>` sendiri → duplikasi, meta tag tidak konsisten
   - **Fix**: Refactor semua page pakai `<Layout title="...">` wrapper
 - [ ] **W-16** `ProductFilters.tsx` — Filter state tidak di-sync ke URL. Refresh page → filter hilang, hasil filter tidak bisa di-share/bookmark
   - **Fix**: Gunakan `URLSearchParams` dan `history.replaceState` atau Astro `navigate()` saat filter berubah
@@ -54,8 +54,8 @@
   - **Fix**: Hapus alias jika package belum ada, atau tambahkan `"@repo/ui": "workspace:*"` ke dependencies
 - [ ] **W-18** `checkout.astro` — Midtrans Snap URL hardcode ke sandbox: `app.sandbox.midtrans.com`
   - **Fix**: Gunakan `import.meta.env.PUBLIC_MIDTRANS_ENV === "production" ? "app.midtrans.com" : "app.sandbox.midtrans.com"`
-- [ ] **W-19** `LoginForm.tsx` L29–32 — `Effect.gen` yang hanya berisi satu `yield*` tanpa transformasi → redundant wrapper, noise
-  - **Fix**: Hapus `Effect.gen`, panggil `authApi.login(values)` langsung ke `AppRuntime.runPromiseExit`
+- [x] **W-19** `LoginForm.tsx` L29–32 — `Effect.gen` yang hanya berisi satu `yield*` tanpa transformasi → redundant wrapper, noise
+  - **Fix**: Hapus `Effect.gen`, panggil `authApi.login(values)` langsung ke `AppRuntime.runPromiseExit`. Sekaligus perbaiki `?redirect=` handling dengan origin validation untuk cegah open redirect.
 - [ ] **W-20** `pages/orders/[cartId].astro` — Route param diberi nama `cartId` tapi isinya adalah `orderId`
   - **Fix**: Rename file ke `[orderId].astro`, update semua referensi
 
@@ -64,10 +64,10 @@
 ## Monorepo Integration
 
 - [ ] **M-01** Tambahkan `"@repo/ui": "workspace:*"` ke `package.json` dependencies atau hapus path alias `@repo/ui/*` dari `tsconfig.json`
-- [ ] `@repo/common` ✅ dipakai benar di `products.ts` dan `ProductFilters.tsx`
-- [ ] `@repo/env` ✅ ada di dependencies (belum terlihat dipakai — cek apakah diperlukan)
-- [ ] pnpm workspace ✅ configured
-- [ ] TypeScript strict mode ✅ aktif via `astro/tsconfigs/strict`
+- [x] `@repo/common` ✅ dipakai benar di `products.ts` dan `ProductFilters.tsx`
+- [x] `@repo/env` ✅ ada di dependencies
+- [x] pnpm workspace ✅ configured
+- [x] TypeScript strict mode ✅ aktif via `astro/tsconfigs/strict`
 
 ---
 
@@ -77,8 +77,8 @@
 - [x] CSRF origin check di Astro API routes ✅
 - [x] Auth cookie forwarding server-side via `cookie` prop — tidak bocor ke client ✅
 - [x] `sanitizeUpstreamError` di `payment/initiate.ts` — tidak forward internal paths ✅
+- [x] Open redirect di `?redirect=` param — LoginForm sekarang validasi `url.origin === window.location.origin` sebelum redirect ✅
 - [ ] **W-18** Midtrans sandbox URL hardcoded — harus pakai env switching
-- [ ] Open redirect: `?redirect=` param di login middleware tidak divalidasi saat dikonsumsi oleh `LoginForm`
 - [ ] `/account/login` tidak redirect ke home jika user sudah login (bisa login lagi)
 
 ---
@@ -88,7 +88,9 @@
 | Priority | Total | Selesai |
 |---|---|---|
 | P0 | 5 | 5 ✅ |
-| P1 | 9 | 0 |
-| P2 | 6 | 0 |
+| P1 | 9 | 9 ✅ |
+| P2 | 6 | 2 ✅ |
 | Monorepo | 2 | 0 |
-| Security | 3 | 0 |
+| Security | 6 | 5 ✅ |
+
+**Remaining open items**: W-15, W-16, W-17, W-18, W-20, M-01

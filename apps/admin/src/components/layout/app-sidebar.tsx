@@ -1,11 +1,17 @@
-"use client"
+import * as React from "react";
 
-import * as React from "react"
+import {
+  ClipboardListIcon,
+  CommandIcon,
+  LayoutDashboardIcon,
+  PackageIcon,
+  Settings2Icon,
+  ShoppingCartIcon,
+  UsersIcon,
+} from "lucide-react";
 
-import { NavDocuments } from "./nav-documents"
-import { NavMain } from "./nav-main"
-import { NavSecondary } from "./nav-secondary"
-import { NavUser } from "./nav-user"
+import { Link } from "@tanstack/react-router";
+
 import {
   Sidebar,
   SidebarContent,
@@ -14,64 +20,38 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@repo/ui/components/sidebar"
+} from "@repo/ui/components/sidebar";
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: (
-          <LayoutDashboardIcon/>
-      ),
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: (
-          <CameraIcon/>
-      ),
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: (
-          <Settings2Icon/>
-      ),
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: (
-          <DatabaseIcon/>
-      ),
-    },
-  ],
-}
+import { can, useSession } from "@/lib";
+
+import { NavMain } from "./nav-main";
+import { NavSecondary } from "./nav-secondary";
+import { NavUser } from "./nav-user";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { session } = useSession();
+  const role = session?.role ?? "CUSTOMER";
+
+  const navMain = [
+    { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
+    ...(can(role, "products:read")
+      ? [{ title: "Products", url: "/products", icon: <PackageIcon /> }]
+      : []),
+    ...(can(role, "orders:read")
+      ? [{ title: "Orders", url: "/orders", icon: <ShoppingCartIcon /> }]
+      : []),
+    ...(can(role, "customers:read")
+      ? [{ title: "Customers", url: "/customers", icon: <UsersIcon /> }]
+      : []),
+    ...(can(role, "audit:read")
+      ? [{ title: "Audit Logs", url: "/audit-logs", icon: <ClipboardListIcon /> }]
+      : []),
+  ];
+
+  const navSecondary = [
+    { title: "Settings", url: "#", icon: <Settings2Icon /> },
+  ];
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -79,23 +59,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<a href="#" />}
+              render={<Link to="/dashboard" />}
             >
-            // TODO: lucide-react
-                <CommandIcon/>
-              <span className="text-base font-semibold">Acme Inc.</span>
+              <CommandIcon />
+              <span className="text-base font-semibold">Admin Panel</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

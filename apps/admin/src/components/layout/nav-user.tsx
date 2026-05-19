@@ -1,36 +1,61 @@
-"use client"
+import { EllipsisVerticalIcon, LogOutIcon } from "lucide-react";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/components/avatar"
+} from "@repo/ui/components/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/components/dropdown-menu"
+} from "@repo/ui/components/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@repo/ui/components/sidebar"
+} from "@repo/ui/components/sidebar";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
-  const { isMobile } = useSidebar()
+import { useSession } from "@/lib";
+import { logoutFn } from "@/server/auth";
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function NavUser() {
+  const { isMobile } = useSidebar();
+  const { session } = useSession();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const logout = useMutation({
+    mutationFn: () => logoutFn(),
+    onSuccess: () => {
+      queryClient.clear();
+      navigate({ to: "/login", search: { logout: "1" } });
+    },
+    onError: () => {
+      queryClient.clear();
+      navigate({ to: "/login" });
+    },
+  });
+
+  const name = session?.name ?? "User";
+  const email = session?.email ?? "";
+  const initials = getInitials(name);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -40,17 +65,16 @@ export function NavUser({
               <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
             }
           >
-            <Avatar className="size-8 rounded-lg grayscale">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+            <Avatar className="size-8 rounded-lg">
+              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
+              <span className="truncate font-medium">{name}</span>
               <span className="truncate text-xs text-foreground/70">
-                {user.email}
+                {email}
               </span>
             </div>
-              <EllipsisVerticalIcon/>
+            <EllipsisVerticalIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-56"
@@ -58,46 +82,31 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {user.email}
-                    </span>
-                  </div>
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{name}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {email}
+                  </span>
                 </div>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-              // TODO: from lucide-react
-                  <CircleUserRoundIcon/>
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                  <CreditCardIcon/>
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                  <BellIcon/>
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-                <LogOutIcon/>
-              Log out
+            <DropdownMenuItem
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+              className="cursor-pointer"
+            >
+              <LogOutIcon className="mr-2 size-4" />
+              {logout.isPending ? "Logging out…" : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

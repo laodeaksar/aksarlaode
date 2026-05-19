@@ -12,7 +12,7 @@
 |----------|-------|--------|
 | P0 — Critical (production-breaking) | 6 | ✅ All fixed |
 | P1 — High (functionality degraded)  | 9 | ✅ All fixed |
-| P2 — Medium (quality/consistency)   | 7 | ✅ 5 fixed · 2 documented |
+| P2 — Medium (quality/consistency)   | 7 | ✅ 6 fixed · 1 documented |
 
 ---
 
@@ -172,9 +172,9 @@ description: data.description?.trim() || undefined
 
 ---
 
-### A-21 · `getSession()` has no caching — triggers `/auth/me` on every navigation ⬜ DOCUMENTED
+### A-21 · `getSession()` has no caching — triggers `/auth/me` on every navigation ✅ FIXED
 
-**Status:** Architectural improvement. The current approach (pass session down as route context) is correct and documented in `session-context.tsx`. Caching via `queryClient.fetchQuery` would reduce network calls on rapid navigation. Left for a follow-up.
+**Fix applied:** `beforeLoad` in `__root.tsx` now uses `queryClient.fetchQuery({ queryKey: ["session"], queryFn: getSession, staleTime: 5 * 60 * 1_000 })` instead of calling `getSession()` directly. Within a 5-minute window, navigating between routes reuses the cached session without a network round-trip. After `silentRefresh()`, the cache entry is removed via `queryClient.removeQueries` and a fresh fetch is forced. Logout (via `queryClient.clear()`) and 401 handling (via `queryClient.invalidateQueries()`) in `router.tsx` already invalidate the session cache correctly.
 
 ---
 
@@ -212,6 +212,6 @@ P2 — 5 fixed ✅ · 2 documented ⬜
   A-18  ✅ Fixed uncontrolled search input in customers page
   A-19  ✅ Mapped empty description to undefined before API call
   A-20  ⬜ Documented: context cast pattern — architectural refactor needed
-  A-21  ⬜ Documented: getSession() caching via queryClient.fetchQuery
+  A-21  ✅ Cached session via queryClient.fetchQuery (staleTime 5 min)
   A-22  ⬜ Documented: runServerEffect unused utility
 ```

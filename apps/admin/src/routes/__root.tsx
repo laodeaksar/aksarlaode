@@ -46,15 +46,32 @@ export const Route = createRootRouteWithContext<{
     ],
   }),
 
-  beforeLoad: async ({ location }: { location: ParsedLocation }) => {
+  beforeLoad: async ({
+    location,
+    context,
+  }: {
+    location: ParsedLocation;
+    context: { queryClient: QueryClient };
+  }) => {
     if (location.pathname.startsWith("/login")) return;
 
-    let session = await getSession();
+    const { queryClient } = context;
+
+    let session = await queryClient.fetchQuery({
+      queryKey: ["session"],
+      queryFn: getSession,
+      staleTime: 5 * 60 * 1_000,
+    });
 
     if (!session) {
       const refreshed = await silentRefresh();
       if (refreshed) {
-        session = await getSession();
+        queryClient.removeQueries({ queryKey: ["session"] });
+        session = await queryClient.fetchQuery({
+          queryKey: ["session"],
+          queryFn: getSession,
+          staleTime: 0,
+        });
       }
     }
 

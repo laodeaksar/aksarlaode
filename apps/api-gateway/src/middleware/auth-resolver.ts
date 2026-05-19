@@ -64,7 +64,11 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
   const result = await Effect.runPromiseExit(verifyJwt(token));
 
   if (result._tag === "Failure") {
-    const tag = (result.cause.error as { _tag?: string })?._tag ?? "";
+    const cause = result.cause;
+    const tag =
+      cause._tag === "Fail"
+        ? (cause.error as { _tag?: string })?._tag ?? ""
+        : "";
     const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED";
     return c.json(
       { error: "Invalid or expired token", code, requestId: c.var.requestId },

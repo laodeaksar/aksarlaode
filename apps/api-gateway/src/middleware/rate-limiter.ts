@@ -92,7 +92,10 @@ export const rateLimiter: MiddlewareHandler<AppEnv> = async (c, next) => {
   const result = await Effect.runPromiseExit(check);
 
   if (result._tag === "Failure") {
-    const { retryAfter } = result.cause.error as { retryAfter: number };
+    const retryAfter =
+      result.cause._tag === "Fail"
+        ? (result.cause.error as { retryAfter: number }).retryAfter
+        : 60_000;
     c.header("Retry-After", String(Math.ceil(retryAfter / 1000)));
     return c.json(
       {

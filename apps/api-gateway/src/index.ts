@@ -108,7 +108,7 @@ app.onError(errorBoundary);
 // FIX GW-02: restore persisted circuit-breaker states from Redis before
 // accepting any traffic. A rolling restart must not silently reset OPEN
 // breakers and flood a still-failing downstream with requests.
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = parseInt(process.env.PORT ?? "3000", 10) || 3000;
 
 restoreAllBreakers().then(() => {
   serve({ fetch: app.fetch, port: PORT }, () => {

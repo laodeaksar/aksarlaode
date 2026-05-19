@@ -1,5 +1,7 @@
 import type { Context } from "hono";
 
+import { env } from "@repo/env/gateway";
+
 import type { AppEnv } from "@/types/context";
 
 export function errorBoundary(err: Error, c: Context<AppEnv>) {
@@ -8,7 +10,7 @@ export function errorBoundary(err: Error, c: Context<AppEnv>) {
       event: "unhandled_error",
       requestId: c.var.requestId,
       message: err.message,
-      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      stack: env.NODE_ENV === "development" ? err.stack : undefined,
     })
   );
 

@@ -34,6 +34,8 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookies } from "@tanstack/react-start/server";
 
+import { env } from "@repo/env/admin";
+
 import type { Session } from "@/lib/auth";
 
 import {
@@ -52,7 +54,7 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
   try {
     const cookies = getCookies();
     const cookieHeader = Object.entries(cookies)
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
       .join("; ");
 
     if (!cookieHeader) return null;
@@ -82,9 +84,8 @@ export const auditMiddleware = createMiddleware().server(
     // Not a mapped mutating function — pass through unchanged.
     if (!mapping) return next();
 
-    // Resolve environment config from process.env (server-only).
-    const apiUrl = process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
-    const internalToken = process.env["INTERNAL_SERVICE_TOKEN"] ?? "";
+    const apiUrl = env.PUBLIC_API_URL;
+    const internalToken = env.INTERNAL_SERVICE_TOKEN;
 
     // Attempt session resolution — if it fails we still run the handler
     // but write the audit entry with a "system" fallback actor.

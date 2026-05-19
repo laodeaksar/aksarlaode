@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import * as React from "react";
 
 import type { QueryClient } from "@tanstack/react-query";
@@ -11,6 +10,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
+import type { ParsedLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import { Toaster } from "sonner";
@@ -43,7 +43,7 @@ export const Route = createRootRouteWithContext<{
     ],
   }),
 
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async ({ location }: { location: ParsedLocation }) => {
     if (location.pathname.startsWith("/login")) return;
 
     // Attempt 1: normal session check.
@@ -66,7 +66,7 @@ export const Route = createRootRouteWithContext<{
     return { session };
   },
 
-  errorComponent: ({ error }) => (
+  errorComponent: ({ error }: { error: unknown }) => (
     <RootDocument>
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center max-w-md w-full">
@@ -101,7 +101,9 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({
+    select: (s: { location: { pathname: string } }) => s.location.pathname,
+  });
 
   const routeCtx = Route.useRouteContext() as { session?: Session };
   const session = routeCtx.session ?? null;

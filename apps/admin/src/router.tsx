@@ -74,7 +74,7 @@ export function makeQueryClient() {
   let queryClient: QueryClient;
 
   const queryCache = new QueryCache({
-    onError: (error) => {
+    onError: (error: Error) => {
       if (!is401(error)) return;
       // Fire-and-forget — React Query does not await onError.
       void handle401(queryClient);
@@ -82,7 +82,7 @@ export function makeQueryClient() {
   });
 
   const mutationCache = new MutationCache({
-    onError: (error) => {
+    onError: (error: Error) => {
       if (!is401(error)) return;
       void handle401(queryClient);
     },

@@ -114,8 +114,9 @@ function OrderDetailPage() {
     queryFn: () => getOrderFn({ data: { id: orderId } }),
   });
 
-  if (!order) return;
-
+  // ── ALL hooks must be called unconditionally before any early return ──────
+  // Violating this rule (Rules of Hooks) causes React to throw
+  // "Rendered more or fewer hooks than previous render" at runtime.
   const {
     register,
     handleSubmit,
@@ -189,7 +190,9 @@ function OrderDetailPage() {
     }
   });
 
-  if (isLoading) return <OrderDetailSkeleton />;
+  // ── Early returns after ALL hooks ─────────────────────────────────────────
+  if (isLoading && !order) return <OrderDetailSkeleton />;
+  if (!order) return null;
 
   return (
     <div className="space-y-6 max-w-4xl">

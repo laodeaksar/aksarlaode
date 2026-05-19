@@ -2,6 +2,9 @@ import { Effect } from "effect";
 
 import type { MiddlewareHandler } from "hono";
 
+import { env } from "@repo/env/gateway";
+
+import { getBreaker } from "@/lib/circuit-breaker";
 import { verifyHmac } from "@/lib/hmac";
 import { verifyJwt } from "@/lib/jwt";
 import { PUBLIC_ROUTES, WEBHOOK_ROUTES } from "@/lib/route-permissions";
@@ -78,21 +81,77 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   c.set("authPayload", result.value);
 
-  // ── Session denylist check (recommended for production) ───────────────────
-  // To enforce immediate revocation after logout/session-revoke, call:
+  // ── C-13: Session denylist check ──────────────────────────────────────────
+  // Validates that the session hasn't been revoked after logout or an explicit
+  // session-revoke call. Adds ~5–10 ms per request on the hot path.
   //
-  //   const { sessionId } = result.value as { sessionId: string }
-  //   const res = await fetch(
-  //     `${env.AUTH_SERVICE_URL}/session/internal/${sessionId}/valid`,
-  //     { headers: { "x-service-token": env.INTERNAL_SERVICE_TOKEN } }
-  //   )
-  //   if (!res.ok) {
-  //     return c.json({ error: "Session revoked", code: "UNAUTHORIZED" }, 401)
-  //   }
+  // Failure policy — fail-open:
+  //   A Redis or auth-service outage must NOT take down the gateway. If the
+  //   denylist check cannot be completed, we let the JWT (which is
+  //   cryptographically valid) pass through. The window of exposure is bounded
+  //   by the JWT's own expiry (`exp` claim).
   //
-  // This adds ~5–10 ms per request. The circuit breaker on the auth-service
-  // route handles downtime gracefully. Enable once Redis is confirmed shared
-  // between auth-service and the gateway's deployment environment.
+  // Circuit breaker — AUTH breaker is reused so that repeated auth-service
+  //   failures trip the breaker and skip future denylist checks automatically,
+  //   preventing latency pile-up during an auth-service outage.
+  const sessionId = (result.value as { sessionId?: string }).sessionId;
+  if (sessionId) {
+    const authBreaker = getBreaker("AUTH");
+    if (authBreaker.allow()) {
+      try {
+        const res = await fetch(
+          `${env.AUTH_SERVICE_URL}/session/internal/${sessionId}/valid`,
+          {
+            headers: { "x-service-token": env.INTERNAL_SERVICE_TOKEN },
+            signal: c.var.abortSignal,
+          }
+        );
+
+        if (res.status === 401 || res.status === 403) {
+          // Auth-service explicitly says this session is revoked.
+          // Count as success (upstream responded, not a 5xx).
+          authBreaker.success();
+          return c.json(
+            {
+              error: "Session has been revoked",
+              code: "UNAUTHORIZED",
+              requestId: c.var.requestId,
+            },
+            401
+          );
+        }
+
+        if (res.ok) {
+          authBreaker.success();
+        } else {
+          // Unexpected non-5xx status — log and fail-open.
+          authBreaker.failure();
+          console.warn(
+            JSON.stringify({
+              event: "session_denylist_unexpected_status",
+              status: res.status,
+              sessionId,
+              requestId: c.var.requestId,
+            })
+          );
+        }
+      } catch (e) {
+        // Network error, timeout, or AbortError — fail-open.
+        authBreaker.failure();
+        if (!(e instanceof Error && e.name === "AbortError")) {
+          console.warn(
+            JSON.stringify({
+              event: "session_denylist_error",
+              error: String(e),
+              sessionId,
+              requestId: c.var.requestId,
+            })
+          );
+        }
+      }
+    }
+    // Circuit OPEN → skip denylist check, fail-open, proceed with valid JWT.
+  }
   // ─────────────────────────────────────────────────────────────────────────
 
   await next();

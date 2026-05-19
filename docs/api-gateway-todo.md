@@ -74,7 +74,7 @@ Format: `[status]` = `[ ]` belum, `[x]` selesai.
   - **Masalah**: Effect dipakai di `jwt.ts`, `hmac.ts`, `rate-limiter.ts` tapi tidak di `circuit-breaker.ts`, `proxy.ts`, `owner-or-admin.ts`, `idempotency.ts`
   - **Rekomendasi**: Keluarkan Effect dari `rate-limiter.ts` (overkill untuk sync logic) agar boundary yang menggunakan Effect jelas: hanya untuk I/O async yang perlu typed errors (`jwt.ts`, `hmac.ts`)
 
-- [ ] **C-13** `middleware/auth-resolver.ts` — Aktifkan session denylist check
+- [x] **C-13** `middleware/auth-resolver.ts` — Aktifkan session denylist check
   - **Masalah**: Komentar di baris 76-91 menjelaskan implementasi yang dibutuhkan tapi belum diaktifkan
   - **Dampak**: Logged-out user JWT tetap valid sampai expiry — revokasi session tidak efektif
   - **Note**: Butuh Redis shared antara auth-service dan gateway
@@ -83,7 +83,7 @@ Format: `[status]` = `[ ]` belum, `[x]` selesai.
   - **Masalah**: Tidak ada satu pun test file di seluruh `apps/api-gateway/src/`
   - **Minimal yang dibutuhkan**: Unit test untuk `lib/jwt.ts`, `lib/hmac.ts`, `lib/circuit-breaker.ts`; integration test untuk middleware chain (authResolver, routeGuard, ownerOrAdmin)
 
-- [ ] **C-15** `proxy.ts` — Hapus `as unknown as Response` double cast
+- [x] **C-15** `proxy.ts` — Hapus `as unknown as Response` double cast
   - **Masalah**: `return c.json(...) as unknown as Response` — workaround type mismatch antara Hono `Response` dan native `Response`
   - **Fix**: Return tipe `Response | Promise<Response>` dari `proxyTo`, atau wrap dengan `Promise.resolve()`
 

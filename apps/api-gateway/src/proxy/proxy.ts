@@ -32,7 +32,7 @@ export async function proxyTo(
         requestId: c.var.requestId,
       },
       503
-    ) as unknown as Response;
+    ) as Response;
   }
 
   // ── Build upstream request ────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export async function proxyTo(
         requestId: c.var.requestId,
       },
       502
-    ) as unknown as Response;
+    ) as Response;
   }
 }
 

@@ -43,15 +43,15 @@ export const Route = createFileRoute("/products/$productId")({
 });
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
-// Mirrors the Edit Product form shape: heading + 5 fields (Name, SKU, Price,
-// Stock, Description) + submit button.
+// Mirrors the Edit Product form shape: heading + 6 fields
+// (Name, SKU, Price, Compare Price, Stock, Description) + submit button.
 
 function EditProductSkeleton() {
   return (
     <div className="space-y-4 max-w-xl">
       <Skeleton className="h-8 w-32" />
       <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="space-y-1.5">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-9 w-full" />
@@ -131,6 +131,7 @@ function EditProductPage() {
         defaultValues={{
           name: product.name,
           price: product.price,
+          comparePrice: product.comparePrice,
           stock: product.stock,
           sku: product.sku,
           ...(product.description !== undefined && {

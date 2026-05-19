@@ -34,7 +34,9 @@ export type StatusFormFields = Schema.Schema.Type<typeof StatusUpdateSchema>;
 // Mirrors NewProductSchema in effect/Services.ts but scoped to the form
 // fields only (no imageUrls / status — those are not rendered in the form).
 // `price` and `stock` are received as numbers because react-hook-form's
-// `valueAsNumber: true` coerces the raw input string before the resolver runs.
+// setValueAs coerces the raw input string before the resolver runs.
+// `comparePrice` uses setValueAs to map empty string → undefined so the
+// Schema.optional wrapper receives undefined (not NaN) for blank inputs.
 
 export const ProductFormSchema = Schema.Struct({
   name: Schema.String.pipe(
@@ -44,6 +46,13 @@ export const ProductFormSchema = Schema.Struct({
     Schema.filter((n) => Number.isFinite(n) && n > 0, {
       message: () => "Price harus lebih dari 0.",
     })
+  ),
+  comparePrice: Schema.optional(
+    Schema.Number.pipe(
+      Schema.filter((n) => Number.isFinite(n) && n > 0, {
+        message: () => "Compare price harus lebih dari 0.",
+      })
+    )
   ),
   stock: Schema.Number.pipe(
     Schema.filter((n) => Number.isFinite(n) && n >= 0, {

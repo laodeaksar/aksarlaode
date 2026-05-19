@@ -37,6 +37,7 @@ export function ProductForm({
     defaultValues: {
       name: defaultValues.name ?? "",
       price: defaultValues.price ?? 0,
+      comparePrice: defaultValues.comparePrice,
       stock: defaultValues.stock ?? 0,
       sku: defaultValues.sku ?? "",
       description: defaultValues.description ?? "",
@@ -86,6 +87,29 @@ export function ProductForm({
             {...register("price", { valueAsNumber: true })}
           />
           {errors.price && <FieldError errors={[errors.price]} />}
+        </Field>
+
+        <Field data-invalid={!!errors.comparePrice}>
+          <FieldLabel htmlFor="pf-compare-price">
+            Compare Price (IDR){" "}
+            <span className="text-muted-foreground font-normal text-xs">
+              — optional, shown crossed-out as original price
+            </span>
+          </FieldLabel>
+          <Input
+            id="pf-compare-price"
+            type="number"
+            min={1}
+            aria-label="Compare price (original price before discount)"
+            placeholder="Leave blank if no sale"
+            {...register("comparePrice", {
+              setValueAs: (v) =>
+                v === "" || v === null ? undefined : Number(v),
+            })}
+          />
+          {errors.comparePrice && (
+            <FieldError errors={[errors.comparePrice]} />
+          )}
         </Field>
 
         <Field data-invalid={!!errors.stock}>

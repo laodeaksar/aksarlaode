@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export type CartItem = {
   id: string;
   name: string;
@@ -9,20 +11,29 @@ export type CartItem = {
 
 const CART_KEY = "ec_cart";
 
+// ── In-memory cache ───────────────────────────────────────────────────────────
+// Eliminates repeated JSON.parse on every cartStore method call.
+// Initialised lazily on first read, kept in sync by saveCart.
+let _cache: CartItem[] | null = null;
+
 function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
+  if (_cache !== null) return _cache;
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY) ?? "[]");
+    _cache = JSON.parse(localStorage.getItem(CART_KEY) ?? "[]");
+    return _cache!;
   } catch {
-    return [];
+    return (_cache = []);
   }
 }
 
 function saveCart(items: CartItem[]): void {
   if (typeof window === "undefined") return;
+  _cache = items;
   localStorage.setItem(CART_KEY, JSON.stringify(items));
 }
 
+// ── Store ─────────────────────────────────────────────────────────────────────
 export const cartStore = {
   getItems: (): CartItem[] => loadCart(),
 
@@ -39,8 +50,7 @@ export const cartStore = {
   },
 
   removeItem: (id: string): void => {
-    const items = loadCart().filter((i) => i.id !== id);
-    saveCart(items);
+    saveCart(loadCart().filter((i) => i.id !== id));
     window.dispatchEvent(new CustomEvent("cart:updated"));
   },
 
@@ -49,11 +59,7 @@ export const cartStore = {
     const item = items.find((i) => i.id === id);
     if (item) {
       item.quantity = quantity;
-      if (item.quantity <= 0) {
-        saveCart(items.filter((i) => i.id !== id));
-      } else {
-        saveCart(items);
-      }
+      saveCart(quantity <= 0 ? items.filter((i) => i.id !== id) : items);
     }
     window.dispatchEvent(new CustomEvent("cart:updated"));
   },
@@ -66,5 +72,33 @@ export const cartStore = {
   getTotal: (): number =>
     loadCart().reduce((sum, i) => sum + i.price * i.quantity, 0),
 
-  getCount: (): number => loadCart().reduce((sum, i) => sum + i.quantity, 0),
+  getCount: (): number =>
+    loadCart().reduce((sum, i) => sum + i.quantity, 0),
 };
+
+// ── React hook ────────────────────────────────────────────────────────────────
+// Replaces the scattered addEventListener("cart:updated") pattern across islands.
+// Components that used to read cartStore directly can call useCart() instead.
+export function useCart() {
+  const [items, setItems] = useState<CartItem[]>(() =>
+    typeof window !== "undefined" ? loadCart() : []
+  );
+
+  useEffect(() => {
+    // Sync on mount in case localStorage changed in another tab
+    setItems(loadCart());
+    const handler = () => setItems(loadCart());
+    window.addEventListener("cart:updated", handler);
+    return () => window.removeEventListener("cart:updated", handler);
+  }, []);
+
+  const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  return {
+    items,
+    totalAmount,
+    itemCount,
+    clearCart: cartStore.clearCart,
+  };
+}

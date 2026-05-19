@@ -1,6 +1,12 @@
 import { Effect } from "effect";
 import { ApiConfig } from "@/effect/layers";
-import { NetworkError, HttpError, ParseError } from "@/effect/errors";
+import {
+  NetworkError,
+  HttpError,
+  ParseError,
+  AuthError,
+  NotFoundError,
+} from "@/effect/errors";
 
 export type FetchOptions = RequestInit & {
   cookie?: string; // SSR: forward browser cookie to api-gateway
@@ -33,15 +39,11 @@ export const apiFetch = <T>(path: string, options: FetchOptions = {}) =>
     });
 
     if (res.status === 401) {
-      return yield* Effect.fail(
-        new (await import("../effect/errors")).AuthError({ reason: "expired" })
-      );
+      return yield* Effect.fail(new AuthError({ reason: "expired" }));
     }
 
     if (res.status === 404) {
-      return yield* Effect.fail(
-        new (await import("../effect/errors")).NotFoundError({ resource: path })
-      );
+      return yield* Effect.fail(new NotFoundError({ resource: path }));
     }
 
     if (!res.ok) {

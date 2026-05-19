@@ -1,7 +1,7 @@
 ---
 import { AppRuntime }   from "@/lib/effect/runtime"
 import { productsApi }  from "@/lib/api/products"
-import { AddToCartButton } from "@/components/islands/product/AddToCartButton"
+import { AddToCartButton } from "@/components/islands/products/AddToCartButton"
 import Layout from "@/layouts/Layout.astro"
 
 const { slug } = Astro.params
@@ -85,7 +85,7 @@ const product = exit.value
           id:       product.id,
           name:     product.name,
           price:    product.price,
-          sku:      product.sku,
+          slug:     product.slug,
           stock:    product.stock,
           imageUrl: product.imageUrls?.[0],
         }}

@@ -67,9 +67,8 @@ export function CheckoutForm({ userId }: Props) {
       const order = yield* ordersApi.create(
         {
           items: items.map((i) => ({
-            productId: i.productId,
+            productId: i.id,
             productName: i.name,
-            sku: i.sku,
             price: i.price,
             quantity: i.quantity,
           })),
@@ -103,7 +102,7 @@ export function CheckoutForm({ userId }: Props) {
                 )?.dataset.userEmail,
                 customerName: values.recipientName,
                 items: items.map((i) => ({
-                  id: i.productId,
+                  id: i.id,
                   name: i.name,
                   price: i.price,
                   quantity: i.quantity,
@@ -293,7 +292,7 @@ export function CheckoutForm({ userId }: Props) {
           {/* Cart items */}
           <div className="divide-y rounded-lg border">
             {items.map((item) => (
-              <div key={item.productId} className="flex items-center gap-3 p-4">
+              <div key={item.id} className="flex items-center gap-3 p-4">
                 <img
                   src={item.imageUrl}
                   className="h-14 w-14 rounded object-cover"

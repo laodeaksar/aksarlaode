@@ -66,11 +66,11 @@ Format: `[status]` = `[ ]` belum, `[x]` selesai.
 
 ## P3 — Nice-to-Have
 
-- [ ] **C-11** `middleware/rate-limiter.ts` + `middleware/idempotency.ts` — Migrasi store ke Redis
+- [x] **C-11** `middleware/rate-limiter.ts` + `middleware/idempotency.ts` — Migrasi store ke Redis
   - **Masalah**: Kedua store pakai in-memory `Map` — tidak survive restart, tidak bekerja dengan multiple gateway instances
   - **Note**: Komentar di kedua file sudah acknowledge ini. Prioritas naik ke P1 saat deploy multi-instance.
 
-- [ ] **C-12** Effect consistency — Either all-in atau opt-out
+- [x] **C-12** Effect consistency — Either all-in atau opt-out
   - **Masalah**: Effect dipakai di `jwt.ts`, `hmac.ts`, `rate-limiter.ts` tapi tidak di `circuit-breaker.ts`, `proxy.ts`, `owner-or-admin.ts`, `idempotency.ts`
   - **Rekomendasi**: Keluarkan Effect dari `rate-limiter.ts` (overkill untuk sync logic) agar boundary yang menggunakan Effect jelas: hanya untuk I/O async yang perlu typed errors (`jwt.ts`, `hmac.ts`)
 

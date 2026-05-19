@@ -79,7 +79,7 @@ Format: `[status]` = `[ ]` belum, `[x]` selesai.
   - **Dampak**: Logged-out user JWT tetap valid sampai expiry — revokasi session tidak efektif
   - **Note**: Butuh Redis shared antara auth-service dan gateway
 
-- [ ] **C-14** Test coverage — Saat ini nol
+- [x] **C-14** Test coverage — Saat ini nol
   - **Masalah**: Tidak ada satu pun test file di seluruh `apps/api-gateway/src/`
   - **Minimal yang dibutuhkan**: Unit test untuk `lib/jwt.ts`, `lib/hmac.ts`, `lib/circuit-breaker.ts`; integration test untuk middleware chain (authResolver, routeGuard, ownerOrAdmin)
 

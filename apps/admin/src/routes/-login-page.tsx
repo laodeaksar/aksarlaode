@@ -73,7 +73,7 @@ export default function LoginPage() {
   const { logout } = Route.useSearch();
   const [showPassword, setShowPassword] = useState(false);
 
-  // Saat user tiba dengan ?logout=1 (dikirim topbar setelah logout berhasil):
+  // Saat user tiba dengan ?logout=1 (dikirim NavUser setelah logout berhasil):
   //   1. Tampilkan skeleton (form belum di-render — tidak ada flash).
   //   2. useEffect jalan → toast konfirmasi muncul.
   //   3. URL dibersihkan → skeleton diganti form normal.

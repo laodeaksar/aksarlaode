@@ -54,7 +54,7 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
   try {
     const cookies = getCookies();
     const cookieHeader = Object.entries(cookies)
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
       .join("; ");
 
     if (!cookieHeader) return null;

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/products/new")({
   beforeLoad: ({ context }) => {
     const { session } = context as { session?: Session };
     if (!session || !can(session.role, "products:write")) {
-      throw redirect({ to: "/products" as any });
+      throw redirect({ to: "/products" });
     }
   },
 
@@ -33,13 +33,17 @@ function NewProductPage() {
     onMutate: async (newProduct) => {
       await queryClient.cancelQueries({ queryKey: ["products"] });
 
+      // Query key must match the shape used in -products-page.tsx:
+      //   ["products", { page, search }]
+      const cacheKey = ["products", { page: 1, search: "" }];
+
       const previousData = queryClient.getQueryData<{
         items: { id: string; name: string }[];
         total: number;
-      }>(["products", 1, ""]);
+      }>(cacheKey);
 
       queryClient.setQueryData(
-        ["products", 1, ""],
+        cacheKey,
         (old: typeof previousData) =>
           old
             ? {
@@ -58,13 +62,13 @@ function NewProductPage() {
             : old
       );
 
-      return { previousData };
+      return { previousData, cacheKey };
     },
 
     // Roll back on error
     onError: (err, _vars, ctx) => {
       if (ctx?.previousData) {
-        queryClient.setQueryData(["products", 1, ""], ctx.previousData);
+        queryClient.setQueryData(ctx.cacheKey, ctx.previousData);
       }
       toast.error("Gagal membuat produk", err);
     },
@@ -89,7 +93,7 @@ function NewProductPage() {
         onSubmit={(data) =>
           mutation.mutate({
             ...data,
-            // imageUrls and status are not in the form — NewProductInput has them optional
+            description: data.description?.trim() || undefined,
           } satisfies NewProductInput)
         }
         isLoading={mutation.isPending}

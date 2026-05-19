@@ -12,7 +12,7 @@ export const Route = createFileRoute("/products/$productId")({
   beforeLoad: ({ context }) => {
     const { session } = context as { session?: Session };
     if (!session || !can(session.role, "products:write")) {
-      throw redirect({ to: "/products" as any });
+      throw redirect({ to: "/products" });
     }
   },
 

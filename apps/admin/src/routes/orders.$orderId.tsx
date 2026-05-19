@@ -22,7 +22,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@repo/ui/components/field";
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { Textarea } from "@repo/ui/components/textarea";
 
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
@@ -288,45 +295,42 @@ function OrderDetailPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={onStatusSubmit} className="space-y-3">
-                <div>
-                  <label htmlFor="order-next-status" className="sr-only">
-                    New status
-                  </label>
-                  <select
-                    id="order-next-status"
-                    aria-label="Select new order status"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    {...register("nextStatus")}
-                  >
-                    <option value="">Select new status...</option>
-                    {ORDER_STATUSES.filter((s) => s !== order.status).map(
-                      (s) => (
-                        <option key={s} value={s}>
-                          {s.replace(/_/g, " ")}
-                        </option>
-                      )
+                <FieldGroup>
+                  <Field data-invalid={!!errors.nextStatus}>
+                    <FieldLabel htmlFor="order-next-status">
+                      New Status
+                    </FieldLabel>
+                    <select
+                      id="order-next-status"
+                      aria-label="Select new order status"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                      {...register("nextStatus")}
+                    >
+                      <option value="">Select new status...</option>
+                      {ORDER_STATUSES.filter((s) => s !== order.status).map(
+                        (s) => (
+                          <option key={s} value={s}>
+                            {s.replace(/_/g, " ")}
+                          </option>
+                        )
+                      )}
+                    </select>
+                    {errors.nextStatus && (
+                      <FieldError errors={[errors.nextStatus]} />
                     )}
-                  </select>
-                  {errors.nextStatus && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.nextStatus.message}
-                    </p>
-                  )}
-                </div>
+                  </Field>
 
-                <div>
-                  <label htmlFor="order-note" className="sr-only">
-                    Note
-                  </label>
-                  <textarea
-                    id="order-note"
-                    aria-label="Status update note"
-                    className="w-full rounded border px-3 py-2 text-sm"
-                    rows={2}
-                    placeholder="Optional note (e.g. tracking number)"
-                    {...register("note")}
-                  />
-                </div>
+                  <Field>
+                    <FieldLabel htmlFor="order-note">Note (optional)</FieldLabel>
+                    <Textarea
+                      id="order-note"
+                      aria-label="Status update note"
+                      rows={2}
+                      placeholder="Optional note (e.g. tracking number)"
+                      {...register("note")}
+                    />
+                  </Field>
+                </FieldGroup>
 
                 <Button
                   type="submit"

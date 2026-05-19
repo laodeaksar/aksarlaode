@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { Effect, Schema } from "effect";
 
 import { auditMiddleware } from "@/effect/AuditMiddleware";
-import { NotFoundError } from "@/effect/Errors";
 import { effectMiddleware } from "@/effect/Middleware";
 import {
   ApiClientService,
@@ -65,15 +64,7 @@ export const getProductFn = createServerFn({ method: "GET" })
     context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService;
-        const product = yield* api.products.getOne(data.id);
-
-        if (!product) {
-          yield* Effect.fail(
-            new NotFoundError({ resource: "Product", id: data.id })
-          );
-        }
-
-        return product;
+        return yield* api.products.getOne(data.id);
       })
     )
   );

@@ -93,7 +93,7 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(
   async (): Promise<void> => {
     const cookies = getCookies();
     const cookieHeader = Object.entries(cookies)
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
       .join("; ");
 
     const res = await fetch(`${apiUrl()}/auth/logout`, {

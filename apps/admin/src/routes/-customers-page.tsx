@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -65,6 +65,8 @@ export default function CustomersPage() {
   const loaderData = Route.useLoaderData();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [inputValue, setInputValue] = useState(search);
+
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page, search }],
     queryFn: () =>
@@ -76,6 +78,7 @@ export default function CustomersPage() {
 
   const handleSearch = useCallback(
     (value: string) => {
+      setInputValue(value);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         navigate({
@@ -104,7 +107,7 @@ export default function CustomersPage() {
       <Input
         className="w-64"
         placeholder="Search by name or email..."
-        defaultValue={search}
+        value={inputValue}
         onChange={(e) => handleSearch(e.target.value)}
       />
 

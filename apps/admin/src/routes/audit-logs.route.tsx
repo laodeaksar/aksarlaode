@@ -11,7 +11,14 @@ export const Route = createFileRoute("/audit-logs")({
     }
   },
 
-  loader: () => listAuditLogsFn({ data: { page: 1 } }),
+  // Persist page in URL so back-button navigation and sharing preserve position.
+  validateSearch: (search: Record<string, unknown>) => ({
+    page: Math.max(1, Number(search.page) || 1),
+  }),
+
+  loaderDeps: ({ search }) => ({ page: search.page }),
+
+  loader: ({ deps }) => listAuditLogsFn({ data: { page: deps.page } }),
 
   component: () => <Outlet />,
 });

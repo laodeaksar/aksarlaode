@@ -1,7 +1,6 @@
 import {
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
@@ -39,12 +38,11 @@ export function DataTable<T>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(total / pageSize),
   });
 
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="space-y-3">
@@ -93,15 +91,15 @@ export function DataTable<T>({
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — driven entirely by props, not internal TanStack Table state */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <p>{total} total records</p>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1}
           >
             ← Prev
           </Button>
@@ -111,8 +109,8 @@ export function DataTable<T>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
           >
             Next →
           </Button>

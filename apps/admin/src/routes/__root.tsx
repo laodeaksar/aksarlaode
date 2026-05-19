@@ -12,15 +12,15 @@ import {
 } from "@tanstack/react-router";
 import type { ParsedLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar"
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 
 import { Toaster } from "sonner";
 
 import appCss from "@repo/ui/globals.css?url";
 
-import { ErrorBoundary, Sidebar, Topbar } from "@/components";
+import { ErrorBoundary } from "@/components";
 import {
   getSession,
   hasAnyAdminRole,
@@ -49,12 +49,8 @@ export const Route = createRootRouteWithContext<{
   beforeLoad: async ({ location }: { location: ParsedLocation }) => {
     if (location.pathname.startsWith("/login")) return;
 
-    // Attempt 1: normal session check.
     let session = await getSession();
 
-    // Attempt 2: jika session null (access token mungkin expired), coba
-    // silent refresh sekali. Kalau berhasil, ulangi session check.
-    // Kalau gagal (refresh token juga expired) → redirect ke login seperti biasa.
     if (!session) {
       const refreshed = await silentRefresh();
       if (refreshed) {
@@ -63,7 +59,7 @@ export const Route = createRootRouteWithContext<{
     }
 
     if (!session || !hasAnyAdminRole(session.role)) {
-      throw redirect({ to: "/login" as any });
+      throw redirect({ to: "/login" });
     }
 
     return { session };
@@ -113,10 +109,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
   if (pathname.startsWith("/login")) {
     return (
-      <div className="min-h-screen bg-muted/40">
-        {children}
-        <Toaster position="top-center" richColors />
-      </div>
+      <html>
+        <head>
+          <HeadContent />
+        </head>
+        <body>
+          <div className="min-h-screen bg-muted/40">
+            {children}
+            <Toaster position="top-center" richColors />
+          </div>
+          <Scripts />
+        </body>
+      </html>
     );
   }
 
@@ -127,62 +131,44 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body>
-        <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-           <ErrorBoundary>
-                  <React.Suspense
-                    fallback={
-                      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-                        Loading…
-                      </div>
-                    }
-                  >
-                    {children}
-                  </React.Suspense>
-                </ErrorBoundary>
+          <SidebarProvider
+            style={
+              {
+                "--sidebar-width": "calc(var(--spacing) * 72)",
+                "--header-height": "calc(var(--spacing) * 12)",
+              } as React.CSSProperties
+            }
+          >
+            <AppSidebar variant="inset" />
+            <SidebarInset>
+              <SiteHeader />
+              <div className="flex flex-1 flex-col">
+                <div className="@container/main flex flex-1 flex-col gap-2">
+                  <ErrorBoundary>
+                    <React.Suspense
+                      fallback={
+                        <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+                          Loading…
+                        </div>
+                      }
+                    >
+                      {children}
+                    </React.Suspense>
+                  </ErrorBoundary>
+                </div>
               </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-    {/*<div className="flex h-screen bg-muted/40">
-            <Sidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <Topbar />
-              <main className="flex-1 overflow-y-auto p-6">
-                <ErrorBoundary>
-                  <React.Suspense
-                    fallback={
-                      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-                        Loading…
-                      </div>
-                    }
-                  >
-                    {children}
-                  </React.Suspense>
-                </ErrorBoundary>
-              </main>
-            </div>
-          </div>
+            </SidebarInset>
+          </SidebarProvider>
+
           {import.meta.env.DEV && (
             <>
               <TanStackRouterDevtools position="bottom-right" />
               <ReactQueryDevtools buttonPosition="bottom-left" />
             </>
           )}
+
           <Toaster position="top-center" richColors />
           <Scripts />
-          */}
         </body>
       </html>
     </SessionContext.Provider>

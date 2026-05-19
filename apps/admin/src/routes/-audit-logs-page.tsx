@@ -1,6 +1,5 @@
-import { useState } from "react";
-
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@repo/ui/components/badge";
@@ -83,8 +82,8 @@ const columns: ColumnDef<AuditLogEntry>[] = [
 ];
 
 export default function AuditLogsPage() {
-  const [page, setPage] = useState(1);
-
+  const navigate = useNavigate();
+  const { page } = Route.useSearch();
   const loaderData = Route.useLoaderData();
 
   const { data, isLoading } = useQuery({
@@ -111,7 +110,12 @@ export default function AuditLogsPage() {
         isLoading={isLoading}
         total={data?.total ?? 0}
         page={page}
-        onPageChange={setPage}
+        onPageChange={(newPage) =>
+          navigate({
+            to: "/audit-logs",
+            search: (prev) => ({ ...prev, page: newPage }),
+          })
+        }
       />
     </div>
   );

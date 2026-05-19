@@ -127,7 +127,7 @@ export default function OrdersPage() {
 
       <div className="flex items-center gap-3">
         <select
-          className="rounded border px-3 py-2 text-sm bg-white"
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
           value={status}
           onChange={(e) => handleStatusChange(e.target.value)}
           aria-label="Filter by status"

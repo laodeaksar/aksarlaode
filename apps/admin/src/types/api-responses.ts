@@ -9,9 +9,9 @@
 // Regola: importa sempre da "@/types" — mai da "@/lib/api".
 // lib/api.ts re-esporta da qui per backward compat durante la transizione.
 //
-// NOTE(TYPE-03): OrderSummary/OrderDetail dell'admin divergono da
-// @repo/common/OrderDetail (campo items.productName vs .name, mancanza
-// totalAmount). Riconciliare con il team order-service prima di consolidare.
+// NOTE: OrderSummary/OrderDetail dell'admin divergono da @repo/common/OrderDetail
+// (campo items.productName vs .name, mancanza totalAmount).
+// Riconciliare con il team order-service separatamente — fuori scope TYPE-03.
 
 export type OrderSummary = {
   orderId: string;

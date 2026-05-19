@@ -20,6 +20,7 @@ export type Product = {
   sku: string;
   description?: string;
   price: number;
+  comparePrice?: number;
   stock: number;
   status?: ProductStatus;
   imageUrls?: string[];
@@ -29,13 +30,18 @@ export type Product = {
   updatedAt?: string;
 };
 
+// CONSISTENCY-FIX TYPE-03: slug is now optional — the backend auto-generates it
+// from the product name when not supplied. status and comparePrice added to
+// align with the admin create/update contract.
 export type NewProduct = {
   name: string;
-  slug: string;
+  slug?: string;
   sku: string;
   description?: string;
   price: number;
+  comparePrice?: number;
   stock: number;
+  status?: ProductStatus;
   imageUrls?: string[];
   categoryId?: string;
 };

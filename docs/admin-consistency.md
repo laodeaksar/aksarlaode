@@ -81,12 +81,15 @@
 
 ## P3 — Backlog Teknis
 
-- [ ] **TYPE-03** Unifikasi penuh tipe `Product` dan `NewProduct` antara `@repo/common`
-  dan `Services.ts`. Saat ini ada divergensi field:
-  - `@repo/common` punya `slug` (required), `isActive`, `categoryId`
-  - `Services.ts` punya `status: ProductStatus` — tidak ada di `@repo/common`
-  - `NewProduct` di `@repo/common` requires `slug`, admin form tidak punya field slug
-  Butuh koordinasi dengan product-service team untuk reconcile kontrak API.
+- [x] **TYPE-03** Unifikasi penuh tipe `Product` dan `NewProduct` antara `@repo/common`
+  dan `Services.ts`.
+  - `@repo/common/Product` — ditambahkan `comparePrice?: number`
+  - `@repo/common/NewProduct` — `slug` dijadikan optional (backend auto-generate); ditambahkan `status?: ProductStatus` dan `comparePrice?: number`
+  - `Services.schemas.ts Product` — ditambahkan `slug?`, `categoryId?`, `isActive?`, `comparePrice?` agar alignment penuh dengan `@repo/common`
+  - `Services.schemas.ts NewProduct` — ditambahkan `slug?`, `categoryId?`, `comparePrice?`
+  - `Services.schemas.ts User` — local type dihapus; sekarang `import type { User } from "@repo/common"` (UserRole sudah mencakup semua role sejak TYPE-01)
+  - `ProductSchema` dan `NewProductSchema` (Effect.Schema) diperbarui sesuai field baru
+  - Semua komentar `NOTE(TYPE-03)` dihapus
 
 - [x] **TYPE-04** 4 response types dipindah ke `src/types/api-responses.ts`:
   `OrderSummary`, `OrderDetail`, `DashboardStats`, `AuditLogEntry`.

@@ -74,10 +74,10 @@ const columns: ColumnDef<OrderSummary>[] = [
     id: "actions",
     header: "",
     cell: ({ row }) => (
-      // TODO: Property 'search' is missing
       <Link
         to="/orders/$orderId"
         params={{ orderId: row.original.orderId }}
+        search={{}}
         className="text-sm text-blue-600 hover:underline"
       >
         View
@@ -114,7 +114,6 @@ export default function OrdersPage() {
     (newPage: number) => {
       navigate({
         to: "/orders",
-        // TODO:
         search: (prev) => ({ ...prev, page: newPage }),
       });
     },

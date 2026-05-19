@@ -80,8 +80,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!logout) return;
     toast.success("Berhasil keluar dari akun");
-    // TODO: Fix
-    void navigate({ to: "/login", search: {}, replace: true });
+    void navigate({ to: "/login", search: { logout: false }, replace: true });
   }, [logout, navigate]);
 
   const {

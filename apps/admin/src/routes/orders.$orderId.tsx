@@ -37,9 +37,7 @@ import { can, effectResolver, toast, useSession } from "@/lib";
 
 export const Route = createFileRoute("/orders/$orderId")({
   loader: ({ params, context }) => {
-    const { queryClient } = context as {
-      queryClient: import("@tanstack/react-query").QueryClient;
-    };
+    const { queryClient } = context;
     return queryClient.ensureQueryData({
       queryKey: ["order", params.orderId],
       queryFn: () => getOrderFn({ data: { id: params.orderId } }),

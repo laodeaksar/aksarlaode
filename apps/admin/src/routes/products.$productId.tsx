@@ -6,11 +6,11 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { getProductFn, updateProductFn } from "@/server/products";
 import type { UpdateProductInput } from "@/effect/Services";
 import { ProductForm } from "@/components/forms/product-form";
-import { can, toast, type Session } from "@/lib";
+import { can, toast } from "@/lib";
 
 export const Route = createFileRoute("/products/$productId")({
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session };
+    const { session } = context;
     if (!session || !can(session.role, "products:write")) {
       throw redirect({ to: "/products" });
     }
@@ -22,9 +22,7 @@ export const Route = createFileRoute("/products/$productId")({
   // state.  On repeated visits within staleTime (60 s) no network request is
   // made at all.
   loader: ({ params, context }) => {
-    const { queryClient } = context as {
-      queryClient: import("@tanstack/react-query").QueryClient;
-    };
+    const { queryClient } = context;
     return queryClient.ensureQueryData({
       queryKey: ["product", params.productId],
       queryFn: () => getProductFn({ data: { id: params.productId } }),

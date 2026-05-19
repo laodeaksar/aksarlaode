@@ -31,5 +31,8 @@ export { effectResolver } from "./effect-resolver";
 export { can, hasAnyAdminRole } from "./rbac";
 export type { Permission } from "./rbac";
 
+// ── router-context ─────────────────────────────────────────────────────────
+export type { RouterContext } from "./router-context";
+
 // ── session-context ────────────────────────────────────────────────────────
 export { SessionContext, useSession } from "./session-context";

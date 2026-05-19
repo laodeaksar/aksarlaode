@@ -4,13 +4,13 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { createProductFn } from "@/server/products";
 import type { NewProductInput } from "@/effect/Services";
 import { ProductForm } from "@/components/forms/product-form";
-import { can, toast, type Session } from "@/lib";
+import { can, toast } from "@/lib";
 
 export const Route = createFileRoute("/products/new")({
   // Route-level RBAC: only ADMIN and OWNER can create products.
   // FINANCE is redirected back to the product list (read-only).
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session };
+    const { session } = context;
     if (!session || !can(session.role, "products:write")) {
       throw redirect({ to: "/products" });
     }

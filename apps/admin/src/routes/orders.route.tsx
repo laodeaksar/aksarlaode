@@ -1,11 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { listOrdersFn } from "@/server/orders";
-import { can, type Session } from "@/lib";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/orders")({
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session };
+    const { session } = context;
     if (!session || !can(session.role, "orders:read")) {
       throw redirect({ to: "/dashboard" });
     }

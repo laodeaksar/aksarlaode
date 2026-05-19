@@ -7,9 +7,7 @@ import { getCustomerFn } from "@/server/customers";
 
 export const Route = createFileRoute("/customers/$userId")({
   loader: ({ params, context }) => {
-    const { queryClient } = context as {
-      queryClient: import("@tanstack/react-query").QueryClient;
-    };
+    const { queryClient } = context;
     return queryClient.ensureQueryData({
       queryKey: ["customer", params.userId],
       queryFn: () => getCustomerFn({ data: { id: params.userId } }),

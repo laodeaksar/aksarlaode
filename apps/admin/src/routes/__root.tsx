@@ -1,6 +1,5 @@
 import * as React from "react";
 
-import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   createRootRouteWithContext,
@@ -26,12 +25,10 @@ import {
   hasAnyAdminRole,
   SessionContext,
   silentRefresh,
-  type Session,
+  type RouterContext,
 } from "@/lib";
 
-export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-}>()({
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -51,7 +48,7 @@ export const Route = createRootRouteWithContext<{
     context,
   }: {
     location: ParsedLocation;
-    context: { queryClient: QueryClient };
+    context: RouterContext;
   }) => {
     if (location.pathname.startsWith("/login")) return;
 
@@ -121,7 +118,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     select: (s: { location: { pathname: string } }) => s.location.pathname,
   });
 
-  const routeCtx = Route.useRouteContext() as { session?: Session };
+  const routeCtx = Route.useRouteContext();
   const session = routeCtx.session ?? null;
 
   if (pathname.startsWith("/login")) {

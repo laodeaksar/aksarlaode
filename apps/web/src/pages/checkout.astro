@@ -8,13 +8,18 @@ const user = Astro.locals.user
 if (!user) {
   return Astro.redirect("/account/login?redirect=/checkout")
 }
+
+const midtransHost =
+  import.meta.env.PUBLIC_MIDTRANS_ENV === "production"
+    ? "https://app.midtrans.com"
+    : "https://app.sandbox.midtrans.com"
 ---
 
 <Layout title="Checkout">
   <!-- Midtrans Snap script -->
   <script
     is:inline
-    src="https://app.sandbox.midtrans.com/snap/snap.js"
+    src={`${midtransHost}/snap/snap.js`}
     data-client-key={import.meta.env.PUBLIC_MIDTRANS_CLIENT_KEY}
   ></script>
 

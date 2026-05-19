@@ -1,4 +1,5 @@
 ---
+import Layout from "@/layouts/Layout.astro"
 import Navbar from "@/components/ui/Navbar.astro"
 import Footer from "@/components/ui/Footer.astro"
 import ProductCard from "@/components/ui/ProductCard.astro"
@@ -8,53 +9,45 @@ import { productsApi } from "@/lib/api/products"
 const exit = await AppRuntime.runPromiseExit(productsApi.list({ limit: 8 }))
 const products = exit._tag === "Success" ? exit.value.items : []
 ---
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MyEcommerce - Shop Quality Products</title>
-  </head>
-  <body class="bg-gray-50 min-h-screen">
-    <Navbar />
+<Layout title="MyEcommerce - Shop Quality Products">
+  <Navbar />
 
-    <!-- Hero -->
-    <section class="bg-gradient-to-br from-gray-900 to-gray-700 text-white py-20 px-4">
-      <div class="max-w-3xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Shop the Best Products</h1>
-        <p class="text-lg text-gray-300 mb-8">Discover thousands of quality products at unbeatable prices.</p>
-        <a href="/products" class="inline-block bg-white text-gray-900 font-semibold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors">
-          Shop Now
-        </a>
+  <!-- Hero -->
+  <section class="bg-gradient-to-br from-gray-900 to-gray-700 text-white py-20 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Shop the Best Products</h1>
+      <p class="text-lg text-gray-300 mb-8">Discover thousands of quality products at unbeatable prices.</p>
+      <a href="/products" class="inline-block bg-white text-gray-900 font-semibold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors">
+        Shop Now
+      </a>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h2 class="text-2xl font-bold text-gray-900 mb-8">Featured Products</h2>
+    {products.length > 0 ? (
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+        {products.map(p => (
+          <ProductCard
+            id={p.id}
+            name={p.name}
+            slug={p.slug}
+            price={p.price}
+            imageUrl={p.imageUrls?.[0]}
+            inStock={(p.stock ?? 0) > 0}
+          />
+        ))}
       </div>
-    </section>
+    ) : (
+      <p class="text-gray-500 text-center py-12">No products available yet.</p>
+    )}
+    <div class="text-center mt-10">
+      <a href="/products" class="inline-block border border-gray-300 text-gray-700 font-medium px-6 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+        View All Products
+      </a>
+    </div>
+  </main>
 
-    <!-- Featured Products -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <h2 class="text-2xl font-bold text-gray-900 mb-8">Featured Products</h2>
-      {products.length > 0 ? (
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map(p => (
-            <ProductCard
-              id={p.id}
-              name={p.name}
-              slug={p.slug}
-              price={p.price}
-              imageUrl={p.imageUrls?.[0]}
-              inStock={(p.stock ?? 0) > 0}
-            />
-          ))}
-        </div>
-      ) : (
-        <p class="text-gray-500 text-center py-12">No products available yet.</p>
-      )}
-      <div class="text-center mt-10">
-        <a href="/products" class="inline-block border border-gray-300 text-gray-700 font-medium px-6 py-2 rounded-xl hover:bg-gray-100 transition-colors">
-          View All Products
-        </a>
-      </div>
-    </main>
-
-    <Footer />
-  </body>
-</html>
+  <Footer />
+</Layout>

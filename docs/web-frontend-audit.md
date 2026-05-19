@@ -46,24 +46,25 @@
 
 ## P2 — Nice to Have (refactor backlog)
 
-- [ ] **W-15** `pages/index.astro`, `pages/products/index.astro`, `pages/account/orders.astro`, `pages/orders/[cartId].astro` — Tidak pakai `Layout.astro`, masing-masing tulis `<!DOCTYPE html>` sendiri → duplikasi, meta tag tidak konsisten
-  - **Fix**: Refactor semua page pakai `<Layout title="...">` wrapper
-- [ ] **W-16** `ProductFilters.tsx` — Filter state tidak di-sync ke URL. Refresh page → filter hilang, hasil filter tidak bisa di-share/bookmark
-  - **Fix**: Gunakan `URLSearchParams` dan `history.replaceState` atau Astro `navigate()` saat filter berubah
-- [ ] **W-17** `tsconfig.json` — `@repo/ui/*` alias ada di tsconfig tapi package tidak ada di `dependencies` di `package.json`
-  - **Fix**: Hapus alias jika package belum ada, atau tambahkan `"@repo/ui": "workspace:*"` ke dependencies
-- [ ] **W-18** `checkout.astro` — Midtrans Snap URL hardcode ke sandbox: `app.sandbox.midtrans.com`
-  - **Fix**: Gunakan `import.meta.env.PUBLIC_MIDTRANS_ENV === "production" ? "app.midtrans.com" : "app.sandbox.midtrans.com"`
+- [x] **W-15** `pages/index.astro`, `pages/products/index.astro`, `pages/account/orders.astro`, `pages/orders/[orderId].astro` — Tidak pakai `Layout.astro`, masing-masing tulis `<!DOCTYPE html>` sendiri → duplikasi, meta tag tidak konsisten
+  - **Fix**: Semua page direfactor pakai `<Layout title="...">` wrapper. `Layout.astro` diperbarui dengan `class="bg-gray-50 min-h-screen"` pada `<body>`.
+- [x] **W-16** `ProductFilters.tsx` — Filter state tidak di-sync ke URL. Refresh page → filter hilang, hasil filter tidak bisa di-share/bookmark
+  - **Fix**: Tambah `getUrlParams()` untuk baca initial state dari `window.location.search`; `syncToUrl()` memanggil `history.replaceState` setelah setiap fetch berhasil.
+- [x] **W-17** `tsconfig.json` — `@repo/ui/*` alias ada di tsconfig tapi package tidak ada di `dependencies` di `package.json`
+  - **Fix**: Tambah `"@repo/ui": "workspace:*"` ke `dependencies` di `package.json`.
+- [x] **W-18** `checkout.astro` — Midtrans Snap URL hardcode ke sandbox: `app.sandbox.midtrans.com`
+  - **Fix**: `midtransHost` dideklarasikan di frontmatter menggunakan `PUBLIC_MIDTRANS_ENV === "production"` ternary; `src` di-interpolasi dari variabel tersebut.
 - [x] **W-19** `LoginForm.tsx` L29–32 — `Effect.gen` yang hanya berisi satu `yield*` tanpa transformasi → redundant wrapper, noise
   - **Fix**: Hapus `Effect.gen`, panggil `authApi.login(values)` langsung ke `AppRuntime.runPromiseExit`. Sekaligus perbaiki `?redirect=` handling dengan origin validation untuk cegah open redirect.
-- [ ] **W-20** `pages/orders/[cartId].astro` — Route param diberi nama `cartId` tapi isinya adalah `orderId`
-  - **Fix**: Rename file ke `[orderId].astro`, update semua referensi
+- [x] **W-20** `pages/orders/[cartId].astro` — Route param diberi nama `cartId` tapi isinya adalah `orderId`
+  - **Fix**: File di-rename ke `[orderId].astro`, semua referensi `cartId` diubah ke `orderId`. File lama dihapus.
 
 ---
 
 ## Monorepo Integration
 
-- [ ] **M-01** Tambahkan `"@repo/ui": "workspace:*"` ke `package.json` dependencies atau hapus path alias `@repo/ui/*` dari `tsconfig.json`
+- [x] **M-01** Tambahkan `"@repo/ui": "workspace:*"` ke `package.json` dependencies atau hapus path alias `@repo/ui/*` dari `tsconfig.json`
+  - **Fix**: `"@repo/ui": "workspace:*"` ditambahkan ke `dependencies` (diselesaikan bersama W-17).
 - [x] `@repo/common` ✅ dipakai benar di `products.ts` dan `ProductFilters.tsx`
 - [x] `@repo/env` ✅ ada di dependencies
 - [x] pnpm workspace ✅ configured
@@ -89,8 +90,8 @@
 |---|---|---|
 | P0 | 5 | 5 ✅ |
 | P1 | 9 | 9 ✅ |
-| P2 | 6 | 2 ✅ |
-| Monorepo | 2 | 0 |
+| P2 | 6 | 6 ✅ |
+| Monorepo | 2 | 2 ✅ |
 | Security | 6 | 5 ✅ |
 
-**Remaining open items**: W-15, W-16, W-17, W-18, W-20, M-01
+**Remaining open items**: W-18 (Midtrans sandbox URL — butuh `PUBLIC_MIDTRANS_ENV` dikonfigurasi di env prod)

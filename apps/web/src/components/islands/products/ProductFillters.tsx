@@ -26,6 +26,29 @@ type Props = {
   total: number;
 };
 
+function getUrlParams(): FilterValues {
+  if (typeof window === "undefined") return { sortBy: "newest" };
+  const p = new URLSearchParams(window.location.search);
+  return {
+    search: p.get("search") ?? undefined,
+    minPrice: p.get("minPrice") ? Number(p.get("minPrice")) : undefined,
+    maxPrice: p.get("maxPrice") ? Number(p.get("maxPrice")) : undefined,
+    inStock: p.get("inStock") === "true" ? true : undefined,
+    sortBy: (p.get("sortBy") as FilterValues["sortBy"]) ?? "newest",
+  };
+}
+
+function syncToUrl(values: FilterValues) {
+  const params = new URLSearchParams();
+  if (values.search) params.set("search", values.search);
+  if (values.minPrice != null) params.set("minPrice", String(values.minPrice));
+  if (values.maxPrice != null) params.set("maxPrice", String(values.maxPrice));
+  if (values.inStock) params.set("inStock", "true");
+  if (values.sortBy && values.sortBy !== "newest") params.set("sortBy", values.sortBy);
+  const qs = params.toString();
+  history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+}
+
 export function ProductFilters({ initialProducts, total }: Props) {
   const [products, setProducts] = useState(initialProducts);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +62,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
     formState: { errors },
   } = useForm<FilterValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: { sortBy: "newest" },
+    defaultValues: getUrlParams(),
   });
 
   // Debounced live search
@@ -69,6 +92,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
     if (exit._tag === "Success") {
       setProducts(exit.value.items);
       setResultTotal(exit.value.total);
+      syncToUrl(values);
     }
   };
 
@@ -165,6 +189,10 @@ export function ProductFilters({ initialProducts, total }: Props) {
       )}
     </div>
   );
+}
+
+function inputCls(invalid: boolean) {
+  return `flex-1 rounded-lg border px-3 py-2 text-sm ${invalid ? "border-red-400" : ""}`;
 }
 
 function ProductCard({ product }: { product: Product }) {

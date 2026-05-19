@@ -4,9 +4,9 @@ import {
   getPaginationRowModel,
   useReactTable,
   type ColumnDef,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
-import { Button } from "@repo/ui/components/button"
+import { Button } from "@repo/ui/components/button";
 import {
   Table,
   TableBody,
@@ -14,17 +14,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@repo/ui/components/table"
+} from "@repo/ui/components/table";
 
 type Props<T> = {
-  columns: ColumnDef<T>[]
-  data: T[]
-  isLoading: boolean
-  total: number
-  page: number
-  onPageChange: (page: number) => void
-  pageSize?: number
-}
+  columns: ColumnDef<T>[];
+  data: T[];
+  isLoading: boolean;
+  total: number;
+  page: number;
+  onPageChange: (page: number) => void;
+  pageSize?: number;
+};
 
 export function DataTable<T>({
   columns,
@@ -39,30 +39,28 @@ export function DataTable<T>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel,
+    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     pageCount: Math.ceil(total / pageSize),
-  })
+  });
 
-  const totalPages = Math.ceil(total / pageSize)
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="space-y-3">
-          <div className="overflow-hidden rounded-md border">
+      <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
                 {hg.headers.map((h) => (
-                  <TableHead
-                    key={h.id}
-                  >
-                    {flexRender(h.column.columnDef.header, h.getContext())}
+                  <TableHead key={h.id}>
+                    <>{flexRender(h.column.columnDef.header, h.getContext())}</>
                   </TableHead>
                 ))}
               </TableRow>
             ))}
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {isLoading
               ? Array.from({ length: 5 }).map((_, i) => (
@@ -75,13 +73,18 @@ export function DataTable<T>({
                   </TableRow>
                 ))
               : table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        <>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </>
                       </TableCell>
                     ))}
                   </TableRow>
@@ -109,12 +112,12 @@ export function DataTable<T>({
             variant="outline"
             size="sm"
             onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+            disabled={!table.getCanNextPage()}
           >
             Next →
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

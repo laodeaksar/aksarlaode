@@ -65,7 +65,7 @@ export class ConflictError extends AppError {
   ) {
     super(message ?? `${field} already exists`);
   }
-  toResponse() {
+  override toResponse() {
     return { error: this.message, field: this.field };
   }
 }
@@ -89,7 +89,7 @@ export class ValidationError extends AppError {
   ) {
     super(message);
   }
-  toResponse() {
+  override toResponse() {
     return this.details
       ? { error: this.message, details: this.details }
       : { error: this.message };

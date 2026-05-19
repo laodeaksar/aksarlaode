@@ -114,6 +114,8 @@ function OrderDetailPage() {
     queryFn: () => getOrderFn({ data: { id: orderId } }),
   });
 
+  if (!order) return;
+
   const {
     register,
     handleSubmit,

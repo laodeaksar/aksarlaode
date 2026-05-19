@@ -8,466 +8,449 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import type { createStart } from "@tanstack/react-start";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProductsRouteRouteImport } from './routes/products.route'
+import { Route as OrdersRouteRouteImport } from './routes/orders.route'
+import { Route as LoginRouteRouteImport } from './routes/login.route'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard.route'
+import { Route as CustomersRouteRouteImport } from './routes/customers.route'
+import { Route as AuditLogsRouteRouteImport } from './routes/audit-logs.route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProductsIndexRouteImport } from './routes/products.index'
+import { Route as OrdersIndexRouteImport } from './routes/orders.index'
+import { Route as LoginIndexRouteImport } from './routes/login.index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as CustomersIndexRouteImport } from './routes/customers.index'
+import { Route as AuditLogsIndexRouteImport } from './routes/audit-logs.index'
+import { Route as ProductsNewRouteImport } from './routes/products.new'
+import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
+import { Route as CustomersUserIdRouteImport } from './routes/customers.$userId'
 
-import type { getRouter } from "./router.tsx";
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as AuditLogsIndexRouteImport } from "./routes/audit-logs.index";
-import { Route as AuditLogsRouteImport } from "./routes/audit-logs.route";
-import { Route as CustomersUserIdRouteImport } from "./routes/customers.$userId";
-import { Route as CustomersIndexRouteImport } from "./routes/customers.index";
-import { Route as CustomersRouteImport } from "./routes/customers.route";
-import { Route as DashboardIndexRouteImport } from "./routes/dashboard.index";
-import { Route as DashboardRouteImport } from "./routes/dashboard.route";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as LoginIndexRouteImport } from "./routes/login.index";
-import { Route as LoginRouteImport } from "./routes/login.route";
-import { Route as OrdersOrderIdRouteImport } from "./routes/orders.$orderId";
-import { Route as OrdersIndexRouteImport } from "./routes/orders.index";
-import { Route as OrdersRouteImport } from "./routes/orders.route";
-import { Route as ProductsProductIdRouteImport } from "./routes/products.$productId";
-import { Route as ProductsIndexRouteImport } from "./routes/products.index";
-import { Route as ProductsNewRouteImport } from "./routes/products.new";
-import { Route as ProductsRouteImport } from "./routes/products.route";
-
-// ── Route instances ─────────────────────────────────────────────────────────
-
+const ProductsRouteRoute = ProductsRouteRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRouteRoute = OrdersRouteRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRouteRoute = LoginRouteRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRouteRoute = CustomersRouteRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditLogsRouteRoute = AuditLogsRouteRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
-
-const LoginRoute = LoginRouteImport.update({
-  id: "/login",
-  path: "/login",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
-const LoginIndexRoute = LoginIndexRouteImport.update({
-  id: "/login/",
-  path: "/",
-  getParentRoute: () => LoginRoute,
-} as any);
-
-const DashboardRoute = DashboardRouteImport.update({
-  id: "/dashboard",
-  path: "/dashboard",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: "/dashboard/",
-  path: "/",
-  getParentRoute: () => DashboardRoute,
-} as any);
-
-const ProductsRoute = ProductsRouteImport.update({
-  id: "/products",
-  path: "/products",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
+} as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
-  id: "/products/",
-  path: "/",
-  getParentRoute: () => ProductsRoute,
-} as any);
-
-const ProductsNewRoute = ProductsNewRouteImport.update({
-  id: "/products/new",
-  path: "/new",
-  getParentRoute: () => ProductsRoute,
-} as any);
-
-const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
-  id: "/products/$productId",
-  path: "/$productId",
-  getParentRoute: () => ProductsRoute,
-} as any);
-
-const OrdersRoute = OrdersRouteImport.update({
-  id: "/orders",
-  path: "/orders",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProductsRouteRoute,
+} as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
-  id: "/orders/",
-  path: "/",
-  getParentRoute: () => OrdersRoute,
-} as any);
-
-const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
-  id: "/orders/$orderId",
-  path: "/$orderId",
-  getParentRoute: () => OrdersRoute,
-} as any);
-
-const CustomersRoute = CustomersRouteImport.update({
-  id: "/customers",
-  path: "/customers",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrdersRouteRoute,
+} as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoginRouteRoute,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const CustomersIndexRoute = CustomersIndexRouteImport.update({
-  id: "/customers/",
-  path: "/",
-  getParentRoute: () => CustomersRoute,
-} as any);
-
-const CustomersUserIdRoute = CustomersUserIdRouteImport.update({
-  id: "/customers/$userId",
-  path: "/$userId",
-  getParentRoute: () => CustomersRoute,
-} as any);
-
-const AuditLogsRoute = AuditLogsRouteImport.update({
-  id: "/audit-logs",
-  path: "/audit-logs",
-  getParentRoute: () => rootRouteImport,
-} as any);
-
+  id: '/',
+  path: '/',
+  getParentRoute: () => CustomersRouteRoute,
+} as any)
 const AuditLogsIndexRoute = AuditLogsIndexRouteImport.update({
-  id: "/audit-logs/",
-  path: "/",
-  getParentRoute: () => AuditLogsRoute,
-} as any);
-
-// ── Type declarations ────────────────────────────────────────────────────────
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuditLogsRouteRoute,
+} as any)
+const ProductsNewRoute = ProductsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ProductsRouteRoute,
+} as any)
+const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => ProductsRouteRoute,
+} as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => OrdersRouteRoute,
+} as any)
+const CustomersUserIdRoute = CustomersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => CustomersRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/login": typeof LoginRouteWithChildren;
-  "/login/": typeof LoginIndexRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/products": typeof ProductsRouteWithChildren;
-  "/products/": typeof ProductsIndexRoute;
-  "/products/new": typeof ProductsNewRoute;
-  "/products/$productId": typeof ProductsProductIdRoute;
-  "/orders": typeof OrdersRouteWithChildren;
-  "/orders/": typeof OrdersIndexRoute;
-  "/orders/$orderId": typeof OrdersOrderIdRoute;
-  "/customers": typeof CustomersRouteWithChildren;
-  "/customers/": typeof CustomersIndexRoute;
-  "/customers/$userId": typeof CustomersUserIdRoute;
-  "/audit-logs": typeof AuditLogsRouteWithChildren;
-  "/audit-logs/": typeof AuditLogsIndexRoute;
+  '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRouteRouteWithChildren
+  '/customers': typeof CustomersRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/login': typeof LoginRouteRouteWithChildren
+  '/orders': typeof OrdersRouteRouteWithChildren
+  '/products': typeof ProductsRouteRouteWithChildren
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs/': typeof AuditLogsIndexRoute
+  '/customers/': typeof CustomersIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/orders/': typeof OrdersIndexRoute
+  '/products/': typeof ProductsIndexRoute
 }
-
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/login": typeof LoginIndexRoute;
-  "/dashboard": typeof DashboardIndexRoute;
-  "/products": typeof ProductsIndexRoute;
-  "/products/new": typeof ProductsNewRoute;
-  "/products/$productId": typeof ProductsProductIdRoute;
-  "/orders": typeof OrdersIndexRoute;
-  "/orders/$orderId": typeof OrdersOrderIdRoute;
-  "/customers": typeof CustomersIndexRoute;
-  "/customers/$userId": typeof CustomersUserIdRoute;
-  "/audit-logs": typeof AuditLogsIndexRoute;
+  '/': typeof IndexRoute
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs': typeof AuditLogsIndexRoute
+  '/customers': typeof CustomersIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/orders': typeof OrdersIndexRoute
+  '/products': typeof ProductsIndexRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/login": typeof LoginRouteWithChildren;
-  "/login/": typeof LoginIndexRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/products": typeof ProductsRouteWithChildren;
-  "/products/": typeof ProductsIndexRoute;
-  "/products/new": typeof ProductsNewRoute;
-  "/products/$productId": typeof ProductsProductIdRoute;
-  "/orders": typeof OrdersRouteWithChildren;
-  "/orders/": typeof OrdersIndexRoute;
-  "/orders/$orderId": typeof OrdersOrderIdRoute;
-  "/customers": typeof CustomersRouteWithChildren;
-  "/customers/": typeof CustomersIndexRoute;
-  "/customers/$userId": typeof CustomersUserIdRoute;
-  "/audit-logs": typeof AuditLogsRouteWithChildren;
-  "/audit-logs/": typeof AuditLogsIndexRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRouteRouteWithChildren
+  '/customers': typeof CustomersRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/login': typeof LoginRouteRouteWithChildren
+  '/orders': typeof OrdersRouteRouteWithChildren
+  '/products': typeof ProductsRouteRouteWithChildren
+  '/customers/$userId': typeof CustomersUserIdRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs/': typeof AuditLogsIndexRoute
+  '/customers/': typeof CustomersIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/orders/': typeof OrdersIndexRoute
+  '/products/': typeof ProductsIndexRoute
 }
-
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/login"
-    | "/login/"
-    | "/dashboard"
-    | "/dashboard/"
-    | "/products"
-    | "/products/"
-    | "/products/new"
-    | "/products/$productId"
-    | "/orders"
-    | "/orders/"
-    | "/orders/$orderId"
-    | "/customers"
-    | "/customers/"
-    | "/customers/$userId"
-    | "/audit-logs"
-    | "/audit-logs/";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/products/new'
+    | '/audit-logs/'
+    | '/customers/'
+    | '/dashboard/'
+    | '/login/'
+    | '/orders/'
+    | '/products/'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/login"
-    | "/dashboard"
-    | "/products"
-    | "/products/new"
-    | "/products/$productId"
-    | "/orders"
-    | "/orders/$orderId"
-    | "/customers"
-    | "/customers/$userId"
-    | "/audit-logs";
+    | '/'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/products/new'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
   id:
-    | "__root__"
-    | "/"
-    | "/login"
-    | "/login/"
-    | "/dashboard"
-    | "/dashboard/"
-    | "/products"
-    | "/products/"
-    | "/products/new"
-    | "/products/$productId"
-    | "/orders"
-    | "/orders/"
-    | "/orders/$orderId"
-    | "/customers"
-    | "/customers/"
-    | "/customers/$userId"
-    | "/audit-logs"
-    | "/audit-logs/";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/products/new'
+    | '/audit-logs/'
+    | '/customers/'
+    | '/dashboard/'
+    | '/login/'
+    | '/orders/'
+    | '/products/'
+  fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  LoginRoute: typeof LoginRouteWithChildren;
-  DashboardRoute: typeof DashboardRouteWithChildren;
-  ProductsRoute: typeof ProductsRouteWithChildren;
-  OrdersRoute: typeof OrdersRouteWithChildren;
-  CustomersRoute: typeof CustomersRouteWithChildren;
-  AuditLogsRoute: typeof AuditLogsRouteWithChildren;
+  IndexRoute: typeof IndexRoute
+  AuditLogsRouteRoute: typeof AuditLogsRouteRouteWithChildren
+  CustomersRouteRoute: typeof CustomersRouteRouteWithChildren
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  LoginRouteRoute: typeof LoginRouteRouteWithChildren
+  OrdersRouteRoute: typeof OrdersRouteRouteWithChildren
+  ProductsRouteRoute: typeof ProductsRouteRouteWithChildren
 }
 
-// ── Module augmentation ─────────────────────────────────────────────────────
-
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/login": {
-      id: "/login";
-      path: "/login";
-      fullPath: "/login";
-      preLoaderRoute: typeof LoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/login/": {
-      id: "/login/";
-      path: "/";
-      fullPath: "/login/";
-      preLoaderRoute: typeof LoginIndexRouteImport;
-      parentRoute: typeof LoginRoute;
-    };
-    "/dashboard": {
-      id: "/dashboard";
-      path: "/dashboard";
-      fullPath: "/dashboard";
-      preLoaderRoute: typeof DashboardRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/": {
-      id: "/dashboard/";
-      path: "/";
-      fullPath: "/dashboard/";
-      preLoaderRoute: typeof DashboardIndexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/products": {
-      id: "/products";
-      path: "/products";
-      fullPath: "/products";
-      preLoaderRoute: typeof ProductsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/products/": {
-      id: "/products/";
-      path: "/";
-      fullPath: "/products/";
-      preLoaderRoute: typeof ProductsIndexRouteImport;
-      parentRoute: typeof ProductsRoute;
-    };
-    "/products/new": {
-      id: "/products/new";
-      path: "/new";
-      fullPath: "/products/new";
-      preLoaderRoute: typeof ProductsNewRouteImport;
-      parentRoute: typeof ProductsRoute;
-    };
-    "/products/$productId": {
-      id: "/products/$productId";
-      path: "/$productId";
-      fullPath: "/products/$productId";
-      preLoaderRoute: typeof ProductsProductIdRouteImport;
-      parentRoute: typeof ProductsRoute;
-    };
-    "/orders": {
-      id: "/orders";
-      path: "/orders";
-      fullPath: "/orders";
-      preLoaderRoute: typeof OrdersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/orders/": {
-      id: "/orders/";
-      path: "/";
-      fullPath: "/orders/";
-      preLoaderRoute: typeof OrdersIndexRouteImport;
-      parentRoute: typeof OrdersRoute;
-    };
-    "/orders/$orderId": {
-      id: "/orders/$orderId";
-      path: "/$orderId";
-      fullPath: "/orders/$orderId";
-      preLoaderRoute: typeof OrdersOrderIdRouteImport;
-      parentRoute: typeof OrdersRoute;
-    };
-    "/customers": {
-      id: "/customers";
-      path: "/customers";
-      fullPath: "/customers";
-      preLoaderRoute: typeof CustomersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/customers/": {
-      id: "/customers/";
-      path: "/";
-      fullPath: "/customers/";
-      preLoaderRoute: typeof CustomersIndexRouteImport;
-      parentRoute: typeof CustomersRoute;
-    };
-    "/customers/$userId": {
-      id: "/customers/$userId";
-      path: "/$userId";
-      fullPath: "/customers/$userId";
-      preLoaderRoute: typeof CustomersUserIdRouteImport;
-      parentRoute: typeof CustomersRoute;
-    };
-    "/audit-logs": {
-      id: "/audit-logs";
-      path: "/audit-logs";
-      fullPath: "/audit-logs";
-      preLoaderRoute: typeof AuditLogsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/audit-logs/": {
-      id: "/audit-logs/";
-      path: "/";
-      fullPath: "/audit-logs/";
-      preLoaderRoute: typeof AuditLogsIndexRouteImport;
-      parentRoute: typeof AuditLogsRoute;
-    };
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit-logs': {
+      id: '/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuditLogsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products/': {
+      id: '/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof ProductsIndexRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/orders/': {
+      id: '/orders/'
+      path: '/'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof OrdersIndexRouteImport
+      parentRoute: typeof OrdersRouteRoute
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof LoginRouteRoute
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/customers/': {
+      id: '/customers/'
+      path: '/'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof CustomersIndexRouteImport
+      parentRoute: typeof CustomersRouteRoute
+    }
+    '/audit-logs/': {
+      id: '/audit-logs/'
+      path: '/'
+      fullPath: '/audit-logs/'
+      preLoaderRoute: typeof AuditLogsIndexRouteImport
+      parentRoute: typeof AuditLogsRouteRoute
+    }
+    '/products/new': {
+      id: '/products/new'
+      path: '/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof ProductsNewRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/products/$productId': {
+      id: '/products/$productId'
+      path: '/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof ProductsProductIdRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof OrdersRouteRoute
+    }
+    '/customers/$userId': {
+      id: '/customers/$userId'
+      path: '/$userId'
+      fullPath: '/customers/$userId'
+      preLoaderRoute: typeof CustomersUserIdRouteImport
+      parentRoute: typeof CustomersRouteRoute
+    }
   }
 }
 
-// ── Children wiring ─────────────────────────────────────────────────────────
-
-interface LoginRouteChildren {
-  LoginIndexRoute: typeof LoginIndexRoute;
+interface AuditLogsRouteRouteChildren {
+  AuditLogsIndexRoute: typeof AuditLogsIndexRoute
 }
-const LoginRouteChildren: LoginRouteChildren = {
-  LoginIndexRoute: LoginIndexRoute,
-};
-const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren);
 
-interface DashboardRouteChildren {
-  DashboardIndexRoute: typeof DashboardIndexRoute;
-}
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardIndexRoute: DashboardIndexRoute,
-};
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren
-);
-
-interface ProductsRouteChildren {
-  ProductsIndexRoute: typeof ProductsIndexRoute;
-  ProductsNewRoute: typeof ProductsNewRoute;
-  ProductsProductIdRoute: typeof ProductsProductIdRoute;
-}
-const ProductsRouteChildren: ProductsRouteChildren = {
-  ProductsIndexRoute: ProductsIndexRoute,
-  ProductsNewRoute: ProductsNewRoute,
-  ProductsProductIdRoute: ProductsProductIdRoute,
-};
-const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
-  ProductsRouteChildren
-);
-
-interface OrdersRouteChildren {
-  OrdersIndexRoute: typeof OrdersIndexRoute;
-  OrdersOrderIdRoute: typeof OrdersOrderIdRoute;
-}
-const OrdersRouteChildren: OrdersRouteChildren = {
-  OrdersIndexRoute: OrdersIndexRoute,
-  OrdersOrderIdRoute: OrdersOrderIdRoute,
-};
-const OrdersRouteWithChildren =
-  OrdersRoute._addFileChildren(OrdersRouteChildren);
-
-interface CustomersRouteChildren {
-  CustomersIndexRoute: typeof CustomersIndexRoute;
-  CustomersUserIdRoute: typeof CustomersUserIdRoute;
-}
-const CustomersRouteChildren: CustomersRouteChildren = {
-  CustomersIndexRoute: CustomersIndexRoute,
-  CustomersUserIdRoute: CustomersUserIdRoute,
-};
-const CustomersRouteWithChildren = CustomersRoute._addFileChildren(
-  CustomersRouteChildren
-);
-
-interface AuditLogsRouteChildren {
-  AuditLogsIndexRoute: typeof AuditLogsIndexRoute;
-}
-const AuditLogsRouteChildren: AuditLogsRouteChildren = {
+const AuditLogsRouteRouteChildren: AuditLogsRouteRouteChildren = {
   AuditLogsIndexRoute: AuditLogsIndexRoute,
-};
-const AuditLogsRouteWithChildren = AuditLogsRoute._addFileChildren(
-  AuditLogsRouteChildren
-);
+}
 
-// ── Root tree assembly ───────────────────────────────────────────────────────
+const AuditLogsRouteRouteWithChildren = AuditLogsRouteRoute._addFileChildren(
+  AuditLogsRouteRouteChildren,
+)
+
+interface CustomersRouteRouteChildren {
+  CustomersUserIdRoute: typeof CustomersUserIdRoute
+  CustomersIndexRoute: typeof CustomersIndexRoute
+}
+
+const CustomersRouteRouteChildren: CustomersRouteRouteChildren = {
+  CustomersUserIdRoute: CustomersUserIdRoute,
+  CustomersIndexRoute: CustomersIndexRoute,
+}
+
+const CustomersRouteRouteWithChildren = CustomersRouteRoute._addFileChildren(
+  CustomersRouteRouteChildren,
+)
+
+interface DashboardRouteRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
+interface LoginRouteRouteChildren {
+  LoginIndexRoute: typeof LoginIndexRoute
+}
+
+const LoginRouteRouteChildren: LoginRouteRouteChildren = {
+  LoginIndexRoute: LoginIndexRoute,
+}
+
+const LoginRouteRouteWithChildren = LoginRouteRoute._addFileChildren(
+  LoginRouteRouteChildren,
+)
+
+interface OrdersRouteRouteChildren {
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
+  OrdersIndexRoute: typeof OrdersIndexRoute
+}
+
+const OrdersRouteRouteChildren: OrdersRouteRouteChildren = {
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
+  OrdersIndexRoute: OrdersIndexRoute,
+}
+
+const OrdersRouteRouteWithChildren = OrdersRouteRoute._addFileChildren(
+  OrdersRouteRouteChildren,
+)
+
+interface ProductsRouteRouteChildren {
+  ProductsProductIdRoute: typeof ProductsProductIdRoute
+  ProductsNewRoute: typeof ProductsNewRoute
+  ProductsIndexRoute: typeof ProductsIndexRoute
+}
+
+const ProductsRouteRouteChildren: ProductsRouteRouteChildren = {
+  ProductsProductIdRoute: ProductsProductIdRoute,
+  ProductsNewRoute: ProductsNewRoute,
+  ProductsIndexRoute: ProductsIndexRoute,
+}
+
+const ProductsRouteRouteWithChildren = ProductsRouteRoute._addFileChildren(
+  ProductsRouteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LoginRoute: LoginRouteWithChildren,
-  DashboardRoute: DashboardRouteWithChildren,
-  ProductsRoute: ProductsRouteWithChildren,
-  OrdersRoute: OrdersRouteWithChildren,
-  CustomersRoute: CustomersRouteWithChildren,
-  AuditLogsRoute: AuditLogsRouteWithChildren,
-};
-
+  AuditLogsRouteRoute: AuditLogsRouteRouteWithChildren,
+  CustomersRouteRoute: CustomersRouteRouteWithChildren,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  LoginRouteRoute: LoginRouteRouteWithChildren,
+  OrdersRouteRoute: OrdersRouteRouteWithChildren,
+  ProductsRouteRoute: ProductsRouteRouteWithChildren,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

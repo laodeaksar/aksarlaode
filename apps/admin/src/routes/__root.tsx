@@ -12,6 +12,9 @@ import {
 } from "@tanstack/react-router";
 import type { ParsedLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar"
 
 import { Toaster } from "sonner";
 
@@ -124,7 +127,35 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body>
-          <div className="flex h-screen bg-muted/40">
+        <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+           <ErrorBoundary>
+                  <React.Suspense
+                    fallback={
+                      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+                        Loading…
+                      </div>
+                    }
+                  >
+                    {children}
+                  </React.Suspense>
+                </ErrorBoundary>
+              </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+    {/*<div className="flex h-screen bg-muted/40">
             <Sidebar />
             <div className="flex flex-col flex-1 overflow-hidden">
               <Topbar />
@@ -151,6 +182,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           )}
           <Toaster position="top-center" richColors />
           <Scripts />
+          */}
         </body>
       </html>
     </SessionContext.Provider>

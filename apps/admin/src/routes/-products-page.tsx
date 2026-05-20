@@ -19,20 +19,129 @@ import {
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@repo/ui/components/sheet";
 
-import { deleteProductFn, listProductsFn } from "@/server/products";
+import {
+  createProductFn,
+  deleteProductFn,
+  listProductsFn,
+} from "@/server/products";
+import type { NewProductInput } from "@/effect/Services";
+import { ProductForm } from "@/components/forms/product-form";
 import { DataTable } from "@/components";
 import { can, toast, useSession } from "@/lib";
 
 import { Route } from "./products.route";
+
+// ── Add Product Drawer ─────────────────────────────────────────────────────
+
+function AddProductDrawer() {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (input: NewProductInput) => createProductFn({ data: input }),
+
+    onMutate: async (newProduct) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+      const cacheKey = ["products", { page: 1, search: "" }];
+      const previousData = queryClient.getQueryData<{
+        items: { id: string; name: string }[];
+        total: number;
+      }>(cacheKey);
+      queryClient.setQueryData(
+        cacheKey,
+        (old: typeof previousData) =>
+          old
+            ? {
+                items: [
+                  {
+                    ...newProduct,
+                    id: `optimistic-${Date.now()}`,
+                    status: newProduct.status ?? "ACTIVE",
+                    imageUrls: newProduct.imageUrls ?? [],
+                    createdAt: new Date().toISOString(),
+                  },
+                  ...old.items,
+                ],
+                total: old.total + 1,
+              }
+            : old
+      );
+      return { previousData, cacheKey };
+    },
+
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previousData) {
+        queryClient.setQueryData(ctx.cacheKey, ctx.previousData);
+      }
+      toast.error("Gagal membuat produk", err);
+    },
+
+    onSuccess: () => {
+      toast.success("Produk berhasil dibuat");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setOpen(false);
+    },
+  });
+
+  const errorMessage = mutation.error
+    ? mutation.error instanceof Error
+      ? mutation.error.message
+      : "Gagal membuat produk. Silakan coba lagi."
+    : null;
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        // Block closing while a submission is in flight.
+        if (!next && mutation.isPending) return;
+        setOpen(next);
+        if (!next) mutation.reset();
+      }}
+    >
+      <SheetTrigger render={<Button />}>+ Tambah Produk</SheetTrigger>
+
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Tambah Produk</SheetTitle>
+          <SheetDescription>
+            Isi detail produk baru. Klik Simpan untuk menyimpan ke katalog.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="px-4 pb-6">
+          <ProductForm
+            onSubmit={(data) =>
+              mutation.mutate({
+                ...data,
+                description: data.description?.trim() || undefined,
+              } satisfies NewProductInput)
+            }
+            isLoading={mutation.isPending}
+            error={errorMessage}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
   const navigate = useNavigate();
   const { page, search } = Route.useSearch();
   const loaderData = Route.useLoaderData();
 
-  // Local state drives the visible input value (instant feedback).
-  // URL search param drives the query — updated 300ms after typing stops.
   const [inputValue, setInputValue] = useState(search);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -193,22 +302,19 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Products</h1>
-        {canWrite && (
-          <Link to="/products/new">
-            <Button>+ Add Product</Button>
-          </Link>
-        )}
-      </div>
+      <h1 className="text-2xl font-semibold">Products</h1>
 
-      <Input
-        className="w-64"
-        placeholder="Search products..."
-        aria-label="Search products"
-        value={inputValue}
-        onChange={(e) => handleSearch(e.target.value)}
-      />
+      {/* Search + Add Product in one row */}
+      <div className="flex items-center gap-2">
+        <Input
+          className="w-64"
+          placeholder="Search products..."
+          aria-label="Search products"
+          value={inputValue}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+        {canWrite && <AddProductDrawer />}
+      </div>
 
       <DataTable
         columns={columns}
@@ -221,6 +327,8 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+// ── Delete Button ──────────────────────────────────────────────────────────
 
 function DeleteButton({ productId }: { productId: string }) {
   const queryClient = useQueryClient();

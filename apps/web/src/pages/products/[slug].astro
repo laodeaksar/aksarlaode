@@ -3,9 +3,10 @@ import { AppRuntime }   from "@/lib/effect/runtime"
 import { productsApi }  from "@/lib/api/products"
 import { AddToCartButton } from "@/components/islands/products/AddToCartButton"
 import Layout from "@/layouts/Layout.astro"
+import { getCookieHeader } from "@/lib/request"
 
 const { slug } = Astro.params
-const cookie   = Astro.request.headers.get("cookie") ?? ""
+const cookie   = getCookieHeader(Astro.request)
 
 const exit = await AppRuntime.runPromiseExit(
   productsApi.getBySlug(slug!, cookie)

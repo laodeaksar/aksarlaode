@@ -4,6 +4,7 @@ import { defineMiddleware } from "astro:middleware";
 import { authApi } from "./lib/api/auth";
 import { NetworkError } from "./lib/effect/errors";
 import { AppRuntime } from "./lib/effect/runtime";
+import { getCookieHeader } from "./lib/request";
 
 const PROTECTED = ["/checkout", "/account/orders", "/orders"];
 
@@ -105,7 +106,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     return applySecurityHeaders(response);
   }
 
-  const cookie = ctx.request.headers.get("cookie") ?? "";
+  const cookie = getCookieHeader(ctx.request);
 
   const exit = await AppRuntime.runPromiseExit(authApi.me(cookie));
 
@@ -117,6 +118,12 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     // redirect to login as before.
     const maybeErr = Cause.failureOption(exit.cause);
     if (maybeErr._tag === "Some" && maybeErr.value instanceof NetworkError) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          "[middleware] Auth service unreachable (NetworkError) — failing open. " +
+          "Check that the api-gateway is running and PUBLIC_API_URL is correct."
+        );
+      }
       const response = await next();
       return applySecurityHeaders(response);
     }

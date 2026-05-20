@@ -50,7 +50,6 @@ export const ordersApi = {
   getOne: (orderId: string, cookie: string) =>
     apiFetch<OrderDetail>(`/orders/${orderId}`, { cookie }),
 
-  // listMine was identical to list — removed as dead code
   list: (cookie: string) =>
     apiFetch<{ items: OrderDetail[] }>("/orders", { cookie }),
 };

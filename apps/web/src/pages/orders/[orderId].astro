@@ -4,9 +4,10 @@ import Navbar from "@/components/ui/Navbar.astro"
 import Footer from "@/components/ui/Footer.astro"
 import { AppRuntime } from "@/lib/effect/runtime"
 import { ordersApi }  from "@/lib/api/orders"
+import { getCookieHeader } from "@/lib/request"
 
 const { orderId } = Astro.params
-const cookie = Astro.request.headers.get("cookie") ?? ""
+const cookie = getCookieHeader(Astro.request)
 const exit   = await AppRuntime.runPromiseExit(ordersApi.getOne(orderId!, cookie))
 
 if (exit._tag === "Failure") {

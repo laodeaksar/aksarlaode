@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { apiFetch } from "@/lib/api/client";
 import type { ApiError } from "@/lib/effect/errors";
 import { AppRuntime } from "@/lib/effect/runtime";
+import { getCookieHeader } from "@/lib/request";
 
 // FIX W-01: CheckoutForm.tsx was calling fetch("/api/payment/initiate") which
 // had no matching route in the Astro app — every checkout produced an orphaned
@@ -49,7 +50,7 @@ function sanitizeUpstreamError(err: unknown): {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const cookie = request.headers.get("cookie") ?? "";
+  const cookie = getCookieHeader(request);
 
   let body: Record<string, unknown>;
   try {

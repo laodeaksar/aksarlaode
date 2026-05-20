@@ -1,7 +1,7 @@
 // ── src/lib/index.ts — barrel export ──────────────────────────────────────
 //
 // Importa utility e tipi interni sempre da qui:
-//   import { silentRefresh, getSession, can, useSession } from "@/lib"
+//   import { silentRefresh, getSessionFn, can, useSession } from "@/lib"
 //   import type { Session, UserRole, Permission } from "@/lib"
 //
 // Regola: i file DENTRO src/lib/* che importano da fratelli usano il percorso

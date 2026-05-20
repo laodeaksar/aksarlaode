@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { Product } from "@repo/common";
+import type { Product } from "@/effect/Services";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,9 +19,15 @@ import { toast } from "@/lib";
 
 interface DeleteProductButtonProps {
   productId: string;
+  productName: string;
+  onSuccess?: () => void;
 }
 
-export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
+export function DeleteProductButton({
+  productId,
+  productName,
+  onSuccess,
+}: DeleteProductButtonProps) {
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
@@ -32,9 +38,7 @@ export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
       const snapshots = queryClient.getQueriesData<{
         items: Product[];
         total: number;
-      }>({
-        queryKey: ["products"],
-      });
+      }>({ queryKey: ["products"] });
       queryClient.setQueriesData<{ items: Product[]; total: number }>(
         { queryKey: ["products"] },
         (old) =>
@@ -49,7 +53,8 @@ export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
     },
 
     onSuccess: () => {
-      toast.success("Produk berhasil dihapus");
+      toast.success(`${productName} berhasil dihapus`);
+      onSuccess?.();
     },
 
     onError: (err, _vars, ctx) => {
@@ -60,11 +65,7 @@ export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
     },
 
     onSettled: () => {
-      // Invalidate all product list queries so every cached page/filter
-      // reflects the deletion.
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      // Remove the deleted product's detail entry entirely — invalidating
-      // it would trigger a re-fetch that returns 404.
       queryClient.removeQueries({ queryKey: ["product", productId] });
     },
   });
@@ -76,17 +77,18 @@ export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
           size="sm"
           variant="destructive"
           disabled={isPending}
-          aria-label="Delete product"
+          className="w-full justify-start"
         >
-          {isPending ? "..." : "Delete"}
+          {isPending ? "Menghapus..." : "Hapus Produk"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
           <AlertDialogDescription>
-            Aksi ini tidak bisa dibatalkan. Produk akan dihapus secara permanen
-            dari sistem.
+            Produk <span className="font-semibold">{productName}</span> akan
+            dihapus secara permanen dari sistem. Aksi ini tidak bisa
+            dibatalkan.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

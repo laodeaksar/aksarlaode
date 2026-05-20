@@ -75,14 +75,14 @@ export function EditProduct({ productId }: { productId: string }) {
       toast.success("Produk berhasil diperbarui");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
-      navigate({ to: "/products" });
+      navigate({ to: "/products/$productId", params: { productId } });
     },
   });
 
   if (isLoading && !product) return <EditProductSkeleton />;
 
   if (!product) {
-    return <p className="p-6 text-red-500">Product not found.</p>;
+    return <p className="p-6 text-red-500">Produk tidak ditemukan.</p>;
   }
 
   const errorMessage = mutation.error

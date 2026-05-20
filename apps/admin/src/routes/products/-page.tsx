@@ -1,12 +1,13 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
+import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 
 import { listProductsFn } from "@/server/products";
-import { AddProductDrawer, getProductColumns } from "@/components/products";
+import { productColumns } from "@/components/products";
 import { DataTable } from "@/components";
 import { can, useSession } from "@/lib";
 import { PageHeader } from "@/components/layout/page-header";
@@ -22,8 +23,7 @@ export default function ProductsPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { session } = useSession();
-  const role = session?.role ?? "CUSTOMER";
-  const canWrite = can(role, "products:write");
+  const canWrite = can(session?.role ?? "CUSTOMER", "products:write");
 
   const handleSearch = useCallback(
     (value: string) => {
@@ -57,26 +57,27 @@ export default function ProductsPage() {
       }),
   });
 
-  const columns = useMemo(() => getProductColumns(canWrite), [canWrite]);
-
   return (
     <div className="space-y-4">
-      <PageHeader title="Products" />
+      <PageHeader title="Produk" />
 
-      {/* Search + Add Product in one row */}
       <div className="flex items-center gap-2">
         <Input
           className="w-64"
-          placeholder="Search products..."
-          aria-label="Search products"
+          placeholder="Cari produk..."
+          aria-label="Cari produk"
           value={inputValue}
           onChange={(e) => handleSearch(e.target.value)}
         />
-        {canWrite && <AddProductDrawer />}
+        {canWrite && (
+          <Button asChild size="sm">
+            <Link to="/products/new">+ Tambah Produk</Link>
+          </Button>
+        )}
       </div>
 
       <DataTable
-        columns={columns}
+        columns={productColumns}
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}

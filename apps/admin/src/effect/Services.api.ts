@@ -80,7 +80,7 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
 
         update: (id: string, body: Partial<NewProduct>) =>
           request<Product>(`/products/${id}`, {
-            method: "PUT",
+            method: "PATCH",
             body: JSON.stringify(body),
           }),
 

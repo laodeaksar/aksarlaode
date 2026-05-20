@@ -8,7 +8,10 @@ import {
 } from "@repo/ui/components/card";
 
 import { getDashboardStatsFn } from "@/server/dashboard";
-import type { DashboardStats, OrderSummary } from "@/effect/Services";
+import type { DashboardStats } from "@/effect/Services";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { RecentOrdersTable } from "@/components/dashboard/recent-orders-table";
+import { TopProductsList } from "@/components/dashboard/top-products-list";
 
 import { Route } from "./dashboard.route";
 
@@ -58,83 +61,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value }: { title: string; value: string | number }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecentOrdersTable({ orders }: { orders: OrderSummary[] }) {
-  if (orders.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Belum ada pesanan terbaru.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      {orders.map((order) => (
-        <div
-          key={order.orderId}
-          className="flex items-center justify-between text-sm"
-        >
-          <span className="font-mono text-xs text-muted-foreground">
-            {order.orderId.slice(0, 12)}…
-          </span>
-          <span
-            className={
-              order.status === "CANCELLED"
-                ? "font-medium text-red-600"
-                : "font-medium text-green-700"
-            }
-          >
-            Rp {order.grandTotal.toLocaleString("id-ID")}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TopProductsList({
-  items,
-}: {
-  items: Array<{ id: string; name: string; salesCount: number }>;
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">Belum ada data produk.</p>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      {items.map((item, i) => (
-        <div
-          key={item.id}
-          className="flex items-center justify-between text-sm"
-        >
-          <span className="text-foreground">
-            {i + 1}. {item.name}
-          </span>
-          <span className="text-muted-foreground">
-            {item.salesCount} terjual
-          </span>
-        </div>
-      ))}
     </div>
   );
 }

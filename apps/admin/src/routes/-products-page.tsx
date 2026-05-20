@@ -6,8 +6,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@repo/ui/components/input";
 
 import { listProductsFn } from "@/server/products";
-import { AddProductDrawer } from "@/components/add-product-drawer";
-import { getProductColumns } from "@/components/product-columns";
+import { AddProductDrawer } from "@/components/products/add-product-drawer";
+import { getProductColumns } from "@/components/products/product-columns";
 import { DataTable } from "@/components";
 import { can, useSession } from "@/lib";
 

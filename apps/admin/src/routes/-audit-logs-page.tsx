@@ -2,102 +2,18 @@ import { useCallback } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
-import type { AuditLogEntry } from "@/effect/Services";
+import {
+  auditLogColumns,
+  AUDIT_ACTIONS,
+  ACTOR_ROLES,
+} from "@/components/audit-logs/audit-log-columns";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./audit-logs.route";
-
-// ── Constants ──────────────────────────────────────────────────────────────
-
-const AUDIT_ACTIONS = [
-  "product_created",
-  "product_updated",
-  "product_deleted",
-  "order_status_changed",
-  "user_role_changed",
-] as const;
-
-const ACTOR_ROLES = ["OWNER", "ADMIN", "FINANCE"] as const;
-
-const ACTION_COLORS: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  product_created: "default",
-  product_updated: "secondary",
-  product_deleted: "destructive",
-  order_status_changed: "secondary",
-  user_role_changed: "default",
-};
-
-// ── Table columns ──────────────────────────────────────────────────────────
-// Defined outside the component — stable reference, no memoization needed.
-
-const columns: ColumnDef<AuditLogEntry>[] = [
-  {
-    accessorKey: "createdAt",
-    header: "Time",
-    cell: ({ getValue }) =>
-      new Date(getValue() as string).toLocaleString("id-ID", {
-        dateStyle: "short",
-        timeStyle: "medium",
-      }),
-  },
-  {
-    accessorKey: "actorId",
-    header: "Actor",
-    cell: ({ row }) => (
-      <div>
-        <p className="font-mono text-xs">{row.original.actorId.slice(0, 8)}…</p>
-        <p className="text-xs text-muted-foreground">{row.original.actorRole}</p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "action",
-    header: "Action",
-    cell: ({ getValue }) => {
-      const action = getValue() as string;
-      return (
-        <Badge variant={ACTION_COLORS[action] ?? "outline"}>
-          {action.replace(/_/g, " ")}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "resource",
-    header: "Resource",
-    cell: ({ row }) => (
-      <div>
-        <p className="text-xs capitalize">{row.original.resource}</p>
-        <p className="font-mono text-xs text-muted-foreground">
-          {row.original.resourceId.slice(0, 8)}…
-        </p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "metadata",
-    header: "Metadata",
-    cell: ({ getValue }) => {
-      const meta = getValue() as Record<string, unknown> | null;
-      if (!meta)
-        return <span className="text-muted-foreground text-xs">—</span>;
-      return (
-        <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-w-xs overflow-hidden">
-          {JSON.stringify(meta, null, 2)}
-        </pre>
-      );
-    },
-  },
-];
 
 // ── Shared filter select style ─────────────────────────────────────────────
 const SELECT_CLS =

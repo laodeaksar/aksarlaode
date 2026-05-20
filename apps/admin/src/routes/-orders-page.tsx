@@ -1,90 +1,16 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-
-import { Badge } from "@repo/ui/components/badge";
+import { useNavigate } from "@tanstack/react-router";
 
 import { listOrdersFn } from "@/server/orders";
-import type { OrderSummary } from "@/effect/Services";
+import {
+  orderColumns,
+  ORDER_STATUSES,
+} from "@/components/orders/order-columns";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./orders.route";
-
-const STATUS_VARIANTS: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  PENDING_PAYMENT: "secondary",
-  PAID: "default",
-  PROCESSING: "default",
-  SHIPPED: "default",
-  DELIVERED: "outline",
-  CANCELLED: "destructive",
-  REFUNDED: "secondary",
-};
-
-const ORDER_STATUSES = [
-  "PENDING_PAYMENT",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-  "REFUNDED",
-] as const;
-
-// Defined outside component — never changes, no memoization needed
-const columns: ColumnDef<OrderSummary>[] = [
-  {
-    accessorKey: "orderId",
-    header: "Order ID",
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-foreground">
-        {getValue() as string}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ getValue }) => {
-      const status = getValue() as string;
-      return (
-        <Badge variant={STATUS_VARIANTS[status] ?? "outline"}>
-          {status.replace(/_/g, " ")}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "grandTotal",
-    header: "Amount",
-    cell: ({ getValue }) =>
-      `Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`,
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Date",
-    cell: ({ getValue }) =>
-      new Date(getValue() as string).toLocaleDateString("id-ID"),
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }) => (
-      <Link
-        to="/orders/$orderId"
-        params={{ orderId: row.original.orderId }}
-        search={{}}
-        className="text-sm text-blue-600 hover:underline"
-      >
-        View
-      </Link>
-    ),
-  },
-];
 
 export default function OrdersPage() {
   const navigate = useNavigate();
@@ -141,7 +67,7 @@ export default function OrdersPage() {
       </div>
 
       <DataTable
-        columns={columns}
+        columns={orderColumns}
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}

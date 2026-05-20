@@ -5,7 +5,7 @@ import type { Product } from "@repo/common";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 
-import { DeleteProductButton } from "@/components/delete-product-button";
+import { DeleteProductButton } from "@/components/products/delete-product-button";
 
 export function getProductColumns(canWrite: boolean): ColumnDef<Product>[] {
   return [

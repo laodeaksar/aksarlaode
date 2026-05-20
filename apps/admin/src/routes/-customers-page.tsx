@@ -1,63 +1,15 @@
 import { useCallback, useRef, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
+import { useNavigate } from "@tanstack/react-router";
 
-import { Badge } from "@repo/ui/components/badge";
 import { Input } from "@repo/ui/components/input";
 
 import { listCustomersFn } from "@/server/customers";
-import type { User } from "@/effect/Services";
+import { customerColumns } from "@/components/customers/customer-columns";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./customers.route";
-
-const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
-  OWNER: "default",
-  ADMIN: "default",
-  CUSTOMER: "outline",
-};
-
-const columns: ColumnDef<User>[] = [
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ getValue }) => (
-      <span className="font-medium text-foreground">
-        {getValue() as string}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ getValue }) => (
-      <span className="text-muted-foreground">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ getValue }) => {
-      const role = getValue() as string;
-      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>;
-    },
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }) => (
-      <Link
-        to="/customers/$userId"
-        params={{ userId: row.original.id }}
-        className="text-sm text-blue-600 hover:underline"
-      >
-        View
-      </Link>
-    ),
-  },
-];
 
 export default function CustomersPage() {
   const navigate = useNavigate();
@@ -112,7 +64,7 @@ export default function CustomersPage() {
       />
 
       <DataTable
-        columns={columns}
+        columns={customerColumns}
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}

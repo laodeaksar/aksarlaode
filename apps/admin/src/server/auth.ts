@@ -1,6 +1,6 @@
 // ── server/auth.ts — LAYER-01 ──────────────────────────────────────────────
 //
-// Server functions untuk login dan logout.
+// Server functions untuk login, logout, dan session check.
 // Menggantikan authApi.login dan authApi.logout yang sebelumnya ada di lib/api.ts.
 //
 // Kenapa server function (bukan client-side fetch)?
@@ -8,9 +8,14 @@
 //   - Cookie handling: Set-Cookie dari backend di-forward ke browser via
 //     appendResponseHeader sehingga browser menyimpan/menghapus cookies
 //     secara otomatis tanpa perlu akses window pada sisi klien.
+//   - SSR safety: getSessionFn menggunakan getCookies() sehingga saat
+//     beforeLoad berjalan di server, cookie dari request asli browser
+//     di-forward ke API — bukan bergantung pada cookie jar Node.js
+//     yang tidak tersedia.
 //
 // Aturan definitif setelah LAYER-01:
 //   login / logout       → sini (server function + cookie forwarding)
+//   session check (SSR)  → sini (getSessionFn, pakai getCookies())
 //   silent token refresh → lib/api.ts (butuh window.location + client-side)
 //   semua data lainnya   → src/server/*.ts (Effect + ApiClientService)
 
@@ -19,11 +24,23 @@ import { appendResponseHeader, getCookies } from "@tanstack/react-start/server";
 
 import { Schema } from "effect";
 
+import type { Session } from "@/lib/auth";
 import { decodeOrThrow } from "./_utils";
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
 const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
+
+// ── Cookie forwarding helper (shared) ──────────────────────────────────────
+// Builds a Cookie header string from the current request's cookies so that
+// server-side fetches to the backend carry the session tokens.
+
+function buildCookieHeader(): string {
+  const cookies = getCookies();
+  return Object.entries(cookies)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("; ");
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,10 +108,7 @@ export const loginFn = createServerFn({ method: "POST" })
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(
   async (): Promise<void> => {
-    const cookies = getCookies();
-    const cookieHeader = Object.entries(cookies)
-      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-      .join("; ");
+    const cookieHeader = buildCookieHeader();
 
     const res = await fetch(`${apiUrl()}/auth/logout`, {
       method: "POST",
@@ -105,5 +119,33 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(
     });
 
     forwardSetCookie(res.headers);
+  }
+);
+
+// ── getSessionFn ───────────────────────────────────────────────────────────
+// Server function untuk mengecek session yang aktif.
+//
+// Kenapa server function dan bukan plain fetch di client?
+//   - Saat beforeLoad berjalan di server (SSR), Node.js tidak punya cookie
+//     jar — `credentials: "include"` pada browser fetch tidak berpengaruh.
+//   - createServerFn memberikan akses ke getCookies() yang membaca cookie
+//     dari request H3 yang sedang aktif, baik saat SSR maupun saat dipanggil
+//     dari browser (TanStack Start meneruskan cookie via HTTP ke endpoint
+//     server function).
+//   - Hasilnya: satu queryFn yang bekerja identik di kedua environment.
+
+export const getSessionFn = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Session | null> => {
+    const cookieHeader = buildCookieHeader();
+    try {
+      const res = await fetch(`${apiUrl()}/auth/me`, {
+        headers: cookieHeader ? { Cookie: cookieHeader } : {},
+      });
+      if (!res.ok) return null;
+      const body = await res.json();
+      return (body?.data ?? body ?? null) as Session | null;
+    } catch {
+      return null;
+    }
   }
 );

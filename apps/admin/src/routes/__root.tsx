@@ -23,13 +23,13 @@ import { DefaultCatchBoundary } from '@/components/default-catch-boundary'
 import { NotFound } from "@/components/not-found";
 import { ErrorBoundary } from "@/components";
 import {
-  getSession,
   hasAnyAdminRole,
   SessionContext,
   silentRefresh,
   type RouterContext,
   type Session,
 } from "@/lib";
+import { getSessionFn } from "@/server/auth";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -66,9 +66,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
     // staleTime: 2 min — short enough to reflect role changes promptly,
     // long enough to avoid a /auth/me call on every client-side navigation.
+    // getSessionFn is a server function: on SSR it runs in-process with
+    // getCookies() forwarding the real request cookie; on the client it
+    // calls the generated endpoint (which also has getCookies() available).
     let session = await queryClient.fetchQuery({
       queryKey: ["session"],
-      queryFn: getSession,
+      queryFn: getSessionFn,
       staleTime: 2 * 60 * 1_000,
     });
 
@@ -78,7 +81,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         queryClient.removeQueries({ queryKey: ["session"] });
         session = await queryClient.fetchQuery({
           queryKey: ["session"],
-          queryFn: getSession,
+          queryFn: getSessionFn,
           staleTime: 0,
         });
       }

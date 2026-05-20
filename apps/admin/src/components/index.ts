@@ -41,3 +41,4 @@ export { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "./audit-logs/audit-
 export { StatCard } from "./dashboard/stat-card";
 export { RecentOrdersTable } from "./dashboard/recent-orders-table";
 export { TopProductsList } from "./dashboard/top-products-list";
+export { DashboardSkeleton } from "./dashboard/dashboard-skeleton";

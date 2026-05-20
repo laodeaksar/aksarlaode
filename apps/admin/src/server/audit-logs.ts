@@ -26,7 +26,7 @@ export type ListAuditLogsParams = Schema.Schema.Type<
 >;
 
 // ── GET /products/audit-logs — paginated audit log with optional filters ───
-// Used as the SSR loader in `routes/audit-logs.route.tsx` and re-called by
+// Used as the SSR loader in `routes/audit-logs/route.tsx` and re-called by
 // `useQuery` whenever the user changes any filter or navigates to a new page.
 
 export const listAuditLogsFn = createServerFn({ method: "GET" })

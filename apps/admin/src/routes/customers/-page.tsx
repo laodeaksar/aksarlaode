@@ -9,7 +9,7 @@ import { listCustomersFn } from "@/server/customers";
 import { customerColumns } from "@/components/customers";
 import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./customers.route";
+import { Route } from "./route";
 
 export default function CustomersPage() {
   const navigate = useNavigate();

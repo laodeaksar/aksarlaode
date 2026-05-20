@@ -16,7 +16,7 @@ import {
   DashboardSkeleton,
 } from "@/components/dashboard";
 
-import { Route } from "./dashboard.route";
+import { Route } from "./route";
 
 export default function DashboardPage() {
   const loaderData = Route.useLoaderData();

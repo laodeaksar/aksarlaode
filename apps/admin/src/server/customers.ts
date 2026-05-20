@@ -20,7 +20,7 @@ const CustomerIdSchema = Schema.Struct({
 });
 
 // ── GET /admin/customers — paginated list with optional search ─────────────
-// Used as the SSR loader in `routes/customers.route.tsx` and re-called from
+// Used as the SSR loader in `routes/customers/route.tsx` and re-called from
 // `customers-page.tsx` whenever page or debounced search term changes.
 
 export const listCustomersFn = createServerFn({ method: "GET" })
@@ -45,7 +45,7 @@ export const listCustomersFn = createServerFn({ method: "GET" })
   );
 
 // ── GET /admin/customers/:id — single customer ────────────────────────────
-// Used as the SSR loader in `routes/customers.$userId.tsx`.
+// Used as the SSR loader in `routes/customers/$userId.tsx`.
 
 export const getCustomerFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])

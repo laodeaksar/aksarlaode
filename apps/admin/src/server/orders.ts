@@ -76,7 +76,7 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
   );
 
 // ── GET /orders/:id — single order detail ─────────────────────────────────
-// Used as the SSR loader in `routes/orders.$orderId.tsx` and re-called by
+// Used as the SSR loader in `routes/orders/$orderId.tsx` and re-called by
 // `useQuery` after a status mutation invalidates the cache.
 
 export const getOrderFn = createServerFn({ method: "GET" })

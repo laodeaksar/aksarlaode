@@ -9,7 +9,7 @@ import { listAuditLogsFn } from "@/server/audit-logs";
 import { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./audit-logs.route";
+import { Route } from "./route";
 
 // ── Shared filter select style ─────────────────────────────────────────────
 const SELECT_CLS =

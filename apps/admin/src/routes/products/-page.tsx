@@ -10,7 +10,7 @@ import { AddProductDrawer, getProductColumns } from "@/components/products";
 import { DataTable } from "@/components";
 import { can, useSession } from "@/lib";
 
-import { Route } from "./products.route";
+import { Route } from "./route";
 
 // ── Products Page ──────────────────────────────────────────────────────────
 

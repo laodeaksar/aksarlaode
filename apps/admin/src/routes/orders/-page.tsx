@@ -7,7 +7,7 @@ import { listOrdersFn } from "@/server/orders";
 import { orderColumns, ORDER_STATUSES } from "@/components/orders";
 import { DataTable } from "@/components/data-table/data-table";
 
-import { Route } from "./orders.route";
+import { Route } from "./route";
 
 export default function OrdersPage() {
   const navigate = useNavigate();

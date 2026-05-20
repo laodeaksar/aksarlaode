@@ -30,7 +30,7 @@ import { LoginPageSkeleton } from "@/components/login";
 import { LoginSchema, type LoginFields } from "@/schemas/forms";
 import { effectResolver, toast } from "@/lib";
 
-import { Route } from "./login.route";
+import { Route } from "./route";
 
 // ── LoginPage ──────────────────────────────────────────────────────────────
 

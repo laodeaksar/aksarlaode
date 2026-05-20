@@ -30,5 +30,9 @@ export const Route = createFileRoute("/products")({
       },
     }),
 
+  head: () => ({
+    meta: [{ title: "Products — Admin" }],
+  }),
+
   component: () => <Outlet />,
 });

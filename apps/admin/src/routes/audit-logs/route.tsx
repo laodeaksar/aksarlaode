@@ -40,5 +40,9 @@ export const Route = createFileRoute("/audit-logs")({
       },
     }),
 
+  head: () => ({
+    meta: [{ title: "Audit Logs — Admin" }],
+  }),
+
   component: () => <Outlet />,
 });

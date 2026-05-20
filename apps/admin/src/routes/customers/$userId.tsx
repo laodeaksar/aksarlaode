@@ -11,6 +11,17 @@ export const Route = createFileRoute("/customers/$userId")({
       queryFn: () => getCustomerFn({ data: { id: params.userId } }),
     });
   },
+
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: loaderData
+          ? `${loaderData.name} — Admin`
+          : "Customer — Admin",
+      },
+    ],
+  }),
+
   component: RouteComponent,
 });
 

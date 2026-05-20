@@ -1,29 +1,19 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import type { Product } from "@repo/common";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@repo/ui/components/alert-dialog";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 
-import { deleteProductFn, listProductsFn } from "@/server/products";
+import { listProductsFn } from "@/server/products";
 import { AddProductDrawer } from "@/components/add-product-drawer";
+import { DeleteProductButton } from "@/components/delete-product-button";
 import { DataTable } from "@/components";
-import { can, toast, useSession } from "@/lib";
+import { can, useSession } from "@/lib";
 
 import { Route } from "./products.route";
 
@@ -182,7 +172,7 @@ export default function ProductsPage() {
                       Edit
                     </Button>
                   </Link>
-                  <DeleteButton productId={row.original.id} />
+                  <DeleteProductButton productId={row.original.id} />
                 </div>
               ),
             },
@@ -217,79 +207,5 @@ export default function ProductsPage() {
         onPageChange={handlePageChange}
       />
     </div>
-  );
-}
-
-// ── Delete Button ──────────────────────────────────────────────────────────
-
-function DeleteButton({ productId }: { productId: string }) {
-  const queryClient = useQueryClient();
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => deleteProductFn({ data: { id: productId } }),
-
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["products"] });
-      const snapshots = queryClient.getQueriesData<{
-        items: Product[];
-        total: number;
-      }>({
-        queryKey: ["products"],
-      });
-      queryClient.setQueriesData<{ items: Product[]; total: number }>(
-        { queryKey: ["products"] },
-        (old) =>
-          old
-            ? {
-                items: old.items.filter((p) => p.id !== productId),
-                total: old.total - 1,
-              }
-            : old
-      );
-      return { snapshots };
-    },
-
-    onSuccess: () => {
-      toast.success("Produk berhasil dihapus");
-    },
-
-    onError: (err, _vars, ctx) => {
-      ctx?.snapshots.forEach(([key, data]) =>
-        queryClient.setQueryData(key, data)
-      );
-      toast.error("Gagal menghapus produk", err);
-    },
-
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
-  });
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={isPending}
-          aria-label="Delete product"
-        >
-          {isPending ? "..." : "Delete"}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
-          <AlertDialogDescription>
-            Aksi ini tidak bisa dibatalkan. Produk akan dihapus secara permanen
-            dari sistem.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Batal</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={() => mutate()}>
-            Ya, Hapus Permanen
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

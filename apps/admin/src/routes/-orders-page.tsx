@@ -121,8 +121,8 @@ export default function OrdersPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
+    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+     <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
 
       <div className="flex items-center gap-3">
         <select

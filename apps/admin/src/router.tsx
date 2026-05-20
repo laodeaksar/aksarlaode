@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { silentRefresh } from "@/lib/api";
 import { NotFound } from "@/components/not-found";
+import { DefaultCatchBoundary } from '@/components/default-catch-boundary'
 
 import { routeTree } from "./routeTree.gen";
 
@@ -110,6 +111,7 @@ export function getRouter() {
     routeTree,
     context: { queryClient },
     defaultPreload: "intent",
+    defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
   });
   setupRouterSsrQueryIntegration({

@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { useRouterState } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
 
 import {
   SidebarGroup,
@@ -16,7 +17,7 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: React.ReactNode;
+    icon?: LucideIcon; //React.ReactNode;
   }[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

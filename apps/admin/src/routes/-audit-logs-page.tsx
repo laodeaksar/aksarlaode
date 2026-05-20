@@ -93,7 +93,7 @@ export default function AuditLogsPage() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Audit Log</h1>

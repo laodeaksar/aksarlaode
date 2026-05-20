@@ -19,6 +19,8 @@ import { Toaster } from "sonner";
 
 import appCss from "@repo/ui/globals.css?url";
 
+import { DefaultCatchBoundary } from '@/components/default-catch-boundary'
+import { NotFound } from "@/components/not-found";
 import { ErrorBoundary } from "@/components";
 import {
   getSession,
@@ -78,8 +80,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
     return { session };
   },
-
-  errorComponent: ({ error }: { error: unknown }) => (
+errorComponent: (props) => {
+    return (
+      <RootDocument>
+        <DefaultCatchBoundary {...props} />
+      </RootDocument>
+    )
+  },
+  {/*errorComponent: ({ error }: { error: unknown }) => (
     <RootDocument>
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center max-w-md w-full">
@@ -101,7 +109,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       </div>
     </RootDocument>
   ),
-
+*/}
+  notFoundComponent: () => <NotFound />,
   shellComponent: RootComponent,
 });
 

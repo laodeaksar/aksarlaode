@@ -1,16 +1,26 @@
 ---
 interface Props {
-  id:        string
-  name:      string
-  slug:      string
-  price:     number
-  imageUrl?: string
-  category?: string
-  inStock:   boolean
+  id:            string
+  name:          string
+  slug:          string
+  price:         number
+  comparePrice?: number
+  imageUrl?:     string
+  category?:     string
+  inStock:       boolean
 }
-const { id, name, slug, price, imageUrl, category, inStock } = Astro.props
+const { id, name, slug, price, comparePrice, imageUrl, category, inStock } = Astro.props
+
+const discountPct = comparePrice && comparePrice > price
+  ? Math.round((1 - price / comparePrice) * 100)
+  : null
 ---
-<a href={`/products/${slug}`} class="group block rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow overflow-hidden">
+<a href={`/products/${slug}`} class="group block rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow overflow-hidden relative">
+  {discountPct && (
+    <span class="absolute top-2 left-2 z-10 inline-flex items-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+      -{discountPct}%
+    </span>
+  )}
   <div class="aspect-square overflow-hidden bg-gray-100">
     <!-- FIX WEB-08: loading="lazy" defers off-screen images; decoding="async"
          prevents the decode from blocking the main thread. -->
@@ -26,9 +36,16 @@ const { id, name, slug, price, imageUrl, category, inStock } = Astro.props
     {category && <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">{category}</p>}
     <h3 class="text-sm font-semibold text-gray-900 line-clamp-2 mb-2">{name}</h3>
     <div class="flex items-center justify-between">
-      <span class="text-base font-bold text-gray-900">
-        Rp {price.toLocaleString("id-ID")}
-      </span>
+      <div class="space-y-0.5">
+        {discountPct && (
+          <p class="text-xs text-gray-400 line-through">
+            Rp {comparePrice!.toLocaleString("id-ID")}
+          </p>
+        )}
+        <span class={`text-base font-bold ${discountPct ? "text-red-600" : "text-gray-900"}`}>
+          Rp {price.toLocaleString("id-ID")}
+        </span>
+      </div>
       {!inStock && (
         <span class="text-xs text-red-500 font-medium">Out of stock</span>
       )}

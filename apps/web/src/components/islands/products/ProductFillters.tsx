@@ -196,11 +196,21 @@ function inputCls(invalid: boolean) {
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const discountPct =
+    product.comparePrice && product.comparePrice > product.price
+      ? Math.round((1 - product.price / product.comparePrice) * 100)
+      : null;
+
   return (
     <a
       href={`/products/${product.slug}`}
-      className="group block rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
+      className="group relative block rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
     >
+      {discountPct && (
+        <span className="absolute top-2 left-2 z-10 inline-flex items-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+          -{discountPct}%
+        </span>
+      )}
       <div className="aspect-square overflow-hidden bg-gray-100">
         <img
           src={product.imageUrls?.[0] ?? "/placeholder.png"}
@@ -208,16 +218,16 @@ function ProductCard({ product }: { product: Product }) {
           className="h-full w-full object-cover group-hover:scale-105 transition-transform"
         />
       </div>
-      <div className="p-3 space-y-1">
+      <div className="p-3 space-y-0.5">
         <p className="text-sm font-medium line-clamp-2">{product.name}</p>
-        <p className="text-sm font-bold text-blue-600">
-          Rp {product.price.toLocaleString("id-ID")}
-        </p>
-        {product.comparePrice && (
+        {discountPct && (
           <p className="text-xs text-gray-400 line-through">
-            Rp {product.comparePrice.toLocaleString("id-ID")}
+            Rp {product.comparePrice!.toLocaleString("id-ID")}
           </p>
         )}
+        <p className={`text-sm font-bold ${discountPct ? "text-red-600" : "text-blue-600"}`}>
+          Rp {product.price.toLocaleString("id-ID")}
+        </p>
         {product.stock === 0 && (
           <p className="text-xs text-red-500 font-medium">Out of Stock</p>
         )}

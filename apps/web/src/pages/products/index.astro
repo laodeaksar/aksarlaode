@@ -25,6 +25,7 @@ const result = exit._tag === "Success" ? exit.value : { items: [], total: 0 }
             name={p.name}
             slug={p.slug}
             price={p.price}
+            comparePrice={p.comparePrice}
             imageUrl={p.imageUrls?.[0]}
             inStock={(p.stock ?? 0) > 0}
           />

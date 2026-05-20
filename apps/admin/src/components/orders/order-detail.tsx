@@ -33,6 +33,7 @@ import { Textarea } from "@repo/ui/components/textarea";
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
 import { can, effectResolver, toast, useSession } from "@/lib";
+import { PageHeader } from "@/components/layout/page-header";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -186,12 +187,10 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{order.orderId}</h1>
-          <p className="text-sm text-muted-foreground">
-            {new Date(order.createdAt).toLocaleString("id-ID")}
-          </p>
-        </div>
+        <PageHeader
+          title={order.orderId}
+          subtitle={new Date(order.createdAt).toLocaleString("id-ID")}
+        />
         <Badge
           variant={STATUS_COLOR[order.status] ?? "outline"}
           className="text-sm px-3 py-1"

@@ -8,6 +8,7 @@ import type { UpdateProductInput } from "@/effect/Services";
 import { toast } from "@/lib";
 
 import { ProductForm } from "../forms/product-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 // Mirrors the Edit Product form shape: heading + 6 fields
@@ -41,7 +42,7 @@ export function EditProduct({ productId }: { productId: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Data is already in cache from the loader's ensureQueryData call.
+  // Data is already in cache from the loader's ensureQueryData call (staleTime: 5 min).
   // No initialData needed — useQuery reads straight from cache.
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", productId],
@@ -92,7 +93,7 @@ export function EditProduct({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-foreground">Edit Product</h1>
+      <PageHeader title="Edit Product" />
       <ProductForm
         defaultValues={{
           name: product.name,

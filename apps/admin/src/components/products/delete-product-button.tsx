@@ -59,7 +59,14 @@ export function DeleteProductButton({ productId }: DeleteProductButtonProps) {
       toast.error("Gagal menghapus produk", err);
     },
 
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    onSettled: () => {
+      // Invalidate all product list queries so every cached page/filter
+      // reflects the deletion.
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      // Remove the deleted product's detail entry entirely — invalidating
+      // it would trigger a re-fetch that returns 404.
+      queryClient.removeQueries({ queryKey: ["product", productId] });
+    },
   });
 
   return (

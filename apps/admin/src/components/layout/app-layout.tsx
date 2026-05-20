@@ -5,9 +5,12 @@ import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 import { ErrorBoundary } from "@/components/shared";
 
 import { AppSidebar } from "./app-sidebar";
+import { CommandPalette } from "./command-palette";
 import { SiteHeader } from "./site-header";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
+  const [commandOpen, setCommandOpen] = React.useState(false);
+
   return (
     <SidebarProvider
       style={
@@ -19,7 +22,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader onOpenCommand={() => setCommandOpen(true)} />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <ErrorBoundary>
@@ -36,6 +39,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </SidebarInset>
+
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </SidebarProvider>
   );
 }

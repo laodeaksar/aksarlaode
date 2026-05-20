@@ -9,6 +9,7 @@ export const Route = createFileRoute("/orders/$orderId")({
     return queryClient.ensureQueryData({
       queryKey: ["order", params.orderId],
       queryFn: () => getOrderFn({ data: { id: params.orderId } }),
+      staleTime: 5 * 60 * 1_000,
     });
   },
 

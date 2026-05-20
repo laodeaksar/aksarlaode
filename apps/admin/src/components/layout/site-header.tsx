@@ -1,6 +1,7 @@
 import * as React from "react";
 
-import { useMatches } from "@tanstack/react-router";
+import { Link, useMatches } from "@tanstack/react-router";
+import { SearchIcon } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -10,6 +11,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@repo/ui/components/breadcrumb";
+import { Button } from "@repo/ui/components/button";
+import { Kbd, KbdGroup } from "@repo/ui/components/kbd";
 import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
 
@@ -51,9 +54,12 @@ function matchToSegment(match: RouteMatch): BreadcrumbSegment | null {
       return { label: "Orders", href: "/orders" };
 
     case "/orders/$orderId": {
-      const short = (params.orderId ?? "").slice(0, 8).toUpperCase();
+      const orderId =
+        typeof ld?.orderId === "string"
+          ? ld.orderId
+          : (params.orderId ?? "").slice(0, 8).toUpperCase();
       return {
-        label: `Order #${short}`,
+        label: `Order #${orderId}`,
         href: `/orders/${params.orderId}`,
       };
     }
@@ -77,7 +83,11 @@ function matchToSegment(match: RouteMatch): BreadcrumbSegment | null {
   }
 }
 
-export function SiteHeader() {
+type SiteHeaderProps = {
+  onOpenCommand?: () => void;
+};
+
+export function SiteHeader({ onOpenCommand }: SiteHeaderProps) {
   const matches = useMatches();
 
   const segments = matches
@@ -103,7 +113,14 @@ export function SiteHeader() {
                       {isLast ? (
                         <BreadcrumbPage>{segment.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink render={<a href={segment.href} />}>
+                        <BreadcrumbLink
+                          render={
+                            <Link
+                              to={segment.href}
+                              preload={false}
+                            />
+                          }
+                        >
                           {segment.label}
                         </BreadcrumbLink>
                       )}
@@ -114,6 +131,22 @@ export function SiteHeader() {
               })}
             </BreadcrumbList>
           </Breadcrumb>
+        )}
+
+        {onOpenCommand && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto hidden h-8 items-center gap-2 px-3 text-sm font-normal text-muted-foreground sm:flex"
+            onClick={onOpenCommand}
+          >
+            <SearchIcon className="size-3.5" />
+            <span>Jump to…</span>
+            <KbdGroup className="ml-1">
+              <Kbd>⌘</Kbd>
+              <Kbd>K</Kbd>
+            </KbdGroup>
+          </Button>
         )}
       </div>
     </header>

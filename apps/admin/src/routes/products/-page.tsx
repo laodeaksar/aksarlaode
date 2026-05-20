@@ -9,6 +9,7 @@ import { listProductsFn } from "@/server/products";
 import { AddProductDrawer, getProductColumns } from "@/components/products";
 import { DataTable } from "@/components";
 import { can, useSession } from "@/lib";
+import { PageHeader } from "@/components/layout/page-header";
 
 import { Route } from "./route";
 
@@ -60,7 +61,7 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Products</h1>
+      <PageHeader title="Products" />
 
       {/* Search + Add Product in one row */}
       <div className="flex items-center gap-2">

@@ -15,6 +15,7 @@ import {
   TopProductsList,
   DashboardSkeleton,
 } from "@/components/dashboard";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default function DashboardPage() {
   const { data } = useQuery({
@@ -30,7 +31,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+      <PageHeader title="Dashboard" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

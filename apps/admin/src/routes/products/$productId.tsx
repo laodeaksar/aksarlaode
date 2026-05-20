@@ -22,6 +22,7 @@ export const Route = createFileRoute("/products/$productId")({
     return queryClient.ensureQueryData({
       queryKey: ["product", params.productId],
       queryFn: () => getProductFn({ data: { id: params.productId } }),
+      staleTime: 5 * 60 * 1_000,
     });
   },
 

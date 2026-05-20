@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getCustomerFn } from "@/server/customers";
+import { PageHeader } from "@/components/layout/page-header";
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 
@@ -39,9 +40,7 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-foreground">
-        Customer Detail
-      </h1>
+      <PageHeader title="Customer Detail" />
       <div className="bg-card rounded-xl border border-border p-6 space-y-3">
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">Name</span>

@@ -8,6 +8,7 @@ import { Input } from "@repo/ui/components/input";
 import { listCustomersFn } from "@/server/customers";
 import { customerColumns } from "@/components/customers";
 import { DataTable } from "@/components/data-table/data-table";
+import { PageHeader } from "@/components/layout/page-header";
 
 import { Route } from "./route";
 
@@ -52,7 +53,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
+      <PageHeader title="Customers" />
 
       <Input
         className="w-64"

@@ -110,6 +110,10 @@ export function getRouter() {
     routeTree,
     context: { queryClient },
     defaultPreload: "intent",
+    // Match React Query's staleTime (60 s) so a route prefetched on hover
+    // is not re-fetched again when the user actually navigates within that
+    // window — one network round-trip per minute instead of two.
+    defaultPreloadStaleTime: 60 * 1_000,
     defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
   });

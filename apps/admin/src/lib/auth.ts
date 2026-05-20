@@ -11,6 +11,16 @@ export type Session = {
   role: UserRole;
 };
 
+/**
+ * @deprecated Gunakan `getSessionFn` dari `@/server/auth` sebagai gantinya.
+ *
+ * Fungsi ini menggunakan `credentials: "include"` yang hanya bekerja di browser.
+ * Saat dipanggil di server (SSR / beforeLoad), Node.js tidak punya cookie jar
+ * sehingga request ke /auth/me selalu gagal dan mengembalikan null.
+ *
+ * `getSessionFn` adalah `createServerFn` yang memakai `getCookies()` dari H3
+ * untuk mem-forward cookie request asli browser — bekerja di kedua environment.
+ */
 export async function getSession(): Promise<Session | null> {
   try {
     const res = await fetch(`${env.PUBLIC_API_URL}/auth/me`, {

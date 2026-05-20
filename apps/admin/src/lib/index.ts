@@ -21,8 +21,14 @@ export type {
 export { toast } from "./toast";
 
 // ── auth ───────────────────────────────────────────────────────────────────
+// getSession: browser-only (deprecated) — pakai getSessionFn dari @/server/auth
 export { getSession } from "./auth";
 export type { Session, UserRole } from "./auth";
+
+// ── server/auth re-exports ─────────────────────────────────────────────────
+// getSessionFn bekerja di server (SSR) maupun client via createServerFn.
+// Di-re-ekspor dari sini agar konsumen tidak perlu tahu path server/*.
+export { getSessionFn } from "../server/auth";
 
 // ── effect-resolver ────────────────────────────────────────────────────────
 export { effectResolver } from "./effect-resolver";

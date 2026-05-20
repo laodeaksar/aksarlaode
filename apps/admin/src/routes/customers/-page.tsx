@@ -14,7 +14,6 @@ import { Route } from "./route";
 export default function CustomersPage() {
   const navigate = useNavigate();
   const { page, search } = Route.useSearch();
-  const loaderData = Route.useLoaderData();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [inputValue, setInputValue] = useState(search);
@@ -25,7 +24,6 @@ export default function CustomersPage() {
       listCustomersFn({
         data: { page, ...(search ? { search } : {}) },
       }),
-    initialData: page === 1 && !search ? loaderData : undefined,
   });
 
   const handleSearch = useCallback(

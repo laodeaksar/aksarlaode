@@ -12,15 +12,12 @@ import { Route } from "./route";
 export default function OrdersPage() {
   const navigate = useNavigate();
   const { page, status } = Route.useSearch();
-  const loaderData = Route.useLoaderData();
-
   const { data, isLoading } = useQuery({
     queryKey: ["orders", { page, status }],
     queryFn: () =>
       listOrdersFn({
         data: { page, ...(status ? { status } : {}) },
       }),
-    initialData: loaderData,
   });
 
   const handleStatusChange = useCallback(

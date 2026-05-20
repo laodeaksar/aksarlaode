@@ -17,8 +17,6 @@ import { Route } from "./route";
 export default function ProductsPage() {
   const navigate = useNavigate();
   const { page, search } = Route.useSearch();
-  const loaderData = Route.useLoaderData();
-
   const [inputValue, setInputValue] = useState(search);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,7 +54,6 @@ export default function ProductsPage() {
       listProductsFn({
         data: { page, limit: 20, ...(search ? { search } : {}) },
       }),
-    initialData: page === 1 && !search ? loaderData : undefined,
   });
 
   const columns = useMemo(() => getProductColumns(canWrite), [canWrite]);

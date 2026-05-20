@@ -7,6 +7,12 @@ export const Route = createFileRoute("/dashboard")({
     meta: [{ title: "Dashboard — Admin" }],
   }),
 
-  loader: () => getDashboardStatsFn({}),
+  loader: ({ context }) => {
+    const { queryClient } = context;
+    return queryClient.ensureQueryData({
+      queryKey: ["dashboard-stats"],
+      queryFn: () => getDashboardStatsFn({}),
+    });
+  },
   component: () => <Outlet />,
 });

@@ -29,16 +29,31 @@ export const Route = createFileRoute("/audit-logs")({
     actorRole: search.actorRole,
   }),
 
-  loader: ({ deps }) =>
-    listAuditLogsFn({
-      data: {
-        page: deps.page,
-        ...(deps.startDate ? { startDate: deps.startDate } : {}),
-        ...(deps.endDate ? { endDate: deps.endDate } : {}),
-        ...(deps.action ? { action: deps.action } : {}),
-        ...(deps.actorRole ? { actorRole: deps.actorRole } : {}),
-      },
-    }),
+  loader: ({ deps, context }) => {
+    const { queryClient } = context;
+    return queryClient.ensureQueryData({
+      queryKey: [
+        "audit-logs",
+        {
+          page: deps.page,
+          startDate: deps.startDate,
+          endDate: deps.endDate,
+          action: deps.action,
+          actorRole: deps.actorRole,
+        },
+      ],
+      queryFn: () =>
+        listAuditLogsFn({
+          data: {
+            page: deps.page,
+            ...(deps.startDate ? { startDate: deps.startDate } : {}),
+            ...(deps.endDate ? { endDate: deps.endDate } : {}),
+            ...(deps.action ? { action: deps.action } : {}),
+            ...(deps.actorRole ? { actorRole: deps.actorRole } : {}),
+          },
+        }),
+    });
+  },
 
   head: () => ({
     meta: [{ title: "Audit Logs — Admin" }],

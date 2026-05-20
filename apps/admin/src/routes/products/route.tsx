@@ -21,14 +21,20 @@ export const Route = createFileRoute("/products")({
     search: search.search,
   }),
 
-  loader: ({ deps }) =>
-    listProductsFn({
-      data: {
-        page: deps.page,
-        limit: 20,
-        ...(deps.search ? { search: deps.search } : {}),
-      },
-    }),
+  loader: ({ deps, context }) => {
+    const { queryClient } = context;
+    return queryClient.ensureQueryData({
+      queryKey: ["products", { page: deps.page, search: deps.search }],
+      queryFn: () =>
+        listProductsFn({
+          data: {
+            page: deps.page,
+            limit: 20,
+            ...(deps.search ? { search: deps.search } : {}),
+          },
+        }),
+    });
+  },
 
   head: () => ({
     meta: [{ title: "Products — Admin" }],

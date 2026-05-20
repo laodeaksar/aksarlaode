@@ -16,18 +16,15 @@ import {
   DashboardSkeleton,
 } from "@/components/dashboard";
 
-import { Route } from "./route";
-
 export default function DashboardPage() {
-  const loaderData = Route.useLoaderData();
-
   const { data } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: () => getDashboardStatsFn({}),
-    initialData: loaderData,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
   });
+
+  if (!data) return <DashboardSkeleton />;
 
   const stats: DashboardStats = data;
 

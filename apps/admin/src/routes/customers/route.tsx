@@ -21,13 +21,19 @@ export const Route = createFileRoute("/customers")({
     search: search.search,
   }),
 
-  loader: ({ deps }) =>
-    listCustomersFn({
-      data: {
-        page: deps.page,
-        ...(deps.search ? { search: deps.search } : {}),
-      },
-    }),
+  loader: ({ deps, context }) => {
+    const { queryClient } = context;
+    return queryClient.ensureQueryData({
+      queryKey: ["customers", { page: deps.page, search: deps.search }],
+      queryFn: () =>
+        listCustomersFn({
+          data: {
+            page: deps.page,
+            ...(deps.search ? { search: deps.search } : {}),
+          },
+        }),
+    });
+  },
 
   head: () => ({
     meta: [{ title: "Customers — Admin" }],

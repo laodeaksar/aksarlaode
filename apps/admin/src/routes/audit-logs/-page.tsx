@@ -21,8 +21,6 @@ const SELECT_CLS =
 export default function AuditLogsPage() {
   const navigate = useNavigate();
   const { page, startDate, endDate, action, actorRole } = Route.useSearch();
-  const loaderData = Route.useLoaderData();
-
   // True when any filter beyond page number is active.
   const hasFilters = !!(startDate || endDate || action || actorRole);
 
@@ -41,10 +39,6 @@ export default function AuditLogsPage() {
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () => listAuditLogsFn({ data: queryParams }),
-    // Only seed from SSR loader data when no filter is applied (loader runs
-    // with whatever the URL params were on SSR, so only page-1 no-filter is safe).
-    initialData:
-      page === 1 && !hasFilters ? loaderData : undefined,
   });
 
   // ── Navigation helpers ─────────────────────────────────────────────────

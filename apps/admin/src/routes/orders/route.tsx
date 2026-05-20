@@ -21,13 +21,19 @@ export const Route = createFileRoute("/orders")({
     status: search.status,
   }),
 
-  loader: ({ deps }) =>
-    listOrdersFn({
-      data: {
-        page: deps.page,
-        ...(deps.status ? { status: deps.status } : {}),
-      },
-    }),
+  loader: ({ deps, context }) => {
+    const { queryClient } = context;
+    return queryClient.ensureQueryData({
+      queryKey: ["orders", { page: deps.page, status: deps.status }],
+      queryFn: () =>
+        listOrdersFn({
+          data: {
+            page: deps.page,
+            ...(deps.status ? { status: deps.status } : {}),
+          },
+        }),
+    });
+  },
 
   head: () => ({
     meta: [{ title: "Orders — Admin" }],

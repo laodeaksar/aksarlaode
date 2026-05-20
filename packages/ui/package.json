@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
-    "./lib/utils": "./src/lib/utils.ts"
+    "./lib/utils": "./src/lib/utils.ts",
+    "./globals.css": "./src/styles/globals.css"
   },
   "scripts": {
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",

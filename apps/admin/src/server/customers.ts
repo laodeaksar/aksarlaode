@@ -19,9 +19,12 @@ const CustomerIdSchema = Schema.Struct({
   id: Schema.String.pipe(Schema.minLength(1)),
 });
 
-// ── GET /admin/customers — paginated list with optional search ─────────────
-// Used as the SSR loader in `routes/customers/route.tsx` and re-called from
-// `customers-page.tsx` whenever page or debounced search term changes.
+const UpdateRoleSchema = Schema.Struct({
+  id: Schema.String.pipe(Schema.minLength(1)),
+  role: Schema.Literal("CUSTOMER", "ADMIN", "FINANCE"),
+});
+
+// ── GET /admin/users — paginated list with optional search ────────────────
 
 export const listCustomersFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])
@@ -44,8 +47,7 @@ export const listCustomersFn = createServerFn({ method: "GET" })
       )
   );
 
-// ── GET /admin/customers/:id — single customer ────────────────────────────
-// Used as the SSR loader in `routes/customers/$userId.tsx`.
+// ── GET /admin/users/:id — single customer ────────────────────────────────
 
 export const getCustomerFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware])
@@ -61,6 +63,66 @@ export const getCustomerFn = createServerFn({ method: "GET" })
         Effect.gen(function* () {
           const api = yield* ApiClientService;
           return yield* api.customers.getOne(data.id);
+        })
+      )
+  );
+
+// ── PATCH /admin/users/:id/role — update role (OWNER only) ────────────────
+
+export const updateCustomerRoleFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
+  .inputValidator((raw: unknown) =>
+    decodeOrThrow(
+      UpdateRoleSchema,
+      raw as Schema.Schema.Encoded<typeof UpdateRoleSchema>
+    )
+  )
+  .handler(
+    async ({ data, context }) =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService;
+          return yield* api.customers.updateRole(data.id, data.role);
+        })
+      )
+  );
+
+// ── DELETE /admin/users/:id — soft-delete (OWNER only) ────────────────────
+
+export const deleteCustomerFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
+  .inputValidator((raw: unknown) =>
+    decodeOrThrow(
+      CustomerIdSchema,
+      raw as Schema.Schema.Encoded<typeof CustomerIdSchema>
+    )
+  )
+  .handler(
+    async ({ data, context }) =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService;
+          return yield* api.customers.delete(data.id);
+        })
+      )
+  );
+
+// ── PATCH /admin/users/:id/restore — restore soft-deleted (OWNER only) ────
+
+export const restoreCustomerFn = createServerFn({ method: "POST" })
+  .middleware([effectMiddleware])
+  .inputValidator((raw: unknown) =>
+    decodeOrThrow(
+      CustomerIdSchema,
+      raw as Schema.Schema.Encoded<typeof CustomerIdSchema>
+    )
+  )
+  .handler(
+    async ({ data, context }) =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService;
+          return yield* api.customers.restore(data.id);
         })
       )
   );

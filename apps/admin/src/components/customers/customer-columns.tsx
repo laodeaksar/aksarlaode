@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal } from "lucide-react";
 
-import { Button } from "@repo/ui/components/button"
+import { Button } from "@repo/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,21 +10,78 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/components/dropdown-menu"
+} from "@repo/ui/components/dropdown-menu";
 import { Badge } from "@repo/ui/components/badge";
 
 import type { User } from "@/effect/Services";
+import { useSession } from "@/lib/session-context";
+import { can } from "@/lib";
+
+import { DeleteCustomerButton } from "./delete-customer-button";
+import { EditCustomerRoleDialog } from "./edit-customer-role-dialog";
 
 const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
   OWNER: "default",
   ADMIN: "default",
+  FINANCE: "secondary",
   CUSTOMER: "outline",
 };
+
+// ── Actions cell — uses hooks, must be its own component ──────────────────
+
+function CustomerActions({ row }: { row: { original: User } }) {
+  const { session } = useSession();
+  const canWrite = session ? can(session.role, "users:manage") : false;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Buka menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link
+            to="/customers/$userId"
+            params={{ userId: row.original.id }}
+            className="w-full cursor-pointer"
+          >
+            Lihat Detail
+          </Link>
+        </DropdownMenuItem>
+        {canWrite && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+              <EditCustomerRoleDialog
+                customerId={row.original.id}
+                customerName={row.original.name}
+                currentRole={row.original.role}
+              />
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+              <DeleteCustomerButton
+                customerId={row.original.id}
+                customerName={row.original.name}
+              />
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ── Column definitions ─────────────────────────────────────────────────────
 
 export const customerColumns: ColumnDef<User>[] = [
   {
     accessorKey: "name",
-    header: "Name",
+    header: "Nama",
     cell: ({ getValue }) => (
       <span className="font-medium text-foreground">
         {getValue() as string}
@@ -49,36 +106,6 @@ export const customerColumns: ColumnDef<User>[] = [
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => (
-      <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            // TODO: delete with alert dialog in new components
-            <DropdownMenuItem>Delete customer</DropdownMenuItem>
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-      // <Link
-      //   to="/customers/$userId"
-      //   params={{ userId: row.original.id }}
-      //   className="text-sm text-blue-600 hover:underline"
-      // >
-      //   View
-      // </Link>
-    ),
+    cell: ({ row }) => <CustomerActions row={row} />,
   },
 ];

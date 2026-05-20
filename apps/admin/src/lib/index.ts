@@ -1,14 +1,14 @@
-// ── src/lib/index.ts — barrel export ──────────────────────────────────────
+// src/lib/index.ts — barrel export
 //
-// Importa utility e tipi interni sempre da qui:
+// Import utility and types from here:
 //   import { silentRefresh, getSessionFn, can, useSession } from "@/lib"
 //   import type { Session, UserRole, Permission } from "@/lib"
 //
-// Regola: i file DENTRO src/lib/* che importano da fratelli usano il percorso
-// diretto (e.g. "@/lib/auth") per evitare circular deps.
-// Questo barrel è solo per i CONSUMER esterni (route, componenti, ecc).
+// Rule: files INSIDE src/lib/* that import from siblings use the direct path
+// (e.g. "@/lib/auth") to avoid circular deps.
+// This barrel is only for EXTERNAL consumers (routes, components, etc).
 
-// ── api ────────────────────────────────────────────────────────────────────
+// api
 export { silentRefresh } from "./api";
 export type {
   AuditLogEntry,
@@ -17,31 +17,31 @@ export type {
   OrderDetail,
 } from "./api";
 
-// ── toast ──────────────────────────────────────────────────────────────────
+// toast
 export { toast } from "./toast";
 
-// ── auth ───────────────────────────────────────────────────────────────────
-// getSession: browser-only (deprecated) — pakai getSessionFn dari @/server/auth
+// auth
+// getSession: browser-only (deprecated) — use getSessionFn from @/server/auth
 export { getSession } from "./auth";
 export type { Session, UserRole } from "./auth";
 
-// ── server/auth re-exports ─────────────────────────────────────────────────
-// getSessionFn bekerja di server (SSR) maupun client via createServerFn.
-// Di-re-ekspor dari sini agar konsumen tidak perlu tahu path server/*.
+// server/auth re-exports
+// getSessionFn works on server (SSR) and client via createServerFn.
+// Re-exported from here so consumers don't need to know the server/* path
 export { getSessionFn } from "../server/auth";
 
-// ── effect-resolver ────────────────────────────────────────────────────────
+// effect-resolver
 export { effectResolver } from "./effect-resolver";
 
-// ── rbac ───────────────────────────────────────────────────────────────────
+// rbac
 export { can, hasAnyAdminRole } from "./rbac";
 export type { Permission } from "./rbac";
 
-// ── router-context ─────────────────────────────────────────────────────────
+// router-context
 export type { RouterContext } from "./router-context";
 
-// ── session-context ────────────────────────────────────────────────────────
+// session-context
 export { SessionContext, useSession } from "./session-context";
 
-// ── utils ────────────────────────────────────────────────────────
-export { formatIDR } from "utils";
+// utils
+export { formatIDR } from "./utils";

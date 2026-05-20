@@ -117,11 +117,32 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
             ...(params.search ? { search: params.search } : {}),
           }).toString();
           return request<{ items: User[]; total: number }>(
-            `/admin/customers?${qs}`
+            `/admin/users?${qs}&role=CUSTOMER`
           );
         },
 
-        getOne: (id: string) => request<User>(`/admin/customers/${id}`),
+        getOne: (id: string) => request<User>(`/admin/users/${id}`),
+
+        updateRole: (id: string, role: string) =>
+          request<{ user: User; changed: { from: string; to: string } }>(
+            `/admin/users/${id}/role`,
+            {
+              method: "PATCH",
+              body: JSON.stringify({ role }),
+            }
+          ),
+
+        delete: (id: string) =>
+          request<{ message: string; deleted: { id: string; email: string; role: string; deletedAt: string } }>(
+            `/admin/users/${id}`,
+            { method: "DELETE" }
+          ),
+
+        restore: (id: string) =>
+          request<{ message: string; user: User }>(
+            `/admin/users/${id}/restore`,
+            { method: "PATCH" }
+          ),
       };
 
       // ── Dashboard ─────────────────────────────────────────────────────────

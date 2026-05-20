@@ -23,9 +23,6 @@ importers:
       elysia:
         specifier: ^1.4.28
         version: 1.4.28(@sinclair/typebox@0.27.10)(@types/bun@1.3.14)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@5.9.3)
-      pnpm:
-        specifier: ^9.1.0
-        version: 9.15.9
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -379,9 +376,12 @@ importers:
       '@repo/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tailwindcss/vite':
         specifier: ^4.3.0
-        version: 4.3.0(vite@7.3.3(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))
+        version: 4.3.0(vite@8.0.13(@types/node@25.8.0)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0))
       '@types/react':
         specifier: ^18.3.0
         version: 18.3.28
@@ -422,18 +422,6 @@ importers:
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
-
-  apps/web2:
-    dependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.3.0
-        version: 4.3.0(vite@7.3.3(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))
-      astro:
-        specifier: ^6.3.5
-        version: 6.3.5(@types/node@25.8.0)(ioredis@5.10.1)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(tsx@4.22.0)(yaml@2.9.0)
-      tailwindcss:
-        specifier: ^4.3.0
-        version: 4.3.0
 
   packages/common:
     dependencies:
@@ -4408,11 +4396,6 @@ packages:
   pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
 
-  pnpm@9.15.9:
-    resolution: {integrity: sha512-aARhQYk8ZvrQHAeSMRKOmvuJ74fiaR1p5NQO7iKJiClf1GghgbrlW1hBjDolO95lpQXsfF+UA+zlzDzTfc8lMQ==}
-    engines: {node: '>=18.12'}
-    hasBin: true
-
   postcss@8.5.14:
     resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
     engines: {node: ^10 || ^12 || >=14}
@@ -6760,19 +6743,19 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.0
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.0
 
-  '@tailwindcss/vite@4.3.0(vite@7.3.3(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))':
-    dependencies:
-      '@tailwindcss/node': 4.3.0
-      '@tailwindcss/oxide': 4.3.0
-      tailwindcss: 4.3.0
-      vite: 7.3.3(@types/node@25.8.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0)
-
   '@tailwindcss/vite@4.3.0(vite@8.0.13(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
       tailwindcss: 4.3.0
       vite: 8.0.13(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0)
+
+  '@tailwindcss/vite@4.3.0(vite@8.0.13(@types/node@25.8.0)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0))':
+    dependencies:
+      '@tailwindcss/node': 4.3.0
+      '@tailwindcss/oxide': 4.3.0
+      tailwindcss: 4.3.0
+      vite: 8.0.13(@types/node@25.8.0)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0)
 
   '@tanstack/history@1.162.0': {}
 
@@ -9187,8 +9170,6 @@ snapshots:
       mlly: 1.8.2
       pathe: 2.0.3
 
-  pnpm@9.15.9: {}
-
   postcss@8.5.14:
     dependencies:
       nanoid: 3.3.12
@@ -10035,6 +10016,21 @@ snapshots:
       tinyglobby: 0.2.16
     optionalDependencies:
       '@types/node': 22.19.19
+      esbuild: 0.28.0
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      tsx: 4.22.0
+      yaml: 2.9.0
+
+  vite@8.0.13(@types/node@25.8.0)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.0)(yaml@2.9.0):
+    dependencies:
+      lightningcss: 1.32.0
+      picomatch: 4.0.4
+      postcss: 8.5.14
+      rolldown: 1.0.1
+      tinyglobby: 0.2.16
+    optionalDependencies:
+      '@types/node': 25.8.0
       esbuild: 0.28.0
       fsevents: 2.3.3
       jiti: 2.7.0

@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@repo/ui/components/badge";
 
 import type { OrderSummary } from "@/effect/Services";
-import { formatIDR } from "@/lib";
+
 export const STATUS_VARIANTS: Record<
   string,
   "default" | "secondary" | "destructive" | "outline"
@@ -52,10 +52,12 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
   },
   {
     accessorKey: "grandTotal",
-    header: () => <div className="text-right">Amount<div>,
-    cell: ({ getValue }) =>(
-      // TODO: formatIDR 
-      `Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`,)
+    header: () => <div className="text-right">Amount</div>,
+    cell: ({ getValue }) => (
+      <div className="text-right">
+        {`Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`}
+      </div>
+    ),
   },
   {
     accessorKey: "createdAt",
@@ -67,7 +69,6 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
     id: "actions",
     header: "",
     cell: ({ row }) => (
-      // TODO: with dropdown-menu
       <Link
         to="/orders/$orderId"
         params={{ orderId: row.original.orderId }}

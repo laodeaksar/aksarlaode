@@ -6,7 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@repo/ui/components/input";
 
 import { listCustomersFn } from "@/server/customers";
-import { customerColumns } from "@/components/customers/customer-columns";
+import { customerColumns } from "@/components/customers";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./customers.route";

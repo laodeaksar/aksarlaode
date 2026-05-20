@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { getOrderFn } from "@/server/orders";
-import { OrderDetail } from "@/components/orders/order-detail";
+import { OrderDetail } from "@/components/orders";
 
 export const Route = createFileRoute("/orders/$orderId")({
   loader: ({ params, context }) => {

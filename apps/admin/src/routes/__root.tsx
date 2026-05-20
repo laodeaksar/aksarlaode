@@ -19,9 +19,7 @@ import { Toaster } from "sonner";
 
 import appCss from "@repo/ui/globals.css?url";
 
-import { DefaultCatchBoundary } from "@/components/shared/default-catch-boundary";
-import { NotFound } from "@/components/shared/not-found";
-import { ErrorBoundary } from "@/components/shared/error-boundary";
+import { DefaultCatchBoundary, NotFound, ErrorBoundary } from "@/components/shared";
 import {
   hasAnyAdminRole,
   SessionContext,

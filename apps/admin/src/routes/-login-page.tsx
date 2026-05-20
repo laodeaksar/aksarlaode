@@ -26,7 +26,7 @@ import {
   InputGroupInput,
 } from "@repo/ui/components/input-group";
 import { loginFn } from "@/server/auth";
-import { LoginPageSkeleton } from "@/components/login/login-skeleton";
+import { LoginPageSkeleton } from "@/components/login";
 import { LoginSchema, type LoginFields } from "@/schemas/forms";
 import { effectResolver, toast } from "@/lib";
 

@@ -9,10 +9,12 @@ import {
 
 import { getDashboardStatsFn } from "@/server/dashboard";
 import type { DashboardStats } from "@/effect/Services";
-import { StatCard } from "@/components/dashboard/stat-card";
-import { RecentOrdersTable } from "@/components/dashboard/recent-orders-table";
-import { TopProductsList } from "@/components/dashboard/top-products-list";
-import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import {
+  StatCard,
+  RecentOrdersTable,
+  TopProductsList,
+  DashboardSkeleton,
+} from "@/components/dashboard";
 
 import { Route } from "./dashboard.route";
 

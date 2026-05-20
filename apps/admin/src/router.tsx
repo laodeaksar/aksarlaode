@@ -5,8 +5,7 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { toast } from "sonner";
 
 import { silentRefresh } from "@/lib/api";
-import { NotFound } from "@/components/shared/not-found";
-import { DefaultCatchBoundary } from "@/components/shared/default-catch-boundary";
+import { NotFound, DefaultCatchBoundary } from "@/components/shared";
 
 import { routeTree } from "./routeTree.gen";
 

@@ -6,11 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@repo/ui/components/button";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
-import {
-  auditLogColumns,
-  AUDIT_ACTIONS,
-  ACTOR_ROLES,
-} from "@/components/audit-logs/audit-log-columns";
+import { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./audit-logs.route";

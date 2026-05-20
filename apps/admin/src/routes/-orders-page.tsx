@@ -4,10 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { listOrdersFn } from "@/server/orders";
-import {
-  orderColumns,
-  ORDER_STATUSES,
-} from "@/components/orders/order-columns";
+import { orderColumns, ORDER_STATUSES } from "@/components/orders";
 import { DataTable } from "@/components/data-table/data-table";
 
 import { Route } from "./orders.route";

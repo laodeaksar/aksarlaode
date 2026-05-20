@@ -11,6 +11,7 @@ import { Field, inputCls } from "@/lib/form-ui";
 
 export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
@@ -47,8 +48,28 @@ export function RegisterForm() {
       );
     } catch { /* storage unavailable — non-critical */ }
 
-    window.location.href = "/";
+    setIsSuccess(true);
+
+    // Honour the ?redirect= param, but validate it's a same-origin path to
+    // prevent open-redirect attacks. Fall back to "/" if absent or invalid.
+    const raw = new URLSearchParams(window.location.search).get("redirect");
+    let dest = "/";
+    if (raw) {
+      try {
+        const url = new URL(raw, window.location.origin);
+        if (url.origin === window.location.origin) dest = url.pathname;
+      } catch { /* malformed — fall back to "/" */ }
+    }
+    window.location.href = dest;
   };
+
+  if (isSuccess) {
+    return (
+      <div className="text-center text-green-600 font-medium py-8">
+        Account created! Redirecting…
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

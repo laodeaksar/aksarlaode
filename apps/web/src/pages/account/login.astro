@@ -1,27 +1,20 @@
 ---
+import Layout from "@/layouts/Layout.astro"
 import Navbar from "@/components/ui/Navbar.astro"
 import Footer from "@/components/ui/Footer.astro"
 import { LoginForm } from "@/components/islands/auth/LoginForm"
 ---
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - MyEcommerce</title>
-  </head>
-  <body class="bg-gray-50 min-h-screen">
-    <Navbar />
-    <main class="max-w-md mx-auto px-4 py-16">
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Sign In</h1>
-        <LoginForm client:load />
-        <p class="mt-4 text-sm text-center text-gray-600">
-          Don't have an account?{" "}
-          <a href="/account/register" class="text-blue-600 hover:underline font-medium">Register</a>
-        </p>
-      </div>
-    </main>
-    <Footer />
-  </body>
-</html>
+<Layout title="Login - MyEcommerce">
+  <Navbar />
+  <main class="max-w-md mx-auto px-4 py-16">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <h1 class="text-2xl font-bold text-gray-900 mb-6">Sign In</h1>
+      <LoginForm client:load />
+      <p class="mt-4 text-sm text-center text-gray-600">
+        Don't have an account?{" "}
+        <a href="/account/register" class="text-blue-600 hover:underline font-medium">Register</a>
+      </p>
+    </div>
+  </main>
+  <Footer />
+</Layout>

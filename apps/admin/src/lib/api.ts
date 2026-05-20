@@ -14,9 +14,17 @@ import { env } from "@repo/env/admin";
 // FIX ADM-02: token refresh state — one in-flight refresh at a time.
 // If multiple requests 401 simultaneously, only one refresh call is made;
 // the others wait for the same promise.
+//
+// SSR safety: module-level singletons are shared across all concurrent
+// server requests. Cookie-based refresh only makes sense in the browser
+// (server fetch has no access to the user's cookie jar), so we bail
+// early on the server to avoid both the singleton hazard and a futile
+// network call.
 let refreshPromise: Promise<boolean> | null = null;
 
 export async function silentRefresh(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {

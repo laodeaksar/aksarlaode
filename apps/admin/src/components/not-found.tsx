@@ -1,6 +1,7 @@
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 
-export function NotFound({ children }: { children?: any }) {
+export function NotFound({ children }: { children?: ReactNode }) {
   return (
     <div className="space-y-2 p-2">
       <div className="text-muted-foreground">
@@ -14,10 +15,10 @@ export function NotFound({ children }: { children?: any }) {
           Go back
         </button>
         <Link
-          to="/"
+          to="/dashboard"
           className="bg-cyan-600 text-white px-2 py-1 rounded-sm uppercase font-black text-sm"
         >
-          Start Over
+          Go to Dashboard
         </Link>
       </p>
     </div>

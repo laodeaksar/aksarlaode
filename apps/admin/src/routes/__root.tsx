@@ -28,6 +28,7 @@ import {
   SessionContext,
   silentRefresh,
   type RouterContext,
+  type Session,
 } from "@/lib";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -52,14 +53,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     location: ParsedLocation;
     context: RouterContext;
   }) => {
-    if (location.pathname.startsWith("/login")) return;
-
     const { queryClient } = context;
 
+    if (location.pathname.startsWith("/login")) {
+      // Redirect already-authenticated users away from the login page.
+      const cached = queryClient.getQueryData<Session>(["session"]);
+      if (cached && hasAnyAdminRole(cached.role)) {
+        throw redirect({ to: "/dashboard" });
+      }
+      return;
+    }
+
+    // staleTime: 2 min — short enough to reflect role changes promptly,
+    // long enough to avoid a /auth/me call on every client-side navigation.
     let session = await queryClient.fetchQuery({
       queryKey: ["session"],
       queryFn: getSession,
-      staleTime: 5 * 60 * 1_000,
+      staleTime: 2 * 60 * 1_000,
     });
 
     if (!session) {
@@ -80,36 +90,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
     return { session };
   },
-errorComponent: (props) => {
+
+  errorComponent: (props) => {
     return (
       <RootDocument>
         <DefaultCatchBoundary {...props} />
       </RootDocument>
     )
   },
-  {/*errorComponent: ({ error }: { error: unknown }) => (
-    <RootDocument>
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center max-w-md w-full">
-          <p className="text-base font-semibold text-red-700 mb-2">
-            Something went wrong
-          </p>
-          <p className="mb-4 text-sm text-red-600">
-            {error instanceof Error
-              ? error.message
-              : "An unexpected error occurred."}
-          </p>
-          <a
-            href="/dashboard"
-            className="inline-block rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-          >
-            Go to Dashboard
-          </a>
-        </div>
-      </div>
-    </RootDocument>
-  ),
-*/}
+
   notFoundComponent: () => <NotFound />,
   shellComponent: RootComponent,
 });

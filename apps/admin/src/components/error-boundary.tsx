@@ -1,7 +1,7 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, Fragment, type ErrorInfo, type ReactNode } from "react";
 
 type Props = { children: ReactNode; fallback?: ReactNode };
-type State = { error: Error | null };
+type State = { error: Error | null; attempt: number };
 
 // ── Global Error Boundary ──────────────────────────────────────────────────
 // FIX ADM-07: Prevents a single crashed component from blanking the entire
@@ -9,26 +9,29 @@ type State = { error: Error | null };
 // went wrong and try to recover.
 // Also catches errors thrown from Effect-powered server functions —
 // the `_tag` property on tagged errors is displayed in the message.
+//
+// Reset strategy: `attempt` increments on every reset. The children are
+// wrapped in a keyed Fragment — when the key changes React fully unmounts
+// and remounts the subtree, so a reset genuinely retries the render rather
+// than immediately re-throwing the same error from a stale closure.
 
 export class ErrorBoundary extends Component<Props, State> {
-  // `state` IS declared as `state: Readonly<S>` in Component — needs override.
-  override state: State = { error: null };
+  override state: State = { error: null, attempt: 0 };
 
-  // getDerivedStateFromError lives on ComponentClass interface, not Component class —
-  // TypeScript treats it as not-in-base, so omit `override`.
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
-  // componentDidCatch IS declared in the ComponentLifecycle interface.
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[ErrorBoundary]", error, info.componentStack);
+    if (import.meta.env.DEV) {
+      console.error("[ErrorBoundary]", error, info.componentStack);
+    }
   }
 
-  reset = () => this.setState({ error: null });
+  reset = () => this.setState((s) => ({ error: null, attempt: s.attempt + 1 }));
 
   override render() {
-    const { error } = this.state;
+    const { error, attempt } = this.state;
 
     if (error) {
       if (this.props.fallback) return this.props.fallback;
@@ -49,6 +52,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return <Fragment key={attempt}>{this.props.children}</Fragment>;
   }
 }

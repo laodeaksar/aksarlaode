@@ -131,13 +131,27 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
 
       // ── Audit logs ────────────────────────────────────────────────────────
       const auditLogs = {
-        list: (page = 1) =>
-          request<{
+        list: (params: {
+          page?: number;
+          startDate?: string;
+          endDate?: string;
+          action?: string;
+          actorRole?: string;
+        }) => {
+          const qs = new URLSearchParams({
+            page: String(params.page ?? 1),
+          });
+          if (params.startDate) qs.set("startDate", params.startDate);
+          if (params.endDate) qs.set("endDate", params.endDate);
+          if (params.action) qs.set("action", params.action);
+          if (params.actorRole) qs.set("actorRole", params.actorRole);
+          return request<{
             items: AuditLogEntry[];
             total: number;
             page: number;
             limit: number;
-          }>(`/products/audit-logs?page=${page}`),
+          }>(`/products/audit-logs?${qs.toString()}`);
+        },
       };
 
       return { products, orders, customers, dashboard, auditLogs } as const;

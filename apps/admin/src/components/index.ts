@@ -28,9 +28,11 @@ export { getProductColumns } from "./products/product-columns";
 
 // ── Customers ──────────────────────────────────────────────────────────────
 export { customerColumns } from "./customers/customer-columns";
+export { CustomerDetail } from "./customers/customer-detail";
 
 // ── Orders ─────────────────────────────────────────────────────────────────
 export { orderColumns, ORDER_STATUSES, STATUS_VARIANTS } from "./orders/order-columns";
+export { OrderDetail } from "./orders/order-detail";
 
 // ── Audit Logs ─────────────────────────────────────────────────────────────
 export { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "./audit-logs/audit-log-columns";

@@ -105,22 +105,21 @@ export default function LoginPage() {
                     disabled={mutation.isPending}
                   />
                   <InputGroupAddon align="inline-end">
-                    <button
-                      type="button"
-                      className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={
-                        showPassword
-                          ? "Sembunyikan password"
-                          : "Tampilkan password"
-                      }
-                    >
+                    <InputGroupButton size="icon-xs" onClick={() => setShowPassword((v) => !v)}>
                       {showPassword ? (
-                        <EyeOffIcon className="h-4 w-4" />
+                        <EyeOffIcon />
                       ) : (
-                        <EyeIcon className="h-4 w-4" />
+                        <EyeIcon />
                       )}
-                    </button>
+
+                      <span className="sr-only">
+                        {
+                          showPassword
+                            ? "Sembunyikan password"
+                            : "Tampilkan password"
+                        }
+                      </span>
+                    </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
                 {errors.password && <FieldError errors={[errors.password]} />}

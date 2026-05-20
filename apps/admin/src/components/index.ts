@@ -37,6 +37,9 @@ export { OrderDetail } from "./orders/order-detail";
 // ── Audit Logs ─────────────────────────────────────────────────────────────
 export { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "./audit-logs/audit-log-columns";
 
+// ── Login ──────────────────────────────────────────────────────────────────
+export { LoginPageSkeleton } from "./login/login-skeleton";
+
 // ── Dashboard ──────────────────────────────────────────────────────────────
 export { StatCard } from "./dashboard/stat-card";
 export { RecentOrdersTable } from "./dashboard/recent-orders-table";

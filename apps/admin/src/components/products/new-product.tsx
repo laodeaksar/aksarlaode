@@ -6,6 +6,7 @@ import type { NewProductInput } from "@/effect/Services";
 import { toast } from "@/lib";
 
 import { ProductForm } from "../forms/product-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 export function NewProduct() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ export function NewProduct() {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="text-2xl font-semibold text-foreground">New Product</h1>
+      <PageHeader title="New Product" />
       <ProductForm
         onSubmit={(data) =>
           mutation.mutate({

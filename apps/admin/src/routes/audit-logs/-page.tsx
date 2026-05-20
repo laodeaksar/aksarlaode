@@ -8,6 +8,7 @@ import { Button } from "@repo/ui/components/button";
 import { listAuditLogsFn } from "@/server/audit-logs";
 import { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
+import { PageHeader } from "@/components/layout/page-header";
 
 import { Route } from "./route";
 
@@ -75,14 +76,10 @@ export default function AuditLogsPage() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold">Audit Log</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Sensitive admin actions — product deletes, order status changes, role
-          changes.
-        </p>
-      </div>
+      <PageHeader
+        title="Audit Log"
+        subtitle="Sensitive admin actions — product deletes, order status changes, role changes."
+      />
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">

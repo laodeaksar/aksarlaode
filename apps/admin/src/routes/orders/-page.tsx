@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { listOrdersFn } from "@/server/orders";
 import { orderColumns, ORDER_STATUSES } from "@/components/orders";
 import { DataTable } from "@/components/data-table/data-table";
+import { PageHeader } from "@/components/layout/page-header";
 
 import { Route } from "./route";
 
@@ -42,7 +43,7 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-     <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
+      <PageHeader title="Orders" />
 
       <div className="flex items-center gap-3">
         <select

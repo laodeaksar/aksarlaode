@@ -15,6 +15,7 @@ import {
   TopProductsList,
   DashboardSkeleton,
 } from "@/components/dashboard";
+import { formatIDR } from "@/lib";
 
 export default function DashboardPage() {
   const { data } = useQuery({
@@ -35,7 +36,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           title="Revenue (Today)"
-          value={`Rp ${stats.revenueToday.toLocaleString("id-ID")}`}
+          value={formatIDR(stats.revenueToday)}
         />
         <StatCard title="Orders (Today)" value={stats.ordersToday} />
         <StatCard title="Total Customers" value={stats.totalCustomers} />

@@ -1,4 +1,5 @@
 import type { OrderSummary } from "@/effect/Services";
+import { formatIDR } from "@/lib";
 
 interface RecentOrdersTableProps {
   orders: OrderSummary[];
@@ -29,7 +30,7 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
                 : "font-medium text-green-700"
             }
           >
-            Rp {order.grandTotal.toLocaleString("id-ID")}
+            {formatIDR(order.grandTotal)}
           </span>
         </div>
       ))}

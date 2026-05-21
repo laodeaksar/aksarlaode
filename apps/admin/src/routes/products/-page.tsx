@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { Button } from "@repo/ui/components/button";
-import { Input } from "@repo/ui/components/input";
 
 import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
 import { DataTable } from "@/components";
+import { SearchInput } from "@/components/shared";
 import {
   can,
   useDebouncedInput,
@@ -42,12 +42,7 @@ export default function ProductsPage() {
       <PageHeader title="Produk" />
 
       <div className="flex items-center gap-2">
-        <Input
-          className="w-64"
-          placeholder="Cari produk..."
-          aria-label="Cari produk"
-          {...searchInput}
-        />
+        <SearchInput placeholder="Cari produk..." aria-label="Cari produk" {...searchInput} />
         {canWrite && (
           <Button asChild size="sm">
             <Link to="/products/new">+ Tambah Produk</Link>

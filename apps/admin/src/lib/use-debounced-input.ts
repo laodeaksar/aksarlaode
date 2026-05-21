@@ -89,5 +89,6 @@ export function useDebouncedInput(
     value,
     onChange: handleChange,
     onKeyDown: handleKeyDown,
+    clear,
   } as const;
 }

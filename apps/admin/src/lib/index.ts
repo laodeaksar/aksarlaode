@@ -51,3 +51,6 @@ export { useFilteredNavigation } from "./use-filtered-navigation";
 
 // use-debounced-input
 export { useDebouncedInput } from "./use-debounced-input";
+
+// use-new-orders
+export { useNewOrdersCount } from "./use-new-orders";

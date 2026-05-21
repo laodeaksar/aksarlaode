@@ -20,6 +20,7 @@ export function NavMain({
     url: string;
     icon?: LucideIcon;
     hasFilter?: boolean;
+    badge?: number;
   }[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -41,14 +42,22 @@ export function NavMain({
                 >
                   <span className="relative flex shrink-0 items-center">
                     {item.icon}
-                    {item.hasFilter && (
+                    {item.hasFilter && !item.badge && (
                       <span
                         className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-orange-400"
                         aria-label="Active filter"
                       />
                     )}
                   </span>
-                  <span>{item.title}</span>
+                  <span className="flex-1">{item.title}</span>
+                  {!!item.badge && (
+                    <span
+                      className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold tabular-nums text-white"
+                      aria-label={`${item.badge} pesanan baru`}
+                    >
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );

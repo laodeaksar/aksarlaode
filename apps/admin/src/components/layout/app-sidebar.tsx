@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
 } from "@repo/ui/components/sidebar";
 
-import { can, useSession } from "@/lib";
+import { can, useNewOrdersCount, useSession } from "@/lib";
 
 import { NavMain } from "./nav-main";
 import { NavSecondary } from "./nav-secondary";
@@ -36,6 +36,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const ordersMatch = useMatch({ from: "/orders", shouldThrow: false });
   const customersMatch = useMatch({ from: "/customers", shouldThrow: false });
   const auditLogsMatch = useMatch({ from: "/audit-logs", shouldThrow: false });
+
+  const pendingOrdersCount = useNewOrdersCount();
 
   const navMain = [
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
@@ -56,6 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/orders",
             icon: <ShoppingCartIcon />,
             hasFilter: !!ordersMatch?.search.status,
+            badge: pendingOrdersCount,
           },
         ]
       : []),

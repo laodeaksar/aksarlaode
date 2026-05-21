@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
@@ -29,9 +27,7 @@ export default function ProductsPage() {
   const canWrite = can(session?.role ?? "CUSTOMER", "products:write");
 
   const { setFilter, goToPage } = useFilteredNavigation("/products");
-  const [searchValue, handleSearchChange] = useDebouncedInput(search, (v) =>
-    setFilter("search", v)
-  );
+  const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { page: currentPage, search }],
@@ -50,8 +46,7 @@ export default function ProductsPage() {
           className="w-64"
           placeholder="Cari produk..."
           aria-label="Cari produk"
-          value={searchValue}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          {...searchInput}
         />
         {canWrite && (
           <Button asChild size="sm">

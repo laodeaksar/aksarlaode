@@ -1,38 +1,52 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 
 /**
  * Manages a controlled text input that debounces URL navigation.
  *
- * - `inputValue`    — bind to the input's `value` prop (reflects typing immediately).
- * - `handleChange`  — call with the raw input value on every keystroke.
+ * Returns a props object you can spread directly onto an <input> element:
  *
- * The `onChange` callback (typically `setFilter`) is only called after the user
- * stops typing for `delay` ms, keeping URL updates smooth.
+ *   const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
+ *   <Input {...searchInput} />
  *
- * The local state is kept in sync with `urlValue` so browser back/forward
- * navigation updates the input correctly.
+ * Behaviour:
+ *  - `value`     — reflects every keystroke immediately (no lag).
+ *  - `onChange`  — debounces the navigation call by `delay` ms.
+ *  - `onKeyDown` — pressing Escape clears the input instantly (no debounce),
+ *                  fires `onChange("")`, and keeps focus on the input.
+ *  - `ref`       — attached to the <input> so focus is managed internally.
+ *
+ * The local state stays in sync with `urlValue` so browser back/forward
+ * navigation (which changes the URL without a remount) updates the input.
  *
  * @param urlValue  The current value from the URL search param (may be undefined).
- * @param onChange  Called with the debounced value — usually `setFilter(key, value)`.
+ * @param onChange  Called with the debounced string — usually `setFilter(key, value)`.
  * @param delay     Debounce delay in milliseconds (default: 300).
  */
 export function useDebouncedInput(
   urlValue: string | undefined,
   onChange: (value: string) => void,
   delay = 300
-): readonly [string, (value: string) => void] {
-  const [inputValue, setInputValue] = useState(urlValue ?? "");
+) {
+  const [value, setValue] = useState(urlValue ?? "");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onChangeRef = useRef(onChange);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Always call the latest onChange without resetting the debounce timer.
+  // Keep the latest onChange without resetting the debounce timer.
   useEffect(() => {
     onChangeRef.current = onChange;
   });
 
   // Sync the input when the URL param changes externally (back/forward nav).
   useEffect(() => {
-    setInputValue(urlValue ?? "");
+    setValue(urlValue ?? "");
   }, [urlValue]);
 
   // Cancel any pending timer on unmount.
@@ -43,11 +57,37 @@ export function useDebouncedInput(
     []
   );
 
-  const handleChange = useCallback((value: string) => {
-    setInputValue(value);
+  const clear = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => onChangeRef.current(value), delay);
-  }, [delay]);
+    setValue("");
+    onChangeRef.current("");
+  }, []);
 
-  return [inputValue, handleChange] as const;
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const v = e.target.value;
+      setValue(v);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => onChangeRef.current(v), delay);
+    },
+    [delay]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        clear();
+        inputRef.current?.focus();
+      }
+    },
+    [clear]
+  );
+
+  return {
+    ref: inputRef,
+    value,
+    onChange: handleChange,
+    onKeyDown: handleKeyDown,
+  } as const;
 }

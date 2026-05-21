@@ -15,9 +15,7 @@ export default function CustomersPage() {
   const currentPage = page ?? 1;
 
   const { setFilter, goToPage } = useFilteredNavigation("/customers");
-  const [searchValue, handleSearchChange] = useDebouncedInput(search, (v) =>
-    setFilter("search", v)
-  );
+  const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page: currentPage, search }],
@@ -34,8 +32,7 @@ export default function CustomersPage() {
       <Input
         className="w-64"
         placeholder="Search by name or email..."
-        value={searchValue}
-        onChange={(e) => handleSearchChange(e.target.value)}
+        {...searchInput}
       />
 
       <DataTable

@@ -43,18 +43,19 @@ export default function ProductsPage() {
     (newPage: number) => {
       navigate({
         to: "/products",
-        // @ts-ignore
-        search: (prev) => ({ ...prev, page: newPage }),
+        search: (prev) => ({ ...prev, page: newPage > 1 ? newPage : undefined }),
       });
     },
     [navigate]
   );
 
+  const currentPage = page ?? 1;
+
   const { data, isLoading } = useQuery({
-    queryKey: ["products", { page, search }],
+    queryKey: ["products", { page: currentPage, search }],
     queryFn: () =>
       listProductsFn({
-        data: { page, limit: 20, ...(search ? { search } : {}) },
+        data: { page: currentPage, limit: 20, ...(search ? { search } : {}) },
       }),
   });
 
@@ -82,7 +83,7 @@ export default function ProductsPage() {
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
+        page={currentPage}
         onPageChange={handlePageChange}
       />
     </div>

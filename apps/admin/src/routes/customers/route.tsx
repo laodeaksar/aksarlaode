@@ -12,7 +12,7 @@ export const Route = createFileRoute("/customers")({
   },
 
   validateSearch: (search: Record<string, unknown>) => ({
-    page: Math.max(1, Number(search.page) || 1),
+    page: Number(search.page) > 1 ? Math.floor(Number(search.page)) : undefined,
     search:
       typeof search.search === "string" && search.search
         ? search.search
@@ -27,11 +27,11 @@ export const Route = createFileRoute("/customers")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["customers", { page: deps.page, search: deps.search }],
+      queryKey: ["customers", { page: deps.page ?? 1, search: deps.search }],
       queryFn: () =>
         listCustomersFn({
           data: {
-            page: deps.page,
+            page: deps.page ?? 1,
             ...(deps.search ? { search: deps.search } : {}),
           },
         }),

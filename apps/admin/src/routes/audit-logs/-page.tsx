@@ -26,18 +26,19 @@ const SELECT_CLS =
 export default function AuditLogsPage() {
   const navigate = useNavigate();
   const { page, startDate, endDate, action, actorRole } = Route.useSearch();
+  const currentPage = page ?? 1;
   // True when any filter beyond page number is active.
   const hasFilters = !!(startDate || endDate || action || actorRole);
 
   // Build the React Query cache key from the complete filter set.
   const queryKey = [
     "audit-logs",
-    { page, startDate, endDate, action, actorRole },
+    { page: currentPage, startDate, endDate, action, actorRole },
   ];
 
   // Derive the params object once — used by both queryFn and initialData check.
   const queryParams = {
-    page,
+    page: currentPage,
     ...(startDate ? { startDate } : {}),
     ...(endDate ? { endDate } : {}),
     ...(action ? { action } : {}),
@@ -57,7 +58,7 @@ export default function AuditLogsPage() {
     (key: string, value: string) => {
       navigate({
         to: "/audit-logs",
-        search: (prev) => ({ ...prev, [key]: value || undefined, page: 1 }),
+        search: (prev) => ({ ...prev, [key]: value || undefined, page: undefined }),
       });
     },
     [navigate]
@@ -67,7 +68,7 @@ export default function AuditLogsPage() {
     (newPage: number) => {
       navigate({
         to: "/audit-logs",
-        search: (prev) => ({ ...prev, page: newPage }),
+        search: (prev) => ({ ...prev, page: newPage > 1 ? newPage : undefined }),
       });
     },
     [navigate]
@@ -77,7 +78,7 @@ export default function AuditLogsPage() {
     navigate({
       to: "/audit-logs",
       search: {
-        page: 1,
+        page: undefined,
         startDate: undefined,
         endDate: undefined,
         action: undefined,
@@ -185,7 +186,7 @@ export default function AuditLogsPage() {
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
+        page={currentPage}
         onPageChange={handlePageChange}
       />
     </div>

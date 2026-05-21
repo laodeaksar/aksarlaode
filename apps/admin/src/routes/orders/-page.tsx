@@ -17,11 +17,13 @@ import { Route } from "./route";
 export default function OrdersPage() {
   const navigate = useNavigate();
   const { page, status } = Route.useSearch();
+  const currentPage = page ?? 1;
+
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", { page, status }],
+    queryKey: ["orders", { page: currentPage, status }],
     queryFn: () =>
       listOrdersFn({
-        data: { page, ...(status ? { status } : {}) },
+        data: { page: currentPage, ...(status ? { status } : {}) },
       }),
   });
 
@@ -39,7 +41,7 @@ export default function OrdersPage() {
     (newPage: number) => {
       navigate({
         to: "/orders",
-        search: (prev) => ({ ...prev, page: newPage }),
+        search: (prev) => ({ ...prev, page: newPage > 1 ? newPage : undefined }),
       });
     },
     [navigate]
@@ -72,7 +74,7 @@ export default function OrdersPage() {
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
+        page={currentPage}
         onPageChange={handlePageChange}
       />
     </div>

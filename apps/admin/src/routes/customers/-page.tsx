@@ -19,11 +19,13 @@ export default function CustomersPage() {
 
   const [inputValue, setInputValue] = useState(search ?? "");
 
+  const currentPage = page ?? 1;
+
   const { data, isLoading } = useQuery({
-    queryKey: ["customers", { page, search }],
+    queryKey: ["customers", { page: currentPage, search }],
     queryFn: () =>
       listCustomersFn({
-        data: { page, ...(search ? { search } : {}) },
+        data: { page: currentPage, ...(search ? { search } : {}) },
       }),
   });
 
@@ -45,7 +47,7 @@ export default function CustomersPage() {
     (newPage: number) => {
       navigate({
         to: "/customers",
-        search: (prev) => ({ ...prev, page: newPage }),
+        search: (prev) => ({ ...prev, page: newPage > 1 ? newPage : undefined }),
       });
     },
     [navigate]
@@ -67,7 +69,7 @@ export default function CustomersPage() {
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
+        page={currentPage}
         onPageChange={handlePageChange}
       />
     </div>

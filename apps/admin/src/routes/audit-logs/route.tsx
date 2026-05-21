@@ -14,7 +14,7 @@ export const Route = createFileRoute("/audit-logs")({
   // All filter state lives in the URL so every combination is bookmarkable,
   // shareable, and survives browser back/forward navigation.
   validateSearch: (search: Record<string, unknown>) => ({
-    page: Math.max(1, Number(search.page) || 1),
+    page: Number(search.page) > 1 ? Math.floor(Number(search.page)) : undefined,
     startDate:
       typeof search.startDate === "string" && search.startDate
         ? search.startDate
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/audit-logs")({
       queryKey: [
         "audit-logs",
         {
-          page: deps.page,
+          page: deps.page ?? 1,
           startDate: deps.startDate,
           endDate: deps.endDate,
           action: deps.action,
@@ -57,7 +57,7 @@ export const Route = createFileRoute("/audit-logs")({
       queryFn: () =>
         listAuditLogsFn({
           data: {
-            page: deps.page,
+            page: deps.page ?? 1,
             ...(deps.startDate ? { startDate: deps.startDate } : {}),
             ...(deps.endDate ? { endDate: deps.endDate } : {}),
             ...(deps.action ? { action: deps.action } : {}),

@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Link, useMatches } from "@tanstack/react-router";
+
 import { SearchIcon } from "lucide-react";
 
 import {
@@ -45,10 +46,16 @@ function matchToSegment(match: RouteMatch): BreadcrumbSegment | null {
     case "/products/$productId": {
       const name = typeof ld?.name === "string" ? ld.name : null;
       return {
-        label: name ? `Edit: ${name}` : "Edit Product",
+        label: name ?? "Product",
         href: `/products/${params.productId}`,
       };
     }
+
+    case "/products/$productId/edit":
+      return {
+        label: "Edit",
+        href: `/products/${params.productId}/edit`,
+      };
 
     case "/orders":
       return { label: "Orders", href: "/orders" };
@@ -114,12 +121,7 @@ export function SiteHeader({ onOpenCommand }: SiteHeaderProps) {
                         <BreadcrumbPage>{segment.label}</BreadcrumbPage>
                       ) : (
                         <BreadcrumbLink
-                          render={
-                            <Link
-                              to={segment.href}
-                              preload={false}
-                            />
-                          }
+                          render={<Link to={segment.href} preload={false} />}
                         >
                           {segment.label}
                         </BreadcrumbLink>
@@ -137,7 +139,7 @@ export function SiteHeader({ onOpenCommand }: SiteHeaderProps) {
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto hidden h-8 items-center gap-2 px-3 text-sm font-normal text-muted-foreground sm:flex"
+            className="text-muted-foreground ml-auto hidden h-8 items-center gap-2 px-3 text-sm font-normal sm:flex"
             onClick={onOpenCommand}
           >
             <SearchIcon className="size-3.5" />

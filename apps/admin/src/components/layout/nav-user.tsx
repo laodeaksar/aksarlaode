@@ -1,12 +1,9 @@
-import { EllipsisVerticalIcon, LogOutIcon } from "lucide-react";
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import {
-  Avatar,
-  AvatarFallback,
-} from "@repo/ui/components/avatar";
+import { EllipsisVerticalIcon, LogOutIcon } from "lucide-react";
+
+import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,8 +19,8 @@ import {
   useSidebar,
 } from "@repo/ui/components/sidebar";
 
-import { useSession } from "@/lib";
 import { logoutFn } from "@/server/auth";
+import { useSession } from "@/lib";
 
 function getInitials(name: string): string {
   return name
@@ -70,7 +67,7 @@ export function NavUser() {
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{name}</span>
-              <span className="truncate text-xs text-foreground/70">
+              <span className="text-foreground/70 truncate text-xs">
                 {email}
               </span>
             </div>
@@ -85,11 +82,13 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="size-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="text-muted-foreground truncate text-xs">
                     {email}
                   </span>
                 </div>

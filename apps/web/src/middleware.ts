@@ -1,4 +1,5 @@
 import { Cause } from "effect";
+
 import { defineMiddleware } from "astro:middleware";
 
 import { authApi } from "./lib/api/auth";
@@ -121,7 +122,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
       if (import.meta.env.DEV) {
         console.warn(
           "[middleware] Auth service unreachable (NetworkError) — failing open. " +
-          "Check that the api-gateway is running and PUBLIC_API_URL is correct."
+            "Check that the api-gateway is running and PUBLIC_API_URL is correct."
         );
       }
       const response = await next();
@@ -136,4 +137,3 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   const response = await next();
   return applySecurityHeaders(response);
 });
-

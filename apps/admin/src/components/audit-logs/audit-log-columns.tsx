@@ -41,7 +41,9 @@ export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [
     cell: ({ row }) => (
       <div>
         <p className="font-mono text-xs">{row.original.actorId.slice(0, 8)}…</p>
-        <p className="text-xs text-muted-foreground">{row.original.actorRole}</p>
+        <p className="text-muted-foreground text-xs">
+          {row.original.actorRole}
+        </p>
       </div>
     ),
   },
@@ -63,7 +65,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [
     cell: ({ row }) => (
       <div>
         <p className="text-xs capitalize">{row.original.resource}</p>
-        <p className="font-mono text-xs text-muted-foreground">
+        <p className="text-muted-foreground font-mono text-xs">
           {row.original.resourceId.slice(0, 8)}…
         </p>
       </div>
@@ -77,7 +79,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [
       if (!meta)
         return <span className="text-muted-foreground text-xs">—</span>;
       return (
-        <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-w-xs overflow-hidden">
+        <pre className="text-muted-foreground max-w-xs overflow-hidden text-xs whitespace-pre-wrap">
           {JSON.stringify(meta, null, 2)}
         </pre>
       );

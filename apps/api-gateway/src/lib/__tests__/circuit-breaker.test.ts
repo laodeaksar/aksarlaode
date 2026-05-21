@@ -31,7 +31,13 @@ function uniqueName() {
   return `TEST_${++_seq}`;
 }
 
-function makeBreaker(overrides: { failureThreshold?: number; cooldownMs?: number; windowMs?: number } = {}) {
+function makeBreaker(
+  overrides: {
+    failureThreshold?: number;
+    cooldownMs?: number;
+    windowMs?: number;
+  } = {}
+) {
   return new CircuitBreaker(uniqueName(), {
     failureThreshold: 3,
     windowMs: 60_000,

@@ -4,7 +4,7 @@ import { Toaster } from "sonner";
 
 export function LoginLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="bg-muted/40 min-h-screen">
       {children}
       <Toaster position="top-center" richColors />
     </div>

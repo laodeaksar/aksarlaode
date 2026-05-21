@@ -1,16 +1,12 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@repo/ui/components/card";
+import { Card, CardContent, CardHeader } from "@repo/ui/components/card";
 import { Skeleton } from "@repo/ui/components/skeleton";
 
 export function LoginPageSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
+    <div className="bg-muted/40 flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <Skeleton className="h-6 w-28 mx-auto" />
+          <Skeleton className="mx-auto h-6 w-28" />
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">

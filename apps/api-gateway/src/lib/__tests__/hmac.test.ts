@@ -1,5 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import { Effect } from "effect";
+
+import { describe, expect, test } from "bun:test";
 
 // ── Mock env with a known server key ──────────────────────────────────────────
 const TEST_SERVER_KEY = "test-midtrans-server-key-for-unit-testing";
@@ -48,7 +49,11 @@ describe("verifyHmac — success path", () => {
   });
 
   test("accepts payloads with extra fields (passthrough)", async () => {
-    const payloadWithExtras = { ...basePayload, transaction_status: "settlement", currency: "IDR" };
+    const payloadWithExtras = {
+      ...basePayload,
+      transaction_status: "settlement",
+      currency: "IDR",
+    };
     const sig = await makeValidSignature(basePayload);
     const body = JSON.stringify(payloadWithExtras);
     const exit = await Effect.runPromiseExit(verifyHmac(body, sig));
@@ -75,7 +80,8 @@ describe("verifyHmac — HmacInvalidError", () => {
     );
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("HmacInvalidError");
       expect(err.reason).toBe("body_parse_failed");
     }
@@ -88,7 +94,8 @@ describe("verifyHmac — HmacInvalidError", () => {
     );
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("HmacInvalidError");
       expect(err.reason).toBe("signature_mismatch");
     }
@@ -103,7 +110,8 @@ describe("verifyHmac — HmacInvalidError", () => {
     const exit = await Effect.runPromiseExit(verifyHmac(body, wrongSig));
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err.reason).toBe("signature_mismatch");
     }
   });
@@ -111,14 +119,20 @@ describe("verifyHmac — HmacInvalidError", () => {
   test("signature_mismatch — tampered order_id is detected", async () => {
     const sig = await makeValidSignature(basePayload);
     // Tamper the body after signing
-    const tamperedBody = JSON.stringify({ ...basePayload, order_id: "ORDER-TAMPERED" });
+    const tamperedBody = JSON.stringify({
+      ...basePayload,
+      order_id: "ORDER-TAMPERED",
+    });
     const exit = await Effect.runPromiseExit(verifyHmac(tamperedBody, sig));
     expect(exit._tag).toBe("Failure");
   });
 
   test("signature_mismatch — tampered gross_amount is detected", async () => {
     const sig = await makeValidSignature(basePayload);
-    const tamperedBody = JSON.stringify({ ...basePayload, gross_amount: "1.00" });
+    const tamperedBody = JSON.stringify({
+      ...basePayload,
+      gross_amount: "1.00",
+    });
     const exit = await Effect.runPromiseExit(verifyHmac(tamperedBody, sig));
     expect(exit._tag).toBe("Failure");
   });

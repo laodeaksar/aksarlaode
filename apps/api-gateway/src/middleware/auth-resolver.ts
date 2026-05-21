@@ -70,7 +70,7 @@ export const authResolver: MiddlewareHandler<AppEnv> = async (c, next) => {
     const cause = result.cause;
     const tag =
       cause._tag === "Fail"
-        ? (cause.error as { _tag?: string })?._tag ?? ""
+        ? ((cause.error as { _tag?: string })?._tag ?? "")
         : "";
     const code = tag === "TokenExpiredError" ? "TOKEN_EXPIRED" : "UNAUTHORIZED";
     return c.json(

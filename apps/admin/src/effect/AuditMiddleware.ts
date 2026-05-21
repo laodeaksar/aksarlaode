@@ -77,7 +77,12 @@ async function resolveSession(apiUrl: string): Promise<Session | null> {
 // ── Middleware ─────────────────────────────────────────────────────────────
 
 export const auditMiddleware = createMiddleware().server(
-  async ({ next, serverFnMeta, data }) => {
+  async (ctx) => {
+    const { next, serverFnMeta } = ctx;
+    // `data` exists at runtime but is typed as `undefined` in the generic
+    // since this middleware has no `.validator()` — access via cast.
+    const data = (ctx as unknown as { data: Record<string, unknown> }).data;
+
     const fnName = serverFnMeta?.name ?? "";
     const mapping = SERVER_FN_ACTION_MAP[fnName];
 

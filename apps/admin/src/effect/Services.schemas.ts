@@ -1,12 +1,20 @@
 import { Schema } from "effect";
 
-// CONSISTENCY-FIX TYPE-02: ProductStatus now lives in @repo/common.
-// CONSISTENCY-FIX TYPE-03: User now imported from @repo/common — UserRole
-// covers CUSTOMER | ADMIN | OWNER | FINANCE so the local string-typed
-// definition is no longer needed.
-import type { ProductStatus, User } from "@repo/common";
+// ProductStatus and User are sourced from packages/common/src/types/index.ts.
+// They are re-declared here as plain TypeScript types so this package has no
+// runtime dependency on @repo/common (which has no default export entry point).
 
-export type { ProductStatus, User };
+export type ProductStatus = "ACTIVE" | "DRAFT" | "ARCHIVED";
+
+export type UserRole = "CUSTOMER" | "ADMIN" | "OWNER" | "FINANCE";
+
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt?: string;
+};
 
 // ── Admin product types ─────────────────────────────────────────────────────
 // Aligned with @repo/common/Product (TYPE-03):

@@ -5,7 +5,7 @@ interface TopProductsListProps {
 export function TopProductsList({ items }: TopProductsListProps) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">Belum ada data produk.</p>
+      <p className="text-muted-foreground text-sm">Belum ada data produk.</p>
     );
   }
   return (

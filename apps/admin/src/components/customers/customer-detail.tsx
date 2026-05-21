@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
-import { Skeleton } from "@repo/ui/components/skeleton";
 import { Badge } from "@repo/ui/components/badge";
+import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getCustomerFn } from "@/server/customers";
-import { PageHeader } from "@/components/layout/page-header";
 import { useSession } from "@/lib/session-context";
+import { PageHeader } from "@/components/layout/page-header";
 import { can } from "@/lib";
 
 import { DeleteCustomerButton } from "./delete-customer-button";
@@ -23,11 +23,11 @@ const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
 
 function CustomerDetailSkeleton() {
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="max-w-xl space-y-4">
       <Skeleton className="h-8 w-40" />
-      <div className="bg-card rounded-xl border border-border p-6 space-y-3">
+      <div className="bg-card border-border space-y-3 rounded-xl border p-6">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex justify-between items-center">
+          <div key={i} className="flex items-center justify-between">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-4 w-44" />
           </div>
@@ -58,7 +58,8 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
   });
 
   if (isLoading && !customer) return <CustomerDetailSkeleton />;
-  if (!customer) return <p className="p-6 text-red-500">Customer tidak ditemukan.</p>;
+  if (!customer)
+    return <p className="p-6 text-red-500">Customer tidak ditemukan.</p>;
 
   const formattedCreatedAt = customer.createdAt
     ? new Date(customer.createdAt).toLocaleDateString("id-ID", {
@@ -69,37 +70,33 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
     : "—";
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="max-w-xl space-y-6">
       <PageHeader title="Detail Customer" />
 
-      <div className="bg-card rounded-xl border border-border p-6 space-y-4">
-        <div className="flex justify-between items-center">
+      <div className="bg-card border-border space-y-4 rounded-xl border p-6">
+        <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Nama</span>
-          <span className="font-medium text-foreground">{customer.name}</span>
+          <span className="text-foreground font-medium">{customer.name}</span>
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Email</span>
-          <span className="font-medium text-foreground">{customer.email}</span>
+          <span className="text-foreground font-medium">{customer.email}</span>
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Role</span>
           <Badge variant={ROLE_VARIANTS[customer.role] ?? "outline"}>
             {customer.role}
           </Badge>
         </div>
-        {customer.phone && (
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-sm">Telepon</span>
-            <span className="font-medium text-foreground">{customer.phone}</span>
-          </div>
-        )}
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Bergabung</span>
-          <span className="text-sm text-muted-foreground">{formattedCreatedAt}</span>
+          <span className="text-muted-foreground text-sm">
+            {formattedCreatedAt}
+          </span>
         </div>
-        <div className="flex justify-between items-center pt-1 border-t border-border">
+        <div className="border-border flex items-center justify-between border-t pt-1">
           <span className="text-muted-foreground text-sm">ID</span>
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="text-muted-foreground font-mono text-xs">
             {customer.id}
           </span>
         </div>

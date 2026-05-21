@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, test } from "bun:test";
 import { Effect } from "effect";
+
+import { beforeAll, describe, expect, test } from "bun:test";
 
 // ── Key material — generated once per test run ────────────────────────────────
 let privateKey: CryptoKey;
@@ -32,10 +33,7 @@ const { verifyJwt } = await import("../jwt");
 
 // ── JWT helpers ───────────────────────────────────────────────────────────────
 function b64url(str: string): string {
-  return btoa(str)
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  return btoa(str).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 async function signToken(payload: object): Promise<string> {
@@ -127,7 +125,8 @@ describe("verifyJwt — TokenInvalidError", () => {
     const exit = await Effect.runPromiseExit(verifyJwt(token));
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("TokenInvalidError");
       expect(err.reason).toBe("unexpected_algorithm");
     }
@@ -143,7 +142,11 @@ describe("verifyJwt — TokenInvalidError", () => {
       const header = b64url(JSON.stringify({ alg: "EdDSA", typ: "JWT" }));
       const body = b64url(JSON.stringify(validClaims));
       const data = new TextEncoder().encode(`${header}.${body}`);
-      const sigBuf = await crypto.subtle.sign("Ed25519", otherPair.privateKey, data);
+      const sigBuf = await crypto.subtle.sign(
+        "Ed25519",
+        otherPair.privateKey,
+        data
+      );
       const sig = btoa(String.fromCharCode(...new Uint8Array(sigBuf)))
         .replace(/=/g, "")
         .replace(/\+/g, "-")
@@ -154,7 +157,8 @@ describe("verifyJwt — TokenInvalidError", () => {
     const exit = await Effect.runPromiseExit(verifyJwt(token));
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("TokenInvalidError");
       expect(err.reason).toBe("bad_signature");
     }
@@ -166,7 +170,8 @@ describe("verifyJwt — TokenInvalidError", () => {
     const exit = await Effect.runPromiseExit(verifyJwt(token));
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("TokenInvalidError");
       expect(err.reason).toBe("missing_claims");
     }
@@ -178,7 +183,8 @@ describe("verifyJwt — TokenInvalidError", () => {
     const exit = await Effect.runPromiseExit(verifyJwt(token));
     expect(exit._tag).toBe("Failure");
     if (exit._tag === "Failure") {
-      const err = (exit.cause as { error: { _tag: string; reason: string } }).error;
+      const err = (exit.cause as { error: { _tag: string; reason: string } })
+        .error;
       expect(err._tag).toBe("TokenInvalidError");
       expect(err.reason).toBe("missing_claims");
     }

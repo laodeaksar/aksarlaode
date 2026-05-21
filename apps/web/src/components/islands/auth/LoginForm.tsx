@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { authApi } from "@/lib/api/auth";
 import { AuthError } from "@/lib/effect/errors";
 import { AppRuntime } from "@/lib/effect/runtime";
-import { loginSchema, type LoginInput } from "@/lib/schemas/forms";
 import { Field, inputCls } from "@/lib/form-ui";
+import { loginSchema, type LoginInput } from "@/lib/schemas/forms";
 
 export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -46,7 +46,9 @@ export function LoginForm() {
         "ec_user",
         JSON.stringify({ name: exit.value.user.name })
       );
-    } catch { /* storage unavailable — non-critical */ }
+    } catch {
+      /* storage unavailable — non-critical */
+    }
 
     setIsSuccess(true);
 
@@ -58,14 +60,16 @@ export function LoginForm() {
       try {
         const url = new URL(raw, window.location.origin);
         if (url.origin === window.location.origin) dest = url.pathname;
-      } catch { /* malformed — fall back to "/" */ }
+      } catch {
+        /* malformed — fall back to "/" */
+      }
     }
     window.location.href = dest;
   };
 
   if (isSuccess) {
     return (
-      <div className="text-center text-green-600 font-medium py-8">
+      <div className="py-8 text-center font-medium text-green-600">
         Logged in! Redirecting…
       </div>
     );
@@ -74,7 +78,10 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       {serverError && (
-        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <div
+          role="alert"
+          className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+        >
           {serverError}
         </div>
       )}
@@ -102,8 +109,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white
-                   hover:bg-blue-700 disabled:opacity-60 transition-colors"
+        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         {isSubmitting ? "Signing in…" : "Sign In"}
       </button>

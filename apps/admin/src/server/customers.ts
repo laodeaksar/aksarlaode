@@ -77,14 +77,13 @@ export const updateCustomerRoleFn = createServerFn({ method: "POST" })
       raw as Schema.Schema.Encoded<typeof UpdateRoleSchema>
     )
   )
-  .handler(
-    async ({ data, context }) =>
-      context.runtime.runPromise(
-        Effect.gen(function* () {
-          const api = yield* ApiClientService;
-          return yield* api.customers.updateRole(data.id, data.role);
-        })
-      )
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
+      Effect.gen(function* () {
+        const api = yield* ApiClientService;
+        return yield* api.customers.updateRole(data.id, data.role);
+      })
+    )
   );
 
 // ── DELETE /admin/users/:id — soft-delete (OWNER only) ────────────────────
@@ -97,14 +96,13 @@ export const deleteCustomerFn = createServerFn({ method: "POST" })
       raw as Schema.Schema.Encoded<typeof CustomerIdSchema>
     )
   )
-  .handler(
-    async ({ data, context }) =>
-      context.runtime.runPromise(
-        Effect.gen(function* () {
-          const api = yield* ApiClientService;
-          return yield* api.customers.delete(data.id);
-        })
-      )
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
+      Effect.gen(function* () {
+        const api = yield* ApiClientService;
+        return yield* api.customers.delete(data.id);
+      })
+    )
   );
 
 // ── PATCH /admin/users/:id/restore — restore soft-deleted (OWNER only) ────
@@ -117,12 +115,11 @@ export const restoreCustomerFn = createServerFn({ method: "POST" })
       raw as Schema.Schema.Encoded<typeof CustomerIdSchema>
     )
   )
-  .handler(
-    async ({ data, context }) =>
-      context.runtime.runPromise(
-        Effect.gen(function* () {
-          const api = yield* ApiClientService;
-          return yield* api.customers.restore(data.id);
-        })
-      )
+  .handler(async ({ data, context }) =>
+    context.runtime.runPromise(
+      Effect.gen(function* () {
+        const api = yield* ApiClientService;
+        return yield* api.customers.restore(data.id);
+      })
+    )
   );

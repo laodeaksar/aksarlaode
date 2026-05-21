@@ -4,10 +4,10 @@ import { EditProduct } from "@/components/products";
 import { can } from "@/lib";
 
 export const Route = createFileRoute("/products/$productId/edit")({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, params }) => {
     const { session } = context;
     if (!session || !can(session.role, "products:write")) {
-      throw redirect({ to: "/products/$productId" });
+      throw redirect({ to: "/products/$productId", params });
     }
   },
 

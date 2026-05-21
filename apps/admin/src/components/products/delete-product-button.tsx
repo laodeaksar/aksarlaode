@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { Product } from "@/effect/Services";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 
 import { deleteProductFn } from "@/server/products";
+import type { Product } from "@/effect/Services";
 import { toast } from "@/lib";
 
 interface DeleteProductButtonProps {
@@ -72,23 +72,24 @@ export function DeleteProductButton({
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={isPending}
-          className="w-full justify-start"
-        >
-          {isPending ? "Menghapus..." : "Hapus Produk"}
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={isPending}
+            className="w-full justify-start"
+          />
+        }
+      >
+        {isPending ? "Menghapus..." : "Hapus Produk"}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
           <AlertDialogDescription>
             Produk <span className="font-semibold">{productName}</span> akan
-            dihapus secara permanen dari sistem. Aksi ini tidak bisa
-            dibatalkan.
+            dihapus secara permanen dari sistem. Aksi ini tidak bisa dibatalkan.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

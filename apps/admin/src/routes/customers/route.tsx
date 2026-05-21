@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { zodValidator } from "@tanstack/zod-adapter";
 
 import { listCustomersFn } from "@/server/customers";
+import { customersSearchSchema } from "@/lib/search-schemas";
 import { can } from "@/lib";
 
 export const Route = createFileRoute("/customers")({
@@ -11,10 +13,7 @@ export const Route = createFileRoute("/customers")({
     }
   },
 
-  validateSearch: (search: Record<string, unknown>) => ({
-    page: Math.max(1, Number(search.page) || 1),
-    search: typeof search.search === "string" ? search.search : "",
-  }),
+  validateSearch: zodValidator(customersSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -24,11 +23,11 @@ export const Route = createFileRoute("/customers")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["customers", { page: deps.page, search: deps.search }],
+      queryKey: ["customers", { page: deps.page ?? 1, search: deps.search }],
       queryFn: () =>
         listCustomersFn({
           data: {
-            page: deps.page,
+            page: deps.page ?? 1,
             ...(deps.search ? { search: deps.search } : {}),
           },
         }),

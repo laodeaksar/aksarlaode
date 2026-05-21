@@ -10,10 +10,10 @@ import {
 import { getDashboardStatsFn } from "@/server/dashboard";
 import type { DashboardStats } from "@/effect/Services";
 import {
-  StatCard,
-  RecentOrdersTable,
-  TopProductsList,
   DashboardSkeleton,
+  RecentOrdersTable,
+  StatCard,
+  TopProductsList,
 } from "@/components/dashboard";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -65,4 +65,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

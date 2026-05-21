@@ -20,11 +20,12 @@
 //   semua data lainnya   → src/server/*.ts (Effect + ApiClientService)
 
 import { createServerFn } from "@tanstack/react-start";
-import { appendResponseHeader, getCookies } from "@tanstack/react-start/server";
+import { getCookies, setResponseHeader } from "@tanstack/react-start/server";
 
 import { Schema } from "effect";
 
 import type { Session } from "@/lib/auth";
+
 import { decodeOrThrow } from "./_utils";
 
 // ── Config ─────────────────────────────────────────────────────────────────
@@ -68,8 +69,8 @@ function forwardSetCookie(headers: Headers): void {
       .getSetCookie === "function"
       ? (headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
       : [];
-  for (const v of values) {
-    appendResponseHeader("set-cookie", v);
+  if (values.length > 0) {
+    setResponseHeader("set-cookie", values);
   }
 }
 

@@ -1,74 +1,42 @@
-import { useCallback, useRef, useState } from "react";
-
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-
-import { Input } from "@repo/ui/components/input";
 
 import { listCustomersFn } from "@/server/customers";
 import { customerColumns } from "@/components/customers";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { SearchInput } from "@/components/shared";
+import { useDebouncedInput, useFilteredNavigation } from "@/lib";
 
 import { Route } from "./route";
 
 export default function CustomersPage() {
-  const navigate = useNavigate();
   const { page, search } = Route.useSearch();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentPage = page ?? 1;
 
-  const [inputValue, setInputValue] = useState(search);
+  const { setFilter, goToPage } = useFilteredNavigation("/customers");
+  const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["customers", { page, search }],
+    queryKey: ["customers", { page: currentPage, search }],
     queryFn: () =>
       listCustomersFn({
-        data: { page, ...(search ? { search } : {}) },
+        data: { page: currentPage, ...(search ? { search } : {}) },
       }),
   });
-
-  const handleSearch = useCallback(
-    (value: string) => {
-      setInputValue(value);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        navigate({
-          to: "/customers",
-          search: (prev) => ({ ...prev, search: value, page: 1 }),
-        });
-      }, 300);
-    },
-    [navigate]
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      navigate({
-        to: "/customers",
-        search: (prev) => ({ ...prev, page: newPage }),
-      });
-    },
-    [navigate]
-  );
 
   return (
     <div className="space-y-4">
       <PageHeader title="Customers" />
 
-      <Input
-        className="w-64"
-        placeholder="Search by name or email..."
-        value={inputValue}
-        onChange={(e) => handleSearch(e.target.value)}
-      />
+      <SearchInput placeholder="Search by name or email..." {...searchInput} />
 
       <DataTable
         columns={customerColumns}
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
-        onPageChange={handlePageChange}
+        page={currentPage}
+        onPageChange={goToPage}
       />
     </div>
   );

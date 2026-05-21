@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import {
   createRootRouteWithContext,
   Outlet,
@@ -7,6 +5,9 @@ import {
 } from "@tanstack/react-router";
 import type { ParsedLocation } from "@tanstack/react-router";
 
+import appCss from "@repo/ui/globals.css?url";
+
+import { getSessionFn } from "@/server/auth";
 import { RootDocument } from "@/components/layout/root-document";
 import { DefaultCatchBoundary, NotFound } from "@/components/shared";
 import {
@@ -15,9 +16,6 @@ import {
   type RouterContext,
   type Session,
 } from "@/lib";
-import { getSessionFn } from "@/server/auth";
-
-import appCss from "@repo/ui/globals.css?url";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -70,6 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }
 
     if (!session || !hasAnyAdminRole(session.role)) {
+      // @ts-ignore
       throw redirect({ to: "/login" });
     }
 

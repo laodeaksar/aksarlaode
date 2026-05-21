@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
+import { Label } from "@repo/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
-import { Label } from "@repo/ui/components/label";
 
 import { updateCustomerRoleFn } from "@/server/customers";
 import { toast } from "@/lib";
@@ -64,10 +64,12 @@ export function EditCustomerRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="w-full justify-start">
-          Ubah Role
-        </Button>
+      <DialogTrigger
+        render={
+          <Button size="sm" variant="outline" className="w-full justify-start" />
+        }
+      >
+        Ubah Role
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>

@@ -14,7 +14,7 @@ export function parseEnv<T extends z.ZodRawShape>(
   if (!result.success) {
     const fields = result.error.flatten().fieldErrors;
     const lines = Object.entries(fields)
-      .map(([key, errors]) => `   ${key.padEnd(30)} ${errors?.join(", ")}`)
+      .map(([key, errors]) => `   ${key.padEnd(30)} ${(errors as string[] | undefined)?.join(", ")}`)
       .join("\n");
 
     console.error(`\n❌  [${serviceName}] Invalid environment variables:\n`);

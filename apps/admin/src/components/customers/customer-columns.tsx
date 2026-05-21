@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
+
 import { MoreHorizontal } from "lucide-react";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   DropdownMenu,
@@ -11,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { Badge } from "@repo/ui/components/badge";
 
 import type { User } from "@/effect/Services";
 import { useSession } from "@/lib/session-context";
@@ -35,35 +36,35 @@ function CustomerActions({ row }: { row: { original: User } }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Buka menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+        <span className="sr-only">Buka menu</span>
+        <MoreHorizontal className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            to="/customers/$userId"
-            params={{ userId: row.original.id }}
-            className="w-full cursor-pointer"
-          >
-            Lihat Detail
-          </Link>
+        <DropdownMenuItem
+          render={
+            <Link
+              to="/customers/$userId"
+              params={{ userId: row.original.id }}
+              className="w-full cursor-pointer"
+            />
+          }
+        >
+          Lihat Detail
         </DropdownMenuItem>
         {canWrite && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <EditCustomerRoleDialog
                 customerId={row.original.id}
                 customerName={row.original.name}
                 currentRole={row.original.role}
               />
             </DropdownMenuItem>
-            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <DeleteCustomerButton
                 customerId={row.original.id}
                 customerName={row.original.name}
@@ -83,7 +84,7 @@ export const customerColumns: ColumnDef<User>[] = [
     accessorKey: "name",
     header: "Nama",
     cell: ({ getValue }) => (
-      <span className="font-medium text-foreground">
+      <span className="text-foreground font-medium">
         {getValue() as string}
       </span>
     ),

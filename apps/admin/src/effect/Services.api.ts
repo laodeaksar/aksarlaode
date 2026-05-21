@@ -21,7 +21,18 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
     effect: Effect.gen(function* () {
       const config = yield* ConfigService;
 
-      // ── Core request helper ───────────────────────────────────────────────
+      // ── Core request helpers ──────────────────────────────────────────────
+
+      function buildHeaders(extra: HeadersInit = {}): HeadersInit {
+        return {
+          "Content-Type": "application/json",
+          ...(config.internalToken
+            ? { "x-service-token": config.internalToken }
+            : {}),
+          ...extra,
+        };
+      }
+
       function request<T>(
         path: string,
         init: RequestInit = {}
@@ -30,13 +41,7 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
           try: async () => {
             const res = await fetch(`${config.apiUrl}${path}`, {
               ...init,
-              headers: {
-                "Content-Type": "application/json",
-                ...(config.internalToken
-                  ? { "x-service-token": config.internalToken }
-                  : {}),
-                ...(init.headers ?? {}),
-              },
+              headers: buildHeaders(init.headers),
             });
 
             if (!res.ok) {
@@ -51,6 +56,35 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
             }
 
             return res.json() as Promise<T>;
+          },
+          catch: (e) =>
+            e instanceof ApiError ? e : new NetworkError({ cause: e, path }),
+        });
+      }
+
+      function requestText(
+        path: string,
+        init: RequestInit = {}
+      ): Effect.Effect<string, ApiError | NetworkError> {
+        return Effect.tryPromise({
+          try: async () => {
+            const res = await fetch(`${config.apiUrl}${path}`, {
+              ...init,
+              headers: buildHeaders(init.headers),
+            });
+
+            if (!res.ok) {
+              const body = await res
+                .json()
+                .catch(() => ({ error: res.statusText }));
+              throw new ApiError({
+                status: res.status,
+                message: (body as { error?: string }).error ?? res.statusText,
+                path,
+              });
+            }
+
+            return res.text();
           },
           catch: (e) =>
             e instanceof ApiError ? e : new NetworkError({ cause: e, path }),
@@ -107,6 +141,19 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
             method: "PATCH",
             body: JSON.stringify({ status, note }),
           }),
+
+        export: (params: {
+          status?: string;
+          dateFrom?: string;
+          dateTo?: string;
+        }) => {
+          const qs = new URLSearchParams();
+          if (params.status) qs.set("status", params.status);
+          if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+          if (params.dateTo) qs.set("dateTo", params.dateTo);
+          const suffix = qs.toString() ? `?${qs.toString()}` : "";
+          return requestText(`/admin/orders/export${suffix}`);
+        },
       };
 
       // ── Customers ─────────────────────────────────────────────────────────
@@ -133,10 +180,15 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
           ),
 
         delete: (id: string) =>
-          request<{ message: string; deleted: { id: string; email: string; role: string; deletedAt: string } }>(
-            `/admin/users/${id}`,
-            { method: "DELETE" }
-          ),
+          request<{
+            message: string;
+            deleted: {
+              id: string;
+              email: string;
+              role: string;
+              deletedAt: string;
+            };
+          }>(`/admin/users/${id}`, { method: "DELETE" }),
 
         restore: (id: string) =>
           request<{ message: string; user: User }>(

@@ -6,7 +6,7 @@ export function CartDrawer() {
   return (
     <a
       href="/cart"
-      className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+      className="relative rounded-full p-2 transition-colors hover:bg-gray-100"
       aria-label={itemCount > 0 ? `Cart (${itemCount} items)` : "Cart"}
     >
       <svg
@@ -24,7 +24,7 @@ export function CartDrawer() {
         />
       </svg>
       {itemCount > 0 && (
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
           {itemCount}
         </span>
       )}

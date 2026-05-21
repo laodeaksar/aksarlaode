@@ -3,10 +3,15 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { createProductFn } from "@/server/products";
 import type { NewProductInput } from "@/effect/Services";
+import { PageHeader } from "@/components/layout/page-header";
 import { toast } from "@/lib";
 
+<<<<<<< HEAD
 import { ProductForm } from "@/components/forms/product-form";
 import { PageHeader } from "@/components/layout/page-header";
+=======
+import { ProductForm } from "../forms/product-form";
+>>>>>>> fbd212cc957b69e3b22849d20a530b106cb9bbea
 
 export function NewProduct() {
   const navigate = useNavigate();
@@ -28,24 +33,22 @@ export function NewProduct() {
         total: number;
       }>(cacheKey);
 
-      queryClient.setQueryData(
-        cacheKey,
-        (old: typeof previousData) =>
-          old
-            ? {
-                items: [
-                  {
-                    ...newProduct,
-                    id: `optimistic-${Date.now()}`,
-                    status: newProduct.status ?? "ACTIVE",
-                    imageUrls: newProduct.imageUrls ?? [],
-                    createdAt: new Date().toISOString(),
-                  },
-                  ...old.items,
-                ],
-                total: old.total + 1,
-              }
-            : old
+      queryClient.setQueryData(cacheKey, (old: typeof previousData) =>
+        old
+          ? {
+              items: [
+                {
+                  ...newProduct,
+                  id: `optimistic-${Date.now()}`,
+                  status: newProduct.status ?? "ACTIVE",
+                  imageUrls: newProduct.imageUrls ?? [],
+                  createdAt: new Date().toISOString(),
+                },
+                ...old.items,
+              ],
+              total: old.total + 1,
+            }
+          : old
       );
 
       return { previousData, cacheKey };
@@ -72,7 +75,7 @@ export function NewProduct() {
     : null;
 
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="max-w-xl space-y-4">
       <PageHeader title="New Product" />
       <ProductForm
         onSubmit={(data) =>

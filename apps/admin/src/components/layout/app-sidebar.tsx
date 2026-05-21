@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { Link, useMatch } from "@tanstack/react-router";
+
 import {
   ClipboardListIcon,
   CommandIcon,
@@ -9,8 +11,6 @@ import {
   ShoppingCartIcon,
   UsersIcon,
 } from "lucide-react";
-
-import { Link } from "@tanstack/react-router";
 
 import {
   Sidebar,
@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
 } from "@repo/ui/components/sidebar";
 
-import { can, useSession } from "@/lib";
+import { can, useNewOrdersCount, useSession } from "@/lib";
 
 import { NavMain } from "./nav-main";
 import { NavSecondary } from "./nav-secondary";
@@ -32,19 +32,60 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { session } = useSession();
   const role = session?.role ?? "CUSTOMER";
 
+  const productsMatch = useMatch({ from: "/products", shouldThrow: false });
+  const ordersMatch = useMatch({ from: "/orders", shouldThrow: false });
+  const customersMatch = useMatch({ from: "/customers", shouldThrow: false });
+  const auditLogsMatch = useMatch({ from: "/audit-logs", shouldThrow: false });
+
+  const pendingOrdersCount = useNewOrdersCount();
+
   const navMain = [
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
     ...(can(role, "products:read")
-      ? [{ title: "Products", url: "/products", icon: <PackageIcon /> }]
+      ? [
+          {
+            title: "Products",
+            url: "/products",
+            icon: <PackageIcon />,
+            hasFilter: !!productsMatch?.search.search,
+          },
+        ]
       : []),
     ...(can(role, "orders:read")
-      ? [{ title: "Orders", url: "/orders", icon: <ShoppingCartIcon /> }]
+      ? [
+          {
+            title: "Orders",
+            url: "/orders",
+            icon: <ShoppingCartIcon />,
+            hasFilter: !!ordersMatch?.search.status,
+            badge: pendingOrdersCount,
+          },
+        ]
       : []),
     ...(can(role, "customers:read")
-      ? [{ title: "Customers", url: "/customers", icon: <UsersIcon /> }]
+      ? [
+          {
+            title: "Customers",
+            url: "/customers",
+            icon: <UsersIcon />,
+            hasFilter: !!customersMatch?.search.search,
+          },
+        ]
       : []),
     ...(can(role, "audit:read")
-      ? [{ title: "Audit Logs", url: "/audit-logs", icon: <ClipboardListIcon /> }]
+      ? [
+          {
+            title: "Audit Logs",
+            url: "/audit-logs",
+            icon: <ClipboardListIcon />,
+            hasFilter: !!(
+              auditLogsMatch?.search.startDate ||
+              auditLogsMatch?.search.endDate ||
+              auditLogsMatch?.search.action ||
+              auditLogsMatch?.search.actorRole
+            ),
+          },
+        ]
       : []),
   ];
 

@@ -25,6 +25,39 @@ const UpdateOrderStatusSchema = Schema.Struct({
   note: Schema.optional(Schema.String),
 });
 
+const ExportOrdersParamsSchema = Schema.Struct({
+  status: Schema.optional(Schema.String),
+  dateFrom: Schema.optional(Schema.String),
+  dateTo: Schema.optional(Schema.String),
+});
+
+// ── GET /admin/orders/export — stream CSV download ─────────────────────────
+// Returns the raw CSV text. The caller (client component) creates a Blob and
+// triggers a browser download. Runs server-side so the service token is never
+// exposed to the browser.
+
+export const exportOrdersFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware])
+  .inputValidator((raw: unknown) =>
+    decodeOrThrow(
+      ExportOrdersParamsSchema,
+      raw as Schema.Schema.Encoded<typeof ExportOrdersParamsSchema>
+    )
+  )
+  .handler(
+    async ({ data, context }): Promise<string> =>
+      context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService;
+          return yield* api.orders.export({
+            ...(data.status ? { status: data.status } : {}),
+            ...(data.dateFrom ? { dateFrom: data.dateFrom } : {}),
+            ...(data.dateTo ? { dateTo: data.dateTo } : {}),
+          });
+        })
+      )
+  );
+
 // ── GET /orders — list with pagination & optional status filter ────────────
 // Used as the SSR loader in `routes/orders/index.tsx` and re-called from
 // `orders-page.tsx` whenever page or status filter changes.

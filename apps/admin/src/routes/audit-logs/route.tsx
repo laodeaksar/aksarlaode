@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { zodValidator } from "@tanstack/zod-adapter";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
+import { auditLogsSearchSchema } from "@/lib/search-schemas";
 import { can, type Session } from "@/lib";
 
 export const Route = createFileRoute("/audit-logs")({
@@ -13,13 +15,7 @@ export const Route = createFileRoute("/audit-logs")({
 
   // All filter state lives in the URL so every combination is bookmarkable,
   // shareable, and survives browser back/forward navigation.
-  validateSearch: (search: Record<string, unknown>) => ({
-    page: Math.max(1, Number(search.page) || 1),
-    startDate: typeof search.startDate === "string" ? search.startDate : "",
-    endDate: typeof search.endDate === "string" ? search.endDate : "",
-    action: typeof search.action === "string" ? search.action : "",
-    actorRole: typeof search.actorRole === "string" ? search.actorRole : "",
-  }),
+  validateSearch: zodValidator(auditLogsSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -35,7 +31,7 @@ export const Route = createFileRoute("/audit-logs")({
       queryKey: [
         "audit-logs",
         {
-          page: deps.page,
+          page: deps.page ?? 1,
           startDate: deps.startDate,
           endDate: deps.endDate,
           action: deps.action,
@@ -45,7 +41,7 @@ export const Route = createFileRoute("/audit-logs")({
       queryFn: () =>
         listAuditLogsFn({
           data: {
-            page: deps.page,
+            page: deps.page ?? 1,
             ...(deps.startDate ? { startDate: deps.startDate } : {}),
             ...(deps.endDate ? { endDate: deps.endDate } : {}),
             ...(deps.action ? { action: deps.action } : {}),

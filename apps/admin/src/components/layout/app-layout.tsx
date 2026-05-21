@@ -28,7 +28,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <ErrorBoundary>
               <React.Suspense
                 fallback={
-                  <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+                  <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
                     Loading…
                   </div>
                 }

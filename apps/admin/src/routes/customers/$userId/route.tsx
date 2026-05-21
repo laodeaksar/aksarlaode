@@ -1,9 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getCustomerFn } from "@/server/customers";
-import { CustomerDetail } from "@/components/customers";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/customers/$userId")({
+  beforeLoad: ({ context }) => {
+    const { session } = context;
+    if (!session || !can(session.role, "customers:read")) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+
   loader: ({ params, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
@@ -16,17 +23,10 @@ export const Route = createFileRoute("/customers/$userId")({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData
-          ? `${loaderData.name} — Admin`
-          : "Customer — Admin",
+        title: loaderData ? `${loaderData.name} — Admin` : "Customer — Admin",
       },
     ],
   }),
 
-  component: RouteComponent,
+  component: () => <Outlet />,
 });
-
-function RouteComponent() {
-  const { userId } = Route.useParams();
-  return <CustomerDetail userId={userId} />;
-}

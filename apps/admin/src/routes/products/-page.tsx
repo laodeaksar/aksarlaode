@@ -1,59 +1,39 @@
-import { useCallback, useRef, useState } from "react";
-
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 
 import { Button } from "@repo/ui/components/button";
-import { Input } from "@repo/ui/components/input";
 
 import { listProductsFn } from "@/server/products";
+import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
 import { DataTable } from "@/components";
-import { can, useSession } from "@/lib";
-import { PageHeader } from "@/components/layout/page-header";
+import { SearchInput } from "@/components/shared";
+import {
+  can,
+  useDebouncedInput,
+  useFilteredNavigation,
+  useSession,
+} from "@/lib";
 
 import { Route } from "./route";
 
 // ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  const navigate = useNavigate();
   const { page, search } = Route.useSearch();
-  const [inputValue, setInputValue] = useState(search);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentPage = page ?? 1;
 
   const { session } = useSession();
   const canWrite = can(session?.role ?? "CUSTOMER", "products:write");
 
-  const handleSearch = useCallback(
-    (value: string) => {
-      setInputValue(value);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        navigate({
-          to: "/products",
-          search: (prev) => ({ ...prev, search: value, page: 1 }),
-        });
-      }, 300);
-    },
-    [navigate]
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      navigate({
-        to: "/products",
-        search: (prev) => ({ ...prev, page: newPage }),
-      });
-    },
-    [navigate]
-  );
+  const { setFilter, goToPage } = useFilteredNavigation("/products");
+  const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", { page, search }],
+    queryKey: ["products", { page: currentPage, search }],
     queryFn: () =>
       listProductsFn({
-        data: { page, limit: 20, ...(search ? { search } : {}) },
+        data: { page: currentPage, limit: 20, ...(search ? { search } : {}) },
       }),
   });
 
@@ -62,16 +42,10 @@ export default function ProductsPage() {
       <PageHeader title="Produk" />
 
       <div className="flex items-center gap-2">
-        <Input
-          className="w-64"
-          placeholder="Cari produk..."
-          aria-label="Cari produk"
-          value={inputValue}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
+        <SearchInput placeholder="Cari produk..." aria-label="Cari produk" {...searchInput} />
         {canWrite && (
-          <Button asChild size="sm">
-            <Link to="/products/new">+ Tambah Produk</Link>
+          <Button size="sm" render={<Link to="/products/new" />}>
+            + Tambah Produk
           </Button>
         )}
       </div>
@@ -81,8 +55,8 @@ export default function ProductsPage() {
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}
-        page={page}
-        onPageChange={handlePageChange}
+        page={currentPage}
+        onPageChange={goToPage}
       />
     </div>
   );

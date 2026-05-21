@@ -8,7 +8,7 @@ interface RecentOrdersTableProps {
 export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
   if (orders.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         Belum ada pesanan terbaru.
       </p>
     );
@@ -20,7 +20,7 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
           key={order.orderId}
           className="flex items-center justify-between text-sm"
         >
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="text-muted-foreground font-mono text-xs">
             {order.orderId.slice(0, 12)}…
           </span>
           <span

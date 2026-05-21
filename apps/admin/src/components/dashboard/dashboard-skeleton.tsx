@@ -1,10 +1,10 @@
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 rounded bg-muted" />
+    <div className="animate-pulse space-y-6">
+      <div className="bg-muted h-8 w-48 rounded" />
       <div className="grid grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-lg bg-muted" />
+          <div key={i} className="bg-muted h-24 rounded-lg" />
         ))}
       </div>
     </div>

@@ -60,12 +60,17 @@ async function redisGet(key: string): Promise<IdempotencyRecord | null> {
 // Atomic set-if-not-exists with TTL.
 // Returns "OK" if the key was newly created (lock acquired), null if it already existed.
 async function redisAcquire(key: string): Promise<boolean> {
-  const payload = JSON.stringify({ status: "processing" } satisfies IdempotencyRecord);
+  const payload = JSON.stringify({
+    status: "processing",
+  } satisfies IdempotencyRecord);
   const result = await getRedis().set(key, payload, "EX", TTL_SEC, "NX");
   return result === "OK";
 }
 
-async function redisSetComplete(key: string, record: IdempotencyRecord): Promise<void> {
+async function redisSetComplete(
+  key: string,
+  record: IdempotencyRecord
+): Promise<void> {
   await getRedis().set(key, JSON.stringify(record), "EX", TTL_SEC);
 }
 
@@ -105,7 +110,9 @@ function replayResponse(
   });
 }
 
-async function buildCompleteRecord(c: Context<AppEnv>): Promise<IdempotencyRecord | null> {
+async function buildCompleteRecord(
+  c: Context<AppEnv>
+): Promise<IdempotencyRecord | null> {
   const res = c.res;
   if (res.status >= 500) return null; // 5xx — do not cache transient failures
 
@@ -165,7 +172,9 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
         });
       } else if (c.res.status >= 500) {
         // 5xx — remove lock so client can retry with the same key
-        redisDel(key).catch(() => { /* non-critical */ });
+        redisDel(key).catch(() => {
+          /* non-critical */
+        });
       }
       return;
     }
@@ -176,7 +185,8 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (existing?.status === "processing") {
       return c.json(
         {
-          error: "A request with this Idempotency-Key is already being processed",
+          error:
+            "A request with this Idempotency-Key is already being processed",
           code: "IDEMPOTENCY_CONFLICT",
           requestId: c.var.requestId,
         },
@@ -192,7 +202,9 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
     await next();
     const record = await buildCompleteRecord(c);
     if (record) {
-      redisSetComplete(key, record).catch(() => { /* non-critical */ });
+      redisSetComplete(key, record).catch(() => {
+        /* non-critical */
+      });
     }
     return;
   } catch {
@@ -210,7 +222,8 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
       if (existing.status === "processing") {
         return c.json(
           {
-            error: "A request with this Idempotency-Key is already being processed",
+            error:
+              "A request with this Idempotency-Key is already being processed",
             code: "IDEMPOTENCY_CONFLICT",
             requestId: c.var.requestId,
           },

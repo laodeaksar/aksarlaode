@@ -23,7 +23,7 @@ export function AddToCartButton({ product }: Props) {
     return (
       <button
         disabled
-        className="w-full bg-gray-200 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed"
+        className="w-full cursor-not-allowed rounded-xl bg-gray-200 py-3 font-semibold text-gray-400"
       >
         Out of Stock
       </button>
@@ -46,7 +46,7 @@ export function AddToCartButton({ product }: Props) {
   return (
     <button
       onClick={handleAdd}
-      className={`w-full font-semibold py-3 rounded-xl transition-colors ${
+      className={`w-full rounded-xl py-3 font-semibold transition-colors ${
         added
           ? "bg-green-600 text-white"
           : "bg-gray-900 text-white hover:bg-gray-700"

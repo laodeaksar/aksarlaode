@@ -5,10 +5,10 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getProductFn, updateProductFn } from "@/server/products";
 import type { UpdateProductInput } from "@/effect/Services";
+import { PageHeader } from "@/components/layout/page-header";
 import { toast } from "@/lib";
 
 import { ProductForm } from "../forms/product-form";
-import { PageHeader } from "@/components/layout/page-header";
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 // Mirrors the Edit Product form shape: heading + 6 fields
@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/layout/page-header";
 
 function EditProductSkeleton() {
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="max-w-xl space-y-4">
       <Skeleton className="h-8 w-32" />
       <div className="space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -92,7 +92,7 @@ export function EditProduct({ productId }: { productId: string }) {
     : null;
 
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="max-w-xl space-y-4">
       <PageHeader title="Edit Product" />
       <ProductForm
         defaultValues={{

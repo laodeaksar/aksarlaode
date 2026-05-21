@@ -1,6 +1,12 @@
-import { XIcon } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
 
-import { Input } from "@repo/ui/components/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from "@repo/ui/components/input-group";
 
 type SearchInputProps = {
   placeholder?: string;
@@ -14,11 +20,8 @@ type SearchInputProps = {
 };
 
 /**
- * A search input with a built-in × clear button.
- *
- * The clear button appears only when the input has a value.
- * Clicking it calls `clear()` (from useDebouncedInput) which removes the
- * search from the URL immediately — no debounce wait.
+ * A search input built on InputGroup with a leading search icon and a
+ * trailing × clear button that appears only when the input has a value.
  *
  * Spread the object returned by useDebouncedInput directly:
  *
@@ -27,28 +30,37 @@ type SearchInputProps = {
  */
 export function SearchInput({
   placeholder,
+  "aria-label": ariaLabel,
   className = "w-64",
   clear,
   ...inputProps
 }: SearchInputProps) {
   return (
-    <div className="relative">
-      <Input
-        className={`${className} ${inputProps.value ? "pr-8" : ""}`}
+    <InputGroup className={className}>
+      <InputGroupAddon align="inline-start">
+        <InputGroupText>
+          <SearchIcon />
+        </InputGroupText>
+      </InputGroupAddon>
+
+      <InputGroupInput
         placeholder={placeholder}
+        aria-label={ariaLabel ?? placeholder}
         {...inputProps}
       />
+
       {inputProps.value && (
-        <button
-          type="button"
-          onClick={clear}
-          aria-label="Clear search"
-          tabIndex={-1}
-          className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 rounded-sm transition-colors focus:outline-none"
-        >
-          <XIcon className="size-3.5" />
-        </button>
+        <InputGroupAddon align="inline-end">
+          <InputGroupButton
+            size="icon-xs"
+            onClick={clear}
+            aria-label="Clear search"
+            tabIndex={-1}
+          >
+            <XIcon />
+          </InputGroupButton>
+        </InputGroupAddon>
       )}
-    </div>
+    </InputGroup>
   );
 }

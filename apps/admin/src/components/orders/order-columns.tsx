@@ -55,6 +55,7 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
     header: () => <div className="text-right">Amount</div>,
     cell: ({ getValue }) => (
       <div className="text-right">
+      // TODO: ganti dengan formatIDR utils
         {`Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`}
       </div>
     ),
@@ -62,8 +63,10 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
   {
     accessorKey: "createdAt",
     header: "Date",
-    cell: ({ getValue }) =>
+    cell: ({ getValue }) => (
+      // 
       new Date(getValue() as string).toLocaleDateString("id-ID"),
+    )
   },
   {
     id: "actions",

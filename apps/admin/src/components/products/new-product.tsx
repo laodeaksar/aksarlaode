@@ -5,7 +5,7 @@ import { createProductFn } from "@/server/products";
 import type { NewProductInput } from "@/effect/Services";
 import { toast } from "@/lib";
 
-import { ProductForm } from "../forms/product-form";
+import { ProductForm } from "@/components/forms/product-form";
 import { PageHeader } from "@/components/layout/page-header";
 
 export function NewProduct() {

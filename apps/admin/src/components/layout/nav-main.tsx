@@ -18,7 +18,8 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: LucideIcon; //React.ReactNode;
+    icon?: LucideIcon;
+    hasFilter?: boolean;
   }[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -38,7 +39,15 @@ export function NavMain({
                   isActive={isActive}
                   render={<a href={item.url} />}
                 >
-                  {item.icon}
+                  <span className="relative flex shrink-0 items-center">
+                    {item.icon}
+                    {item.hasFilter && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-orange-400"
+                        aria-label="Active filter"
+                      />
+                    )}
+                  </span>
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 import {
   ClipboardListIcon,
@@ -32,16 +32,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { session } = useSession();
   const role = session?.role ?? "CUSTOMER";
 
+  const search = useRouterState({ select: (s) => s.location.search });
+  const params = React.useMemo(() => new URLSearchParams(search), [search]);
+
   const navMain = [
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
     ...(can(role, "products:read")
-      ? [{ title: "Products", url: "/products", icon: <PackageIcon /> }]
+      ? [
+          {
+            title: "Products",
+            url: "/products",
+            icon: <PackageIcon />,
+            hasFilter: !!params.get("search"),
+          },
+        ]
       : []),
     ...(can(role, "orders:read")
-      ? [{ title: "Orders", url: "/orders", icon: <ShoppingCartIcon /> }]
+      ? [
+          {
+            title: "Orders",
+            url: "/orders",
+            icon: <ShoppingCartIcon />,
+            hasFilter: !!params.get("status"),
+          },
+        ]
       : []),
     ...(can(role, "customers:read")
-      ? [{ title: "Customers", url: "/customers", icon: <UsersIcon /> }]
+      ? [
+          {
+            title: "Customers",
+            url: "/customers",
+            icon: <UsersIcon />,
+            hasFilter: !!params.get("search"),
+          },
+        ]
       : []),
     ...(can(role, "audit:read")
       ? [
@@ -49,6 +73,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Audit Logs",
             url: "/audit-logs",
             icon: <ClipboardListIcon />,
+            hasFilter: !!(
+              params.get("startDate") ||
+              params.get("endDate") ||
+              params.get("action") ||
+              params.get("actorRole")
+            ),
           },
         ]
       : []),

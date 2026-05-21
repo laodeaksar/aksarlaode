@@ -43,6 +43,7 @@ export default function ProductsPage() {
     (newPage: number) => {
       navigate({
         to: "/products",
+        // @ts-ignore
         search: (prev) => ({ ...prev, page: newPage }),
       });
     },

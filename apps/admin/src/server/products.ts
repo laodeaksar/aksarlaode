@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { Effect, Schema } from "effect";
 
 import { auditMiddleware } from "@/effect/AuditMiddleware";
+import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import {
   ApiClientService,
@@ -26,9 +27,12 @@ const ProductIdSchema = Schema.Struct({
 });
 
 // ── GET /products — list with pagination & search ─────────────────────────
+// requirePermission("products:read") provides defense-in-depth for direct
+// server function endpoint calls, even though the route also guards via
+// beforeLoad.
 
 export const listProductsFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("products:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ListParamsSchema,
@@ -53,7 +57,7 @@ export const listProductsFn = createServerFn({ method: "GET" })
 // ── GET /products/:id — fetch single product ──────────────────────────────
 
 export const getProductFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("products:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ProductIdSchema,
@@ -72,7 +76,11 @@ export const getProductFn = createServerFn({ method: "GET" })
 // ── POST /products — create product ───────────────────────────────────────
 
 export const createProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, auditMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("products:write"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       NewProductSchema,
@@ -100,7 +108,11 @@ const UpdateParamsSchema = Schema.Struct({
 });
 
 export const updateProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, auditMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("products:write"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       UpdateParamsSchema,
@@ -124,7 +136,11 @@ export const updateProductFn = createServerFn({ method: "POST" })
 // ── DELETE /products/:id ──────────────────────────────────────────────────
 
 export const deleteProductFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, auditMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("products:write"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ProductIdSchema,

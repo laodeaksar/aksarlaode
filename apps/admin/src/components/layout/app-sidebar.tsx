@@ -91,7 +91,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Products",
             url: "/products",
             icon: <PackageIcon />,
-            hasFilter: hasProductsFilter,
+            hasFilter: hasProductsFilter ?? false,
           },
         ]
       : []),
@@ -101,7 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Orders",
             url: "/orders",
             icon: <ShoppingCartIcon />,
-            hasFilter: hasOrdersFilter,
+            hasFilter: hasOrdersFilter ?? false,
             badge: pendingOrdersCount,
           },
         ]
@@ -112,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Customers",
             url: "/customers",
             icon: <UsersIcon />,
-            hasFilter: hasCustomersFilter,
+            hasFilter: hasCustomersFilter ?? false,
           },
         ]
       : []),
@@ -122,7 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Audit Logs",
             url: "/audit-logs",
             icon: <ClipboardListIcon />,
-            hasFilter: hasAuditLogsFilter,
+            hasFilter: hasAuditLogsFilter ?? false,
           },
         ]
       : []),

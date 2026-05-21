@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useMatch } from "@tanstack/react-router";
 
 import {
   ClipboardListIcon,
@@ -32,8 +32,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { session } = useSession();
   const role = session?.role ?? "CUSTOMER";
 
-  const search = useRouterState({ select: (s) => s.location.search });
-  const params = React.useMemo(() => new URLSearchParams(search), [search]);
+  const productsMatch = useMatch({ from: "/products", shouldThrow: false });
+  const ordersMatch = useMatch({ from: "/orders", shouldThrow: false });
+  const customersMatch = useMatch({ from: "/customers", shouldThrow: false });
+  const auditLogsMatch = useMatch({ from: "/audit-logs", shouldThrow: false });
 
   const navMain = [
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
@@ -43,7 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Products",
             url: "/products",
             icon: <PackageIcon />,
-            hasFilter: !!params.get("search"),
+            hasFilter: !!productsMatch?.search.search,
           },
         ]
       : []),
@@ -53,7 +55,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Orders",
             url: "/orders",
             icon: <ShoppingCartIcon />,
-            hasFilter: !!params.get("status"),
+            hasFilter: !!ordersMatch?.search.status,
           },
         ]
       : []),
@@ -63,7 +65,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Customers",
             url: "/customers",
             icon: <UsersIcon />,
-            hasFilter: !!params.get("search"),
+            hasFilter: !!customersMatch?.search.search,
           },
         ]
       : []),
@@ -74,10 +76,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/audit-logs",
             icon: <ClipboardListIcon />,
             hasFilter: !!(
-              params.get("startDate") ||
-              params.get("endDate") ||
-              params.get("action") ||
-              params.get("actorRole")
+              auditLogsMatch?.search.startDate ||
+              auditLogsMatch?.search.endDate ||
+              auditLogsMatch?.search.action ||
+              auditLogsMatch?.search.actorRole
             ),
           },
         ]

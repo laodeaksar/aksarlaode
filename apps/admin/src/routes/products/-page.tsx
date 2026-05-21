@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -10,7 +10,12 @@ import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
 import { DataTable } from "@/components";
-import { can, useFilteredNavigation, useSession } from "@/lib";
+import {
+  can,
+  useDebouncedInput,
+  useFilteredNavigation,
+  useSession,
+} from "@/lib";
 
 import { Route } from "./route";
 
@@ -19,19 +24,14 @@ import { Route } from "./route";
 export default function ProductsPage() {
   const { page, search } = Route.useSearch();
   const currentPage = page ?? 1;
-  const [inputValue, setInputValue] = useState(search ?? "");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { session } = useSession();
   const canWrite = can(session?.role ?? "CUSTOMER", "products:write");
 
   const { setFilter, goToPage } = useFilteredNavigation("/products");
-
-  const handleSearch = (value: string) => {
-    setInputValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setFilter("search", value), 300);
-  };
+  const [searchValue, handleSearchChange] = useDebouncedInput(search, (v) =>
+    setFilter("search", v)
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { page: currentPage, search }],
@@ -50,8 +50,8 @@ export default function ProductsPage() {
           className="w-64"
           placeholder="Cari produk..."
           aria-label="Cari produk"
-          value={inputValue}
-          onChange={(e) => handleSearch(e.target.value)}
+          value={searchValue}
+          onChange={(e) => handleSearchChange(e.target.value)}
         />
         {canWrite && (
           <Button asChild size="sm">

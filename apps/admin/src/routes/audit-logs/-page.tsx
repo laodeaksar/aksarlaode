@@ -1,7 +1,4 @@
-import { useCallback } from "react";
-
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@repo/ui/components/button";
 
@@ -13,6 +10,7 @@ import {
 } from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { useFilteredNavigation } from "@/lib";
 
 import { Route } from "./route";
 
@@ -24,19 +22,13 @@ const SELECT_CLS =
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  const navigate = useNavigate();
   const { page, startDate, endDate, action, actorRole } = Route.useSearch();
   const currentPage = page ?? 1;
-  // True when any filter beyond page number is active.
   const hasFilters = !!(startDate || endDate || action || actorRole);
 
-  // Build the React Query cache key from the complete filter set.
-  const queryKey = [
-    "audit-logs",
-    { page: currentPage, startDate, endDate, action, actorRole },
-  ];
+  const { setFilter, clearFilters, goToPage } =
+    useFilteredNavigation("/audit-logs");
 
-  // Derive the params object once — used by both queryFn and initialData check.
   const queryParams = {
     page: currentPage,
     ...(startDate ? { startDate } : {}),
@@ -46,46 +38,9 @@ export default function AuditLogsPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey,
+    queryKey: ["audit-logs", { page: currentPage, startDate, endDate, action, actorRole }],
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
-
-  // ── Navigation helpers ─────────────────────────────────────────────────
-
-  // Generic setter: updates one search param and resets page to 1.
-  // Passes undefined when value is empty so it's omitted from the URL.
-  const setFilter = useCallback(
-    (key: string, value: string) => {
-      navigate({
-        to: "/audit-logs",
-        search: (prev) => ({ ...prev, [key]: value || undefined, page: undefined }),
-      });
-    },
-    [navigate]
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      navigate({
-        to: "/audit-logs",
-        search: (prev) => ({ ...prev, page: newPage > 1 ? newPage : undefined }),
-      });
-    },
-    [navigate]
-  );
-
-  const clearFilters = useCallback(() => {
-    navigate({
-      to: "/audit-logs",
-      search: {
-        page: undefined,
-        startDate: undefined,
-        endDate: undefined,
-        action: undefined,
-        actorRole: undefined,
-      },
-    });
-  }, [navigate]);
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -172,7 +127,9 @@ export default function AuditLogsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={clearFilters}
+            onClick={() =>
+              clearFilters("startDate", "endDate", "action", "actorRole")
+            }
             className="self-end"
           >
             Clear filters
@@ -187,7 +144,7 @@ export default function AuditLogsPage() {
         isLoading={isLoading}
         total={data?.total ?? 0}
         page={currentPage}
-        onPageChange={handlePageChange}
+        onPageChange={goToPage}
       />
     </div>
   );

@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { zodValidator } from "@tanstack/zod-adapter";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
+import { auditLogsSearchSchema } from "@/lib/search-schemas";
 import { can, type Session } from "@/lib";
 
 export const Route = createFileRoute("/audit-logs")({
@@ -13,25 +15,7 @@ export const Route = createFileRoute("/audit-logs")({
 
   // All filter state lives in the URL so every combination is bookmarkable,
   // shareable, and survives browser back/forward navigation.
-  validateSearch: (search: Record<string, unknown>) => ({
-    page: Number(search.page) > 1 ? Math.floor(Number(search.page)) : undefined,
-    startDate:
-      typeof search.startDate === "string" && search.startDate
-        ? search.startDate
-        : undefined,
-    endDate:
-      typeof search.endDate === "string" && search.endDate
-        ? search.endDate
-        : undefined,
-    action:
-      typeof search.action === "string" && search.action
-        ? search.action
-        : undefined,
-    actorRole:
-      typeof search.actorRole === "string" && search.actorRole
-        ? search.actorRole
-        : undefined,
-  }),
+  validateSearch: zodValidator(auditLogsSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,

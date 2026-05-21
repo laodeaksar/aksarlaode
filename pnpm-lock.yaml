@@ -90,6 +90,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.0
         version: 8.21.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@tanstack/zod-adapter':
+        specifier: ^1.167.0
+        version: 1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(zod@4.4.3)
       effect:
         specifier: ^3.15.0
         version: 3.21.2
@@ -2583,6 +2586,13 @@ packages:
   '@tanstack/virtual-file-routes@1.162.0':
     resolution: {integrity: sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA==}
     engines: {node: '>=20.19'}
+
+  '@tanstack/zod-adapter@1.167.0':
+    resolution: {integrity: sha512-5Wlm5teSu+pz3KKhfa1ESsiOJXbvV6ITr1vKOQKi9yEdtozp6VefEzxzafLLida97mnL2tmauva/njokQrG5CA==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@tanstack/react-router': '>=1.43.2'
+      zod: ^3.23.8
 
   '@tokenizer/inflate@0.4.1':
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
@@ -6993,6 +7003,11 @@ snapshots:
   '@tanstack/table-core@8.21.3': {}
 
   '@tanstack/virtual-file-routes@1.162.0': {}
+
+  '@tanstack/zod-adapter@1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(zod@4.4.3)':
+    dependencies:
+      '@tanstack/react-router': 1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      zod: 4.4.3
 
   '@tokenizer/inflate@0.4.1':
     dependencies:

@@ -1,8 +1,6 @@
-import * as React from "react";
-
 import { useRouterState } from "@tanstack/react-router";
 
-import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import {
   SidebarGroup,
@@ -18,7 +16,7 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: LucideIcon;
+    icon?: ReactNode;
     hasFilter?: boolean;
     badge?: number;
   }[];

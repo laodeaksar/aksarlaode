@@ -35,7 +35,7 @@ export function useFilteredNavigation(to: string) {
       navigate({
         to,
         search: (prev: Record<string, unknown>) => {
-          const next = { ...prev, page: undefined };
+          const next: Record<string, unknown> = { ...prev, page: undefined };
           for (const key of keys) next[key] = undefined;
           return next;
         },

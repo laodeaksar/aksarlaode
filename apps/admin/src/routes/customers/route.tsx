@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { zodValidator } from "@tanstack/zod-adapter";
 
 import { listCustomersFn } from "@/server/customers";
+import { customersSearchSchema } from "@/lib/search-schemas";
 import { can } from "@/lib";
 
 export const Route = createFileRoute("/customers")({
@@ -11,13 +13,7 @@ export const Route = createFileRoute("/customers")({
     }
   },
 
-  validateSearch: (search: Record<string, unknown>) => ({
-    page: Number(search.page) > 1 ? Math.floor(Number(search.page)) : undefined,
-    search:
-      typeof search.search === "string" && search.search
-        ? search.search
-        : undefined,
-  }),
+  validateSearch: zodValidator(customersSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,

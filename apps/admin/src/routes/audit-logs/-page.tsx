@@ -37,7 +37,9 @@ export default function AuditLogsPage() {
     ...(actorRole ? { actorRole } : {}),
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<
+    Awaited<ReturnType<typeof listAuditLogsFn>>
+  >({
     queryKey: ["audit-logs", { page: currentPage, startDate, endDate, action, actorRole }],
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });

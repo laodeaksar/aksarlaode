@@ -171,13 +171,17 @@ export function ProductDetail({ productId }: ProductDetailProps) {
 
       {canWrite && (
         <div className="flex gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link
-              to="/products/$productId/edit"
-              params={{ productId: product.id }}
-            >
-              Edit Produk
-            </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            render={
+              <Link
+                to="/products/$productId/edit"
+                params={{ productId: product.id }}
+              />
+            }
+          >
+            Edit Produk
           </Button>
           <DeleteProductButton
             productId={product.id}

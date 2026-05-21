@@ -1,4 +1,4 @@
-import type { Resolver } from "react-hook-form";
+import type { FieldErrors, Resolver } from "react-hook-form";
 
 import { ParseResult, Schema } from "effect";
 
@@ -23,7 +23,7 @@ export function effectResolver<S extends Schema.Schema<any, any, never>>(
     );
 
     if (result._tag === "Right") {
-      return { values: result.right, errors: {} };
+      return { values: result.right as Schema.Schema.Type<S>, errors: {} };
     }
 
     const issues = ParseResult.ArrayFormatter.formatErrorSync(result.left);
@@ -40,6 +40,9 @@ export function effectResolver<S extends Schema.Schema<any, any, never>>(
       }
     }
 
-    return { values: {}, errors };
+    return {
+      values: {} as Schema.Schema.Type<S>,
+      errors: errors as FieldErrors<Schema.Schema.Type<S>>,
+    };
   };
 }

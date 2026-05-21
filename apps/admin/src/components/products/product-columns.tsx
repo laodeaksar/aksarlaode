@@ -33,37 +33,39 @@ function ProductActions({ row }: { row: { original: Product } }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Buka menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+      <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+        <span className="sr-only">Buka menu</span>
+        <MoreHorizontal className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            to="/products/$productId"
-            params={{ productId: row.original.id }}
-            className="w-full cursor-pointer"
-          >
-            Lihat Detail
-          </Link>
+        <DropdownMenuItem
+          render={
+            <Link
+              to="/products/$productId"
+              params={{ productId: row.original.id }}
+              className="w-full cursor-pointer"
+            />
+          }
+        >
+          Lihat Detail
         </DropdownMenuItem>
         {canWrite && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                to="/products/$productId/edit"
-                params={{ productId: row.original.id }}
-                className="w-full cursor-pointer"
-              >
-                Edit Produk
-              </Link>
+            <DropdownMenuItem
+              render={
+                <Link
+                  to="/products/$productId/edit"
+                  params={{ productId: row.original.id }}
+                  className="w-full cursor-pointer"
+                />
+              }
+            >
+              Edit Produk
             </DropdownMenuItem>
-            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <DeleteProductButton
                 productId={row.original.id}
                 productName={row.original.name}

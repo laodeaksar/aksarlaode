@@ -44,8 +44,8 @@ export default function ProductsPage() {
       <div className="flex items-center gap-2">
         <SearchInput placeholder="Cari produk..." aria-label="Cari produk" {...searchInput} />
         {canWrite && (
-          <Button asChild size="sm">
-            <Link to="/products/new">+ Tambah Produk</Link>
+          <Button size="sm" render={<Link to="/products/new" />}>
+            + Tambah Produk
           </Button>
         )}
       </div>

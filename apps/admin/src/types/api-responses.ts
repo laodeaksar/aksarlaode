@@ -44,6 +44,12 @@ export type DashboardStats = {
   topProducts: Array<{ id: string; name: string; salesCount: number }>;
 };
 
+// JSON-safe recursive value type — covers any value that can round-trip through
+// JSON serialization (no `unknown`, no `Function`, no `Symbol`, no `undefined`).
+type JsonPrimitive = string | number | boolean | null;
+type JsonObject = { [key: string]: JsonPrimitive | JsonObject | JsonArray };
+type JsonArray = Array<JsonPrimitive | JsonObject | JsonArray>;
+
 export type AuditLogEntry = {
   id: string;
   actorId: string;
@@ -51,8 +57,8 @@ export type AuditLogEntry = {
   action: string;
   resource: string;
   resourceId: string;
-  oldValue: Record<string, unknown> | null;
-  newValue: Record<string, unknown> | null;
-  metadata: Record<string, unknown> | null;
+  oldValue: JsonObject | null;
+  newValue: JsonObject | null;
+  metadata: JsonObject | null;
   createdAt: string;
 };

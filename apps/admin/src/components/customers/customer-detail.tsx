@@ -88,14 +88,6 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
             {customer.role}
           </Badge>
         </div>
-        {customer.phone && (
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">Telepon</span>
-            <span className="text-foreground font-medium">
-              {customer.phone}
-            </span>
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Bergabung</span>
           <span className="text-muted-foreground text-sm">

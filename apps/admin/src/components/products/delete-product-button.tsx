@@ -72,15 +72,17 @@ export function DeleteProductButton({
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={isPending}
-          className="w-full justify-start"
-        >
-          {isPending ? "Menghapus..." : "Hapus Produk"}
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={isPending}
+            className="w-full justify-start"
+          />
+        }
+      >
+        {isPending ? "Menghapus..." : "Hapus Produk"}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

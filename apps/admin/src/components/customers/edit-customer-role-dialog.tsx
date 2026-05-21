@@ -64,10 +64,12 @@ export function EditCustomerRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="w-full justify-start">
-          Ubah Role
-        </Button>
+      <DialogTrigger
+        render={
+          <Button size="sm" variant="outline" className="w-full justify-start" />
+        }
+      >
+        Ubah Role
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>

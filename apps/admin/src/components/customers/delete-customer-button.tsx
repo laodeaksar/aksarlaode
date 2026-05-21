@@ -46,15 +46,17 @@ export function DeleteCustomerButton({
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={isPending}
-          className="w-full justify-start"
-        >
-          {isPending ? "Memproses..." : "Nonaktifkan"}
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={isPending}
+            className="w-full justify-start"
+          />
+        }
+      >
+        {isPending ? "Memproses..." : "Nonaktifkan"}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

@@ -1,6 +1,6 @@
-import { useRouterState } from "@tanstack/react-router";
-
 import type { ReactNode } from "react";
+
+import { Link, useRouterState } from "@tanstack/react-router";
 
 import {
   SidebarGroup,
@@ -36,7 +36,10 @@ export function NavMain({
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={isActive}
-                  render={<a href={item.url} />}
+                  render={
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    <Link to={item.url as any} />
+                  }
                 >
                   <span className="relative flex shrink-0 items-center">
                     {item.icon}

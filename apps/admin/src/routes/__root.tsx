@@ -68,7 +68,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }
 
     if (!session || !hasAnyAdminRole(session.role)) {
-      // @ts-ignore
       throw redirect({ to: "/login" });
     }
 

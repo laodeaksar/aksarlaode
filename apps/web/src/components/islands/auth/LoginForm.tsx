@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Field as FormField, Form, setErrors, useForm } from "@formisch/react";
 
 import { authApi } from "@/lib/api/auth";
 import { AuthError } from "@/lib/effect/errors";
@@ -13,14 +11,7 @@ export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-  } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-  });
+  const form = useForm({ schema: loginSchema });
 
   const onSubmit = async (values: LoginInput) => {
     setServerError(null);
@@ -32,7 +23,10 @@ export function LoginForm() {
       const err = exit.cause.error;
 
       if (err instanceof AuthError) {
-        setError("password", { message: "Invalid email or password" });
+        setErrors(form, {
+          path: ["password"] as const,
+          errors: ["Invalid email or password"],
+        });
         return;
       }
 
@@ -76,7 +70,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <Form of={form} onSubmit={onSubmit} className="space-y-4">
       {serverError && (
         <div
           role="alert"
@@ -86,32 +80,40 @@ export function LoginForm() {
         </div>
       )}
 
-      <Field label="Email" error={errors.email?.message}>
-        <input
-          {...register("email")}
-          type="email"
-          autoComplete="email"
-          className={inputCls(!!errors.email)}
-          placeholder="you@example.com"
-        />
-      </Field>
+      <FormField of={form} path={["email"] as const}>
+        {(emailField) => (
+          <Field label="Email" error={emailField.errors?.[0]}>
+            <input
+              {...emailField.props}
+              type="email"
+              autoComplete="email"
+              className={inputCls(!!emailField.errors)}
+              placeholder="you@example.com"
+            />
+          </Field>
+        )}
+      </FormField>
 
-      <Field label="Password" error={errors.password?.message}>
-        <input
-          {...register("password")}
-          type="password"
-          autoComplete="current-password"
-          className={inputCls(!!errors.password)}
-          placeholder="••••••••"
-        />
-      </Field>
+      <FormField of={form} path={["password"] as const}>
+        {(passwordField) => (
+          <Field label="Password" error={passwordField.errors?.[0]}>
+            <input
+              {...passwordField.props}
+              type="password"
+              autoComplete="current-password"
+              className={inputCls(!!passwordField.errors)}
+              placeholder="••••••••"
+            />
+          </Field>
+        )}
+      </FormField>
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
-        {isSubmitting ? "Signing in…" : "Sign In"}
+        {form.isSubmitting ? "Signing in…" : "Sign In"}
       </button>
 
       <p className="text-center text-sm text-gray-500">
@@ -120,6 +122,6 @@ export function LoginForm() {
           Register
         </a>
       </p>
-    </form>
+    </Form>
   );
 }

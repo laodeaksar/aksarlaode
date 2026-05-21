@@ -1,4 +1,4 @@
-import type { LoginInput, RegisterInput } from "@/schemas/forms";
+import type { LoginInput, RegisterInput } from "@/lib/schemas/forms";
 
 import { apiFetch } from "./client";
 

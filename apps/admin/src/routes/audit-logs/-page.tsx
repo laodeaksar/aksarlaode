@@ -8,9 +8,9 @@ import {
   AUDIT_ACTIONS,
   auditLogColumns,
 } from "@/components/audit-logs";
-import { DataTable } from "@/components/data-table/data-table";
+import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { useFilteredNavigation } from "@/lib";
+import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
@@ -22,25 +22,32 @@ const SELECT_CLS =
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  const { page, startDate, endDate, action, actorRole } = Route.useSearch();
-  const currentPage = page ?? 1;
-  const hasFilters = !!(startDate || endDate || action || actorRole);
+  const page      = useRouteSearch(Route, (s) => s.page);
+  const startDate = useRouteSearch(Route, (s) => s.startDate);
+  const endDate   = useRouteSearch(Route, (s) => s.endDate);
+  const action    = useRouteSearch(Route, (s) => s.action);
+  const actorRole = useRouteSearch(Route, (s) => s.actorRole);
 
-  const { setFilter, clearFilters, goToPage } =
-    useFilteredNavigation("/audit-logs");
+  const currentPage = page ?? 1;
+  const hasFilters  = !!(startDate || endDate || action || actorRole);
+
+  const { setFilter, clearFilters } = useFilteredNavigation("/audit-logs");
 
   const queryParams = {
     page: currentPage,
     ...(startDate ? { startDate } : {}),
-    ...(endDate ? { endDate } : {}),
-    ...(action ? { action } : {}),
+    ...(endDate   ? { endDate }   : {}),
+    ...(action    ? { action }    : {}),
     ...(actorRole ? { actorRole } : {}),
   };
 
   const { data, isLoading } = useQuery<
     Awaited<ReturnType<typeof listAuditLogsFn>>
   >({
-    queryKey: ["audit-logs", { page: currentPage, startDate, endDate, action, actorRole }],
+    queryKey: [
+      "audit-logs",
+      { page: currentPage, startDate, endDate, action, actorRole },
+    ],
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
 
@@ -55,7 +62,6 @@ export default function AuditLogsPage() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">
-        {/* Date range */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             From
@@ -84,7 +90,6 @@ export default function AuditLogsPage() {
           />
         </div>
 
-        {/* Action filter */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Action
@@ -104,7 +109,6 @@ export default function AuditLogsPage() {
           </select>
         </div>
 
-        {/* Actor role filter */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Role
@@ -124,7 +128,6 @@ export default function AuditLogsPage() {
           </select>
         </div>
 
-        {/* Clear button — only visible when a filter is active */}
         {hasFilters && (
           <Button
             variant="outline"
@@ -140,14 +143,18 @@ export default function AuditLogsPage() {
       </div>
 
       {/* Results */}
-      <DataTable
-        columns={auditLogColumns}
-        data={data?.items ?? []}
-        isLoading={isLoading}
-        total={data?.total ?? 0}
-        page={currentPage}
-        onPageChange={goToPage}
-      />
+      <div className="space-y-3">
+        <DataTable
+          columns={auditLogColumns}
+          data={data?.items ?? []}
+          isLoading={isLoading}
+        />
+        <PaginationBar
+          route={Route}
+          to="/audit-logs"
+          total={data?.total ?? 0}
+        />
+      </div>
     </div>
   );
 }

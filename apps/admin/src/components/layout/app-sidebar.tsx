@@ -28,14 +28,58 @@ import { NavMain } from "./nav-main";
 import { NavSecondary } from "./nav-secondary";
 import { NavUser } from "./nav-user";
 
+// ── Narrowed match selectors ────────────────────────────────────────────────
+// Each useMatch call uses `select` so the component only re-renders when the
+// derived boolean flips — not on every search-param keystroke.
+
+function useHasProductsFilter() {
+  return useMatch({
+    from: "/products",
+    shouldThrow: false,
+    select: (m) => !!m?.search.search,
+  });
+}
+
+function useHasOrdersFilter() {
+  return useMatch({
+    from: "/orders",
+    shouldThrow: false,
+    select: (m) => !!m?.search.status,
+  });
+}
+
+function useHasCustomersFilter() {
+  return useMatch({
+    from: "/customers",
+    shouldThrow: false,
+    select: (m) => !!m?.search.search,
+  });
+}
+
+function useHasAuditLogsFilter() {
+  return useMatch({
+    from: "/audit-logs",
+    shouldThrow: false,
+    select: (m) =>
+      !!(
+        m?.search.startDate ||
+        m?.search.endDate ||
+        m?.search.action ||
+        m?.search.actorRole
+      ),
+  });
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { session } = useSession();
   const role = session?.role ?? "CUSTOMER";
 
-  const productsMatch = useMatch({ from: "/products", shouldThrow: false });
-  const ordersMatch = useMatch({ from: "/orders", shouldThrow: false });
-  const customersMatch = useMatch({ from: "/customers", shouldThrow: false });
-  const auditLogsMatch = useMatch({ from: "/audit-logs", shouldThrow: false });
+  const hasProductsFilter = useHasProductsFilter();
+  const hasOrdersFilter = useHasOrdersFilter();
+  const hasCustomersFilter = useHasCustomersFilter();
+  const hasAuditLogsFilter = useHasAuditLogsFilter();
 
   const pendingOrdersCount = useNewOrdersCount();
 
@@ -47,7 +91,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Products",
             url: "/products",
             icon: <PackageIcon />,
-            hasFilter: !!productsMatch?.search.search,
+            hasFilter: hasProductsFilter ?? false,
           },
         ]
       : []),
@@ -57,7 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Orders",
             url: "/orders",
             icon: <ShoppingCartIcon />,
-            hasFilter: !!ordersMatch?.search.status,
+            hasFilter: hasOrdersFilter ?? false,
             badge: pendingOrdersCount,
           },
         ]
@@ -68,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Customers",
             url: "/customers",
             icon: <UsersIcon />,
-            hasFilter: !!customersMatch?.search.search,
+            hasFilter: hasCustomersFilter ?? false,
           },
         ]
       : []),
@@ -78,12 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Audit Logs",
             url: "/audit-logs",
             icon: <ClipboardListIcon />,
-            hasFilter: !!(
-              auditLogsMatch?.search.startDate ||
-              auditLogsMatch?.search.endDate ||
-              auditLogsMatch?.search.action ||
-              auditLogsMatch?.search.actorRole
-            ),
+            hasFilter: hasAuditLogsFilter ?? false,
           },
         ]
       : []),

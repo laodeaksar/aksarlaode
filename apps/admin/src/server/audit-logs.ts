@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { Effect, Schema } from "effect";
 
+import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import { ApiClientService } from "@/effect/Services";
 import type { AuditLogEntry } from "@/effect/Services";
@@ -30,7 +31,7 @@ export type ListAuditLogsParams = Schema.Schema.Type<
 // `useQuery` whenever the user changes any filter or navigates to a new page.
 
 export const listAuditLogsFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("audit:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ListAuditLogsParamsSchema,
@@ -50,13 +51,21 @@ export const listAuditLogsFn = createServerFn({ method: "GET" })
       context.runtime.runPromise(
         Effect.gen(function* () {
           const api = yield* ApiClientService;
-          return yield* api.auditLogs.list({
-            page: data.page,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            action: data.action,
-            actorRole: data.actorRole,
-          });
+          // Build params object with only defined optional fields to satisfy
+          // exactOptionalPropertyTypes: each key's value must be the declared
+          // type (string), not string | undefined.
+          const params: {
+            page: number;
+            startDate?: string;
+            endDate?: string;
+            action?: string;
+            actorRole?: string;
+          } = { page: data.page };
+          if (data.startDate !== undefined) params.startDate = data.startDate;
+          if (data.endDate !== undefined) params.endDate = data.endDate;
+          if (data.action !== undefined) params.action = data.action;
+          if (data.actorRole !== undefined) params.actorRole = data.actorRole;
+          return yield* api.auditLogs.list(params);
         })
       )
   );

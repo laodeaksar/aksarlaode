@@ -1,17 +1,6 @@
 // ── server/auth.ts — LAYER-01 ──────────────────────────────────────────────
 //
 // Server functions untuk login, logout, dan session check.
-// Menggantikan authApi.login dan authApi.logout yang sebelumnya ada di lib/api.ts.
-//
-// Kenapa server function (bukan client-side fetch)?
-//   - Konsistensi dengan semua server calls lain di src/server/*.ts
-//   - Cookie handling: Set-Cookie dari backend di-forward ke browser via
-//     appendResponseHeader sehingga browser menyimpan/menghapus cookies
-//     secara otomatis tanpa perlu akses window pada sisi klien.
-//   - SSR safety: getSessionFn menggunakan getCookies() sehingga saat
-//     beforeLoad berjalan di server, cookie dari request asli browser
-//     di-forward ke API — bukan bergantung pada cookie jar Node.js
-//     yang tidak tersedia.
 //
 // Aturan definitif setelah LAYER-01:
 //   login / logout       → sini (server function + cookie forwarding)
@@ -32,6 +21,35 @@ import { decodeOrThrow } from "./_utils";
 
 const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
 
+// ── Runtime validation schemas ─────────────────────────────────────────────
+// All responses from the auth service are validated before being trusted.
+// This prevents type confusion when the backend schema drifts or returns
+// unexpected payloads.
+
+const SessionSchema = Schema.Struct({
+  id: Schema.String.pipe(Schema.minLength(1)),
+  email: Schema.String.pipe(Schema.minLength(1)),
+  name: Schema.String,
+  role: Schema.Literal("CUSTOMER", "ADMIN", "OWNER", "FINANCE"),
+});
+
+const LoginResultSchema = Schema.Struct({
+  accessToken: Schema.String.pipe(Schema.minLength(1)),
+  user: Schema.Struct({
+    id: Schema.String,
+    email: Schema.String,
+    name: Schema.String,
+    role: Schema.String,
+  }),
+});
+
+// ── Input schema ───────────────────────────────────────────────────────────
+
+const LoginInputSchema = Schema.Struct({
+  email: Schema.String.pipe(Schema.minLength(1)),
+  password: Schema.String.pipe(Schema.minLength(1)),
+});
+
 // ── Cookie forwarding helper (shared) ──────────────────────────────────────
 // Builds a Cookie header string from the current request's cookies so that
 // server-side fetches to the backend carry the session tokens.
@@ -45,17 +63,7 @@ function buildCookieHeader(): string {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type LoginResult = {
-  accessToken: string;
-  user: { id: string; email: string; name: string; role: string };
-};
-
-// ── Input schema ───────────────────────────────────────────────────────────
-
-const LoginInputSchema = Schema.Struct({
-  email: Schema.String.pipe(Schema.minLength(1)),
-  password: Schema.String.pipe(Schema.minLength(1)),
-});
+export type LoginResult = Schema.Schema.Type<typeof LoginResultSchema>;
 
 // ── Cookie forwarding helper ───────────────────────────────────────────────
 // Forward semua Set-Cookie header dari backend response ke browser.
@@ -75,9 +83,6 @@ function forwardSetCookie(headers: Headers): void {
 }
 
 // ── loginFn ────────────────────────────────────────────────────────────────
-// Meneruskan request login ke backend.
-// Set-Cookie header dari backend (auth tokens) di-forward ke browser via
-// appendResponseHeader agar browser menyimpannya secara otomatis.
 
 export const loginFn = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
@@ -100,12 +105,16 @@ export const loginFn = createServerFn({ method: "POST" })
       throw new Error((err as { error?: string }).error ?? "Login gagal");
     }
 
-    return (await res.json()) as LoginResult;
+    // ── PATCH 2: validate login response before trusting its shape ──────
+    const json: unknown = await res.json();
+    const parsed = Schema.decodeUnknownEither(LoginResultSchema)(json);
+    if (parsed._tag === "Left") {
+      throw new Error("Server returned an invalid login response.");
+    }
+    return parsed.right;
   });
 
 // ── logoutFn ───────────────────────────────────────────────────────────────
-// Meneruskan cookies browser ke backend logout endpoint, lalu meneruskan
-// kembali Set-Cookie (clear/expire) header agar browser menghapus session cookies.
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(
   async (): Promise<void> => {
@@ -133,7 +142,6 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(
 //     dari request H3 yang sedang aktif, baik saat SSR maupun saat dipanggil
 //     dari browser (TanStack Start meneruskan cookie via HTTP ke endpoint
 //     server function).
-//   - Hasilnya: satu queryFn yang bekerja identik di kedua environment.
 
 export const getSessionFn = createServerFn({ method: "GET" }).handler(
   async (): Promise<Session | null> => {
@@ -143,8 +151,16 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
         headers: cookieHeader ? { Cookie: cookieHeader } : {},
       });
       if (!res.ok) return null;
-      const body = await res.json();
-      return (body?.data ?? body ?? null) as Session | null;
+
+      const body: unknown = await res.json();
+      const raw =
+        (body as { data?: unknown } | null)?.data ?? body;
+
+      // ── PATCH 2: validate session shape before trusting it ──────────
+      // Prevents type confusion if the auth service returns unexpected data.
+      const parsed = Schema.decodeUnknownEither(SessionSchema)(raw);
+      if (parsed._tag === "Left") return null;
+      return parsed.right;
     } catch {
       return null;
     }

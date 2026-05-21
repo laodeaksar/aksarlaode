@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { Effect, Schema } from "effect";
 
+import { auditMiddleware } from "@/effect/AuditMiddleware";
+import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import { ApiClientService } from "@/effect/Services";
 import type { User } from "@/effect/Services";
@@ -27,7 +29,7 @@ const UpdateRoleSchema = Schema.Struct({
 // ── GET /admin/users — paginated list with optional search ────────────────
 
 export const listCustomersFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("customers:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ListCustomersParamsSchema,
@@ -39,10 +41,12 @@ export const listCustomersFn = createServerFn({ method: "GET" })
       context.runtime.runPromise(
         Effect.gen(function* () {
           const api = yield* ApiClientService;
-          return yield* api.customers.list({
+          // Omit `search` when undefined to satisfy exactOptionalPropertyTypes.
+          const params: { page: number; search?: string } = {
             page: data.page,
-            search: data.search,
-          });
+          };
+          if (data.search !== undefined) params.search = data.search;
+          return yield* api.customers.list(params);
         })
       )
   );
@@ -50,7 +54,7 @@ export const listCustomersFn = createServerFn({ method: "GET" })
 // ── GET /admin/users/:id — single customer ────────────────────────────────
 
 export const getCustomerFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("customers:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       CustomerIdSchema,
@@ -67,10 +71,18 @@ export const getCustomerFn = createServerFn({ method: "GET" })
       )
   );
 
-// ── PATCH /admin/users/:id/role — update role (OWNER only) ────────────────
+// ── PATCH /admin/users/:id/role — update role ─────────────────────────────
+// users:manage is required — only OWNER and ADMIN have this permission.
+// auditMiddleware maps this fn to "changeUserRoleFn" in SERVER_FN_ACTION_MAP.
+// NOTE: if this function is ever renamed, update SERVER_FN_ACTION_MAP in
+//       src/effect/Audit.ts to keep the audit trail intact.
 
 export const updateCustomerRoleFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("users:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       UpdateRoleSchema,
@@ -89,7 +101,11 @@ export const updateCustomerRoleFn = createServerFn({ method: "POST" })
 // ── DELETE /admin/users/:id — soft-delete (OWNER only) ────────────────────
 
 export const deleteCustomerFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("users:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       CustomerIdSchema,
@@ -108,7 +124,11 @@ export const deleteCustomerFn = createServerFn({ method: "POST" })
 // ── PATCH /admin/users/:id/restore — restore soft-deleted (OWNER only) ────
 
 export const restoreCustomerFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("users:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       CustomerIdSchema,

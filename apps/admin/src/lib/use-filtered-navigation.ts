@@ -12,9 +12,18 @@ import { useNavigate } from "@tanstack/react-router";
  *
  * All three ensure `page` is absent from the URL when it would be 1 so URLs
  * stay minimal and meaningful.
+ *
+ * `to` is passed explicitly on every navigate call so the hook works
+ * correctly even when called from a child route (e.g. /products/new
+ * redirecting back to the /products list after a save).
+ *
+ * The `search` updater is cast to `any` at the call site to avoid TypeScript
+ * recomputing a large route-union type on every invocation — runtime
+ * validation is guaranteed by each route's `validateSearch: zodValidator(…)`.
  */
 export function useFilteredNavigation(to: string) {
-  const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const navigate = useNavigate() as any;
 
   const setFilter = useCallback(
     (key: string, value: string) => {

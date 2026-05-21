@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { Effect, Schema } from "effect";
 
+import { auditMiddleware } from "@/effect/AuditMiddleware";
+import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import { ApiClientService } from "@/effect/Services";
 import type { OrderDetail, OrderSummary } from "@/effect/Services";
@@ -37,7 +39,7 @@ const ExportOrdersParamsSchema = Schema.Struct({
 // exposed to the browser.
 
 export const exportOrdersFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("orders:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ExportOrdersParamsSchema,
@@ -59,11 +61,9 @@ export const exportOrdersFn = createServerFn({ method: "GET" })
   );
 
 // ── GET /orders — list with pagination & optional status filter ────────────
-// Used as the SSR loader in `routes/orders/index.tsx` and re-called from
-// `orders-page.tsx` whenever page or status filter changes.
 
 export const listOrdersFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("orders:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       ListOrdersParamsSchema,
@@ -86,12 +86,15 @@ export const listOrdersFn = createServerFn({ method: "GET" })
   );
 
 // ── PATCH /orders/:id/status — update order status ────────────────────────
-// Replaces the legacy client-side `ordersApi.updateStatus()` call.
-// Runs server-side so the service-to-service token is never exposed to the
-// browser. On success the caller invalidates ["order", orderId] in the cache.
+// requirePermission("orders:write") is the server-side RBAC gate.
+// auditMiddleware records the actor, old/new state, and outcome.
 
 export const updateOrderStatusFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("orders:write"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       UpdateOrderStatusSchema,
@@ -109,11 +112,9 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
   );
 
 // ── GET /orders/:id — single order detail ─────────────────────────────────
-// Used as the SSR loader in `routes/orders/$orderId.tsx` and re-called by
-// `useQuery` after a status mutation invalidates the cache.
 
 export const getOrderFn = createServerFn({ method: "GET" })
-  .middleware([effectMiddleware])
+  .middleware([effectMiddleware, requirePermission("orders:read")])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       OrderIdSchema,

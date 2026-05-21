@@ -17,5 +17,5 @@
  *   const cookie = getCookieHeader(request)
  */
 export function getCookieHeader(request: Request): string {
-  return request.headers.get("cookie") ?? ""
+  return request.headers.get("cookie") ?? "";
 }

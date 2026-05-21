@@ -180,10 +180,15 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
           ),
 
         delete: (id: string) =>
-          request<{ message: string; deleted: { id: string; email: string; role: string; deletedAt: string } }>(
-            `/admin/users/${id}`,
-            { method: "DELETE" }
-          ),
+          request<{
+            message: string;
+            deleted: {
+              id: string;
+              email: string;
+              role: string;
+              deletedAt: string;
+            };
+          }>(`/admin/users/${id}`, { method: "DELETE" }),
 
         restore: (id: string) =>
           request<{ message: string; user: User }>(

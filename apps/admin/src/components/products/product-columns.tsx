@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
+
 import { MoreHorizontal } from "lucide-react";
 
 import { Badge } from "@repo/ui/components/badge";
@@ -94,8 +95,8 @@ export const productColumns: ColumnDef<Product>[] = [
           />
         )}
         <div>
-          <p className="font-medium text-foreground">{row.original.name}</p>
-          <p className="text-xs text-muted-foreground">{row.original.sku}</p>
+          <p className="text-foreground font-medium">{row.original.name}</p>
+          <p className="text-muted-foreground text-xs">{row.original.sku}</p>
         </div>
       </div>
     ),
@@ -107,12 +108,12 @@ export const productColumns: ColumnDef<Product>[] = [
       const { price, comparePrice } = row.original;
       return comparePrice ? (
         <div className="space-y-0.5">
-          <p className="text-xs text-muted-foreground line-through">
+          <p className="text-muted-foreground text-xs line-through">
             {formatIDR(comparePrice)}
           </p>
           <div className="flex items-center gap-1.5">
             <span className="font-medium">{formatIDR(price)}</span>
-            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+            <Badge variant="secondary" className="px-1.5 py-0 text-xs">
               Sale
             </Badge>
           </div>
@@ -130,11 +131,7 @@ export const productColumns: ColumnDef<Product>[] = [
       return (
         <Badge
           variant={
-            stock === 0
-              ? "destructive"
-              : stock < 10
-                ? "secondary"
-                : "default"
+            stock === 0 ? "destructive" : stock < 10 ? "secondary" : "default"
           }
         >
           {stock}

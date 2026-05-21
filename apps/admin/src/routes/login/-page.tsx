@@ -26,9 +26,10 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@repo/ui/components/input-group";
+
 import { loginFn } from "@/server/auth";
-import { LoginPageSkeleton } from "@/components/login";
 import { LoginSchema, type LoginFields } from "@/schemas/forms";
+import { LoginPageSkeleton } from "@/components/login";
 import { effectResolver, toast } from "@/lib";
 
 import { Route } from "./route";
@@ -71,10 +72,10 @@ export default function LoginPage() {
   if (logout) return <LoginPageSkeleton />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
+    <div className="bg-muted/40 flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-center text-xl">Admin Login</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onFormSubmit} className="space-y-4">
@@ -106,19 +107,16 @@ export default function LoginPage() {
                     disabled={mutation.isPending}
                   />
                   <InputGroupAddon align="inline-end">
-                    <InputGroupButton size="icon-xs" onClick={() => setShowPassword((v) => !v)}>
-                      {showPassword ? (
-                        <EyeOffIcon />
-                      ) : (
-                        <EyeIcon />
-                      )}
+                    <InputGroupButton
+                      size="icon-xs"
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
 
                       <span className="sr-only">
-                        {
-                          showPassword
-                            ? "Sembunyikan password"
-                            : "Tampilkan password"
-                        }
+                        {showPassword
+                          ? "Sembunyikan password"
+                          : "Tampilkan password"}
                       </span>
                     </InputGroupButton>
                   </InputGroupAddon>

@@ -65,7 +65,7 @@ export function DataTable<T>({
                   <TableRow key={i}>
                     {columns.map((_, j) => (
                       <TableCell key={j} className="px-4 py-3">
-                        <div className="h-4 rounded bg-muted animate-pulse" />
+                        <div className="bg-muted h-4 animate-pulse rounded" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -92,7 +92,7 @@ export function DataTable<T>({
       </div>
 
       {/* Pagination — driven entirely by props, not internal TanStack Table state */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-between text-sm">
         <p>{total} total records</p>
         <div className="flex items-center gap-2">
           <Button

@@ -34,7 +34,10 @@ export const PUBLIC_ROUTES: ReadonlyArray<{ path: string; method: string }> = [
 
 // ── Webhook routes (HMAC-verified, no JWT) ────────────────────────────────────
 // C-09: Both versioned and legacy webhook paths are HMAC-verified.
-export const WEBHOOK_ROUTES: ReadonlyArray<string> = ["/webhooks", "/v1/webhooks"];
+export const WEBHOOK_ROUTES: ReadonlyArray<string> = [
+  "/webhooks",
+  "/v1/webhooks",
+];
 
 // ── Role hierarchy (higher number = more privileged) ─────────────────────────
 //
@@ -67,9 +70,17 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   // Transfer ownership — only the current OWNER can initiate
   { pattern: /^(?:\/v1)?\/auth\/owner\//, method: "*", minRole: "OWNER" },
   // Role mutation — must precede the /admin catch-all
-  { pattern: /^(?:\/v1)?\/admin\/users\/.+\/role$/, method: "PATCH", minRole: "OWNER" },
+  {
+    pattern: /^(?:\/v1)?\/admin\/users\/.+\/role$/,
+    method: "PATCH",
+    minRole: "OWNER",
+  },
   // Hard-delete user (cascade-invalidates sessions) — must precede /admin catch-all
-  { pattern: /^(?:\/v1)?\/admin\/users\/.+$/, method: "DELETE", minRole: "OWNER" },
+  {
+    pattern: /^(?:\/v1)?\/admin\/users\/.+$/,
+    method: "DELETE",
+    minRole: "OWNER",
+  },
 
   // ── Admin panel ───────────────────────────────────────────────────────────
   { pattern: /^(?:\/v1)?\/admin/, method: "*", minRole: "ADMIN" },
@@ -83,9 +94,17 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   // Customers can create and view their own; ownerOrAdmin middleware handles row-level
   { pattern: /^(?:\/v1)?\/orders$/, method: "POST", minRole: "CUSTOMER" },
   { pattern: /^(?:\/v1)?\/orders\/.+/, method: "GET", minRole: "CUSTOMER" },
-  { pattern: /^(?:\/v1)?\/orders\/.+\/cancel/, method: "POST", minRole: "CUSTOMER" },
+  {
+    pattern: /^(?:\/v1)?\/orders\/.+\/cancel/,
+    method: "POST",
+    minRole: "CUSTOMER",
+  },
   { pattern: /^(?:\/v1)?\/orders$/, method: "GET", minRole: "ADMIN" },
-  { pattern: /^(?:\/v1)?\/orders\/.+\/status/, method: "PATCH", minRole: "ADMIN" },
+  {
+    pattern: /^(?:\/v1)?\/orders\/.+\/status/,
+    method: "PATCH",
+    minRole: "ADMIN",
+  },
 
   // ── Payments ──────────────────────────────────────────────────────────────
   { pattern: /^(?:\/v1)?\/payments/, method: "*", minRole: "CUSTOMER" },
@@ -94,5 +113,9 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   { pattern: /^(?:\/v1)?\/auth\/sessions/, method: "*", minRole: "CUSTOMER" },
   { pattern: /^(?:\/v1)?\/auth\/me/, method: "*", minRole: "CUSTOMER" },
   { pattern: /^(?:\/v1)?\/auth\/logout/, method: "POST", minRole: "CUSTOMER" },
-  { pattern: /^(?:\/v1)?\/auth\/change-password/, method: "POST", minRole: "CUSTOMER" },
+  {
+    pattern: /^(?:\/v1)?\/auth\/change-password/,
+    method: "POST",
+    minRole: "CUSTOMER",
+  },
 ];

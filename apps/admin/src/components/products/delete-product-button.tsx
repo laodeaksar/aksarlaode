@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { Product } from "@/effect/Services";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 
 import { deleteProductFn } from "@/server/products";
+import type { Product } from "@/effect/Services";
 import { toast } from "@/lib";
 
 interface DeleteProductButtonProps {
@@ -87,8 +87,7 @@ export function DeleteProductButton({
           <AlertDialogTitle>Hapus Produk</AlertDialogTitle>
           <AlertDialogDescription>
             Produk <span className="font-semibold">{productName}</span> akan
-            dihapus secara permanen dari sistem. Aksi ini tidak bisa
-            dibatalkan.
+            dihapus secara permanen dari sistem. Aksi ini tidak bisa dibatalkan.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@repo/ui/components/badge";
 
 import type { OrderSummary } from "@/effect/Services";
+import { formatIDR } from "@/lib";
 
 export const STATUS_VARIANTS: Record<
   string,
@@ -33,7 +34,7 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
     accessorKey: "orderId",
     header: "Order ID",
     cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-foreground">
+      <span className="text-foreground font-mono text-xs">
         {getValue() as string}
       </span>
     ),
@@ -53,11 +54,15 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
   {
     accessorKey: "grandTotal",
     header: () => <div className="text-right">Amount</div>,
-    cell: ({ getValue }) => (
-      <div className="text-right">
-        {`Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`}
-      </div>
-    ),
+    cell: ({ getValue }) => {
+      const total = Number(getValue) ?? 0;
+      return (
+        <div className="text-right">
+          {formatIDR(total)}
+          {/*`Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`*/}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "createdAt",
@@ -72,6 +77,7 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
       <Link
         to="/orders/$orderId"
         params={{ orderId: row.original.orderId }}
+        // @ts-ignore
         search={{}}
         className="text-sm text-blue-600 hover:underline"
       >

@@ -48,7 +48,7 @@ export function PaymentSnap({ snapToken, onSuccess, onError }: Props) {
   }, [snapToken]);
 
   return (
-    <div className="text-center py-8">
+    <div className="py-8 text-center">
       <p className="text-gray-600">Opening payment gateway…</p>
     </div>
   );

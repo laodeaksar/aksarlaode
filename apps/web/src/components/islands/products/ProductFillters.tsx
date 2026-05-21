@@ -44,7 +44,8 @@ function syncToUrl(values: FilterValues) {
   if (values.minPrice != null) params.set("minPrice", String(values.minPrice));
   if (values.maxPrice != null) params.set("maxPrice", String(values.maxPrice));
   if (values.inStock) params.set("inStock", "true");
-  if (values.sortBy && values.sortBy !== "newest") params.set("sortBy", values.sortBy);
+  if (values.sortBy && values.sortBy !== "newest")
+    params.set("sortBy", values.sortBy);
   const qs = params.toString();
   history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
 }
@@ -108,7 +109,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
         />
 
         {/* Price range */}
-        <div className="flex gap-3 items-center">
+        <div className="flex items-center gap-3">
           <input
             {...register("minPrice")}
             type="number"
@@ -125,7 +126,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
         </div>
 
         {/* Sort + In Stock row */}
-        <div className="flex gap-3 items-center">
+        <div className="flex items-center gap-3">
           <Controller
             name="sortBy"
             control={control}
@@ -142,7 +143,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
             )}
           />
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
             <Controller
               name="inStock"
               control={control}
@@ -174,8 +175,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
       <p className="text-sm text-gray-500">{resultTotal} products found</p>
 
       <div
-        className={`grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 transition-opacity
-        ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+        className={`grid grid-cols-2 gap-4 transition-opacity sm:grid-cols-3 lg:grid-cols-4 ${isLoading ? "pointer-events-none opacity-50" : ""}`}
       >
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
@@ -204,7 +204,7 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <a
       href={`/products/${product.slug}`}
-      className="group relative block rounded-lg border overflow-hidden hover:shadow-md transition-shadow"
+      className="group relative block overflow-hidden rounded-lg border transition-shadow hover:shadow-md"
     >
       {discountPct && (
         <span className="absolute top-2 left-2 z-10 inline-flex items-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
@@ -215,21 +215,23 @@ function ProductCard({ product }: { product: Product }) {
         <img
           src={product.imageUrls?.[0] ?? "/placeholder.png"}
           alt={product.name}
-          className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+          className="h-full w-full object-cover transition-transform group-hover:scale-105"
         />
       </div>
-      <div className="p-3 space-y-0.5">
-        <p className="text-sm font-medium line-clamp-2">{product.name}</p>
+      <div className="space-y-0.5 p-3">
+        <p className="line-clamp-2 text-sm font-medium">{product.name}</p>
         {discountPct && (
           <p className="text-xs text-gray-400 line-through">
             Rp {product.comparePrice!.toLocaleString("id-ID")}
           </p>
         )}
-        <p className={`text-sm font-bold ${discountPct ? "text-red-600" : "text-blue-600"}`}>
+        <p
+          className={`text-sm font-bold ${discountPct ? "text-red-600" : "text-blue-600"}`}
+        >
           Rp {product.price.toLocaleString("id-ID")}
         </p>
         {product.stock === 0 && (
-          <p className="text-xs text-red-500 font-medium">Out of Stock</p>
+          <p className="text-xs font-medium text-red-500">Out of Stock</p>
         )}
       </div>
     </a>

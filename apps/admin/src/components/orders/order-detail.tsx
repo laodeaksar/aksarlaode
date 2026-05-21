@@ -32,8 +32,8 @@ import { Textarea } from "@repo/ui/components/textarea";
 
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
-import { can, effectResolver, toast, useSession } from "@/lib";
 import { PageHeader } from "@/components/layout/page-header";
+import { can, effectResolver, toast, useSession } from "@/lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -62,7 +62,7 @@ const STATUS_COLOR: Record<
 
 function OrderDetailSkeleton() {
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1.5">
           <Skeleton className="h-8 w-48" />
@@ -184,7 +184,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
   if (!order) return null;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="max-w-4xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <PageHeader
@@ -193,7 +193,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
         />
         <Badge
           variant={STATUS_COLOR[order.status] ?? "outline"}
-          className="text-sm px-3 py-1"
+          className="px-3 py-1 text-sm"
         >
           {order.status}
         </Badge>
@@ -222,7 +222,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                 </p>
               </div>
             ))}
-            <div className="border-t pt-2 flex justify-between font-bold">
+            <div className="flex justify-between border-t pt-2 font-bold">
               <span>Grand Total</span>
               <span>Rp {order.grandTotal.toLocaleString("id-ID")}</span>
             </div>
@@ -234,10 +234,10 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
           <CardHeader>
             <CardTitle>Shipping Address</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm space-y-1">
+          <CardContent className="space-y-1 text-sm">
             {Object.entries(order.shippingAddress).map(([k, v]) => (
               <p key={k}>
-                <span className="capitalize text-muted-foreground">{k}:</span>{" "}
+                <span className="text-muted-foreground capitalize">{k}:</span>{" "}
                 {v}
               </p>
             ))}
@@ -250,15 +250,15 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
             <CardTitle>Status History</CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="relative border-l border-border ml-3 space-y-4">
+            <ol className="border-border relative ml-3 space-y-4 border-l">
               {order.statusHistory.map((e, i) => (
                 <li key={i} className="ml-4">
                   <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-blue-500" />
                   <p className="text-sm font-medium">{e.status}</p>
                   {e.note && (
-                    <p className="text-xs text-muted-foreground">{e.note}</p>
+                    <p className="text-muted-foreground text-xs">{e.note}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {new Date(e.timestamp).toLocaleString("id-ID")}
                   </p>
                 </li>
@@ -283,7 +283,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                     <select
                       id="order-next-status"
                       aria-label="Select new order status"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="border-input bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
                       {...register("nextStatus")}
                     >
                       <option value="">Select new status...</option>

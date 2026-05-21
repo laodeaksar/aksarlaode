@@ -5,8 +5,8 @@ import { getRedis } from "@/lib/redis";
 import type { AppEnv } from "@/types/context";
 
 // ── Limits (conservative defaults — tune for production load) ─────────────────
-const BURST_LIMIT = 20;       // max requests per second per IP
-const SUSTAINED_LIMIT = 200;  // max requests per minute per IP
+const BURST_LIMIT = 20; // max requests per second per IP
+const SUSTAINED_LIMIT = 200; // max requests per minute per IP
 const PRODUCT_LIST_LIMIT = 100; // max requests per minute for GET /products
 
 // ── In-memory fallback store ──────────────────────────────────────────────────

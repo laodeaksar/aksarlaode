@@ -23,9 +23,7 @@ export const Route = createFileRoute("/customers/$userId")({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData
-          ? `${loaderData.name} — Admin`
-          : "Customer — Admin",
+        title: loaderData ? `${loaderData.name} — Admin` : "Customer — Admin",
       },
     ],
   }),

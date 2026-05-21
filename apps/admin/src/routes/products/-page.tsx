@@ -7,10 +7,10 @@ import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 
 import { listProductsFn } from "@/server/products";
+import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
 import { DataTable } from "@/components";
 import { can, useSession } from "@/lib";
-import { PageHeader } from "@/components/layout/page-header";
 
 import { Route } from "./route";
 

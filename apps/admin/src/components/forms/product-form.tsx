@@ -58,7 +58,7 @@ export function ProductForm({
       {error && (
         <p
           role="alert"
-          className="text-sm text-red-600 bg-red-50 rounded-lg p-3"
+          className="rounded-lg bg-red-50 p-3 text-sm text-red-600"
         >
           {error}
         </p>
@@ -92,7 +92,7 @@ export function ProductForm({
         <Field data-invalid={!!errors.comparePrice}>
           <FieldLabel htmlFor="pf-compare-price">
             Compare Price (IDR){" "}
-            <span className="text-muted-foreground font-normal text-xs">
+            <span className="text-muted-foreground text-xs font-normal">
               — optional, shown crossed-out as original price
             </span>
           </FieldLabel>
@@ -107,9 +107,7 @@ export function ProductForm({
                 v === "" || v === null ? undefined : Number(v),
             })}
           />
-          {errors.comparePrice && (
-            <FieldError errors={[errors.comparePrice]} />
-          )}
+          {errors.comparePrice && <FieldError errors={[errors.comparePrice]} />}
         </Field>
 
         <Field data-invalid={!!errors.stock}>

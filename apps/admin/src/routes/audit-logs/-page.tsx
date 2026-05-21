@@ -6,7 +6,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@repo/ui/components/button";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
-import { auditLogColumns, AUDIT_ACTIONS, ACTOR_ROLES } from "@/components/audit-logs";
+import {
+  ACTOR_ROLES,
+  AUDIT_ACTIONS,
+  auditLogColumns,
+} from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -26,7 +30,10 @@ export default function AuditLogsPage() {
   const hasFilters = !!(startDate || endDate || action || actorRole);
 
   // Build the React Query cache key from the complete filter set.
-  const queryKey = ["audit-logs", { page, startDate, endDate, action, actorRole }];
+  const queryKey = [
+    "audit-logs",
+    { page, startDate, endDate, action, actorRole },
+  ];
 
   // Derive the params object once — used by both queryFn and initialData check.
   const queryParams = {
@@ -68,7 +75,13 @@ export default function AuditLogsPage() {
   const clearFilters = useCallback(() => {
     navigate({
       to: "/audit-logs",
-      search: { page: 1, startDate: "", endDate: "", action: "", actorRole: "" },
+      search: {
+        page: 1,
+        startDate: "",
+        endDate: "",
+        action: "",
+        actorRole: "",
+      },
     });
   }, [navigate]);
 
@@ -85,7 +98,7 @@ export default function AuditLogsPage() {
       <div className="flex flex-wrap items-end gap-3">
         {/* Date range */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">
+          <label className="text-muted-foreground text-xs font-medium">
             From
           </label>
           <input
@@ -99,7 +112,7 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">
+          <label className="text-muted-foreground text-xs font-medium">
             To
           </label>
           <input
@@ -114,7 +127,7 @@ export default function AuditLogsPage() {
 
         {/* Action filter */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">
+          <label className="text-muted-foreground text-xs font-medium">
             Action
           </label>
           <select
@@ -134,7 +147,7 @@ export default function AuditLogsPage() {
 
         {/* Actor role filter */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground font-medium">
+          <label className="text-muted-foreground text-xs font-medium">
             Role
           </label>
           <select

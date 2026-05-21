@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
+
 import { MoreHorizontal } from "lucide-react";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   DropdownMenu,
@@ -11,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { Badge } from "@repo/ui/components/badge";
 
 import type { User } from "@/effect/Services";
 import { useSession } from "@/lib/session-context";
@@ -83,7 +84,7 @@ export const customerColumns: ColumnDef<User>[] = [
     accessorKey: "name",
     header: "Nama",
     cell: ({ getValue }) => (
-      <span className="font-medium text-foreground">
+      <span className="text-foreground font-medium">
         {getValue() as string}
       </span>
     ),

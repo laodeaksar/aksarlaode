@@ -3,10 +3,11 @@ import * as React from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+
 import { Toaster } from "sonner";
 
-import { SessionContext } from "@/lib/session-context";
 import type { Session } from "@/lib/auth";
+import { SessionContext } from "@/lib/session-context";
 
 import { AppLayout } from "./app-layout";
 import { LoginLayout } from "./login-layout";

@@ -72,8 +72,7 @@ export const cartStore = {
   getTotal: (): number =>
     loadCart().reduce((sum, i) => sum + i.price * i.quantity, 0),
 
-  getCount: (): number =>
-    loadCart().reduce((sum, i) => sum + i.quantity, 0),
+  getCount: (): number => loadCart().reduce((sum, i) => sum + i.quantity, 0),
 };
 
 // ── React hook ────────────────────────────────────────────────────────────────

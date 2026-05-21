@@ -8,11 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@repo/ui/components/field";
+import { Field, FieldGroup, FieldLabel } from "@repo/ui/components/field";
 
 import { exportOrdersFn } from "@/server/orders";
 import { can, toast, useSession } from "@/lib";
@@ -78,7 +74,7 @@ export function ExportOrdersButton() {
               <FieldLabel htmlFor="export-status">Status</FieldLabel>
               <select
                 id="export-status"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                className="border-input bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -96,7 +92,7 @@ export function ExportOrdersButton() {
               <input
                 id="export-date-from"
                 type="date"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                className="border-input bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
               />
@@ -107,14 +103,14 @@ export function ExportOrdersButton() {
               <input
                 id="export-date-to"
                 type="date"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                className="border-input bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
               />
             </Field>
           </FieldGroup>
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setOpen(false)}

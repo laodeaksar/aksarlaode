@@ -167,7 +167,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
       {serverError && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700"
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
         >
           {serverError}
         </div>
@@ -270,7 +270,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
           <h2 className="text-lg font-semibold">Review Order</h2>
 
           {/* Address summary */}
-          <div className="rounded-lg border p-4 text-sm space-y-1">
+          <div className="space-y-1 rounded-lg border p-4 text-sm">
             <p className="font-medium">
               {watchedValues.recipientName} · {watchedValues.phone}
             </p>
@@ -282,7 +282,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
             <button
               type="button"
               onClick={() => setStep("address")}
-              className="text-blue-600 text-xs hover:underline"
+              className="text-xs text-blue-600 hover:underline"
             >
               Edit address
             </button>
@@ -303,7 +303,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
                   <p className="font-medium">{item.name}</p>
                   <p className="text-gray-500">x{item.quantity}</p>
                 </div>
-                <p className="font-semibold text-sm">
+                <p className="text-sm font-semibold">
                   Rp {(item.price * item.quantity).toLocaleString("id-ID")}
                 </p>
               </div>
@@ -335,7 +335,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
           {paymentStatus === "failed" && (
             <div
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 p-5 text-center space-y-3"
+              className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-5 text-center"
             >
               <p className="font-semibold text-red-700">Payment unsuccessful</p>
               <p className="text-sm text-red-600">
@@ -345,13 +345,13 @@ export function CheckoutForm({ userId, userEmail }: Props) {
               <div className="flex justify-center gap-3">
                 <button
                   onClick={openSnap}
-                  className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                  className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
                 >
                   Retry Payment
                 </button>
                 <a
                   href={`/orders/${orderId}`}
-                  className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                 >
                   View Order
                 </a>
@@ -362,7 +362,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
           {paymentStatus === "cancelled" && (
             <div
               role="alert"
-              className="rounded-lg border border-yellow-200 bg-yellow-50 p-5 text-center space-y-3"
+              className="space-y-3 rounded-lg border border-yellow-200 bg-yellow-50 p-5 text-center"
             >
               <p className="font-semibold text-yellow-800">
                 Payment window closed
@@ -373,7 +373,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
               </p>
               <button
                 onClick={openSnap}
-                className="rounded-lg bg-yellow-600 px-5 py-2 text-sm font-medium text-white hover:bg-yellow-700 transition-colors"
+                className="rounded-lg bg-yellow-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-700"
               >
                 Continue Payment
               </button>
@@ -423,13 +423,12 @@ function StepIndicator({ current }: { current: CheckoutStep }) {
       {steps.map((s, i) => (
         <li key={s.key} className="flex items-center gap-2">
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-full font-medium text-xs
-            ${i <= idx ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${i <= idx ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}
           >
             {i + 1}
           </span>
           <span
-            className={i <= idx ? "text-blue-600 font-medium" : "text-gray-400"}
+            className={i <= idx ? "font-medium text-blue-600" : "text-gray-400"}
           >
             {s.label}
           </span>

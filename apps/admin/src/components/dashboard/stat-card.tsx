@@ -14,12 +14,12 @@ export function StatCard({ title, value }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-muted-foreground text-sm font-medium">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className="text-foreground text-2xl font-bold">{value}</p>
       </CardContent>
     </Card>
   );

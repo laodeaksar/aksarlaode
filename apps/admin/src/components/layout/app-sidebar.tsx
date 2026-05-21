@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { Link } from "@tanstack/react-router";
+
 import {
   ClipboardListIcon,
   CommandIcon,
@@ -9,8 +11,6 @@ import {
   ShoppingCartIcon,
   UsersIcon,
 } from "lucide-react";
-
-import { Link } from "@tanstack/react-router";
 
 import {
   Sidebar,
@@ -44,7 +44,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ? [{ title: "Customers", url: "/customers", icon: <UsersIcon /> }]
       : []),
     ...(can(role, "audit:read")
-      ? [{ title: "Audit Logs", url: "/audit-logs", icon: <ClipboardListIcon /> }]
+      ? [
+          {
+            title: "Audit Logs",
+            url: "/audit-logs",
+            icon: <ClipboardListIcon />,
+          },
+        ]
       : []),
   ];
 

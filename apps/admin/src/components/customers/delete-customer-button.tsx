@@ -61,8 +61,8 @@ export function DeleteCustomerButton({
           <AlertDialogTitle>Nonaktifkan Customer</AlertDialogTitle>
           <AlertDialogDescription>
             Akun <span className="font-semibold">{customerName}</span> akan
-            dinonaktifkan dan semua sesinya akan langsung dibatalkan. Data
-            akun tetap tersimpan dan dapat dipulihkan oleh Owner.
+            dinonaktifkan dan semua sesinya akan langsung dibatalkan. Data akun
+            tetap tersimpan dan dapat dipulihkan oleh Owner.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

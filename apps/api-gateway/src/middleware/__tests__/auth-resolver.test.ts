@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Effect } from "effect";
+
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
 
 import type { AppEnv } from "@/types/context";
@@ -62,7 +63,9 @@ mock.module("@/lib/circuit-breaker", () => ({
 
 // global fetch mock — default: session valid
 const mockFetch = mock(() =>
-  Promise.resolve(new Response(JSON.stringify({ valid: true }), { status: 200 }))
+  Promise.resolve(
+    new Response(JSON.stringify({ valid: true }), { status: 200 })
+  )
 );
 global.fetch = mockFetch as typeof fetch;
 
@@ -98,7 +101,11 @@ function makeApp() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function makeReq(path: string, method = "GET", headers: Record<string, string> = {}) {
+function makeReq(
+  path: string,
+  method = "GET",
+  headers: Record<string, string> = {}
+) {
   return new Request(`http://localhost${path}`, { method, headers });
 }
 
@@ -157,7 +164,7 @@ describe("authResolver — protected routes", () => {
     const app = makeApp();
     const res = await app.fetch(makeReq("/protected"));
     expect(res.status).toBe(401);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe("UNAUTHORIZED");
     expect(mockVerifyJwt.mock.calls.length).toBe(0);
   });
@@ -179,7 +186,7 @@ describe("authResolver — protected routes", () => {
       makeReq("/protected", "GET", { Authorization: "Bearer bad-token" })
     );
     expect(res.status).toBe(401);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe("UNAUTHORIZED");
   });
 
@@ -192,7 +199,7 @@ describe("authResolver — protected routes", () => {
       makeReq("/protected", "GET", { Authorization: "Bearer expired-token" })
     );
     expect(res.status).toBe(401);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe("TOKEN_EXPIRED");
   });
 
@@ -243,7 +250,7 @@ describe("authResolver — session denylist check (C-13)", () => {
       makeReq("/protected", "GET", { Authorization: "Bearer valid-token" })
     );
     expect(res.status).toBe(401);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe("UNAUTHORIZED");
     // 401 from auth-service is a legitimate response, counts as success for circuit breaker
     expect(mockBreakerSuccess.mock.calls.length).toBeGreaterThan(0);
@@ -261,7 +268,9 @@ describe("authResolver — session denylist check (C-13)", () => {
   });
 
   test("fails open when auth-service fetch throws (network error)", async () => {
-    mockFetch.mockImplementation(() => Promise.reject(new Error("ECONNREFUSED")));
+    mockFetch.mockImplementation(() =>
+      Promise.reject(new Error("ECONNREFUSED"))
+    );
     const app = makeApp();
     // Should still get 200 — fail-open policy
     const res = await app.fetch(
@@ -330,7 +339,7 @@ describe("authResolver — webhook routes", () => {
       })
     );
     expect(res.status).toBe(401);
-    const body = await res.json() as { code: string };
+    const body = (await res.json()) as { code: string };
     expect(body.code).toBe("UNAUTHORIZED");
   });
 });

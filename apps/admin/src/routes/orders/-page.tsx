@@ -8,12 +8,15 @@ import {
   ORDER_STATUSES,
   orderColumns,
 } from "@/components/orders";
-import { useFilteredNavigation } from "@/lib";
+import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
 export default function OrdersPage() {
-  const { page, status } = Route.useSearch();
+  // Per-field subscriptions: re-renders only when that specific param changes.
+  const page   = useRouteSearch(Route, (s) => s.page);
+  const status = useRouteSearch(Route, (s) => s.status);
+
   const currentPage = page ?? 1;
 
   const { setFilter, goToPage } = useFilteredNavigation("/orders");

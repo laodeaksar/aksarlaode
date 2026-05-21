@@ -5,12 +5,15 @@ import { customerColumns } from "@/components/customers";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/shared";
-import { useDebouncedInput, useFilteredNavigation } from "@/lib";
+import { useDebouncedInput, useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
 export default function CustomersPage() {
-  const { page, search } = Route.useSearch();
+  // Per-field subscriptions: re-renders only when that specific param changes.
+  const page   = useRouteSearch(Route, (s) => s.page);
+  const search = useRouteSearch(Route, (s) => s.search);
+
   const currentPage = page ?? 1;
 
   const { setFilter, goToPage } = useFilteredNavigation("/customers");

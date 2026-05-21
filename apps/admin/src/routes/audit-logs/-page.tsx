@@ -10,7 +10,7 @@ import {
 } from "@/components/audit-logs";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { useFilteredNavigation } from "@/lib";
+import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
@@ -22,9 +22,16 @@ const SELECT_CLS =
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  const { page, startDate, endDate, action, actorRole } = Route.useSearch();
+  // Per-field subscriptions: each re-renders independently when its value
+  // changes — typing in the date picker does not re-render the action select.
+  const page      = useRouteSearch(Route, (s) => s.page);
+  const startDate = useRouteSearch(Route, (s) => s.startDate);
+  const endDate   = useRouteSearch(Route, (s) => s.endDate);
+  const action    = useRouteSearch(Route, (s) => s.action);
+  const actorRole = useRouteSearch(Route, (s) => s.actorRole);
+
   const currentPage = page ?? 1;
-  const hasFilters = !!(startDate || endDate || action || actorRole);
+  const hasFilters  = !!(startDate || endDate || action || actorRole);
 
   const { setFilter, clearFilters, goToPage } =
     useFilteredNavigation("/audit-logs");
@@ -32,15 +39,18 @@ export default function AuditLogsPage() {
   const queryParams = {
     page: currentPage,
     ...(startDate ? { startDate } : {}),
-    ...(endDate ? { endDate } : {}),
-    ...(action ? { action } : {}),
+    ...(endDate   ? { endDate }   : {}),
+    ...(action    ? { action }    : {}),
     ...(actorRole ? { actorRole } : {}),
   };
 
   const { data, isLoading } = useQuery<
     Awaited<ReturnType<typeof listAuditLogsFn>>
   >({
-    queryKey: ["audit-logs", { page: currentPage, startDate, endDate, action, actorRole }],
+    queryKey: [
+      "audit-logs",
+      { page: currentPage, startDate, endDate, action, actorRole },
+    ],
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
 

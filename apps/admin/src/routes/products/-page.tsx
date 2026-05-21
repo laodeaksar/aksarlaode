@@ -12,6 +12,7 @@ import {
   can,
   useDebouncedInput,
   useFilteredNavigation,
+  useRouteSearch,
   useSession,
 } from "@/lib";
 
@@ -20,7 +21,10 @@ import { Route } from "./route";
 // ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  const { page, search } = Route.useSearch();
+  // Per-field subscriptions: re-renders only when that specific param changes.
+  const page   = useRouteSearch(Route, (s) => s.page);
+  const search = useRouteSearch(Route, (s) => s.search);
+
   const currentPage = page ?? 1;
 
   const { session } = useSession();

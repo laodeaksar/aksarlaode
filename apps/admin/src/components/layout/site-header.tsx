@@ -45,10 +45,16 @@ function matchToSegment(match: RouteMatch): BreadcrumbSegment | null {
     case "/products/$productId": {
       const name = typeof ld?.name === "string" ? ld.name : null;
       return {
-        label: name ? `Edit: ${name}` : "Edit Product",
+        label: name ?? "Product",
         href: `/products/${params.productId}`,
       };
     }
+
+    case "/products/$productId/edit":
+      return {
+        label: "Edit",
+        href: `/products/${params.productId}/edit`,
+      };
 
     case "/orders":
       return { label: "Orders", href: "/orders" };

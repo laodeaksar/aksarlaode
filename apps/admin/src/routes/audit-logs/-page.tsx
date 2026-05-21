@@ -8,7 +8,7 @@ import {
   AUDIT_ACTIONS,
   auditLogColumns,
 } from "@/components/audit-logs";
-import { DataTable } from "@/components/data-table/data-table";
+import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
@@ -22,8 +22,6 @@ const SELECT_CLS =
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  // Per-field subscriptions: each re-renders independently when its value
-  // changes — typing in the date picker does not re-render the action select.
   const page      = useRouteSearch(Route, (s) => s.page);
   const startDate = useRouteSearch(Route, (s) => s.startDate);
   const endDate   = useRouteSearch(Route, (s) => s.endDate);
@@ -33,8 +31,7 @@ export default function AuditLogsPage() {
   const currentPage = page ?? 1;
   const hasFilters  = !!(startDate || endDate || action || actorRole);
 
-  const { setFilter, clearFilters, goToPage } =
-    useFilteredNavigation("/audit-logs");
+  const { setFilter, clearFilters } = useFilteredNavigation("/audit-logs");
 
   const queryParams = {
     page: currentPage,
@@ -65,7 +62,6 @@ export default function AuditLogsPage() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">
-        {/* Date range */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             From
@@ -94,7 +90,6 @@ export default function AuditLogsPage() {
           />
         </div>
 
-        {/* Action filter */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Action
@@ -114,7 +109,6 @@ export default function AuditLogsPage() {
           </select>
         </div>
 
-        {/* Actor role filter */}
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Role
@@ -134,7 +128,6 @@ export default function AuditLogsPage() {
           </select>
         </div>
 
-        {/* Clear button — only visible when a filter is active */}
         {hasFilters && (
           <Button
             variant="outline"
@@ -150,14 +143,18 @@ export default function AuditLogsPage() {
       </div>
 
       {/* Results */}
-      <DataTable
-        columns={auditLogColumns}
-        data={data?.items ?? []}
-        isLoading={isLoading}
-        total={data?.total ?? 0}
-        page={currentPage}
-        onPageChange={goToPage}
-      />
+      <div className="space-y-3">
+        <DataTable
+          columns={auditLogColumns}
+          data={data?.items ?? []}
+          isLoading={isLoading}
+        />
+        <PaginationBar
+          route={Route}
+          to="/audit-logs"
+          total={data?.total ?? 0}
+        />
+      </div>
     </div>
   );
 }

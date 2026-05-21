@@ -6,7 +6,7 @@ import { Button } from "@repo/ui/components/button";
 import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
-import { DataTable } from "@/components";
+import { DataTable, PaginationBar } from "@/components";
 import { SearchInput } from "@/components/shared";
 import {
   can,
@@ -21,7 +21,6 @@ import { Route } from "./route";
 // ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  // Per-field subscriptions: re-renders only when that specific param changes.
   const page   = useRouteSearch(Route, (s) => s.page);
   const search = useRouteSearch(Route, (s) => s.search);
 
@@ -30,7 +29,7 @@ export default function ProductsPage() {
   const { session } = useSession();
   const canWrite = can(session?.role ?? "CUSTOMER", "products:write");
 
-  const { setFilter, goToPage } = useFilteredNavigation("/products");
+  const { setFilter } = useFilteredNavigation("/products");
   const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
@@ -54,14 +53,14 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <DataTable
-        columns={productColumns}
-        data={data?.items ?? []}
-        isLoading={isLoading}
-        total={data?.total ?? 0}
-        page={currentPage}
-        onPageChange={goToPage}
-      />
+      <div className="space-y-3">
+        <DataTable
+          columns={productColumns}
+          data={data?.items ?? []}
+          isLoading={isLoading}
+        />
+        <PaginationBar route={Route} to="/products" total={data?.total ?? 0} />
+      </div>
     </div>
   );
 }

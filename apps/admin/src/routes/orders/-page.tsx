@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listOrdersFn } from "@/server/orders";
-import { DataTable } from "@/components/data-table/data-table";
+import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   ExportOrdersButton,
@@ -13,13 +13,12 @@ import { useFilteredNavigation, useRouteSearch } from "@/lib";
 import { Route } from "./route";
 
 export default function OrdersPage() {
-  // Per-field subscriptions: re-renders only when that specific param changes.
   const page   = useRouteSearch(Route, (s) => s.page);
   const status = useRouteSearch(Route, (s) => s.status);
 
   const currentPage = page ?? 1;
 
-  const { setFilter, goToPage } = useFilteredNavigation("/orders");
+  const { setFilter } = useFilteredNavigation("/orders");
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders", { page: currentPage, status }],
@@ -51,14 +50,14 @@ export default function OrdersPage() {
         <ExportOrdersButton />
       </div>
 
-      <DataTable
-        columns={orderColumns}
-        data={data?.items ?? []}
-        isLoading={isLoading}
-        total={data?.total ?? 0}
-        page={currentPage}
-        onPageChange={goToPage}
-      />
+      <div className="space-y-3">
+        <DataTable
+          columns={orderColumns}
+          data={data?.items ?? []}
+          isLoading={isLoading}
+        />
+        <PaginationBar route={Route} to="/orders" total={data?.total ?? 0} />
+      </div>
     </div>
   );
 }

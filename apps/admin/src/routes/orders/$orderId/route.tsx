@@ -1,9 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getOrderFn } from "@/server/orders";
-import { OrderDetail } from "@/components/orders";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/orders/$orderId")({
+  beforeLoad: ({ context }) => {
+    const { session } = context;
+    if (!session || !can(session.role, "orders:read")) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+
   loader: ({ params, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
@@ -23,10 +30,5 @@ export const Route = createFileRoute("/orders/$orderId")({
     ],
   }),
 
-  component: RouteComponent,
+  component: () => <Outlet />,
 });
-
-function RouteComponent() {
-  const { orderId } = Route.useParams();
-  return <OrderDetail orderId={orderId} />;
-}

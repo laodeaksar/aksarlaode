@@ -19,7 +19,7 @@ import { Route } from "./route";
 export default function ProductsPage() {
   const navigate = useNavigate();
   const { page, search } = Route.useSearch();
-  const [inputValue, setInputValue] = useState(search);
+  const [inputValue, setInputValue] = useState(search ?? "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { session } = useSession();
@@ -32,7 +32,7 @@ export default function ProductsPage() {
       debounceRef.current = setTimeout(() => {
         navigate({
           to: "/products",
-          search: (prev) => ({ ...prev, search: value, page: 1 }),
+          search: (prev) => ({ ...prev, search: value || undefined, page: 1 }),
         });
       }, 300);
     },

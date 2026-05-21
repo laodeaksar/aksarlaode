@@ -13,7 +13,10 @@ export const Route = createFileRoute("/products")({
 
   validateSearch: (search: Record<string, unknown>) => ({
     page: Math.max(1, Number(search.page) || 1),
-    search: typeof search.search === "string" ? search.search : "",
+    search:
+      typeof search.search === "string" && search.search
+        ? search.search
+        : undefined,
   }),
 
   loaderDeps: ({ search }) => ({

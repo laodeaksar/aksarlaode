@@ -17,7 +17,7 @@ export default function CustomersPage() {
   const { page, search } = Route.useSearch();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [inputValue, setInputValue] = useState(search);
+  const [inputValue, setInputValue] = useState(search ?? "");
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page, search }],
@@ -34,7 +34,7 @@ export default function CustomersPage() {
       debounceRef.current = setTimeout(() => {
         navigate({
           to: "/customers",
-          search: (prev) => ({ ...prev, search: value, page: 1 }),
+          search: (prev) => ({ ...prev, search: value || undefined, page: 1 }),
         });
       }, 300);
     },

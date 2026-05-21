@@ -13,7 +13,10 @@ export const Route = createFileRoute("/orders")({
 
   validateSearch: (search: Record<string, unknown>) => ({
     page: Math.max(1, Number(search.page) || 1),
-    status: typeof search.status === "string" ? search.status : "",
+    status:
+      typeof search.status === "string" && search.status
+        ? search.status
+        : undefined,
   }),
 
   loaderDeps: ({ search }) => ({

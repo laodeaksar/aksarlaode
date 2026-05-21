@@ -29,7 +29,7 @@ export default function OrdersPage() {
     (value: string) => {
       navigate({
         to: "/orders",
-        search: (prev) => ({ ...prev, status: value, page: 1 }),
+        search: (prev) => ({ ...prev, status: value || undefined, page: 1 }),
       });
     },
     [navigate]
@@ -52,8 +52,8 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between gap-3">
         <select
           className="border-input bg-background focus:ring-ring rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
-          value={status}
-          onChange={(e) => handleStatusChange(e.target.value)}
+          value={status ?? ""}
+          onChange={(e) => handleStatusChange(e.target.value || "")}
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>

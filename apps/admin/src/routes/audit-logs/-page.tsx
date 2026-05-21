@@ -52,11 +52,12 @@ export default function AuditLogsPage() {
   // ── Navigation helpers ─────────────────────────────────────────────────
 
   // Generic setter: updates one search param and resets page to 1.
+  // Passes undefined when value is empty so it's omitted from the URL.
   const setFilter = useCallback(
     (key: string, value: string) => {
       navigate({
         to: "/audit-logs",
-        search: (prev) => ({ ...prev, [key]: value, page: 1 }),
+        search: (prev) => ({ ...prev, [key]: value || undefined, page: 1 }),
       });
     },
     [navigate]
@@ -77,10 +78,10 @@ export default function AuditLogsPage() {
       to: "/audit-logs",
       search: {
         page: 1,
-        startDate: "",
-        endDate: "",
-        action: "",
-        actorRole: "",
+        startDate: undefined,
+        endDate: undefined,
+        action: undefined,
+        actorRole: undefined,
       },
     });
   }, [navigate]);
@@ -104,8 +105,8 @@ export default function AuditLogsPage() {
           <input
             type="date"
             className={SELECT_CLS}
-            value={startDate}
-            max={endDate || undefined}
+            value={startDate ?? ""}
+            max={endDate ?? undefined}
             onChange={(e) => setFilter("startDate", e.target.value)}
             aria-label="Filter from date"
           />
@@ -118,8 +119,8 @@ export default function AuditLogsPage() {
           <input
             type="date"
             className={SELECT_CLS}
-            value={endDate}
-            min={startDate || undefined}
+            value={endDate ?? ""}
+            min={startDate ?? undefined}
             onChange={(e) => setFilter("endDate", e.target.value)}
             aria-label="Filter to date"
           />
@@ -132,7 +133,7 @@ export default function AuditLogsPage() {
           </label>
           <select
             className={SELECT_CLS}
-            value={action}
+            value={action ?? ""}
             onChange={(e) => setFilter("action", e.target.value)}
             aria-label="Filter by action"
           >
@@ -152,7 +153,7 @@ export default function AuditLogsPage() {
           </label>
           <select
             className={SELECT_CLS}
-            value={actorRole}
+            value={actorRole ?? ""}
             onChange={(e) => setFilter("actorRole", e.target.value)}
             aria-label="Filter by actor role"
           >

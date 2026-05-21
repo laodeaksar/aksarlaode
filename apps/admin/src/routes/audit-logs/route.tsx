@@ -15,10 +15,22 @@ export const Route = createFileRoute("/audit-logs")({
   // shareable, and survives browser back/forward navigation.
   validateSearch: (search: Record<string, unknown>) => ({
     page: Math.max(1, Number(search.page) || 1),
-    startDate: typeof search.startDate === "string" ? search.startDate : "",
-    endDate: typeof search.endDate === "string" ? search.endDate : "",
-    action: typeof search.action === "string" ? search.action : "",
-    actorRole: typeof search.actorRole === "string" ? search.actorRole : "",
+    startDate:
+      typeof search.startDate === "string" && search.startDate
+        ? search.startDate
+        : undefined,
+    endDate:
+      typeof search.endDate === "string" && search.endDate
+        ? search.endDate
+        : undefined,
+    action:
+      typeof search.action === "string" && search.action
+        ? search.action
+        : undefined,
+    actorRole:
+      typeof search.actorRole === "string" && search.actorRole
+        ? search.actorRole
+        : undefined,
   }),
 
   loaderDeps: ({ search }) => ({

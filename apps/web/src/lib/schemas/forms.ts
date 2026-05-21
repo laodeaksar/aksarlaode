@@ -1,35 +1,40 @@
-import { z } from "zod/v4";
+import * as v from "valibot";
 
 // ── Auth ───────────────────────────────────────────────────
-export const loginSchema = z.object({
-  email: z.email("Invalid email"),
-  password: z.string().min(1, "Password required"),
+export const loginSchema = v.object({
+  email: v.pipe(v.string(), v.email("Invalid email")),
+  password: v.pipe(v.string(), v.minLength(1, "Password required")),
 });
 
-export const registerSchema = z
-  .object({
-    name: z.string().min(2, "Name too short").max(100),
-    email: z.email("Invalid email"),
-    password: z.string().min(8, "Min 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
+export const registerSchema = v.pipe(
+  v.object({
+    name: v.pipe(v.string(), v.minLength(2, "Name too short"), v.maxLength(100)),
+    email: v.pipe(v.string(), v.email("Invalid email")),
+    password: v.pipe(v.string(), v.minLength(8, "Min 8 characters")),
+    confirmPassword: v.string(),
+  }),
+  v.forward(
+    v.partialCheck(
+      [["password"], ["confirmPassword"]],
+      (input) => input.password === input.confirmPassword,
+      "Passwords don't match"
+    ),
+    ["confirmPassword"]
+  )
+);
 
 // ── Checkout ───────────────────────────────────────────────
-export const checkoutSchema = z.object({
-  recipientName: z.string().min(2, "Name required"),
-  phone: z.string().min(9, "Invalid phone").max(15),
-  street: z.string().min(5, "Street address required"),
-  city: z.string().min(2, "City required"),
-  province: z.string().min(2, "Province required"),
-  postalCode: z.string().length(5, "5-digit postal code"),
-  notes: z.string().max(200).optional(),
+export const checkoutSchema = v.object({
+  recipientName: v.pipe(v.string(), v.minLength(2, "Name required")),
+  phone: v.pipe(v.string(), v.minLength(9, "Invalid phone"), v.maxLength(15)),
+  street: v.pipe(v.string(), v.minLength(5, "Street address required")),
+  city: v.pipe(v.string(), v.minLength(2, "City required")),
+  province: v.pipe(v.string(), v.minLength(2, "Province required")),
+  postalCode: v.pipe(v.string(), v.length(5, "5-digit postal code")),
+  notes: v.optional(v.pipe(v.string(), v.maxLength(200))),
 });
 
-// Inferred types used in RHF
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;
-export type CheckoutInput = z.infer<typeof checkoutSchema>;
+// Inferred output types — used in place of the old z.infer<> aliases
+export type LoginInput = v.InferOutput<typeof loginSchema>;
+export type RegisterInput = v.InferOutput<typeof registerSchema>;
+export type CheckoutInput = v.InferOutput<typeof checkoutSchema>;

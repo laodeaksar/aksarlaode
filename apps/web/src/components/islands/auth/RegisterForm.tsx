@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Field as FormField, Form, setErrors, useForm } from "@formisch/react";
 
 import { authApi } from "@/lib/api/auth";
 import { HttpError } from "@/lib/effect/errors";
@@ -13,14 +11,12 @@ export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-  } = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
-    mode: "onBlur",
+  // validate: "blur" preserves the original mode: "onBlur" UX —
+  // fields are validated when the user leaves them, and revalidated on blur too.
+  const form = useForm({
+    schema: registerSchema,
+    validate: "blur",
+    revalidate: "blur",
   });
 
   const onSubmit = async (values: RegisterInput) => {
@@ -32,7 +28,10 @@ export function RegisterForm() {
       const err = exit.cause.error;
 
       if (err instanceof HttpError && err.status === 409) {
-        setError("email", { message: "This email is already registered" });
+        setErrors(form, {
+          path: ["email"] as const,
+          errors: ["This email is already registered"],
+        });
         return;
       }
 
@@ -76,7 +75,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <Form of={form} onSubmit={onSubmit} className="space-y-4">
       {serverError && (
         <div
           role="alert"
@@ -86,52 +85,68 @@ export function RegisterForm() {
         </div>
       )}
 
-      <Field label="Full Name" error={errors.name?.message}>
-        <input
-          {...register("name")}
-          className={inputCls(!!errors.name)}
-          placeholder="Budi Santoso"
-          autoComplete="name"
-        />
-      </Field>
+      <FormField of={form} path={["name"] as const}>
+        {(nameField) => (
+          <Field label="Full Name" error={nameField.errors?.[0]}>
+            <input
+              {...nameField.props}
+              className={inputCls(!!nameField.errors)}
+              placeholder="Budi Santoso"
+              autoComplete="name"
+            />
+          </Field>
+        )}
+      </FormField>
 
-      <Field label="Email" error={errors.email?.message}>
-        <input
-          {...register("email")}
-          type="email"
-          autoComplete="email"
-          className={inputCls(!!errors.email)}
-          placeholder="you@example.com"
-        />
-      </Field>
+      <FormField of={form} path={["email"] as const}>
+        {(emailField) => (
+          <Field label="Email" error={emailField.errors?.[0]}>
+            <input
+              {...emailField.props}
+              type="email"
+              autoComplete="email"
+              className={inputCls(!!emailField.errors)}
+              placeholder="you@example.com"
+            />
+          </Field>
+        )}
+      </FormField>
 
-      <Field label="Password" error={errors.password?.message}>
-        <input
-          {...register("password")}
-          type="password"
-          autoComplete="new-password"
-          className={inputCls(!!errors.password)}
-          placeholder="Min 8 characters"
-        />
-      </Field>
+      <FormField of={form} path={["password"] as const}>
+        {(passwordField) => (
+          <Field label="Password" error={passwordField.errors?.[0]}>
+            <input
+              {...passwordField.props}
+              type="password"
+              autoComplete="new-password"
+              className={inputCls(!!passwordField.errors)}
+              placeholder="Min 8 characters"
+            />
+          </Field>
+        )}
+      </FormField>
 
-      <Field label="Confirm Password" error={errors.confirmPassword?.message}>
-        <input
-          {...register("confirmPassword")}
-          type="password"
-          autoComplete="new-password"
-          className={inputCls(!!errors.confirmPassword)}
-          placeholder="Repeat password"
-        />
-      </Field>
+      <FormField of={form} path={["confirmPassword"] as const}>
+        {(confirmField) => (
+          <Field label="Confirm Password" error={confirmField.errors?.[0]}>
+            <input
+              {...confirmField.props}
+              type="password"
+              autoComplete="new-password"
+              className={inputCls(!!confirmField.errors)}
+              placeholder="Repeat password"
+            />
+          </Field>
+        )}
+      </FormField>
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
-        {isSubmitting ? "Creating account…" : "Create Account"}
+        {form.isSubmitting ? "Creating account…" : "Create Account"}
       </button>
-    </form>
+    </Form>
   );
 }

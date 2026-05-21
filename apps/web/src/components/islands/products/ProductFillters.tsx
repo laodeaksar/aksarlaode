@@ -1,48 +1,55 @@
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useState } from "react";
+import { Form, handleSubmit, useField, useForm } from "@formisch/react";
+import * as v from "valibot";
 
 import { Effect } from "effect";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
 
 import type { Product } from "@repo/common";
 
 import { productsApi } from "@/lib/api/products";
 import { AppRuntime } from "@/lib/effect/runtime";
 
-const filterSchema = z.object({
-  search: z.string().optional(),
-  minPrice: z.coerce.number().min(0).optional(),
-  maxPrice: z.coerce.number().min(0).optional(),
-  inStock: z.boolean().optional(),
-  sortBy: z.enum(["newest", "price_asc", "price_desc", "popular"]).optional(),
+// Filter schema — inline, all fields optional so the form always submits.
+// minPrice/maxPrice are kept as strings because HTML number inputs yield
+// string values via the DOM; conversion happens in fetchProducts below.
+const filterSchema = v.object({
+  search: v.optional(v.string()),
+  minPrice: v.optional(v.string()),
+  maxPrice: v.optional(v.string()),
+  inStock: v.optional(v.boolean()),
+  sortBy: v.optional(
+    v.picklist(["newest", "price_asc", "price_desc", "popular"] as const)
+  ),
 });
 
-type FilterValues = z.infer<typeof filterSchema>;
+type FilterFormValues = v.InferOutput<typeof filterSchema>;
 
 type Props = {
   initialProducts: Product[];
   total: number;
 };
 
-function getUrlParams(): FilterValues {
+function getUrlParams(): FilterFormValues {
   if (typeof window === "undefined") return { sortBy: "newest" };
   const p = new URLSearchParams(window.location.search);
   return {
     search: p.get("search") ?? undefined,
-    minPrice: p.get("minPrice") ? Number(p.get("minPrice")) : undefined,
-    maxPrice: p.get("maxPrice") ? Number(p.get("maxPrice")) : undefined,
+    minPrice: p.get("minPrice") ?? undefined,
+    maxPrice: p.get("maxPrice") ?? undefined,
     inStock: p.get("inStock") === "true" ? true : undefined,
-    sortBy: (p.get("sortBy") as FilterValues["sortBy"]) ?? "newest",
+    sortBy:
+      (p.get("sortBy") as FilterFormValues["sortBy"]) ?? "newest",
   };
 }
 
-function syncToUrl(values: FilterValues) {
+function syncToUrl(values: FilterFormValues) {
   const params = new URLSearchParams();
   if (values.search) params.set("search", values.search);
-  if (values.minPrice != null) params.set("minPrice", String(values.minPrice));
-  if (values.maxPrice != null) params.set("maxPrice", String(values.maxPrice));
+  if (values.minPrice != null && values.minPrice !== "")
+    params.set("minPrice", values.minPrice);
+  if (values.maxPrice != null && values.maxPrice !== "")
+    params.set("maxPrice", values.maxPrice);
   if (values.inStock) params.set("inStock", "true");
   if (values.sortBy && values.sortBy !== "newest")
     params.set("sortBy", values.sortBy);
@@ -55,34 +62,51 @@ export function ProductFilters({ initialProducts, total }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [resultTotal, setResultTotal] = useState(total);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<FilterValues>({
-    resolver: zodResolver(filterSchema),
-    defaultValues: getUrlParams(),
+  const form = useForm({
+    schema: filterSchema,
+    initialInput: getUrlParams(),
   });
 
-  // Debounced live search
-  const searchValue = watch("search");
+  // useField for fields that need programmatic access (debounce / immediate submit)
+  const searchField = useField(form, { path: ["search"] as const });
+  const minPriceField = useField(form, { path: ["minPrice"] as const });
+  const maxPriceField = useField(form, { path: ["maxPrice"] as const });
+  const sortByField = useField(form, { path: ["sortBy"] as const });
+  const inStockField = useField(form, { path: ["inStock"] as const });
+
+  // Debounced live search — re-runs whenever the search field value changes.
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleSubmit(fetchProducts)();
+      handleSubmit(form, fetchProducts)();
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchField.input]);
 
-  const fetchProducts = async (values: FilterValues) => {
+  const fetchProducts = async (values: FilterFormValues) => {
     setIsLoading(true);
+
+    // Convert optional price strings to numbers for the API
+    const minPriceNum =
+      values.minPrice !== undefined && values.minPrice !== ""
+        ? parseFloat(values.minPrice)
+        : undefined;
+    const maxPriceNum =
+      values.maxPrice !== undefined && values.maxPrice !== ""
+        ? parseFloat(values.maxPrice)
+        : undefined;
 
     const exit = await AppRuntime.runPromiseExit(
       productsApi.list({
         search: values.search || undefined,
-        minPrice: values.minPrice || undefined,
-        maxPrice: values.maxPrice || undefined,
+        minPrice:
+          minPriceNum !== undefined && !isNaN(minPriceNum)
+            ? minPriceNum
+            : undefined,
+        maxPrice:
+          maxPriceNum !== undefined && !isNaN(maxPriceNum)
+            ? maxPriceNum
+            : undefined,
         inStock: values.inStock || undefined,
         sortBy: values.sortBy,
       })
@@ -100,10 +124,10 @@ export function ProductFilters({ initialProducts, total }: Props) {
   return (
     <div className="space-y-6">
       {/* Filter form */}
-      <form onSubmit={handleSubmit(fetchProducts)} className="space-y-4">
+      <Form of={form} onSubmit={fetchProducts} className="space-y-4">
         {/* Search */}
         <input
-          {...register("search")}
+          {...searchField.props}
           className="w-full rounded-lg border px-4 py-2.5 text-sm"
           placeholder="Search products..."
         />
@@ -111,53 +135,53 @@ export function ProductFilters({ initialProducts, total }: Props) {
         {/* Price range */}
         <div className="flex items-center gap-3">
           <input
-            {...register("minPrice")}
+            {...minPriceField.props}
             type="number"
-            className={inputCls(!!errors.minPrice)}
+            className={inputCls(!!minPriceField.errors)}
             placeholder="Min price"
           />
           <span className="text-gray-400">—</span>
           <input
-            {...register("maxPrice")}
+            {...maxPriceField.props}
             type="number"
-            className={inputCls(!!errors.maxPrice)}
+            className={inputCls(!!maxPriceField.errors)}
             placeholder="Max price"
           />
         </div>
 
         {/* Sort + In Stock row */}
         <div className="flex items-center gap-3">
-          <Controller
-            name="sortBy"
-            control={control}
-            render={({ field }) => (
-              <select
-                {...field}
-                className="flex-1 rounded-lg border px-3 py-2 text-sm"
-              >
-                <option value="newest">Newest</option>
-                <option value="price_asc">Price: Low → High</option>
-                <option value="price_desc">Price: High → Low</option>
-                <option value="popular">Most Popular</option>
-              </select>
-            )}
-          />
+          {/* sortBy select — use field.onChange for controlled value */}
+          <select
+            name={sortByField.props.name}
+            ref={sortByField.props.ref}
+            value={sortByField.input ?? "newest"}
+            onChange={(e) =>
+              sortByField.onChange(
+                e.target.value as FilterFormValues["sortBy"]
+              )
+            }
+            onBlur={sortByField.props.onBlur}
+            className="flex-1 rounded-lg border px-3 py-2 text-sm"
+          >
+            <option value="newest">Newest</option>
+            <option value="price_asc">Price: Low → High</option>
+            <option value="price_desc">Price: High → Low</option>
+            <option value="popular">Most Popular</option>
+          </select>
 
+          {/* inStock checkbox — onChange also immediately triggers a fetch */}
           <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <Controller
-              name="inStock"
-              control={control}
-              render={({ field }) => (
-                <input
-                  type="checkbox"
-                  checked={field.value ?? false}
-                  onChange={(e) => {
-                    field.onChange(e.target.checked);
-                    handleSubmit(fetchProducts)();
-                  }}
-                  className="h-4 w-4 rounded"
-                />
-              )}
+            <input
+              type="checkbox"
+              name={inStockField.props.name}
+              ref={inStockField.props.ref}
+              checked={inStockField.input ?? false}
+              onChange={(e) => {
+                inStockField.onChange(e.target.checked);
+                handleSubmit(form, fetchProducts)();
+              }}
+              className="h-4 w-4 rounded"
             />
             In Stock Only
           </label>
@@ -169,7 +193,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
         >
           Apply Filters
         </button>
-      </form>
+      </Form>
 
       {/* Results */}
       <p className="text-sm text-gray-500">{resultTotal} products found</p>

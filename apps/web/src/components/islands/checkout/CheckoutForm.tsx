@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { getErrors, useField, useForm, validate, Form } from "@formisch/react";
 
 import { Effect, pipe } from "effect";
-
-import { zodResolver } from "@hookform/resolvers/zod";
 
 import { ordersApi } from "@/lib/api/orders";
 import { HttpError, NetworkError } from "@/lib/effect/errors";
@@ -32,31 +30,51 @@ export function CheckoutForm({ userId, userEmail }: Props) {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [snapToken, setSnapToken] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    trigger,
-    formState: { errors, isSubmitting },
-  } = useForm<CheckoutInput>({
-    resolver: zodResolver(checkoutSchema),
-    mode: "onChange",
+  // validate: "change" preserves original mode: "onChange" UX
+  const form = useForm({
+    schema: checkoutSchema,
+    validate: "change",
+    revalidate: "change",
   });
 
-  const watchedValues = watch();
+  // useField hooks give reactive access to each field's value and errors.
+  // These replace both register() for binding and watch() for reading values.
+  const recipientNameField = useField(form, {
+    path: ["recipientName"] as const,
+  });
+  const phoneField = useField(form, { path: ["phone"] as const });
+  const streetField = useField(form, { path: ["street"] as const });
+  const cityField = useField(form, { path: ["city"] as const });
+  const provinceField = useField(form, { path: ["province"] as const });
+  const postalCodeField = useField(form, { path: ["postalCode"] as const });
+  const notesField = useField(form, { path: ["notes"] as const });
 
-  // Step 1 → Step 2: validate address fields only
+  // Step 1 → Step 2: validate address fields only.
+  // validate(form) runs the full schema and writes errors into the store;
+  // we then inspect only the address-specific paths to decide whether to advance.
   const proceedToReview = async () => {
-    const addressFields: (keyof CheckoutInput)[] = [
+    const result = await validate(form);
+
+    if (result.success) {
+      setStep("review");
+      return;
+    }
+
+    // If all failures are outside the address fields (e.g. only notes), still advance.
+    const addressKeys = new Set([
       "recipientName",
       "phone",
       "street",
       "city",
       "province",
       "postalCode",
-    ];
-    const valid = await trigger(addressFields);
-    if (valid) setStep("review");
+    ]);
+    const hasAddressError = result.issues.some((issue) => {
+      const key = issue.path?.[0]?.key;
+      return typeof key === "string" && addressKeys.has(key);
+    });
+
+    if (!hasAddressError) setStep("review");
   };
 
   // Step 2 → Step 3: create order + initiate payment
@@ -181,29 +199,29 @@ export function CheckoutForm({ userId, userEmail }: Props) {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Recipient Name"
-              error={errors.recipientName?.message}
+              error={recipientNameField.errors?.[0]}
               className="sm:col-span-2"
             >
               <input
-                {...register("recipientName")}
-                className={inputCls(!!errors.recipientName)}
+                {...recipientNameField.props}
+                className={inputCls(!!recipientNameField.errors)}
                 placeholder="Full name"
               />
             </Field>
 
-            <Field label="Phone" error={errors.phone?.message}>
+            <Field label="Phone" error={phoneField.errors?.[0]}>
               <input
-                {...register("phone")}
+                {...phoneField.props}
                 type="tel"
-                className={inputCls(!!errors.phone)}
+                className={inputCls(!!phoneField.errors)}
                 placeholder="08123456789"
               />
             </Field>
 
-            <Field label="Postal Code" error={errors.postalCode?.message}>
+            <Field label="Postal Code" error={postalCodeField.errors?.[0]}>
               <input
-                {...register("postalCode")}
-                className={inputCls(!!errors.postalCode)}
+                {...postalCodeField.props}
+                className={inputCls(!!postalCodeField.errors)}
                 placeholder="12345"
                 maxLength={5}
               />
@@ -211,39 +229,39 @@ export function CheckoutForm({ userId, userEmail }: Props) {
 
             <Field
               label="Street Address"
-              error={errors.street?.message}
+              error={streetField.errors?.[0]}
               className="sm:col-span-2"
             >
               <input
-                {...register("street")}
-                className={inputCls(!!errors.street)}
+                {...streetField.props}
+                className={inputCls(!!streetField.errors)}
                 placeholder="Jl. Sudirman No. 1"
               />
             </Field>
 
-            <Field label="City" error={errors.city?.message}>
+            <Field label="City" error={cityField.errors?.[0]}>
               <input
-                {...register("city")}
-                className={inputCls(!!errors.city)}
+                {...cityField.props}
+                className={inputCls(!!cityField.errors)}
                 placeholder="Jakarta"
               />
             </Field>
 
-            <Field label="Province" error={errors.province?.message}>
+            <Field label="Province" error={provinceField.errors?.[0]}>
               <input
-                {...register("province")}
-                className={inputCls(!!errors.province)}
+                {...provinceField.props}
+                className={inputCls(!!provinceField.errors)}
                 placeholder="DKI Jakarta"
               />
             </Field>
 
             <Field
               label="Order Notes (optional)"
-              error={errors.notes?.message}
+              error={notesField.errors?.[0]}
               className="sm:col-span-2"
             >
               <textarea
-                {...register("notes")}
+                {...notesField.props}
                 rows={2}
                 className={inputCls(false)}
                 placeholder="Leave at door, etc."
@@ -262,22 +280,18 @@ export function CheckoutForm({ userId, userEmail }: Props) {
 
       {/* ── Step 2: Review ────────────────────────────── */}
       {step === "review" && (
-        <form
-          onSubmit={handleSubmit(proceedToPayment)}
-          className="space-y-6"
-          noValidate
-        >
+        <Form of={form} onSubmit={proceedToPayment} className="space-y-6">
           <h2 className="text-lg font-semibold">Review Order</h2>
 
-          {/* Address summary */}
+          {/* Address summary — reads from reactive useField.input values */}
           <div className="space-y-1 rounded-lg border p-4 text-sm">
             <p className="font-medium">
-              {watchedValues.recipientName} · {watchedValues.phone}
+              {recipientNameField.input} · {phoneField.input}
             </p>
-            <p className="text-gray-600">{watchedValues.street}</p>
+            <p className="text-gray-600">{streetField.input}</p>
             <p className="text-gray-600">
-              {watchedValues.city}, {watchedValues.province}{" "}
-              {watchedValues.postalCode}
+              {cityField.input}, {provinceField.input}{" "}
+              {postalCodeField.input}
             </p>
             <button
               type="button"
@@ -320,12 +334,12 @@ export function CheckoutForm({ userId, userEmail }: Props) {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={form.isSubmitting}
             className="w-full rounded-lg bg-green-600 py-3 font-medium text-white hover:bg-green-700 disabled:opacity-60"
           >
-            {isSubmitting ? "Creating order..." : "Place Order →"}
+            {form.isSubmitting ? "Creating order..." : "Place Order →"}
           </button>
-        </form>
+        </Form>
       )}
 
       {/* ── Step 3: Payment ───────────────────────────── */}

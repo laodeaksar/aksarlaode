@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { listOrdersFn } from "@/server/orders";
-import { orderColumns, ORDER_STATUSES } from "@/components/orders";
+import { orderColumns, ORDER_STATUSES, ExportOrdersButton } from "@/components/orders";
 import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -45,7 +45,7 @@ export default function OrdersPage() {
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <PageHeader title="Orders" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <select
           className="rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
           value={status}
@@ -59,6 +59,8 @@ export default function OrdersPage() {
             </option>
           ))}
         </select>
+
+        <ExportOrdersButton />
       </div>
 
       <DataTable

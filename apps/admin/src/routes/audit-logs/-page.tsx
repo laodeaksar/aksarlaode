@@ -167,7 +167,7 @@ export default function AuditLogsPage() {
 
       {/* Results */}
       <DataTable
-        columns={columns}
+        columns={auditLogColumns}
         data={data?.items ?? []}
         isLoading={isLoading}
         total={data?.total ?? 0}

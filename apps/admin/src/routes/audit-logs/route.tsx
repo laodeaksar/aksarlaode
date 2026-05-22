@@ -8,9 +8,8 @@ import { can } from "@/lib";
 export const Route = createFileRoute("/audit-logs")({
   beforeLoad: ({ context }) => {
     const { session } = context;
-    if (!session || !can(session.role, "audit:read")) {
-      throw redirect({ to: "/dashboard" });
-    }
+    if (!session) throw redirect({ to: "/login" });
+    if (!can(session.role, "audit:read")) throw redirect({ to: "/forbidden" });
   },
 
   // All filter state lives in the URL so every combination is bookmarkable,

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as ProductsRouteRouteImport } from './routes/products/route'
 import { Route as OrdersRouteRouteImport } from './routes/orders/route'
 import { Route as LoginRouteRouteImport } from './routes/login/route'
@@ -31,6 +32,11 @@ import { Route as OrdersOrderIdIndexRouteImport } from './routes/orders/$orderId
 import { Route as CustomersUserIdIndexRouteImport } from './routes/customers/$userId/index'
 import { Route as ProductsProductIdEditRouteImport } from './routes/products/$productId/edit'
 
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsRouteRoute = ProductsRouteRouteImport.update({
   id: '/products',
   path: '/products',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
   '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
   '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forbidden': typeof ForbiddenRoute
   '/products/new': typeof ProductsNewRoute
   '/audit-logs': typeof AuditLogsIndexRoute
   '/customers': typeof CustomersIndexRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
   '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
   '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/forbidden'
     | '/customers/$userId'
     | '/orders/$orderId'
     | '/products/$productId'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forbidden'
     | '/products/new'
     | '/audit-logs'
     | '/customers'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/forbidden'
     | '/customers/$userId'
     | '/orders/$orderId'
     | '/products/$productId'
@@ -269,10 +281,18 @@ export interface RootRouteChildren {
   LoginRouteRoute: typeof LoginRouteRouteWithChildren
   OrdersRouteRoute: typeof OrdersRouteRouteWithChildren
   ProductsRouteRoute: typeof ProductsRouteRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products': {
       id: '/products'
       path: '/products'
@@ -549,6 +569,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRouteRoute: LoginRouteRouteWithChildren,
   OrdersRouteRoute: OrdersRouteRouteWithChildren,
   ProductsRouteRoute: ProductsRouteRouteWithChildren,
+  ForbiddenRoute: ForbiddenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

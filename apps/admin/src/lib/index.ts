@@ -30,9 +30,6 @@ export type { Session, UserRole } from "./auth";
 // Re-exported from here so consumers don't need to know the server/* path
 export { getSessionFn } from "../server/auth";
 
-// effect-resolver
-export { effectResolver } from "./effect-resolver";
-
 // rbac
 export { can, hasAnyAdminRole } from "./rbac";
 export type { Permission } from "./rbac";

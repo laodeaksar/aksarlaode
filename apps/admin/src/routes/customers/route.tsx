@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
+import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listCustomersFn } from "@/server/customers";
 import { customersSearchSchema } from "@/lib/search-schemas";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/customers")({
     if (!can(session.role, "customers:read")) throw redirect({ to: "/forbidden" });
   },
 
-  validateSearch: zodValidator(customersSearchSchema),
+  validateSearch: valibotValidator(customersSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,

@@ -58,3 +58,7 @@ export type { NavItem } from "./use-nav-items";
 
 // use-route-search
 export { useRouteSearch } from "./use-route-search";
+
+// use-recent-pages
+export { getRecentPages, useTrackRecentPage } from "./use-recent-pages";
+export type { RecentPage } from "./use-recent-pages";

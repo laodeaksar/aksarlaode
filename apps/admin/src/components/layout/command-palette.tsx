@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
-
 import {
   ClipboardListIcon,
+  ClockIcon,
   LayoutDashboardIcon,
   PackageIcon,
   PlusIcon,
@@ -19,9 +19,17 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@repo/ui/components/command";
 
-import { can, useSession } from "@/lib";
+import { can, getRecentPages, useSession } from "@/lib";
+import type { RecentPage } from "@/lib";
+
+type NavEntry = {
+  label: string;
+  to: string;
+  icon: React.ReactNode;
+};
 
 type CommandPaletteProps = {
   open: boolean;
@@ -32,6 +40,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { session } = useSession();
   const role = session?.role ?? "CUSTOMER";
+
+  const [recentPages, setRecentPages] = useState<RecentPage[]>([]);
+
+  // Refresh recent pages from localStorage each time the palette opens.
+  useEffect(() => {
+    if (open) setRecentPages(getRecentPages());
+  }, [open]);
 
   // ⌘K / Ctrl+K — toggle palette from anywhere in the app.
   useEffect(() => {
@@ -50,44 +65,42 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     navigate({ to });
   }
 
-  const navItems = [
+  const navItems: NavEntry[] = [
     {
       label: "Dashboard",
       to: "/dashboard",
       icon: <LayoutDashboardIcon />,
-      show: true,
     },
-    {
+    can(role, "products:read") && {
       label: "Products",
       to: "/products",
       icon: <PackageIcon />,
-      show: can(role, "products:read"),
     },
-    {
+    can(role, "products:write") && {
       label: "New Product",
       to: "/products/new",
       icon: <PlusIcon />,
-      show: can(role, "products:write"),
     },
-    {
+    can(role, "orders:read") && {
       label: "Orders",
       to: "/orders",
       icon: <ShoppingCartIcon />,
-      show: can(role, "orders:read"),
     },
-    {
+    can(role, "customers:read") && {
       label: "Customers",
       to: "/customers",
       icon: <UsersIcon />,
-      show: can(role, "customers:read"),
     },
-    {
+    can(role, "audit:read") && {
       label: "Audit Logs",
       to: "/audit-logs",
       icon: <ClipboardListIcon />,
-      show: can(role, "audit:read"),
     },
-  ].filter((item) => item.show);
+  ].filter((item): item is NavEntry => Boolean(item));
+
+  // Only show recent pages the current role can still access.
+  const allowedPaths = new Set(navItems.map((i) => i.to));
+  const visibleRecent = recentPages.filter((p) => allowedPaths.has(p.to));
 
   return (
     <CommandDialog
@@ -100,9 +113,35 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <CommandInput placeholder="Jump to..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+
+          {visibleRecent.length > 0 && (
+            <>
+              <CommandGroup heading="Recent">
+                {visibleRecent.map((page) => {
+                  const match = navItems.find((i) => i.to === page.to);
+                  return (
+                    <CommandItem
+                      key={`recent-${page.to}`}
+                      value={`recent ${page.label}`}
+                      onSelect={() => go(page.to)}
+                    >
+                      {match?.icon ?? <ClockIcon />}
+                      {page.label}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              <CommandSeparator />
+            </>
+          )}
+
           <CommandGroup heading="Navigation">
             {navItems.map((item) => (
-              <CommandItem key={item.to} onSelect={() => go(item.to)}>
+              <CommandItem
+                key={item.to}
+                value={item.label}
+                onSelect={() => go(item.to)}
+              >
                 {item.icon}
                 {item.label}
               </CommandItem>

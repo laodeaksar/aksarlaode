@@ -4,12 +4,15 @@ import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 
 import { ErrorBoundary } from "@/components/shared";
 
+import { useTrackRecentPage } from "@/lib";
+
 import { AppSidebar } from "./app-sidebar";
 import { CommandPalette } from "./command-palette";
 import { SiteHeader } from "./site-header";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [commandOpen, setCommandOpen] = React.useState(false);
+  useTrackRecentPage();
 
   return (
     <SidebarProvider

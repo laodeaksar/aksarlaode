@@ -17,7 +17,8 @@ export type AuditAction =
   | "product_updated"
   | "product_deleted"
   | "order_status_changed"
-  | "user_role_changed";
+  | "user_role_changed"
+  | "user_invited";
 
 export type AuditResource = "product" | "order" | "user";
 
@@ -32,6 +33,8 @@ export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
   deleteProductFn: { action: "product_deleted", resource: "product" },
   updateOrderStatusFn: { action: "order_status_changed", resource: "order" },
   changeUserRoleFn: { action: "user_role_changed", resource: "user" },
+  // inviteUserFn returns { userId, email, role, message } — ID extracted below.
+  inviteUserFn: { action: "user_invited", resource: "user" },
 };
 
 // ── Audit entry input ──────────────────────────────────────────────────────
@@ -94,14 +97,17 @@ export function extractResourceId(
   data: unknown,
   result: unknown = undefined
 ): string {
-  // For creates, prefer the ID from the returned entity (set post-insert)
+  // For creates and invites, prefer the ID from the returned payload
+  // (set post-insert by the backend).
+  // Handles both { id } (createProductFn) and { userId } (inviteUserFn).
   if (
-    fnName.startsWith("create") &&
+    (fnName.startsWith("create") || fnName.startsWith("invite")) &&
     result !== null &&
     typeof result === "object"
   ) {
     const r = result as Record<string, unknown>;
     if (typeof r["id"] === "string") return r["id"];
+    if (typeof r["userId"] === "string") return r["userId"];
   }
 
   if (data !== null && typeof data === "object") {

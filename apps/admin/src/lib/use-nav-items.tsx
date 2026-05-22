@@ -9,6 +9,7 @@
 import {
   ClipboardListIcon,
   LayoutDashboardIcon,
+  MailIcon,
   PackageIcon,
   SettingsIcon,
   ShieldCheckIcon,
@@ -76,6 +77,13 @@ export function useNavItems(): NavItem[] {
         ),
     }) ?? false;
 
+  const hasQueueFilter =
+    useMatch({
+      from: "/queue",
+      shouldThrow: false,
+      select: (m) => !!m?.search.jobType,
+    }) ?? false;
+
   const allItems: NavItemDef[] = [
     {
       title: "Dashboard",
@@ -111,6 +119,13 @@ export function useNavItems(): NavItem[] {
       icon: <ClipboardListIcon />,
       hasFilter: hasAuditLogsFilter,
       permission: "audit:read",
+    },
+    {
+      title: "Email Queue",
+      url: "/queue",
+      icon: <MailIcon />,
+      hasFilter: hasQueueFilter,
+      permission: "queue:read",
     },
     {
       title: "Users",

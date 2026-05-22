@@ -4,10 +4,6 @@
 //   OWNER   — full access including user management and billing
 //   ADMIN   — full product and order management, plus audit log access
 //   FINANCE — read-only access to orders and revenue; no product management
-//
-// Usage:
-//   import { can } from "@/lib/rbac"
-//   if (!can(session.role, "products:write")) return <Forbidden />
 
 import type { UserRole } from "@/lib/auth";
 
@@ -19,8 +15,10 @@ export type Permission =
   | "customers:read"
   | "dashboard:read"
   | "users:manage"
-  | "audit:read" // FIX ADM-06b: audit log viewer access
-  | "settings:write"; // Global store config — OWNER only
+  | "audit:read"
+  | "queue:read"    // view email queue stats and failed jobs
+  | "queue:manage"  // retry failed jobs (OWNER + ADMIN)
+  | "settings:write";
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OWNER: [
@@ -32,6 +30,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "dashboard:read",
     "users:manage",
     "audit:read",
+    "queue:read",
+    "queue:manage",
     "settings:write",
   ],
   ADMIN: [
@@ -42,6 +42,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "customers:read",
     "dashboard:read",
     "audit:read",
+    "queue:read",
+    "queue:manage",
   ],
   FINANCE: ["orders:read", "customers:read", "dashboard:read"],
   CUSTOMER: [],

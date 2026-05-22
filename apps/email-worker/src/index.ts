@@ -1,4 +1,13 @@
+import { env } from "@repo/env/email-worker";
+
 import { renderMetrics } from "./lib/metrics";
+import {
+  closeInspector,
+  getFailedJobs,
+  getQueueStats,
+  retryAllFailed,
+  retryJob,
+} from "./lib/queue-inspector";
 import { emailWorker } from "./processor/email.processor";
 import { emailQueue } from "./queues/email.queue";
 
@@ -6,10 +15,6 @@ console.info(
   JSON.stringify({ event: "worker_started", service: "email-worker" })
 );
 
-// P1 FIX: Global unhandledRejection handler.
-// Without this, an unhandled rejection in a fire-and-forget promise (e.g.
-// a non-awaited fetch) crashes the Bun process with no structured log entry,
-// making the failure invisible to alerting systems.
 process.on("unhandledRejection", (reason: unknown) => {
   console.error(
     JSON.stringify({
@@ -19,9 +24,6 @@ process.on("unhandledRejection", (reason: unknown) => {
       service: "email-worker",
     })
   );
-  // Do NOT call process.exit() here — let BullMQ finish in-flight jobs.
-  // The process will exit naturally after the current event loop drains,
-  // or the orchestrator will restart it based on the CRITICAL log.
 });
 
 process.on("uncaughtException", (err: Error) => {
@@ -34,29 +36,84 @@ process.on("uncaughtException", (err: Error) => {
       service: "email-worker",
     })
   );
-  // For uncaught exceptions the process state is undefined — exit immediately
-  // so the orchestrator can restart with a clean state.
   process.exit(1);
 });
 
-const METRICS_PORT = Number(process.env.METRICS_PORT ?? 9100);
+// ── Auth helper ─────────────────────────────────────────────────────────────
+// Queue inspection endpoints are internal-only. They require
+// Authorization: Bearer <INTERNAL_SERVICE_TOKEN> to prevent unauthorized
+// access to job metadata from the open network.
+
+function isAuthorized(req: Request): boolean {
+  const header = req.headers.get("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  return token.length > 0 && token === env.INTERNAL_SERVICE_TOKEN;
+}
+
+function unauthorized(): Response {
+  return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// ── HTTP server ─────────────────────────────────────────────────────────────
+
+const METRICS_PORT = Number(process.env["METRICS_PORT"] ?? 9100);
 
 Bun.serve({
   port: METRICS_PORT,
-  fetch(req: Request) {
+  async fetch(req: Request) {
     const { pathname } = new URL(req.url);
+    const method = req.method;
 
-    if (pathname === "/health") {
-      return new Response(
-        JSON.stringify({ status: "ok", service: "email-worker" }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+    // ── Public endpoints ──────────────────────────────────────────────────
+
+    if (method === "GET" && pathname === "/health") {
+      return json({ status: "ok", service: "email-worker" });
     }
 
-    if (pathname === "/metrics") {
+    if (method === "GET" && pathname === "/metrics") {
       return new Response(renderMetrics(), {
         headers: { "Content-Type": "text/plain; version=0.0.4; charset=utf-8" },
       });
+    }
+
+    // ── Protected queue inspection endpoints ──────────────────────────────
+    // All /queue/* routes require a valid INTERNAL_SERVICE_TOKEN.
+
+    if (!isAuthorized(req)) return unauthorized();
+
+    if (method === "GET" && pathname === "/queue/stats") {
+      const stats = await getQueueStats();
+      return json(stats);
+    }
+
+    if (method === "GET" && pathname === "/queue/jobs") {
+      const jobs = await getFailedJobs(50);
+      return json({ jobs });
+    }
+
+    // POST /queue/retry/:jobId — retry a single failed job by ID
+    const retryMatch = pathname.match(/^\/queue\/retry\/([^/]+)$/);
+    if (method === "POST" && retryMatch) {
+      const jobId = decodeURIComponent(retryMatch[1] ?? "");
+      if (!jobId) return json({ error: "Missing jobId" }, 400);
+      const ok = await retryJob(jobId);
+      return json({ success: ok, jobId });
+    }
+
+    // POST /queue/retry-all — retry every failed job
+    if (method === "POST" && pathname === "/queue/retry-all") {
+      const count = await retryAllFailed();
+      return json({ success: true, retriedCount: count });
     }
 
     return new Response("Not Found", { status: 404 });
@@ -71,14 +128,15 @@ console.info(
   })
 );
 
-// Graceful shutdown — emailWorker.close() waits for the active job to finish
-// before the process exits, preventing mid-send interruptions.
+// ── Graceful shutdown ────────────────────────────────────────────────────────
+
 const shutdown = async (signal: string) => {
   console.info(
     JSON.stringify({ event: "shutdown", signal, service: "email-worker" })
   );
   await emailWorker.close();
   await emailQueue.close();
+  await closeInspector();
   process.exit(0);
 };
 

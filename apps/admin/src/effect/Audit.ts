@@ -18,9 +18,12 @@ export type AuditAction =
   | "product_deleted"
   | "order_status_changed"
   | "user_role_changed"
-  | "user_invited";
+  | "user_invited"
+  | "customer_deleted"
+  | "customer_restored"
+  | "settings_updated";
 
-export type AuditResource = "product" | "order" | "user";
+export type AuditResource = "product" | "order" | "user" | "settings";
 
 export type ActionMapping = {
   action: AuditAction;
@@ -35,6 +38,9 @@ export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
   changeUserRoleFn: { action: "user_role_changed", resource: "user" },
   // inviteUserFn returns { userId, email, role, message } — ID extracted below.
   inviteUserFn: { action: "user_invited", resource: "user" },
+  deleteCustomerFn: { action: "customer_deleted", resource: "user" },
+  restoreCustomerFn: { action: "customer_restored", resource: "user" },
+  updateSettingsFn: { action: "settings_updated", resource: "settings" },
 };
 
 // ── Audit entry input ──────────────────────────────────────────────────────
@@ -97,6 +103,9 @@ export function extractResourceId(
   data: unknown,
   result: unknown = undefined
 ): string {
+  // Settings always affect the single global row — no per-record ID needed.
+  if (fnName === "updateSettingsFn") return "global";
+
   // For creates and invites, prefer the ID from the returned payload
   // (set post-insert by the backend).
   // Handles both { id } (createProductFn) and { userId } (inviteUserFn).

@@ -19,7 +19,8 @@ export type Permission =
   | "customers:read"
   | "dashboard:read"
   | "users:manage"
-  | "audit:read"; // FIX ADM-06b: audit log viewer access
+  | "audit:read" // FIX ADM-06b: audit log viewer access
+  | "settings:write"; // Global store config — OWNER only
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OWNER: [
@@ -31,6 +32,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "dashboard:read",
     "users:manage",
     "audit:read",
+    "settings:write",
   ],
   ADMIN: [
     "products:read",

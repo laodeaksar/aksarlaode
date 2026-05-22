@@ -10,6 +10,7 @@ import {
   ClipboardListIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   ShoppingCartIcon,
   UsersIcon,
@@ -116,6 +117,12 @@ export function useNavItems(): NavItem[] {
       url: "/users",
       icon: <ShieldCheckIcon />,
       permission: "users:manage",
+    },
+    {
+      title: "Settings",
+      url: "/settings",
+      icon: <SettingsIcon />,
+      permission: "settings:write",
     },
   ];
 

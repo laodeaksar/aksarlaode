@@ -23,6 +23,7 @@ import authRoutes from "./routes/auth.routes";
 import orderRoutes from "./routes/orders.routes";
 import paymentRoutes from "./routes/payments.routes";
 import productRoutes from "./routes/products.routes";
+import settingsRoutes from "./routes/settings.routes";
 import webhookRoutes from "./routes/webhooks.routes";
 import type { AppEnv } from "./types/context";
 
@@ -103,6 +104,8 @@ app.route("/v1/products", productRoutes);
 app.route("/v1/orders", orderRoutes);
 app.route("/v1/payments", paymentRoutes);
 app.route("/v1/webhooks", webhookRoutes);
+// Settings are handled inline (not proxied) — gateway owns DB + Redis pub/sub
+app.route("/v1/admin/settings", settingsRoutes);
 
 // Legacy unversioned mounts — deprecated, kept for backward compatibility
 app.route("/auth", authRoutes);
@@ -110,6 +113,7 @@ app.route("/products", productRoutes);
 app.route("/orders", orderRoutes);
 app.route("/payments", paymentRoutes);
 app.route("/webhooks", webhookRoutes);
+app.route("/admin/settings", settingsRoutes);
 
 // ── Unhandled error boundary ──────────────────────────────────────────────────
 app.onError(errorBoundary);

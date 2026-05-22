@@ -78,3 +78,37 @@ export const ProductFormSchema = v.object({
 });
 
 export type ProductFormValues = v.InferOutput<typeof ProductFormSchema>;
+
+// ── Store settings form ────────────────────────────────────────────────────
+// All four settings fields are required; numeric fields coerce from HTML
+// input values (always strings) the same way ProductFormSchema does.
+
+export const SettingsFormSchema = v.object({
+  paymentExpiryMinutes: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 1,
+      "Payment window must be at least 1 minute."
+    )
+  ),
+  minimumOrderAmount: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 0,
+      "Minimum order amount cannot be negative."
+    )
+  ),
+  maxOrderItemsPerOrder: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 1,
+      "Max items per order must be at least 1."
+    )
+  ),
+  maintenanceMode: v.boolean(),
+});
+
+export type SettingsFormValues = v.InferOutput<typeof SettingsFormSchema>;

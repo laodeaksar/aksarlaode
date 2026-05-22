@@ -2,14 +2,13 @@ import { Effect } from "effect";
 
 import type { Context } from "elysia";
 
-import { env } from "@repo/env/order";
-
 import { authClient } from "@/lib/auth-client";
 import { emailQueue } from "@/lib/email-queue";
 import { idempotency } from "@/lib/idempotency";
 import { generateOrderId } from "@/lib/order-id";
 import { productClient } from "@/lib/product-client";
 import { checkOrderCreateRateLimit } from "@/lib/rate-limiter";
+import { getStoreConfig } from "@/lib/store-config";
 import { orderRepository } from "@/repository/order.repository";
 import type { CreateOrderBody } from "@/types";
 
@@ -68,6 +67,17 @@ export const createHandler = async ({ body, headers, set }: Context) => {
   // state === "free" → lock acquired, continue to order creation
 
   // ── Main order creation ──────────────────────────────────────────────────
+  const config = getStoreConfig();
+
+  // Enforce per-order item limit from store config before touching any service.
+  if (input.items.length > config.maxOrderItemsPerOrder) {
+    set.status = 422;
+    return {
+      error: `Order cannot contain more than ${config.maxOrderItemsPerOrder} items`,
+      code: "MAX_ITEMS_EXCEEDED",
+    };
+  }
+
   const program = Effect.gen(function* () {
     // ── 1. Fetch authoritative prices from product-service ──────────────────
     //    Never trust client-supplied prices — always override with server data.
@@ -121,12 +131,13 @@ export const createHandler = async ({ body, headers, set }: Context) => {
 
     // ── 3. Compute totals — shippingFee from server config; discount rejected ─
     //    discountAmount is NOT accepted from client body to prevent manipulation.
+    //    minimumOrderAmount comes from live store config (admin-configurable).
     const totalAmount = verifiedItems.reduce(
       (sum, i) => sum + i.price * i.quantity,
       0
     );
     const grandTotal = Math.max(
-      env.MINIMUM_ORDER_AMOUNT,
+      config.minimumOrderAmount,
       totalAmount + (input.shippingFee ?? 0)
     );
 

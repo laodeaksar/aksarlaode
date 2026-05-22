@@ -112,3 +112,32 @@ export type NewProductInput = Schema.Schema.Type<typeof NewProductSchema>;
 
 export const UpdateProductSchema = Schema.partial(NewProductSchema);
 export type UpdateProductInput = Schema.Schema.Type<typeof UpdateProductSchema>;
+
+// ── Store settings ─────────────────────────────────────────────────────────
+
+export type StoreSettings = {
+  paymentExpiryMinutes: number;
+  minimumOrderAmount: number;
+  maxOrderItemsPerOrder: number;
+  maintenanceMode: boolean;
+};
+
+export const StoreSettingsSchema = Schema.Struct({
+  paymentExpiryMinutes: Schema.Number.pipe(
+    Schema.filter((n) => n >= 1, {
+      message: () => "paymentExpiryMinutes must be ≥ 1",
+    })
+  ),
+  minimumOrderAmount: Schema.Number.pipe(
+    Schema.filter((n) => n >= 0, {
+      message: () => "minimumOrderAmount must be ≥ 0",
+    })
+  ),
+  maxOrderItemsPerOrder: Schema.Number.pipe(
+    Schema.filter((n) => n >= 1, {
+      message: () => "maxOrderItemsPerOrder must be ≥ 1",
+    })
+  ),
+  maintenanceMode: Schema.Boolean,
+});
+export type StoreSettingsInput = Schema.Schema.Type<typeof StoreSettingsSchema>;

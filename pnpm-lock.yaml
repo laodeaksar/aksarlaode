@@ -480,13 +480,10 @@ importers:
     dependencies:
       '@t3-oss/env-core':
         specifier: ^0.13.11
-        version: 0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@3.25.76)
+        version: 0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@4.4.3)
       valibot:
         specifier: ^1.4.0
         version: 1.4.0(typescript@5.9.3)
-      zod:
-        specifier: ^3.24.0
-        version: 3.25.76
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -6704,11 +6701,11 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@3.25.76)':
+  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@4.4.3)':
     optionalDependencies:
       typescript: 5.9.3
       valibot: 1.4.0(typescript@5.9.3)
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@tailwindcss/node@4.3.0':
     dependencies:

@@ -91,11 +91,7 @@ export const createProductFn = createServerFn({ method: "POST" })
     context.runtime.runPromise(
       Effect.gen(function* () {
         const api = yield* ApiClientService;
-        return yield* api.products.create(
-          stripUndefined(
-            data as unknown as Record<string, unknown>
-          ) as NewProduct
-        );
+        return yield* api.products.create(stripUndefined(data) as NewProduct);
       })
     )
   );
@@ -125,9 +121,7 @@ export const updateProductFn = createServerFn({ method: "POST" })
         const api = yield* ApiClientService;
         return yield* api.products.update(
           data.id,
-          stripUndefined(
-            data.body as unknown as Record<string, unknown>
-          ) as Partial<NewProduct>
+          stripUndefined(data.body) as Partial<NewProduct>
         );
       })
     )

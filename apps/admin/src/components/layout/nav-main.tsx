@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 import { Link, useRouterState } from "@tanstack/react-router";
+import type { ToPathOption } from "@tanstack/react-router";
+import type { RegisteredRouter } from "@tanstack/react-router";
 
 import {
   SidebarGroup,
@@ -10,17 +12,15 @@ import {
   SidebarMenuItem,
 } from "@repo/ui/components/sidebar";
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string;
-    url: string;
-    icon?: ReactNode;
-    hasFilter?: boolean;
-    badge?: number;
-  }[];
-}) {
+export interface NavItem {
+  title: string;
+  url: string;
+  icon?: ReactNode;
+  hasFilter?: boolean;
+  badge?: number;
+}
+
+export function NavMain({ items }: { items: NavItem[] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -37,8 +37,13 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   render={
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    <Link to={item.url as any} />
+                    // item.url is a string literal matching a registered route.
+                    // We cast to the router's path union — tighter than `any`.
+                    <Link
+                      to={
+                        item.url as ToPathOption<RegisteredRouter, string, string>
+                      }
+                    />
                   }
                 >
                   <span className="relative flex shrink-0 items-center">

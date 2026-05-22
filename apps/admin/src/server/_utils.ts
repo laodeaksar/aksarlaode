@@ -26,8 +26,11 @@ export function decodeOrThrow<A, I>(schema: Schema.Schema<A, I>, input: I): A {
  * With `exactOptionalPropertyTypes: true`, Effect.Schema's `partial()` produces
  * `{ x?: T | undefined }` while hand-written types use `{ x?: T }`.
  * Removing explicit undefined entries makes the two shapes compatible.
+ *
+ * Accepts any object type (not just `Record<string, unknown>`) so callers
+ * can pass typed schema outputs directly without a double-cast.
  */
-export function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
+export function stripUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
   ) as T;

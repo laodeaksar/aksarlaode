@@ -197,6 +197,23 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
           ),
       };
 
+      // ── Admin users (staff management — excludes CUSTOMER role) ──────────
+      const adminUsers = {
+        list: (params: { page?: number; search?: string }) => {
+          const qs = new URLSearchParams({
+            page: String(params.page ?? 1),
+          });
+          if (params.search) qs.set("search", params.search);
+          // Filter to staff roles only — CUSTOMER accounts are managed via /customers
+          for (const role of ["ADMIN", "FINANCE", "OWNER"]) {
+            qs.append("role", role);
+          }
+          return request<{ items: User[]; total: number }>(
+            `/admin/users?${qs.toString()}`
+          );
+        },
+      };
+
       // ── Dashboard ─────────────────────────────────────────────────────────
       const dashboard = {
         stats: () => request<DashboardStats>("/admin/dashboard/stats"),
@@ -227,7 +244,7 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
         },
       };
 
-      return { products, orders, customers, dashboard, auditLogs } as const;
+      return { products, orders, customers, adminUsers, dashboard, auditLogs } as const;
     }),
   }
 ) {}

@@ -10,6 +10,7 @@ import {
   ClipboardListIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  ShieldCheckIcon,
   ShoppingCartIcon,
   UsersIcon,
 } from "lucide-react";
@@ -109,6 +110,12 @@ export function useNavItems(): NavItem[] {
       icon: <ClipboardListIcon />,
       hasFilter: hasAuditLogsFilter,
       permission: "audit:read",
+    },
+    {
+      title: "Users",
+      url: "/users",
+      icon: <ShieldCheckIcon />,
+      permission: "users:manage",
     },
   ];
 

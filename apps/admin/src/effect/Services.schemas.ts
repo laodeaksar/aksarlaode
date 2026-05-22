@@ -14,6 +14,7 @@ export type User = {
   name: string;
   role: UserRole;
   createdAt?: string;
+  deletedAt?: string | null;
 };
 
 // ── Admin product types ─────────────────────────────────────────────────────

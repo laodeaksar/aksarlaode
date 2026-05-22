@@ -234,9 +234,9 @@ importers:
       bullmq:
         specifier: ^5.49.0
         version: 5.76.8
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
+      valibot:
+        specifier: ^1.4.0
+        version: 1.4.0(typescript@5.9.3)
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*

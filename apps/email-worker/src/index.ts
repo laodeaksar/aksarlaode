@@ -1,3 +1,5 @@
+import * as v from "valibot";
+
 import { env } from "@repo/env/email-worker";
 
 import { EnqueueSchema } from "./lib/enqueue-schema";
@@ -126,15 +128,15 @@ Bun.serve({
         return json({ error: "Invalid JSON body" }, 400);
       }
 
-      const parsed = EnqueueSchema.safeParse(body);
+      const parsed = v.safeParse(EnqueueSchema, body);
       if (!parsed.success) {
         return json(
-          { error: "Invalid payload", issues: parsed.error.issues },
+          { error: "Invalid payload", issues: parsed.issues },
           400
         );
       }
 
-      const { type, payload } = parsed.data;
+      const { type, payload } = parsed.output;
 
       // Unique jobId with "resend:" prefix ensures manual re-sends bypass the
       // normal idempotency key and always reach the queue.

@@ -1,4 +1,5 @@
 import { Worker, type Job } from "bullmq";
+import * as v from "valibot";
 
 import { env } from "@repo/env/email-worker";
 import { parseRedisUrl } from "@repo/env/utils";
@@ -44,16 +45,16 @@ export const emailWorker = new Worker(
       });
     }
 
-    // P1 FIX: parsed.data (the validated, typed result) is now passed to the
-    // handler instead of the raw job.data as any. Previously the Zod validation
-    // was a no-op — parsed.data was discarded and the unvalidated payload was
+    // P1 FIX: parsed.output (the validated, typed result) is now passed to the
+    // handler instead of the raw job.data as any. Previously the validation
+    // was a no-op — parsed output was discarded and the unvalidated payload was
     // forwarded, bypassing every schema constraint.
     const schema = PAYLOAD_SCHEMAS[type];
     if (schema) {
-      const parsed = schema.safeParse(job.data);
+      const parsed = v.safeParse(schema, job.data);
       if (!parsed.success) {
-        const message = parsed.error.issues
-          .map((e) => `${e.path.join(".")}: ${e.message}`)
+        const message = parsed.issues
+          .map((e) => `${e.path?.map((p) => p.key).join(".") ?? "(root)"}: ${e.message}`)
           .join("; ");
         throw Object.assign(
           new Error(`Invalid payload for job type "${type}": ${message}`),
@@ -63,10 +64,10 @@ export const emailWorker = new Worker(
       // Use the validated, coerced data — not the raw job.data
       const result = await (
         handler as (
-          payload: typeof parsed.data,
+          payload: typeof parsed.output,
           provider: MailChannelsProvider
         ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>
-      )(parsed.data, provider);
+      )(parsed.output, provider);
 
       if (!result.success) {
         throw Object.assign(new Error(result.error ?? "Send failed"), {

@@ -1,37 +1,37 @@
-// Zod schemas used by the POST /queue/enqueue endpoint.
+// Valibot schemas used by the POST /queue/enqueue endpoint.
 // Only the three order-related job types make sense to manually trigger
 // from the admin panel. password-reset and staff-invite are system-initiated
 // and should not be triggerable via the queue dashboard.
 
-import { z } from "zod";
+import * as v from "valibot";
 
-export const EnqueueSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("order-created"),
-    payload: z.object({
-      orderId: z.string().min(1),
-      userId: z.string().min(1),
-      userEmail: z.string().email(),
-      grandTotal: z.number().positive(),
+export const EnqueueSchema = v.variant("type", [
+  v.object({
+    type: v.literal("order-created"),
+    payload: v.object({
+      orderId: v.pipe(v.string(), v.minLength(1)),
+      userId: v.pipe(v.string(), v.minLength(1)),
+      userEmail: v.pipe(v.string(), v.email()),
+      grandTotal: v.pipe(v.number(), v.minValue(1)),
     }),
   }),
-  z.object({
-    type: z.literal("order-confirmation"),
-    payload: z.object({
-      orderId: z.string().min(1),
-      userId: z.string().min(1),
-      userEmail: z.string().email(),
-      amount: z.number().positive(),
+  v.object({
+    type: v.literal("order-confirmation"),
+    payload: v.object({
+      orderId: v.pipe(v.string(), v.minLength(1)),
+      userId: v.pipe(v.string(), v.minLength(1)),
+      userEmail: v.pipe(v.string(), v.email()),
+      amount: v.pipe(v.number(), v.minValue(1)),
     }),
   }),
-  z.object({
-    type: z.literal("order-cancelled"),
-    payload: z.object({
-      orderId: z.string().min(1),
-      userEmail: z.string().email(),
-      reason: z.string().min(1),
+  v.object({
+    type: v.literal("order-cancelled"),
+    payload: v.object({
+      orderId: v.pipe(v.string(), v.minLength(1)),
+      userEmail: v.pipe(v.string(), v.email()),
+      reason: v.pipe(v.string(), v.minLength(1)),
     }),
   }),
 ]);
 
-export type EnqueueInput = z.infer<typeof EnqueueSchema>;
+export type EnqueueInput = v.InferOutput<typeof EnqueueSchema>;

@@ -13,9 +13,7 @@ mock.module("@repo/env/gateway", () => ({
     INTERNAL_SERVICE_TOKEN: "test-internal-token-32-chars-long!!",
     JWT_ACCESS_PUBLIC_KEY: "dummy",
     MIDTRANS_SERVER_KEY: "dummy",
-    REDIS_HOST: "localhost",
-    REDIS_PORT: 6379,
-    REDIS_PASSWORD: "",
+    REDIS_URL: "redis://localhost:6379",
   },
 }));
 

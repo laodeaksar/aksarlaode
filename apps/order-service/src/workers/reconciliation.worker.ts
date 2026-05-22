@@ -3,17 +3,14 @@ import { Effect } from "effect";
 import { Queue, Worker } from "bullmq";
 
 import { env } from "@repo/env/order";
+import { parseRedisUrl } from "@repo/env/utils";
 
 import { productClient } from "@/lib/product-client";
 import { redis } from "@/lib/redis";
 import { orderRepository } from "@/repository/order.repository";
 
 // ── Shared Redis connection options (used by Queue + Worker) ─────────────────
-const connection = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD || undefined,
-};
+const connection = parseRedisUrl(env.REDIS_URL);
 
 const QUEUE_NAME = "reconciliation";
 const JOB_NAME = "sweep-expired-orders";

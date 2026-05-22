@@ -13,9 +13,7 @@ x-app-env: &app-env
   NODE_ENV:               development
   DATABASE_URL:           postgresql://ecapp:ecapppassword@postgres:5432/ecommerce
   MONGODB_URL:            mongodb://${MONGO_USER:-ecuser}:${MONGO_PASSWORD:-ecpassword}@mongo:27017/ecommerce?authSource=admin
-  REDIS_HOST:             redis
-  REDIS_PORT:             "6379"
-  REDIS_PASSWORD:         ${REDIS_PASSWORD:-ecredis}
+  REDIS_URL:              redis://:${REDIS_PASSWORD:-ecredis}@redis:6379
   JWT_SECRET:             ${JWT_SECRET:-dev-jwt-secret-that-is-at-least-32-chars!}
   INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-service-token-32chars!}
   AUTH_SERVICE_URL:       http://auth-service:3001

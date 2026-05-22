@@ -1,6 +1,7 @@
 import { Worker, type Job } from "bullmq";
 
-import { env } from "@repo/env";
+import { env } from "@repo/env/email-worker";
+import { parseRedisUrl } from "@repo/env/utils";
 
 // FIX EML-09: Prometheus counter helpers (no external dep).
 import { incrementCounter } from "@/lib/metrics";
@@ -77,11 +78,7 @@ export const emailWorker = new Worker(
     return { sent: true, jobId: job.id, type };
   },
   {
-    connection: {
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      password: env.REDIS_PASSWORD,
-    },
+    connection: parseRedisUrl(env.REDIS_URL),
     concurrency: 5,
     limiter: { max: 50, duration: 60_000 }, // 50 emails/min
   }

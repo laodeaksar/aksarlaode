@@ -10,14 +10,18 @@
     "./gateway": "./src/gateway.ts",
     "./product": "./src/product.ts",
     "./order": "./src/order.ts",
-    "./admin": "./src/admin.ts"
+    "./admin": "./src/admin.ts",
+    "./email-worker": "./src/email-worker.ts",
+    "./payment": "./src/payment.ts",
+    "./utils": "./src/utils.ts"
   },
   "scripts": {
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "@t3-oss/env-core": "^0.13.11",
+    "valibot": "^1.4.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

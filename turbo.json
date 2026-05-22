@@ -9,7 +9,7 @@
       "outputs":   [".next/**", "dist/**", ".astro/**", ".wrangler/**", ".output/**", ".vinxi/**"],
       "env": [
         "NODE_ENV",
-        "DATABASE_URL", "MONGODB_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
+        "DATABASE_URL", "MONGODB_URL", "REDIS_URL",
         "JWT_SECRET", "INTERNAL_SERVICE_TOKEN",
         "AUTH_SERVICE_URL", "PRODUCT_SERVICE_URL", "ORDER_SERVICE_URL", "PAYMENT_SERVICE_URL",
         "PUBLIC_API_URL", "WEB_URL", "ADMIN_URL",

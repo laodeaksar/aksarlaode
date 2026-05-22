@@ -1,4 +1,4 @@
-import { env } from "@repo/env";
+import { env } from "@repo/env/email-worker";
 
 type UserProfile = { id: string; name: string; email: string };
 

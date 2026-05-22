@@ -1,12 +1,9 @@
 import { Queue } from "bullmq";
 
 import { env } from "@repo/env/order";
+import { parseRedisUrl } from "@repo/env/utils";
 
-const connection = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD || undefined,
-};
+const connection = parseRedisUrl(env.REDIS_URL);
 
 // Payload types kept in sync with email-worker's EmailJobPayload contract.
 type OrderCreatedPayload = {

@@ -2,7 +2,8 @@ import { Data, Effect } from "effect";
 
 import { Queue } from "bullmq";
 
-import { env } from "@repo/env";
+import { env } from "@repo/env/payment";
+import { parseRedisUrl } from "@repo/env/utils";
 
 class EmailQueueError extends Data.TaggedError("EmailQueueError")<{
   cause: unknown;
@@ -23,11 +24,7 @@ type OrderCancelledPayload = {
 };
 
 const queue = new Queue("email", {
-  connection: {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD,
-  },
+  connection: parseRedisUrl(env.REDIS_URL),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 2_000 },

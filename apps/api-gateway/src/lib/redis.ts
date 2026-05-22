@@ -13,10 +13,7 @@ let _client: Redis | null = null;
 
 export function getRedis(): Redis {
   if (!_client) {
-    _client = new Redis({
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      password: env.REDIS_PASSWORD || undefined,
+    _client = new Redis(env.REDIS_URL, {
       lazyConnect: true,
       enableOfflineQueue: false, // fail-fast: don't queue commands when disconnected
       maxRetriesPerRequest: 1, // one retry then give up — circuit breaker is resilient

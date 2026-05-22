@@ -9,10 +9,9 @@ const safeUrl = () =>
   z
     .string()
     .url()
-    .refine(
-      (url) => SAFE_URL_PROTOCOLS.test(url),
-      { message: "URL must use http or https protocol" }
-    );
+    .refine((url) => SAFE_URL_PROTOCOLS.test(url), {
+      message: "URL must use http or https protocol",
+    });
 
 export const OrderCreatedSchema = z.object({
   orderId: z.string().min(1),

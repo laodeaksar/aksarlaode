@@ -22,16 +22,11 @@ export type AuditAction =
   | "customer_deleted"
   | "customer_restored"
   | "settings_updated"
-  | "queue_job_retried"   // single failed job manually retried
-  | "queue_jobs_retried"  // all failed jobs retried at once
+  | "queue_job_retried" // single failed job manually retried
+  | "queue_jobs_retried" // all failed jobs retried at once
   | "queue_email_resent"; // one-off email manually enqueued from admin
 
-export type AuditResource =
-  | "product"
-  | "order"
-  | "user"
-  | "settings"
-  | "queue";
+export type AuditResource = "product" | "order" | "user" | "settings" | "queue";
 
 export type ActionMapping = {
   action: AuditAction;
@@ -39,19 +34,19 @@ export type ActionMapping = {
 };
 
 export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
-  createProductFn:      { action: "product_created",      resource: "product"  },
-  updateProductFn:      { action: "product_updated",      resource: "product"  },
-  deleteProductFn:      { action: "product_deleted",      resource: "product"  },
-  updateOrderStatusFn:  { action: "order_status_changed", resource: "order"    },
-  changeUserRoleFn:     { action: "user_role_changed",    resource: "user"     },
-  inviteUserFn:         { action: "user_invited",         resource: "user"     },
-  deleteCustomerFn:     { action: "customer_deleted",     resource: "user"     },
-  restoreCustomerFn:    { action: "customer_restored",    resource: "user"     },
-  updateSettingsFn:     { action: "settings_updated",     resource: "settings" },
+  createProductFn: { action: "product_created", resource: "product" },
+  updateProductFn: { action: "product_updated", resource: "product" },
+  deleteProductFn: { action: "product_deleted", resource: "product" },
+  updateOrderStatusFn: { action: "order_status_changed", resource: "order" },
+  changeUserRoleFn: { action: "user_role_changed", resource: "user" },
+  inviteUserFn: { action: "user_invited", resource: "user" },
+  deleteCustomerFn: { action: "customer_deleted", resource: "user" },
+  restoreCustomerFn: { action: "customer_restored", resource: "user" },
+  updateSettingsFn: { action: "settings_updated", resource: "settings" },
   // ── Queue dashboard actions ───────────────────────────────────────────────
-  retryJobFn:           { action: "queue_job_retried",    resource: "queue"    },
-  retryAllFn:           { action: "queue_jobs_retried",   resource: "queue"    },
-  resendEmailFn:        { action: "queue_email_resent",   resource: "queue"    },
+  retryJobFn: { action: "queue_job_retried", resource: "queue" },
+  retryAllFn: { action: "queue_jobs_retried", resource: "queue" },
+  resendEmailFn: { action: "queue_email_resent", resource: "queue" },
 };
 
 // ── Audit entry input ──────────────────────────────────────────────────────

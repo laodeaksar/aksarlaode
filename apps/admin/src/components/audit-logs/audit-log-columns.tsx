@@ -21,14 +21,14 @@ const ACTION_COLORS: Record<
   string,
   "default" | "secondary" | "destructive" | "outline"
 > = {
-  product_created:      "default",
-  product_updated:      "secondary",
-  product_deleted:      "destructive",
+  product_created: "default",
+  product_updated: "secondary",
+  product_deleted: "destructive",
   order_status_changed: "secondary",
-  user_role_changed:    "default",
-  queue_job_retried:    "secondary",
-  queue_jobs_retried:   "secondary",
-  queue_email_resent:   "default",
+  user_role_changed: "default",
+  queue_job_retried: "secondary",
+  queue_jobs_retried: "secondary",
+  queue_email_resent: "default",
 };
 
 export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [

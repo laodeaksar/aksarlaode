@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 
-import type { AppEnv } from "@/types/context";
 import {
   getStoreSettings,
   isValidStoreSettings,
   upsertStoreSettings,
 } from "@/lib/store-settings";
+import type { AppEnv } from "@/types/context";
 
 // ── /admin/settings ───────────────────────────────────────────────────────
 // GET  — ADMIN and above (routeGuard enforces minRole: "ADMIN" via the

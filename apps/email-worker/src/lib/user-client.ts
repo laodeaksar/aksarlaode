@@ -22,9 +22,7 @@ function isValidUserId(id: string): boolean {
 
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
   if (!isValidUserId(userId)) {
-    console.warn(
-      JSON.stringify({ event: "user_client_invalid_id_rejected" })
-    );
+    console.warn(JSON.stringify({ event: "user_client_invalid_id_rejected" }));
     return null;
   }
 

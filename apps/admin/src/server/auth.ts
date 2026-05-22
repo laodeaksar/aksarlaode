@@ -153,8 +153,7 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
       if (!res.ok) return null;
 
       const body: unknown = await res.json();
-      const raw =
-        (body as { data?: unknown } | null)?.data ?? body;
+      const raw = (body as { data?: unknown } | null)?.data ?? body;
 
       // ── PATCH 2: validate session shape before trusting it ──────────
       // Prevents type confusion if the auth service returns unexpected data.

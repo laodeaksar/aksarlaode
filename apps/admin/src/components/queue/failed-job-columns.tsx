@@ -7,12 +7,18 @@ import { RetryJobButton } from "./retry-job-button";
 // ── Job type badge colours ──────────────────────────────────────────────────
 
 const JOB_TYPE_STYLES: Record<string, string> = {
-  "order-created":      "bg-green-100  text-green-800  dark:bg-green-900/40  dark:text-green-300",
-  "order-confirmation": "bg-blue-100   text-blue-800   dark:bg-blue-900/40   dark:text-blue-300",
-  "order-cancelled":    "bg-red-100    text-red-800    dark:bg-red-900/40    dark:text-red-300",
-  "password-reset":     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  "shipping-update":    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  "staff-invite":       "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  "order-created":
+    "bg-green-100  text-green-800  dark:bg-green-900/40  dark:text-green-300",
+  "order-confirmation":
+    "bg-blue-100   text-blue-800   dark:bg-blue-900/40   dark:text-blue-300",
+  "order-cancelled":
+    "bg-red-100    text-red-800    dark:bg-red-900/40    dark:text-red-300",
+  "password-reset":
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  "shipping-update":
+    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  "staff-invite":
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
 };
 
 function jobTypeBadge(name: string) {
@@ -53,7 +59,7 @@ export function buildFailedJobColumns({
       accessorKey: "id",
       header: "Job ID",
       cell: ({ row }) => (
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="text-muted-foreground font-mono text-xs">
           …{row.original.id.slice(-10)}
         </span>
       ),
@@ -68,7 +74,9 @@ export function buildFailedJobColumns({
       header: "Order ID",
       cell: ({ row }) => (
         <span className="font-mono text-xs">
-          {row.original.orderId ?? <span className="text-muted-foreground">—</span>}
+          {row.original.orderId ?? (
+            <span className="text-muted-foreground">—</span>
+          )}
         </span>
       ),
     },
@@ -77,7 +85,7 @@ export function buildFailedJobColumns({
       header: "Error",
       cell: ({ row }) => (
         <span
-          className="block max-w-xs truncate text-sm text-destructive"
+          className="text-destructive block max-w-xs truncate text-sm"
           title={row.original.failedReason}
         >
           {row.original.failedReason}
@@ -88,7 +96,9 @@ export function buildFailedJobColumns({
       accessorKey: "attemptsMade",
       header: "Attempts",
       cell: ({ row }) => (
-        <span className="text-sm tabular-nums">{row.original.attemptsMade}</span>
+        <span className="text-sm tabular-nums">
+          {row.original.attemptsMade}
+        </span>
       ),
     },
     {

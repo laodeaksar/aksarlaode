@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ToPathOption } from "@tanstack/react-router";
-import type { RegisteredRouter } from "@tanstack/react-router";
+import type { RegisteredRouter, ToPathOption } from "@tanstack/react-router";
 
 import {
   SidebarGroup,
@@ -41,7 +40,11 @@ export function NavMain({ items }: { items: NavItem[] }) {
                     // We cast to the router's path union — tighter than `any`.
                     <Link
                       to={
-                        item.url as ToPathOption<RegisteredRouter, string, string>
+                        item.url as ToPathOption<
+                          RegisteredRouter,
+                          string,
+                          string
+                        >
                       }
                     />
                   }
@@ -58,7 +61,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   <span className="flex-1">{item.title}</span>
                   {!!item.badge && (
                     <span
-                      className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold tabular-nums text-white"
+                      className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white tabular-nums"
                       aria-label={`${item.badge} pesanan baru`}
                     >
                       {item.badge > 99 ? "99+" : item.badge}

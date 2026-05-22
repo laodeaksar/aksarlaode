@@ -44,14 +44,21 @@ export class MailChannelsProvider extends BaseProvider {
 
       // 4xx = fatal (bad input, invalid email) — don't retry
       if (res.status >= 400 && res.status < 500) {
-        return { success: false, error: `MailChannels 4xx: ${res.status}`, retryable: false };
+        return {
+          success: false,
+          error: `MailChannels 4xx: ${res.status}`,
+          retryable: false,
+        };
       }
 
       // 5xx = transient — retry
-      return { success: false, error: `MailChannels 5xx: ${res.status}`, retryable: true };
+      return {
+        success: false,
+        error: `MailChannels 5xx: ${res.status}`,
+        retryable: true,
+      };
     } catch (e) {
-      const isTimeout =
-        e instanceof DOMException && e.name === "TimeoutError";
+      const isTimeout = e instanceof DOMException && e.name === "TimeoutError";
       return {
         success: false,
         error: isTimeout ? "MailChannels request timed out" : String(e),

@@ -71,13 +71,11 @@ export function ProductForm({
       <FieldGroup>
         <Field data-invalid={!!nameField.errors}>
           <FieldLabel htmlFor="pf-name">Name</FieldLabel>
-          <Input
-            {...nameField.props}
-            id="pf-name"
-            aria-label="Product name"
-          />
+          <Input {...nameField.props} id="pf-name" aria-label="Product name" />
           {nameField.errors && (
-            <FieldError errors={nameField.errors.map((m) => ({ message: m }))} />
+            <FieldError
+              errors={nameField.errors.map((m) => ({ message: m }))}
+            />
           )}
         </Field>
 

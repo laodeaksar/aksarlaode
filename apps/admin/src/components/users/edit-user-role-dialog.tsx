@@ -68,7 +68,11 @@ export function EditUserRoleDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button size="sm" variant="outline" className="w-full justify-start" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full justify-start"
+          />
         }
       >
         Change Role

@@ -7,7 +7,8 @@ export const Route = createFileRoute("/customers/$userId")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "customers:read")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "customers:read"))
+      throw redirect({ to: "/forbidden" });
   },
 
   loader: ({ params, context }) => {

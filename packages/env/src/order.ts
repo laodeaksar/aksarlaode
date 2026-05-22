@@ -32,12 +32,7 @@ export const env = createEnv({
     ),
 
     MINIMUM_ORDER_AMOUNT: v.optional(
-      v.pipe(
-        v.string(),
-        v.transform(Number),
-        v.number(),
-        v.minValue(0)
-      ),
+      v.pipe(v.string(), v.transform(Number), v.number(), v.minValue(0)),
       1000
     ),
 

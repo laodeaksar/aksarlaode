@@ -46,8 +46,8 @@ async function workerFetch<T>(
 
 export const getQueueStatsFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware, requirePermission("queue:read")])
-  .handler(async (): Promise<QueueStats> =>
-    workerFetch<QueueStats>("/queue/stats")
+  .handler(
+    async (): Promise<QueueStats> => workerFetch<QueueStats>("/queue/stats")
   );
 
 // ── GET /queue/jobs (failed) ────────────────────────────────────────────────
@@ -222,25 +222,22 @@ export const resendEmailFn = createServerFn({ method: "POST" })
 
 export const getQueueActivityFn = createServerFn({ method: "GET" })
   .middleware([effectMiddleware, requirePermission("queue:read")])
-  .handler(
-    async ({ context }): Promise<{ items: AuditLogEntry[] }> => {
-      const items = await context.runtime.runPromise(
-        Effect.gen(function* () {
-          const api = yield* ApiClientService;
-          const [retried, retriedAll, resent] = yield* Effect.all([
-            api.auditLogs.list({ page: 1, action: "queue_job_retried" }),
-            api.auditLogs.list({ page: 1, action: "queue_jobs_retried" }),
-            api.auditLogs.list({ page: 1, action: "queue_email_resent" }),
-          ]);
-          return [...retried.items, ...retriedAll.items, ...resent.items]
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            )
-            .slice(0, 10);
-        })
-      );
-      return { items };
-    }
-  );
+  .handler(async ({ context }): Promise<{ items: AuditLogEntry[] }> => {
+    const items = await context.runtime.runPromise(
+      Effect.gen(function* () {
+        const api = yield* ApiClientService;
+        const [retried, retriedAll, resent] = yield* Effect.all([
+          api.auditLogs.list({ page: 1, action: "queue_job_retried" }),
+          api.auditLogs.list({ page: 1, action: "queue_jobs_retried" }),
+          api.auditLogs.list({ page: 1, action: "queue_email_resent" }),
+        ]);
+        return [...retried.items, ...retriedAll.items, ...resent.items]
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+          .slice(0, 10);
+      })
+    );
+    return { items };
+  });

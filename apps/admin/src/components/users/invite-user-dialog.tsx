@@ -38,7 +38,9 @@ export function InviteUserDialog() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
-      inviteUserFn({ data: { email: email.trim(), role, name: name.trim() || undefined } }),
+      inviteUserFn({
+        data: { email: email.trim(), role, name: name.trim() || undefined },
+      }),
 
     onSuccess: (result) => {
       toast.success(`Invitation sent to ${result.email}`);
@@ -91,7 +93,9 @@ export function InviteUserDialog() {
           <div className="space-y-1.5">
             <Label htmlFor="invite-name">
               Display name{" "}
-              <span className="text-muted-foreground font-normal">(optional)</span>
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
             </Label>
             <Input
               id="invite-name"
@@ -104,13 +108,20 @@ export function InviteUserDialog() {
 
           <div className="space-y-1.5">
             <Label htmlFor="invite-role">Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AssignableRole)}>
+            <Select
+              value={role}
+              onValueChange={(v) => setRole(v as AssignableRole)}
+            >
               <SelectTrigger id="invite-role" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ADMIN">ADMIN — Full product &amp; order management</SelectItem>
-                <SelectItem value="FINANCE">FINANCE — Read-only orders &amp; revenue</SelectItem>
+                <SelectItem value="ADMIN">
+                  ADMIN — Full product &amp; order management
+                </SelectItem>
+                <SelectItem value="FINANCE">
+                  FINANCE — Read-only orders &amp; revenue
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

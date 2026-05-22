@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@repo/ui/components/button";
 
-import { retryJobFn, retryAllFn } from "@/server/queue";
+import { retryAllFn, retryJobFn } from "@/server/queue";
 import { toast } from "@/lib/toast";
 
 // ── Retry single job ────────────────────────────────────────────────────────
@@ -68,9 +68,7 @@ export function RetryAllButton({ failedCount }: RetryAllButtonProps) {
       onClick={() => mutation.mutate()}
       disabled={mutation.isPending || failedCount === 0}
     >
-      {mutation.isPending
-        ? "Retrying…"
-        : `Retry All Failed (${failedCount})`}
+      {mutation.isPending ? "Retrying…" : `Retry All Failed (${failedCount})`}
     </Button>
   );
 }

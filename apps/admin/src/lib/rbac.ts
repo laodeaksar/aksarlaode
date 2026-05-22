@@ -16,8 +16,8 @@ export type Permission =
   | "dashboard:read"
   | "users:manage"
   | "audit:read"
-  | "queue:read"    // view email queue stats and failed jobs
-  | "queue:manage"  // retry failed jobs (OWNER + ADMIN)
+  | "queue:read" // view email queue stats and failed jobs
+  | "queue:manage" // retry failed jobs (OWNER + ADMIN)
   | "settings:write";
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {

@@ -13,7 +13,7 @@ import { useFilteredNavigation, useRouteSearch } from "@/lib";
 import { Route } from "./route";
 
 export default function OrdersPage() {
-  const page   = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const status = useRouteSearch(Route, (s) => s.status);
 
   const currentPage = page ?? 1;

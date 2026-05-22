@@ -98,8 +98,10 @@ export function QueueStatsCards({
         {STATS.map(({ key, label, valueClass, dotClass }) => (
           <Card key={String(key)}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
-                <span className={`inline-block size-2 rounded-full ${dotClass}`} />
+              <CardTitle className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+                <span
+                  className={`inline-block size-2 rounded-full ${dotClass}`}
+                />
                 {label}
               </CardTitle>
             </CardHeader>

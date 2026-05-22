@@ -14,10 +14,10 @@ import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { Switch } from "@repo/ui/components/switch";
 
-import { PageHeader } from "@/components/layout/page-header";
 import { getSettingsFn, updateSettingsFn } from "@/server/settings";
 import type { StoreSettings } from "@/effect/Services.schemas";
 import { toast } from "@/lib/toast";
+import { PageHeader } from "@/components/layout/page-header";
 
 const DEFAULT_SETTINGS: StoreSettings = {
   paymentExpiryMinutes: 60,
@@ -75,7 +75,7 @@ export default function SettingsPage() {
           e.preventDefault();
           mutate(values);
         }}
-        className="grid gap-6 max-w-2xl"
+        className="grid max-w-2xl gap-6"
       >
         {/* ── Order limits ─────────────────────────────────────────── */}
         <Card>
@@ -88,9 +88,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="maxOrderItemsPerOrder">
-                Max Items Per Order
-              </Label>
+              <Label htmlFor="maxOrderItemsPerOrder">Max Items Per Order</Label>
               <Input
                 id="maxOrderItemsPerOrder"
                 type="number"

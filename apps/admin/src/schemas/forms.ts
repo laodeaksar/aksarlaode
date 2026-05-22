@@ -49,10 +49,7 @@ export const ProductFormSchema = v.object({
   price: v.pipe(
     v.unknown(),
     v.transform(coerceNumber),
-    v.check(
-      (n) => Number.isFinite(n) && n > 0,
-      "Price harus lebih dari 0."
-    )
+    v.check((n) => Number.isFinite(n) && n > 0, "Price harus lebih dari 0.")
   ),
   comparePrice: v.pipe(
     v.unknown(),
@@ -66,10 +63,7 @@ export const ProductFormSchema = v.object({
   stock: v.pipe(
     v.unknown(),
     v.transform(coerceNumber),
-    v.check(
-      (n) => Number.isFinite(n) && n >= 0,
-      "Stock tidak boleh negatif."
-    )
+    v.check((n) => Number.isFinite(n) && n >= 0, "Stock tidak boleh negatif.")
   ),
   sku: v.pipe(v.string(), v.minLength(1, "SKU wajib diisi.")),
   // Always a string in the form (empty string = no description).

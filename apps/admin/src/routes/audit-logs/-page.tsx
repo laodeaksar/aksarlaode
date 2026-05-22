@@ -22,22 +22,22 @@ const SELECT_CLS =
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  const page      = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const startDate = useRouteSearch(Route, (s) => s.startDate);
-  const endDate   = useRouteSearch(Route, (s) => s.endDate);
-  const action    = useRouteSearch(Route, (s) => s.action);
+  const endDate = useRouteSearch(Route, (s) => s.endDate);
+  const action = useRouteSearch(Route, (s) => s.action);
   const actorRole = useRouteSearch(Route, (s) => s.actorRole);
 
   const currentPage = page ?? 1;
-  const hasFilters  = !!(startDate || endDate || action || actorRole);
+  const hasFilters = !!(startDate || endDate || action || actorRole);
 
   const { setFilter, clearFilters } = useFilteredNavigation("/audit-logs");
 
   const queryParams = {
     page: currentPage,
     ...(startDate ? { startDate } : {}),
-    ...(endDate   ? { endDate }   : {}),
-    ...(action    ? { action }    : {}),
+    ...(endDate ? { endDate } : {}),
+    ...(action ? { action } : {}),
     ...(actorRole ? { actorRole } : {}),
   };
 

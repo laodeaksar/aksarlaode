@@ -6,8 +6,8 @@ import { Button } from "@repo/ui/components/button";
 import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
-import { DataTable, PaginationBar } from "@/components";
 import { SearchInput } from "@/components/shared";
+import { DataTable, PaginationBar } from "@/components";
 import {
   can,
   useDebouncedInput,
@@ -21,7 +21,7 @@ import { Route } from "./route";
 // ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  const page   = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const search = useRouteSearch(Route, (s) => s.search);
 
   const currentPage = page ?? 1;
@@ -45,7 +45,11 @@ export default function ProductsPage() {
       <PageHeader title="Produk" />
 
       <div className="flex items-center gap-2">
-        <SearchInput placeholder="Cari produk..." aria-label="Cari produk" {...searchInput} />
+        <SearchInput
+          placeholder="Cari produk..."
+          aria-label="Cari produk"
+          {...searchInput}
+        />
         {canWrite && (
           <Button size="sm" render={<Link to="/products/new" />}>
             + Tambah Produk

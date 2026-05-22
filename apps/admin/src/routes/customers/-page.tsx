@@ -5,12 +5,16 @@ import { customerColumns } from "@/components/customers";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/shared";
-import { useDebouncedInput, useFilteredNavigation, useRouteSearch } from "@/lib";
+import {
+  useDebouncedInput,
+  useFilteredNavigation,
+  useRouteSearch,
+} from "@/lib";
 
 import { Route } from "./route";
 
 export default function CustomersPage() {
-  const page   = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const search = useRouteSearch(Route, (s) => s.search);
 
   const currentPage = page ?? 1;

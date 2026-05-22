@@ -8,7 +8,11 @@ export const loginSchema = v.object({
 
 export const registerSchema = v.pipe(
   v.object({
-    name: v.pipe(v.string(), v.minLength(2, "Name too short"), v.maxLength(100)),
+    name: v.pipe(
+      v.string(),
+      v.minLength(2, "Name too short"),
+      v.maxLength(100)
+    ),
     email: v.pipe(v.string(), v.email("Invalid email")),
     password: v.pipe(v.string(), v.minLength(8, "Min 8 characters")),
     confirmPassword: v.string(),

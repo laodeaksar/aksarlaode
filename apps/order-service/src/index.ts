@@ -7,8 +7,8 @@ import { env } from "@repo/env/order";
 
 import { healthHandler } from "./handlers/health";
 import { paymentWebhookHandler } from "./handlers/payment-webhook";
-import { startConfigWatcher } from "./lib/store-config";
 import { requestLogger } from "./lib/request-logger";
+import { startConfigWatcher } from "./lib/store-config";
 import { adminRoutes } from "./routes/admin.routes";
 import { orderRoutes } from "./routes/order.routes";
 import {

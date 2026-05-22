@@ -6,6 +6,10 @@
 //
 // Rule: import siblings by direct path (not "@/lib") to avoid circular deps.
 
+import type { ReactNode } from "react";
+
+import { useMatch } from "@tanstack/react-router";
+
 import {
   ClipboardListIcon,
   LayoutDashboardIcon,
@@ -16,8 +20,6 @@ import {
   ShoppingCartIcon,
   UsersIcon,
 } from "lucide-react";
-import { useMatch } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
 import { can } from "@/lib/rbac";
 import type { Permission } from "@/lib/rbac";

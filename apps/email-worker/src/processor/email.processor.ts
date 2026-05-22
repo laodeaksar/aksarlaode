@@ -61,13 +61,12 @@ export const emailWorker = new Worker(
         );
       }
       // Use the validated, coerced data — not the raw job.data
-      const result = await (handler as (
-        payload: typeof parsed.data,
-        provider: MailChannelsProvider
-      ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>)(
-        parsed.data,
-        provider
-      );
+      const result = await (
+        handler as (
+          payload: typeof parsed.data,
+          provider: MailChannelsProvider
+        ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>
+      )(parsed.data, provider);
 
       if (!result.success) {
         throw Object.assign(new Error(result.error ?? "Send failed"), {
@@ -80,9 +79,12 @@ export const emailWorker = new Worker(
 
     // Fallback for job types without a schema (should not happen — all types
     // are covered in PAYLOAD_SCHEMAS, but satisfies the control-flow check).
-    throw Object.assign(new Error(`No schema registered for job type: ${type}`), {
-      retryable: false,
-    });
+    throw Object.assign(
+      new Error(`No schema registered for job type: ${type}`),
+      {
+        retryable: false,
+      }
+    );
   },
   {
     connection: parseRedisUrl(env.REDIS_URL),
@@ -114,8 +116,7 @@ emailWorker.on("failed", (job, err: unknown) => {
     typeof err === "object" && err !== null && "retryable" in err
       ? (err as { retryable: unknown }).retryable === true
       : true;
-  const errMessage =
-    err instanceof Error ? err.message : String(err);
+  const errMessage = err instanceof Error ? err.message : String(err);
   const isPermanent = !isRetryableErr || attempt >= MAX_ATTEMPTS;
 
   if (isPermanent) {
@@ -137,7 +138,7 @@ emailWorker.on("failed", (job, err: unknown) => {
       error: errMessage,
       // PII redacted: email address replaced with orderId only for correlation
       orderId: job?.data
-        ? (job.data as Record<string, unknown>)["orderId"] ?? null
+        ? ((job.data as Record<string, unknown>)["orderId"] ?? null)
         : null,
     })
   );

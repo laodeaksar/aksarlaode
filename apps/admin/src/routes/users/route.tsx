@@ -9,7 +9,8 @@ export const Route = createFileRoute("/users")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "users:manage")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "users:manage"))
+      throw redirect({ to: "/forbidden" });
   },
 
   validateSearch: valibotValidator(usersSearchSchema),

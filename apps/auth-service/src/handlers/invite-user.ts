@@ -28,11 +28,7 @@ function generateToken(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export const inviteUserHandler = async ({
-  body,
-  headers,
-  set,
-}: HandlerCtx) => {
+export const inviteUserHandler = async ({ body, headers, set }: HandlerCtx) => {
   const actorId = headers["x-user-id"];
   const actorRole = headers["x-user-role"] as UserRole | undefined;
 
@@ -60,7 +56,8 @@ export const inviteUserHandler = async ({
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const displayName = name?.trim() || normalizedEmail.split("@")[0] || normalizedEmail;
+  const displayName =
+    name?.trim() || normalizedEmail.split("@")[0] || normalizedEmail;
 
   const program = Effect.gen(function* () {
     // ── Random unusable password — account locked until invite accepted ────

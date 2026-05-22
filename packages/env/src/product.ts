@@ -12,7 +12,10 @@ export const env = createEnv({
       "development"
     ),
 
-    DATABASE_URL: v.pipe(v.string(), v.minLength(1, "DATABASE_URL is required")),
+    DATABASE_URL: v.pipe(
+      v.string(),
+      v.minLength(1, "DATABASE_URL is required")
+    ),
 
     INTERNAL_SERVICE_TOKEN: v.pipe(
       v.string(),

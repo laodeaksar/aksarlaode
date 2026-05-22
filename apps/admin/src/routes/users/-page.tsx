@@ -1,16 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listAdminUsersFn } from "@/server/users";
-import { userColumns, InviteUserDialog } from "@/components/users";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/shared";
-import { useDebouncedInput, useFilteredNavigation, useRouteSearch } from "@/lib";
+import { InviteUserDialog, userColumns } from "@/components/users";
+import {
+  useDebouncedInput,
+  useFilteredNavigation,
+  useRouteSearch,
+} from "@/lib";
 
 import { Route } from "./route";
 
 export default function UsersPage() {
-  const page   = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const search = useRouteSearch(Route, (s) => s.search);
 
   const currentPage = page ?? 1;
@@ -28,13 +32,13 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Users"
-        subtitle="Manage staff and admin accounts"
-      />
+      <PageHeader title="Users" subtitle="Manage staff and admin accounts" />
 
       <div className="flex items-center justify-between gap-3">
-        <SearchInput placeholder="Search by name or email..." {...searchInput} />
+        <SearchInput
+          placeholder="Search by name or email..."
+          {...searchInput}
+        />
         <InviteUserDialog />
       </div>
 

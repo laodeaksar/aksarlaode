@@ -1,22 +1,23 @@
-import { ShieldOffIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+
+import { ShieldOffIcon } from "lucide-react";
 
 export function Forbidden() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-xl border bg-card p-10 text-center shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-          <ShieldOffIcon className="h-8 w-8 text-destructive" />
+      <div className="bg-card flex w-full max-w-md flex-col items-center gap-6 rounded-xl border p-10 text-center shadow-sm">
+        <div className="bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-full">
+          <ShieldOffIcon className="text-destructive h-8 w-8" />
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+          <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
             403 Forbidden
           </p>
-          <h1 className="text-2xl font-semibold text-foreground">
+          <h1 className="text-foreground text-2xl font-semibold">
             Access Denied
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             You don't have permission to view this page. Contact your
             administrator if you think this is a mistake.
           </p>
@@ -25,13 +26,13 @@ export function Forbidden() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => window.history.back()}
-            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground rounded-md border px-4 py-2 text-sm font-medium shadow-sm transition-colors"
           >
             Go back
           </button>
           <Link
             to="/dashboard"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium shadow-sm transition-colors"
           >
             Go to Dashboard
           </Link>

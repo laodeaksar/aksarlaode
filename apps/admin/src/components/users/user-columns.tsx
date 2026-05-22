@@ -19,7 +19,10 @@ import { DeactivateUserButton } from "./deactivate-user-button";
 import { EditUserRoleDialog } from "./edit-user-role-dialog";
 import { RestoreUserButton } from "./restore-user-button";
 
-const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+const ROLE_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
   OWNER: "default",
   ADMIN: "default",
   FINANCE: "secondary",
@@ -78,7 +81,9 @@ export const userColumns: ColumnDef<User>[] = [
     accessorKey: "name",
     header: "Name",
     cell: ({ getValue }) => (
-      <span className="text-foreground font-medium">{getValue() as string}</span>
+      <span className="text-foreground font-medium">
+        {getValue() as string}
+      </span>
     ),
   },
   {
@@ -93,9 +98,7 @@ export const userColumns: ColumnDef<User>[] = [
     header: "Role",
     cell: ({ getValue }) => {
       const role = getValue() as string;
-      return (
-        <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>
-      );
+      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>;
     },
   },
   {

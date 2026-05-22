@@ -1,9 +1,9 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
+import { startConfigWatcher } from "./lib/store-config";
 import paymentRoutes from "./routes/payment.routes";
 import webhookRoutes from "./routes/webhook.routes";
-import { startConfigWatcher } from "./lib/store-config";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();

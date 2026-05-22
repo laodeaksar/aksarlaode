@@ -32,8 +32,9 @@ import { getCookies } from "@tanstack/react-start/server";
 
 import { Schema } from "effect";
 
-import { can, type Permission } from "@/lib/rbac";
 import type { Session } from "@/lib/auth";
+import { can, type Permission } from "@/lib/rbac";
+
 import { UnauthorizedError } from "./Errors";
 
 // Minimal Effect Schema for session validation inside this middleware.
@@ -70,9 +71,7 @@ export async function resolveAdminSession(
     if (!res.ok) return null;
 
     const body = (await res.json()) as unknown;
-    const raw =
-      (body as { data?: unknown } | null)?.data ??
-      (body as unknown);
+    const raw = (body as { data?: unknown } | null)?.data ?? (body as unknown);
 
     // Validate the session shape with Effect Schema before trusting it.
     // This prevents silent type confusion if the auth service returns
@@ -98,8 +97,7 @@ export type AuthMiddlewareContext = {
 
 // ── requirePermission ───────────────────────────────────────────────────────
 
-const apiUrl = () =>
-  process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
+const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
 
 /**
  * Factory that returns a server-only TanStack Start middleware enforcing

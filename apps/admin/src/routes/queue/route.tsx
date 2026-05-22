@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { valibotValidator } from "@tanstack/valibot-adapter";
 
+import { getFailedJobsFn, getQueueStatsFn } from "@/server/queue";
 import { queueSearchSchema } from "@/lib/search-schemas";
 import { can } from "@/lib";
-import { getQueueStatsFn, getFailedJobsFn } from "@/server/queue";
 
 export const Route = createFileRoute("/queue")({
   beforeLoad: ({ context }) => {

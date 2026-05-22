@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { useState } from "react";
-import { Form, handleSubmit, useField, useForm } from "@formisch/react";
-import * as v from "valibot";
+import { useEffect, useState } from "react";
 
 import { Effect } from "effect";
+
+import { Form, handleSubmit, useField, useForm } from "@formisch/react";
+import * as v from "valibot";
 
 import type { Product } from "@repo/common";
 
@@ -38,8 +38,7 @@ function getUrlParams(): FilterFormValues {
     minPrice: p.get("minPrice") ?? undefined,
     maxPrice: p.get("maxPrice") ?? undefined,
     inStock: p.get("inStock") === "true" ? true : undefined,
-    sortBy:
-      (p.get("sortBy") as FilterFormValues["sortBy"]) ?? "newest",
+    sortBy: (p.get("sortBy") as FilterFormValues["sortBy"]) ?? "newest",
   };
 }
 
@@ -157,9 +156,7 @@ export function ProductFilters({ initialProducts, total }: Props) {
             ref={sortByField.props.ref}
             value={sortByField.input ?? "newest"}
             onChange={(e) =>
-              sortByField.onChange(
-                e.target.value as FilterFormValues["sortBy"]
-              )
+              sortByField.onChange(e.target.value as FilterFormValues["sortBy"])
             }
             onBlur={sortByField.props.onBlur}
             className="flex-1 rounded-lg border px-3 py-2 text-sm"

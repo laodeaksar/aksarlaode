@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
-import { can } from "@/lib";
 import { getSettingsFn } from "@/server/settings";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: ({ context }) => {

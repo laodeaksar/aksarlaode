@@ -12,7 +12,10 @@ export const env = createEnv({
       "development"
     ),
 
-    DATABASE_URL: v.pipe(v.string(), v.minLength(1, "DATABASE_URL is required")),
+    DATABASE_URL: v.pipe(
+      v.string(),
+      v.minLength(1, "DATABASE_URL is required")
+    ),
 
     // ── JWT keypairs (Ed25519 / EdDSA) ──────────────────────────────────────
     // Auth-service holds BOTH keys. The api-gateway receives ONLY the public

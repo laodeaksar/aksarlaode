@@ -52,5 +52,9 @@ export { useDebouncedInput } from "./use-debounced-input";
 // use-new-orders
 export { useNewOrdersCount } from "./use-new-orders";
 
+// use-nav-items
+export { useNavItems } from "./use-nav-items";
+export type { NavItem } from "./use-nav-items";
+
 // use-route-search
 export { useRouteSearch } from "./use-route-search";

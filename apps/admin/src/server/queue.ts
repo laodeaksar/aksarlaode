@@ -2,10 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { Effect } from "effect";
 
+import { auditMiddleware } from "@/effect/AuditMiddleware";
 import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import { ApiClientService } from "@/effect/Services";
-import type { QueueFailedJob, QueueStats } from "@/types";
+import type { AuditLogEntry, QueueFailedJob, QueueStats } from "@/types";
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 // Admin server functions call the email-worker's inspection HTTP server
@@ -61,7 +62,11 @@ export const getFailedJobsFn = createServerFn({ method: "GET" })
 // ── POST /queue/retry/:jobId ────────────────────────────────────────────────
 
 export const retryJobFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, requirePermission("queue:manage")])
+  .middleware([
+    effectMiddleware,
+    requirePermission("queue:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) => {
     if (
       typeof raw !== "object" ||
@@ -87,7 +92,11 @@ export const retryJobFn = createServerFn({ method: "POST" })
 // ── POST /queue/retry-all ───────────────────────────────────────────────────
 
 export const retryAllFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, requirePermission("queue:manage")])
+  .middleware([
+    effectMiddleware,
+    requirePermission("queue:manage"),
+    auditMiddleware,
+  ])
   .handler(
     async (): Promise<{ success: boolean; retriedCount: number }> =>
       workerFetch<{ success: boolean; retriedCount: number }>(
@@ -96,15 +105,10 @@ export const retryAllFn = createServerFn({ method: "POST" })
       )
   );
 
-// ── POST /queue/resend — manually trigger a one-off email job ───────────────
+// ── POST /queue/resend ──────────────────────────────────────────────────────
 // Fetches the order from the API gateway to validate it exists and resolve
 // grandTotal/userId, then builds the appropriate payload and enqueues via
 // the email-worker's /queue/enqueue endpoint.
-//
-// Only the three order-related job types are supported:
-//   order-created       — "Your order has been placed"
-//   order-confirmation  — "Payment confirmed for your order"
-//   order-cancelled     — "Your order has been cancelled"
 
 export type ResendEmailType =
   | "order-created"
@@ -125,7 +129,11 @@ const RESEND_EMAIL_TYPES: readonly ResendEmailType[] = [
 ];
 
 export const resendEmailFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, requirePermission("queue:manage")])
+  .middleware([
+    effectMiddleware,
+    requirePermission("queue:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown): ResendEmailInput => {
     if (typeof raw !== "object" || raw === null)
       throw new Error("Invalid input");
@@ -133,7 +141,9 @@ export const resendEmailFn = createServerFn({ method: "POST" })
     if (typeof r["orderId"] !== "string" || !r["orderId"])
       throw new Error("orderId is required");
     if (!RESEND_EMAIL_TYPES.includes(r["emailType"] as ResendEmailType))
-      throw new Error("emailType must be one of: " + RESEND_EMAIL_TYPES.join(", "));
+      throw new Error(
+        "emailType must be one of: " + RESEND_EMAIL_TYPES.join(", ")
+      );
     if (
       typeof r["recipientEmail"] !== "string" ||
       !r["recipientEmail"].includes("@")
@@ -148,8 +158,8 @@ export const resendEmailFn = createServerFn({ method: "POST" })
       ? { ...base, reason: r["reason"] as string }
       : base;
   })
-  .handler(async ({ data, context }): Promise<{ queued: boolean; jobId: string }> => {
-      // Fetch order to validate existence and resolve grandTotal / userId.
+  .handler(
+    async ({ data, context }): Promise<{ queued: boolean; jobId: string }> => {
       const order = await context.runtime.runPromise(
         Effect.gen(function* () {
           const api = yield* ApiClientService;
@@ -157,7 +167,6 @@ export const resendEmailFn = createServerFn({ method: "POST" })
         })
       );
 
-      // Build the payload for the chosen email type.
       type EnqueueBody = {
         type: ResendEmailType;
         payload: Record<string, unknown>;
@@ -204,5 +213,34 @@ export const resendEmailFn = createServerFn({ method: "POST" })
         method: "POST",
         body: JSON.stringify(body),
       });
+    }
+  );
+
+// ── GET /queue/activity — recent queue audit log entries ───────────────────
+// Runs three audit-log queries in parallel (one per queue action type) and
+// merges them, returning the 10 most recent entries.
+
+export const getQueueActivityFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware, requirePermission("queue:read")])
+  .handler(
+    async ({ context }): Promise<{ items: AuditLogEntry[] }> => {
+      const items = await context.runtime.runPromise(
+        Effect.gen(function* () {
+          const api = yield* ApiClientService;
+          const [retried, retriedAll, resent] = yield* Effect.all([
+            api.auditLogs.list({ page: 1, action: "queue_job_retried" }),
+            api.auditLogs.list({ page: 1, action: "queue_jobs_retried" }),
+            api.auditLogs.list({ page: 1, action: "queue_email_resent" }),
+          ]);
+          return [...retried.items, ...retriedAll.items, ...resent.items]
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            )
+            .slice(0, 10);
+        })
+      );
+      return { items };
     }
   );

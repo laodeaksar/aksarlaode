@@ -21,9 +21,17 @@ export type AuditAction =
   | "user_invited"
   | "customer_deleted"
   | "customer_restored"
-  | "settings_updated";
+  | "settings_updated"
+  | "queue_job_retried"   // single failed job manually retried
+  | "queue_jobs_retried"  // all failed jobs retried at once
+  | "queue_email_resent"; // one-off email manually enqueued from admin
 
-export type AuditResource = "product" | "order" | "user" | "settings";
+export type AuditResource =
+  | "product"
+  | "order"
+  | "user"
+  | "settings"
+  | "queue";
 
 export type ActionMapping = {
   action: AuditAction;
@@ -31,16 +39,19 @@ export type ActionMapping = {
 };
 
 export const SERVER_FN_ACTION_MAP: Readonly<Record<string, ActionMapping>> = {
-  createProductFn: { action: "product_created", resource: "product" },
-  updateProductFn: { action: "product_updated", resource: "product" },
-  deleteProductFn: { action: "product_deleted", resource: "product" },
-  updateOrderStatusFn: { action: "order_status_changed", resource: "order" },
-  changeUserRoleFn: { action: "user_role_changed", resource: "user" },
-  // inviteUserFn returns { userId, email, role, message } — ID extracted below.
-  inviteUserFn: { action: "user_invited", resource: "user" },
-  deleteCustomerFn: { action: "customer_deleted", resource: "user" },
-  restoreCustomerFn: { action: "customer_restored", resource: "user" },
-  updateSettingsFn: { action: "settings_updated", resource: "settings" },
+  createProductFn:      { action: "product_created",      resource: "product"  },
+  updateProductFn:      { action: "product_updated",      resource: "product"  },
+  deleteProductFn:      { action: "product_deleted",      resource: "product"  },
+  updateOrderStatusFn:  { action: "order_status_changed", resource: "order"    },
+  changeUserRoleFn:     { action: "user_role_changed",    resource: "user"     },
+  inviteUserFn:         { action: "user_invited",         resource: "user"     },
+  deleteCustomerFn:     { action: "customer_deleted",     resource: "user"     },
+  restoreCustomerFn:    { action: "customer_restored",    resource: "user"     },
+  updateSettingsFn:     { action: "settings_updated",     resource: "settings" },
+  // ── Queue dashboard actions ───────────────────────────────────────────────
+  retryJobFn:           { action: "queue_job_retried",    resource: "queue"    },
+  retryAllFn:           { action: "queue_jobs_retried",   resource: "queue"    },
+  resendEmailFn:        { action: "queue_email_resent",   resource: "queue"    },
 };
 
 // ── Audit entry input ──────────────────────────────────────────────────────
@@ -57,8 +68,6 @@ export type AuditEntryInput = {
 };
 
 // ── Input sanitization ─────────────────────────────────────────────────────
-// Removes values whose key matches a sensitive-key pattern and truncates
-// strings and arrays to reasonable lengths. Used to build metadata.input.
 
 const SENSITIVE_KEY_RE = /^(password|token|secret|key|auth|cvv|cvc|pin|card)/i;
 const MAX_STRING_LEN = 200;
@@ -94,21 +103,19 @@ export function sanitizeInput(value: unknown, depth = 0): unknown {
 
 // ── Resource-ID extraction ─────────────────────────────────────────────────
 // Pulls the affected entity's ID from the server function input or result.
-//   • Create operations: ID lives in the handler result.
-//   • Update / delete:  ID is in `data.id` or `data.body.id`.
-//   • Fallback: "(unknown)".
 
 export function extractResourceId(
   fnName: string,
   data: unknown,
   result: unknown = undefined
 ): string {
-  // Settings always affect the single global row — no per-record ID needed.
+  // Settings always affect the single global row.
   if (fnName === "updateSettingsFn") return "global";
 
-  // For creates and invites, prefer the ID from the returned payload
-  // (set post-insert by the backend).
-  // Handles both { id } (createProductFn) and { userId } (inviteUserFn).
+  // Retry-all acts on the entire failed set — no single resource ID.
+  if (fnName === "retryAllFn") return "all";
+
+  // For creates and invites, prefer the ID from the returned payload.
   if (
     (fnName.startsWith("create") || fnName.startsWith("invite")) &&
     result !== null &&
@@ -121,8 +128,12 @@ export function extractResourceId(
 
   if (data !== null && typeof data === "object") {
     const d = data as Record<string, unknown>;
+    // Standard ID field used by most server functions.
     if (typeof d["id"] === "string") return d["id"];
     if (typeof d["resourceId"] === "string") return d["resourceId"];
+    // Queue-specific: retryJobFn passes jobId; resendEmailFn passes orderId.
+    if (typeof d["jobId"] === "string") return d["jobId"];
+    if (typeof d["orderId"] === "string") return d["orderId"];
   }
 
   return "(unknown)";
@@ -144,8 +155,6 @@ export function fireAuditWrite(
     headers: {
       "Content-Type": "application/json",
       "x-service-token": internalToken,
-      // Forward actor identity as user-context headers so RBAC in the
-      // product service can verify the role without re-reading the body.
       "x-user-id": entry.actorId,
       "x-user-role": entry.actorRole,
     },

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { getFailedJobsFn, getQueueStatsFn } from "@/server/queue";
+import { getFailedJobsFn, getQueueActivityFn, getQueueStatsFn } from "@/server/queue";
 import {
+  QueueActivityLog,
   QueueStatsCards,
   ResendEmailDialog,
   RetryAllButton,
@@ -57,6 +58,14 @@ export default function QueuePage() {
     queryKey: ["queue-failed-jobs"],
     queryFn: () => getFailedJobsFn({}),
     refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Queue activity log — recent manual retries & resends
+  const { data: activityData, isLoading: activityLoading } = useQuery({
+    queryKey: ["queue-activity"],
+    queryFn: () => getQueueActivityFn({}),
+    refetchInterval: 30_000,
     refetchIntervalInBackground: false,
   });
 
@@ -141,6 +150,14 @@ export default function QueuePage() {
               : "No failed jobs — queue is healthy"}
           </p>
         )}
+      </div>
+
+      {/* ── Activity log ─────────────────────────────────────────────────── */}
+      <div className="border-border border-t pt-6">
+        <QueueActivityLog
+          items={activityData?.items ?? []}
+          isLoading={activityLoading}
+        />
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@repo/ui/components/command";
 
 import { can, getRecentPages, useSession } from "@/lib";
@@ -127,6 +128,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     >
                       {match?.icon ?? <ClockIcon />}
                       {page.label}
+                      <CommandShortcut>↵</CommandShortcut>
                     </CommandItem>
                   );
                 })}
@@ -144,6 +146,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               >
                 {item.icon}
                 {item.label}
+                <CommandShortcut>↵</CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>

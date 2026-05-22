@@ -199,6 +199,12 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
 
       // ── Admin users (staff management — excludes CUSTOMER role) ──────────
       const adminUsers = {
+        invite: (data: { email: string; role: string; name?: string | undefined }) =>
+          request<{ message: string; userId: string; email: string; role: string }>(
+            "/admin/invite",
+            { method: "POST", body: JSON.stringify(data) }
+          ),
+
         list: (params: { page?: number; search?: string }) => {
           const qs = new URLSearchParams({
             page: String(params.page ?? 1),

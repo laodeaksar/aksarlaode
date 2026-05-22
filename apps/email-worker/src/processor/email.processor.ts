@@ -10,6 +10,7 @@ import { handleOrderConfirmation } from "@/jobs/order-confirmation";
 import { handleOrderCreated } from "@/jobs/order-created";
 import { handlePasswordReset } from "@/jobs/password-reset";
 import { handleShippingUpdate } from "@/jobs/shipping-update";
+import { handleStaffInvite } from "@/jobs/staff-invite";
 import { MailChannelsProvider } from "@/providers/mailchannels.provider";
 import type { EmailJobPayload, EmailJobType } from "@/queues/email.queue";
 
@@ -26,6 +27,7 @@ const HANDLERS: {
   "order-cancelled": handleOrderCancelled,
   "password-reset": handlePasswordReset,
   "shipping-update": handleShippingUpdate,
+  "staff-invite": handleStaffInvite,
 };
 
 // FIX EML-05: total retry attempts configured here — must match defaultJobOptions
@@ -53,7 +55,7 @@ export const emailWorker = new Worker(
     if (schema) {
       const parsed = schema.safeParse(job.data);
       if (!parsed.success) {
-        const message = parsed.error.errors
+        const message = parsed.error.issues
           .map((e) => `${e.path.join(".")}: ${e.message}`)
           .join("; ");
         throw Object.assign(

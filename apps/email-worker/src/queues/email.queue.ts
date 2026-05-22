@@ -7,7 +7,8 @@ export type EmailJobType =
   | "order-confirmation"
   | "order-cancelled"
   | "password-reset"
-  | "shipping-update";
+  | "shipping-update"
+  | "staff-invite";
 
 // FIX EML-03: all order-related payloads now include userEmail so handlers
 // can send email without an extra auth-service round-trip.
@@ -43,6 +44,13 @@ export type EmailJobPayload = {
     trackingNumber: string;
     courierName: string;
     estimatedDate: string;
+  };
+  "staff-invite": {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    inviteLink: string;
   };
 };
 

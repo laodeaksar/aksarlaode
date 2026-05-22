@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listAdminUsersFn } from "@/server/users";
-import { userColumns } from "@/components/users";
+import { userColumns, InviteUserDialog } from "@/components/users";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/shared";
@@ -33,7 +33,10 @@ export default function UsersPage() {
         subtitle="Manage staff and admin accounts"
       />
 
-      <SearchInput placeholder="Search by name or email..." {...searchInput} />
+      <div className="flex items-center justify-between gap-3">
+        <SearchInput placeholder="Search by name or email..." {...searchInput} />
+        <InviteUserDialog />
+      </div>
 
       <div className="space-y-3">
         <DataTable

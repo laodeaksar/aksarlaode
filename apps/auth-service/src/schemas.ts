@@ -87,3 +87,13 @@ export const UpdateUserRoleBody = t.Object({
       "Target role. OWNER cannot be assigned here — use POST /auth/owner/transfer.",
   }),
 });
+
+export const InviteUserBody = t.Object({
+  email: t.String({ format: "email", description: "Invitee email address" }),
+  role: t.Union([t.Literal("ADMIN"), t.Literal("FINANCE")], {
+    description: "Role to assign. OWNER cannot be invited.",
+  }),
+  name: t.Optional(
+    t.String({ minLength: 1, description: "Display name (derived from email if omitted)" })
+  ),
+});

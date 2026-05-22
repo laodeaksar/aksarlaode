@@ -38,6 +38,11 @@ export const auditLogsSearchSchema = z.object({
   actorRole: optionalString,
 });
 
+export const usersSearchSchema = z.object({
+  page: pageSchema,
+  search: optionalString,
+});
+
 export const loginSearchSchema = z.object({
   logout: z.literal("1").optional().catch(undefined),
 });
@@ -48,4 +53,5 @@ export type ProductsSearch = z.infer<typeof productsSearchSchema>;
 export type OrdersSearch = z.infer<typeof ordersSearchSchema>;
 export type CustomersSearch = z.infer<typeof customersSearchSchema>;
 export type AuditLogsSearch = z.infer<typeof auditLogsSearchSchema>;
+export type UsersSearch = z.infer<typeof usersSearchSchema>;
 export type LoginSearch = z.infer<typeof loginSearchSchema>;

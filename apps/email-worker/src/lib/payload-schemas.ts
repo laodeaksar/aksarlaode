@@ -41,12 +41,21 @@ export const ShippingUpdateSchema = z.object({
   estimatedDate: z.string().min(1),
 });
 
+export const StaffInviteSchema = z.object({
+  userId: z.string().min(1),
+  email: z.string().email(),
+  name: z.string().min(1),
+  role: z.string().min(1),
+  inviteLink: z.string().url(),
+});
+
 export const PAYLOAD_SCHEMAS = {
   "order-created": OrderCreatedSchema,
   "order-confirmation": OrderConfirmationSchema,
   "order-cancelled": OrderCancelledSchema,
   "password-reset": PasswordResetSchema,
   "shipping-update": ShippingUpdateSchema,
+  "staff-invite": StaffInviteSchema,
 } as const;
 
 export type PayloadSchemaMap = typeof PAYLOAD_SCHEMAS;

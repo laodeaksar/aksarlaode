@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Form, useField, useForm } from "@formisch/react";
 
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -28,9 +28,9 @@ import {
 } from "@repo/ui/components/input-group";
 
 import { loginFn } from "@/server/auth";
-import { LoginSchema, type LoginFields } from "@/schemas/forms";
+import { LoginSchema } from "@/schemas/forms";
 import { LoginPageSkeleton } from "@/components/login";
-import { effectResolver, toast } from "@/lib";
+import { toast } from "@/lib";
 
 import { Route } from "./route";
 
@@ -51,23 +51,21 @@ export default function LoginPage() {
     void navigate({ to: "/login", search: {}, replace: true });
   }, [logout, navigate]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFields>({
-    resolver: effectResolver(LoginSchema),
-    defaultValues: { email: "", password: "" },
+  const form = useForm({
+    schema: LoginSchema,
+    initialInput: { email: "", password: "" },
   });
 
+  const emailField = useField(form, { path: ["email"] as const });
+  const passwordField = useField(form, { path: ["password"] as const });
+
   const mutation = useMutation({
-    mutationFn: (data: LoginFields) => loginFn({ data }),
+    mutationFn: (data: { email: string; password: string }) =>
+      loginFn({ data }),
     onSuccess: () => {
       navigate({ to: "/dashboard" });
     },
   });
-
-  const onFormSubmit = handleSubmit((data) => mutation.mutate(data));
 
   if (logout) return <LoginPageSkeleton />;
 
@@ -78,32 +76,40 @@ export default function LoginPage() {
           <CardTitle className="text-center text-xl">Admin Login</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onFormSubmit} className="space-y-4">
+          <Form
+            of={form}
+            onSubmit={(data) => mutation.mutate(data)}
+            className="space-y-4"
+          >
             <FieldGroup>
-              <Field data-invalid={!!errors.email}>
+              <Field data-invalid={!!emailField.errors}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
-                  {...register("email")}
+                  {...emailField.props}
                   id="email"
                   type="email"
                   autoComplete="email"
                   placeholder="example@mail.com"
-                  aria-invalid={!!errors.email}
+                  aria-invalid={!!emailField.errors}
                   disabled={mutation.isPending}
                 />
-                {errors.email && <FieldError errors={[errors.email]} />}
+                {emailField.errors && (
+                  <FieldError
+                    errors={emailField.errors.map((m) => ({ message: m }))}
+                  />
+                )}
               </Field>
 
-              <Field data-invalid={!!errors.password}>
+              <Field data-invalid={!!passwordField.errors}>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <InputGroup>
                   <InputGroupInput
-                    {...register("password")}
+                    {...passwordField.props}
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     autoComplete="current-password"
-                    aria-invalid={!!errors.password}
+                    aria-invalid={!!passwordField.errors}
                     disabled={mutation.isPending}
                   />
                   <InputGroupAddon align="inline-end">
@@ -121,7 +127,11 @@ export default function LoginPage() {
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                {errors.password && <FieldError errors={[errors.password]} />}
+                {passwordField.errors && (
+                  <FieldError
+                    errors={passwordField.errors.map((m) => ({ message: m }))}
+                  />
+                )}
               </Field>
             </FieldGroup>
 
@@ -140,7 +150,7 @@ export default function LoginPage() {
             >
               {mutation.isPending ? "Masuk..." : "Masuk"}
             </Button>
-          </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

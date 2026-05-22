@@ -1,27 +1,29 @@
-import { z } from "zod/v4";
-
 /**
- * Parse process.env against a Zod schema.
- * Crashes immediately with a clear, structured error message if any variable
- * is missing or invalid — no silent fallbacks.
+ * Parses a Redis URL into IORedis-compatible connection options.
+ *
+ * Supports:
+ *   redis://host:port
+ *   redis://:password@host:port
+ *   rediss://host:port          (TLS)
+ *   rediss://:password@host:port (TLS)
+ *
+ * Usage (IORedis):
+ *   new Redis(env.REDIS_URL)
+ *
+ * Usage (BullMQ — needs plain options, not a URL string):
+ *   new Queue("name", { connection: parseRedisUrl(env.REDIS_URL) })
  */
-export function parseEnv<T extends z.ZodRawShape>(
-  shape: T,
-  serviceName: string
-): z.infer<z.ZodObject<T>> {
-  const result = z.object(shape).safeParse(process.env);
-
-  if (!result.success) {
-    const fields = result.error.flatten().fieldErrors;
-    const lines = Object.entries(fields)
-      .map(([key, errors]) => `   ${key.padEnd(30)} ${(errors as string[] | undefined)?.join(", ")}`)
-      .join("\n");
-
-    console.error(`\n❌  [${serviceName}] Invalid environment variables:\n`);
-    console.error(lines);
-    console.error("\n   Check your .env file against .env.example\n");
-    process.exit(1);
-  }
-
-  return result.data;
+export function parseRedisUrl(url: string): {
+  host: string;
+  port: number;
+  password?: string;
+  tls?: object;
+} {
+  const u = new URL(url);
+  return {
+    host: u.hostname,
+    port: u.port ? parseInt(u.port, 10) : 6379,
+    ...(u.password ? { password: decodeURIComponent(u.password) } : {}),
+    ...(u.protocol === "rediss:" ? { tls: {} } : {}),
+  };
 }

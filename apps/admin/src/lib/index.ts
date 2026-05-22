@@ -30,9 +30,6 @@ export type { Session, UserRole } from "./auth";
 // Re-exported from here so consumers don't need to know the server/* path
 export { getSessionFn } from "../server/auth";
 
-// effect-resolver
-export { effectResolver } from "./effect-resolver";
-
 // rbac
 export { can, hasAnyAdminRole } from "./rbac";
 export type { Permission } from "./rbac";
@@ -54,6 +51,10 @@ export { useDebouncedInput } from "./use-debounced-input";
 
 // use-new-orders
 export { useNewOrdersCount } from "./use-new-orders";
+
+// use-nav-items
+export { useNavItems } from "./use-nav-items";
+export type { NavItem } from "./use-nav-items";
 
 // use-route-search
 export { useRouteSearch } from "./use-route-search";

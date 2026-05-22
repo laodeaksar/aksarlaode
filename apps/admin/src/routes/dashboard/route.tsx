@@ -1,8 +1,16 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getDashboardStatsFn } from "@/server/dashboard";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/dashboard")({
+  beforeLoad: ({ context }) => {
+    const { session } = context;
+    if (!session || !can(session.role, "dashboard:read")) {
+      throw redirect({ to: "/login" });
+    }
+  },
+
   head: () => ({
     meta: [{ title: "Dashboard — Admin" }],
   }),

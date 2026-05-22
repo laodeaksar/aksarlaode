@@ -1,13 +1,15 @@
 import { Queue } from "bullmq";
 
-import { env } from "@repo/env";
+import { env } from "@repo/env/email-worker";
+import { parseRedisUrl } from "@repo/env/utils";
 
 export type EmailJobType =
   | "order-created"
   | "order-confirmation"
   | "order-cancelled"
   | "password-reset"
-  | "shipping-update";
+  | "shipping-update"
+  | "staff-invite";
 
 // FIX EML-03: all order-related payloads now include userEmail so handlers
 // can send email without an extra auth-service round-trip.
@@ -44,14 +46,17 @@ export type EmailJobPayload = {
     courierName: string;
     estimatedDate: string;
   };
+  "staff-invite": {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    inviteLink: string;
+  };
 };
 
 export const emailQueue = new Queue("email", {
-  connection: {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD,
-  },
+  connection: parseRedisUrl(env.REDIS_URL),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 2000 },

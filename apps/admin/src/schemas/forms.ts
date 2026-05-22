@@ -1,70 +1,80 @@
-import { Schema } from "effect";
+import * as v from "valibot";
 
 // ── Login ──────────────────────────────────────────────────────────────────
 
-export const LoginSchema = Schema.Struct({
-  email: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Email wajib diisi." }),
-    Schema.filter((s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s), {
-      message: () => "Format email tidak valid.",
-    })
+export const LoginSchema = v.object({
+  email: v.pipe(
+    v.string(),
+    v.minLength(1, "Email wajib diisi."),
+    v.email("Format email tidak valid.")
   ),
-  password: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Password wajib diisi." })
-  ),
+  password: v.pipe(v.string(), v.minLength(1, "Password wajib diisi.")),
 });
 
-export type LoginFields = Schema.Schema.Type<typeof LoginSchema>;
+export type LoginFields = v.InferOutput<typeof LoginSchema>;
 
 // ── Order status update ────────────────────────────────────────────────────
 
-export const StatusUpdateSchema = Schema.Struct({
+export const StatusUpdateSchema = v.object({
   // Must be one of the ORDER_STATUSES literals — validated as non-empty string
   // here; business-rule check (not same as current) stays in the UI layer.
-  nextStatus: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Pilih status baru." })
-  ),
+  nextStatus: v.pipe(v.string(), v.minLength(1, "Pilih status baru.")),
   // Always a string from the textarea; empty string is valid.
-  note: Schema.String,
+  note: v.string(),
 });
 
-export type StatusFormFields = Schema.Schema.Type<typeof StatusUpdateSchema>;
+export type StatusFormFields = v.InferOutput<typeof StatusUpdateSchema>;
 
 // ── Product form ───────────────────────────────────────────────────────────
-// Mirrors NewProductSchema in effect/Services.ts but scoped to the form
-// fields only (no imageUrls / status — those are not rendered in the form).
-// `price` and `stock` are received as numbers because react-hook-form's
-// setValueAs coerces the raw input string before the resolver runs.
-// `comparePrice` uses setValueAs to map empty string → undefined so the
-// Schema.optional wrapper receives undefined (not NaN) for blank inputs.
+// Number inputs in HTML always yield string values via the DOM.  We coerce
+// with v.transform before numeric validations — mirrors the original RHF
+// `valueAsNumber: true` / `setValueAs` behaviour.
+//
+// `price` and `stock` are required numbers (> 0 and >= 0 respectively).
+// `comparePrice` is optional — blank input → undefined, non-blank → number.
 
-export const ProductFormSchema = Schema.Struct({
-  name: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "Name wajib diisi." })
-  ),
-  price: Schema.Number.pipe(
-    Schema.filter((n) => Number.isFinite(n) && n > 0, {
-      message: () => "Price harus lebih dari 0.",
-    })
-  ),
-  comparePrice: Schema.optional(
-    Schema.Number.pipe(
-      Schema.filter((n) => Number.isFinite(n) && n > 0, {
-        message: () => "Compare price harus lebih dari 0.",
-      })
+const coerceNumber = (val: unknown): number => {
+  if (val === "" || val == null) return NaN;
+  return Number(val);
+};
+
+const coerceOptionalNumber = (val: unknown): number | undefined => {
+  if (val === "" || val == null) return undefined;
+  const n = Number(val);
+  return isNaN(n) ? undefined : n;
+};
+
+export const ProductFormSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, "Name wajib diisi.")),
+  price: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n > 0,
+      "Price harus lebih dari 0."
     )
   ),
-  stock: Schema.Number.pipe(
-    Schema.filter((n) => Number.isFinite(n) && n >= 0, {
-      message: () => "Stock tidak boleh negatif.",
-    })
+  comparePrice: v.pipe(
+    v.unknown(),
+    v.transform(coerceOptionalNumber),
+    v.check(
+      (n): n is number | undefined =>
+        n === undefined || (Number.isFinite(n) && n > 0),
+      "Compare price harus lebih dari 0."
+    )
   ),
-  sku: Schema.String.pipe(
-    Schema.minLength(1, { message: () => "SKU wajib diisi." })
+  stock: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 0,
+      "Stock tidak boleh negatif."
+    )
   ),
+  sku: v.pipe(v.string(), v.minLength(1, "SKU wajib diisi.")),
   // Always a string in the form (empty string = no description).
-  // The submit handler trims and maps "" → undefined before sending to the API.
-  description: Schema.String,
+  // The submit handler trims and maps "" → "" before sending to the API.
+  description: v.string(),
 });
 
-export type ProductFormValues = Schema.Schema.Type<typeof ProductFormSchema>;
+export type ProductFormValues = v.InferOutput<typeof ProductFormSchema>;

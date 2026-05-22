@@ -6,8 +6,9 @@ import {
   adminRestoreUserHandler,
   adminUpdateUserRoleHandler,
 } from "@/handlers/admin-users";
+import { inviteUserHandler } from "@/handlers/invite-user";
 import { serviceTokenMiddleware } from "@/middleware/service-token";
-import { AdminUserQuery, UpdateUserRoleBody } from "@/schemas";
+import { AdminUserQuery, InviteUserBody, UpdateUserRoleBody } from "@/schemas";
 
 /**
  * Admin user management routes.
@@ -55,6 +56,15 @@ const adminRoutes = new Elysia({ prefix: "/admin" })
       summary: "Restore soft-deleted user",
       description:
         "Clears the `deletedAt` timestamp, making the account active again. Returns 409 if the user is not currently soft-deleted. Requires OWNER role.",
+    },
+  })
+  .post("/invite", inviteUserHandler, {
+    body: InviteUserBody,
+    detail: {
+      tags: ["Admin"],
+      summary: "Invite a new staff member",
+      description:
+        "Creates a new ADMIN or FINANCE account and emails a 24-hour invite link. The account is locked until the invitee sets their password. Requires OWNER role.",
     },
   });
 

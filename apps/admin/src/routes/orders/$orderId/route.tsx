@@ -6,9 +6,8 @@ import { can } from "@/lib";
 export const Route = createFileRoute("/orders/$orderId")({
   beforeLoad: ({ context }) => {
     const { session } = context;
-    if (!session || !can(session.role, "orders:read")) {
-      throw redirect({ to: "/dashboard" });
-    }
+    if (!session) throw redirect({ to: "/login" });
+    if (!can(session.role, "orders:read")) throw redirect({ to: "/forbidden" });
   },
 
   loader: ({ params, context }) => {

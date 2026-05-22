@@ -1,6 +1,6 @@
 import { Data, Effect } from "effect";
 
-import { env } from "@repo/env";
+import { env } from "@repo/env/payment";
 
 class OrderClientError extends Data.TaggedError("OrderClientError")<{
   status: number;

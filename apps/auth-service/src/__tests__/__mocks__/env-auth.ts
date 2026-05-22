@@ -28,9 +28,7 @@ export const env = {
   JWT_REFRESH_PRIVATE_KEY: refresh.privateKey,
   JWT_REFRESH_PUBLIC_KEY: refresh.publicKey,
   INTERNAL_SERVICE_TOKEN: "test-internal-service-token-minimum-32chars!!",
-  REDIS_HOST: "localhost",
-  REDIS_PORT: 6379,
-  REDIS_PASSWORD: "",
+  REDIS_URL: "redis://localhost:6379",
   WEB_URL: "http://localhost:3000",
   ADMIN_URL: "http://localhost:3001",
 };

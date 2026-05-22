@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { Form, useField, useForm } from "@formisch/react";
 
 import { Button } from "@repo/ui/components/button";
 import {
@@ -11,7 +11,6 @@ import { Input } from "@repo/ui/components/input";
 import { Textarea } from "@repo/ui/components/textarea";
 
 import { ProductFormSchema, type ProductFormValues } from "@/schemas/forms";
-import { effectResolver } from "@/lib";
 
 interface Props {
   defaultValues?: Partial<ProductFormValues>;
@@ -28,13 +27,9 @@ export function ProductForm({
   isLoading,
   error,
 }: Props) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ProductFormValues>({
-    resolver: effectResolver(ProductFormSchema),
-    defaultValues: {
+  const form = useForm({
+    schema: ProductFormSchema,
+    initialInput: {
       name: defaultValues.name ?? "",
       price: defaultValues.price ?? 0,
       comparePrice: defaultValues.comparePrice,
@@ -44,17 +39,26 @@ export function ProductForm({
     },
   });
 
-  const onFormSubmit = handleSubmit((data) =>
-    onSubmit({
-      ...data,
-      name: data.name.trim(),
-      sku: data.sku.trim(),
-      description: data.description?.trim() || "",
-    })
-  );
+  const nameField = useField(form, { path: ["name"] as const });
+  const skuField = useField(form, { path: ["sku"] as const });
+  const priceField = useField(form, { path: ["price"] as const });
+  const comparePriceField = useField(form, { path: ["comparePrice"] as const });
+  const stockField = useField(form, { path: ["stock"] as const });
+  const descriptionField = useField(form, { path: ["description"] as const });
 
   return (
-    <form onSubmit={onFormSubmit} className="space-y-4">
+    <Form
+      of={form}
+      onSubmit={(data) =>
+        onSubmit({
+          ...data,
+          name: data.name.trim(),
+          sku: data.sku.trim(),
+          description: data.description.trim(),
+        })
+      }
+      className="space-y-4"
+    >
       {error && (
         <p
           role="alert"
@@ -65,31 +69,43 @@ export function ProductForm({
       )}
 
       <FieldGroup>
-        <Field data-invalid={!!errors.name}>
+        <Field data-invalid={!!nameField.errors}>
           <FieldLabel htmlFor="pf-name">Name</FieldLabel>
-          <Input id="pf-name" aria-label="Product name" {...register("name")} />
-          {errors.name && <FieldError errors={[errors.name]} />}
+          <Input
+            {...nameField.props}
+            id="pf-name"
+            aria-label="Product name"
+          />
+          {nameField.errors && (
+            <FieldError errors={nameField.errors.map((m) => ({ message: m }))} />
+          )}
         </Field>
 
-        <Field data-invalid={!!errors.sku}>
+        <Field data-invalid={!!skuField.errors}>
           <FieldLabel htmlFor="pf-sku">SKU</FieldLabel>
-          <Input id="pf-sku" aria-label="Product SKU" {...register("sku")} />
-          {errors.sku && <FieldError errors={[errors.sku]} />}
+          <Input {...skuField.props} id="pf-sku" aria-label="Product SKU" />
+          {skuField.errors && (
+            <FieldError errors={skuField.errors.map((m) => ({ message: m }))} />
+          )}
         </Field>
 
-        <Field data-invalid={!!errors.price}>
+        <Field data-invalid={!!priceField.errors}>
           <FieldLabel htmlFor="pf-price">Price (IDR)</FieldLabel>
           <Input
+            {...priceField.props}
             id="pf-price"
             type="number"
             min={1}
             aria-label="Product price"
-            {...register("price", { valueAsNumber: true })}
           />
-          {errors.price && <FieldError errors={[errors.price]} />}
+          {priceField.errors && (
+            <FieldError
+              errors={priceField.errors.map((m) => ({ message: m }))}
+            />
+          )}
         </Field>
 
-        <Field data-invalid={!!errors.comparePrice}>
+        <Field data-invalid={!!comparePriceField.errors}>
           <FieldLabel htmlFor="pf-compare-price">
             Compare Price (IDR){" "}
             <span className="text-muted-foreground text-xs font-normal">
@@ -97,38 +113,43 @@ export function ProductForm({
             </span>
           </FieldLabel>
           <Input
+            {...comparePriceField.props}
             id="pf-compare-price"
             type="number"
             min={1}
             aria-label="Compare price (original price before discount)"
             placeholder="Leave blank if no sale"
-            {...register("comparePrice", {
-              setValueAs: (v) =>
-                v === "" || v === null ? undefined : Number(v),
-            })}
           />
-          {errors.comparePrice && <FieldError errors={[errors.comparePrice]} />}
+          {comparePriceField.errors && (
+            <FieldError
+              errors={comparePriceField.errors.map((m) => ({ message: m }))}
+            />
+          )}
         </Field>
 
-        <Field data-invalid={!!errors.stock}>
+        <Field data-invalid={!!stockField.errors}>
           <FieldLabel htmlFor="pf-stock">Stock</FieldLabel>
           <Input
+            {...stockField.props}
             id="pf-stock"
             type="number"
             min={0}
             aria-label="Product stock"
-            {...register("stock", { valueAsNumber: true })}
           />
-          {errors.stock && <FieldError errors={[errors.stock]} />}
+          {stockField.errors && (
+            <FieldError
+              errors={stockField.errors.map((m) => ({ message: m }))}
+            />
+          )}
         </Field>
 
-        <Field data-invalid={!!errors.description}>
+        <Field data-invalid={!!descriptionField.errors}>
           <FieldLabel htmlFor="pf-description">Description</FieldLabel>
           <Textarea
+            {...descriptionField.props}
             id="pf-description"
             rows={3}
             aria-label="Product description"
-            {...register("description")}
           />
         </Field>
       </FieldGroup>
@@ -136,6 +157,6 @@ export function ProductForm({
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Saving..." : "Save Product"}
       </Button>
-    </form>
+    </Form>
   );
 }

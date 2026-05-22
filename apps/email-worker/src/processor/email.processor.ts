@@ -1,6 +1,7 @@
 import { Worker, type Job } from "bullmq";
 
-import { env } from "@repo/env";
+import { env } from "@repo/env/email-worker";
+import { parseRedisUrl } from "@repo/env/utils";
 
 // FIX EML-09: Prometheus counter helpers (no external dep).
 import { incrementCounter } from "@/lib/metrics";
@@ -10,6 +11,7 @@ import { handleOrderConfirmation } from "@/jobs/order-confirmation";
 import { handleOrderCreated } from "@/jobs/order-created";
 import { handlePasswordReset } from "@/jobs/password-reset";
 import { handleShippingUpdate } from "@/jobs/shipping-update";
+import { handleStaffInvite } from "@/jobs/staff-invite";
 import { MailChannelsProvider } from "@/providers/mailchannels.provider";
 import type { EmailJobPayload, EmailJobType } from "@/queues/email.queue";
 
@@ -26,6 +28,7 @@ const HANDLERS: {
   "order-cancelled": handleOrderCancelled,
   "password-reset": handlePasswordReset,
   "shipping-update": handleShippingUpdate,
+  "staff-invite": handleStaffInvite,
 };
 
 // FIX EML-05: total retry attempts configured here — must match defaultJobOptions
@@ -53,7 +56,7 @@ export const emailWorker = new Worker(
     if (schema) {
       const parsed = schema.safeParse(job.data);
       if (!parsed.success) {
-        const message = parsed.error.errors
+        const message = parsed.error.issues
           .map((e) => `${e.path.join(".")}: ${e.message}`)
           .join("; ");
         throw Object.assign(
@@ -75,11 +78,7 @@ export const emailWorker = new Worker(
     return { sent: true, jobId: job.id, type };
   },
   {
-    connection: {
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      password: env.REDIS_PASSWORD,
-    },
+    connection: parseRedisUrl(env.REDIS_URL),
     concurrency: 5,
     limiter: { max: 50, duration: 60_000 }, // 50 emails/min
   }

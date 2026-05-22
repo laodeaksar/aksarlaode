@@ -27,3 +27,17 @@ export async function enqueuePasswordReset(
 ): Promise<void> {
   await emailQueue.add("password-reset", data);
 }
+
+export type StaffInviteJobData = {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+  inviteLink: string;
+};
+
+export async function enqueueStaffInvite(
+  data: StaffInviteJobData
+): Promise<void> {
+  await emailQueue.add("staff-invite", data);
+}

@@ -3,14 +3,13 @@ import { zodValidator } from "@tanstack/zod-adapter";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
 import { auditLogsSearchSchema } from "@/lib/search-schemas";
-import { can, type Session } from "@/lib";
+import { can } from "@/lib";
 
 export const Route = createFileRoute("/audit-logs")({
   beforeLoad: ({ context }) => {
-    const { session } = context as { session?: Session };
-    if (!session || !can(session.role, "audit:read")) {
-      throw redirect({ to: "/dashboard" });
-    }
+    const { session } = context;
+    if (!session) throw redirect({ to: "/login" });
+    if (!can(session.role, "audit:read")) throw redirect({ to: "/forbidden" });
   },
 
   // All filter state lives in the URL so every combination is bookmarkable,

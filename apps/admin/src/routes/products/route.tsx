@@ -8,9 +8,8 @@ import { can } from "@/lib";
 export const Route = createFileRoute("/products")({
   beforeLoad: ({ context }) => {
     const { session } = context;
-    if (!session || !can(session.role, "products:read")) {
-      throw redirect({ to: "/dashboard" });
-    }
+    if (!session) throw redirect({ to: "/login" });
+    if (!can(session.role, "products:read")) throw redirect({ to: "/forbidden" });
   },
 
   validateSearch: zodValidator(productsSearchSchema),

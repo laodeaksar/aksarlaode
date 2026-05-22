@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Form, reset, useField, useForm } from "@formisch/react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -33,7 +33,7 @@ import { Textarea } from "@repo/ui/components/textarea";
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
 import { PageHeader } from "@/components/layout/page-header";
-import { can, effectResolver, toast, useSession } from "@/lib";
+import { can, toast, useSession } from "@/lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -107,18 +107,13 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
     queryFn: () => getOrderFn({ data: { id: orderId } }),
   });
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<StatusFormFields>({
-    resolver: effectResolver(StatusUpdateSchema),
-    defaultValues: { nextStatus: "", note: "" },
+  const form = useForm({
+    schema: StatusUpdateSchema,
+    initialInput: { nextStatus: "", note: "" },
   });
 
-  const watchedNextStatus = watch("nextStatus");
+  const nextStatusField = useField(form, { path: ["nextStatus"] as const });
+  const noteField = useField(form, { path: ["note"] as const });
 
   const { mutate: executeUpdate, isPending } = useMutation({
     mutationFn: ({ nextStatus, note }: StatusFormFields) =>
@@ -167,17 +162,9 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
       toast.success("Status pesanan berhasil diperbarui");
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      reset();
+      reset(form);
       setConfirmOpen(false);
     },
-  });
-
-  const onStatusSubmit = handleSubmit((data) => {
-    if (data.nextStatus === "CANCELLED") {
-      setConfirmOpen(true);
-    } else {
-      executeUpdate(data);
-    }
   });
 
   if (isLoading && !order) return <OrderDetailSkeleton />;
@@ -274,17 +261,27 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
               <CardTitle>Update Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={onStatusSubmit} className="space-y-3">
+              <Form
+                of={form}
+                onSubmit={(data) => {
+                  if (data.nextStatus === "CANCELLED") {
+                    setConfirmOpen(true);
+                  } else {
+                    executeUpdate(data);
+                  }
+                }}
+                className="space-y-3"
+              >
                 <FieldGroup>
-                  <Field data-invalid={!!errors.nextStatus}>
+                  <Field data-invalid={!!nextStatusField.errors}>
                     <FieldLabel htmlFor="order-next-status">
                       New Status
                     </FieldLabel>
                     <select
+                      {...nextStatusField.props}
                       id="order-next-status"
                       aria-label="Select new order status"
                       className="border-input bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
-                      {...register("nextStatus")}
                     >
                       <option value="">Select new status...</option>
                       {ORDER_STATUSES.filter((s) => s !== order.status).map(
@@ -295,8 +292,12 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                         )
                       )}
                     </select>
-                    {errors.nextStatus && (
-                      <FieldError errors={[errors.nextStatus]} />
+                    {nextStatusField.errors && (
+                      <FieldError
+                        errors={nextStatusField.errors.map((m) => ({
+                          message: m,
+                        }))}
+                      />
                     )}
                   </Field>
 
@@ -305,11 +306,11 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                       Note (optional)
                     </FieldLabel>
                     <Textarea
+                      {...noteField.props}
                       id="order-note"
                       aria-label="Status update note"
                       rows={2}
                       placeholder="Optional note (e.g. tracking number)"
-                      {...register("note")}
                     />
                   </Field>
                 </FieldGroup>
@@ -317,11 +318,11 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={!watchedNextStatus || isPending || isSubmitting}
+                  disabled={!nextStatusField.input || isPending}
                 >
-                  {isPending || isSubmitting ? "Updating..." : "Update Status"}
+                  {isPending ? "Updating..." : "Update Status"}
                 </Button>
-              </form>
+              </Form>
             </CardContent>
           </Card>
         )}
@@ -342,8 +343,11 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                const { nextStatus, note } = watch();
-                executeUpdate({ nextStatus, note });
+                const nextStatus = nextStatusField.input ?? "";
+                const note = noteField.input ?? "";
+                if (nextStatus) {
+                  executeUpdate({ nextStatus, note });
+                }
               }}
             >
               Ya, Batalkan Pesanan

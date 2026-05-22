@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
+import { Route as UsersRouteRouteImport } from './routes/users/route'
 import { Route as ProductsRouteRouteImport } from './routes/products/route'
 import { Route as OrdersRouteRouteImport } from './routes/orders/route'
 import { Route as LoginRouteRouteImport } from './routes/login/route'
@@ -16,6 +18,7 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as CustomersRouteRouteImport } from './routes/customers/route'
 import { Route as AuditLogsRouteRouteImport } from './routes/audit-logs/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as ProductsIndexRouteImport } from './routes/products/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
@@ -31,6 +34,16 @@ import { Route as OrdersOrderIdIndexRouteImport } from './routes/orders/$orderId
 import { Route as CustomersUserIdIndexRouteImport } from './routes/customers/$userId/index'
 import { Route as ProductsProductIdEditRouteImport } from './routes/products/$productId/edit'
 
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRouteRoute = UsersRouteRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsRouteRoute = ProductsRouteRouteImport.update({
   id: '/products',
   path: '/products',
@@ -65,6 +78,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UsersRouteRoute,
 } as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
   id: '/',
@@ -145,6 +163,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/users': typeof UsersRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
   '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
   '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
@@ -155,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/users/': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId/': typeof CustomersUserIdIndexRoute
   '/orders/$orderId/': typeof OrdersOrderIdIndexRoute
@@ -162,6 +183,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forbidden': typeof ForbiddenRoute
   '/products/new': typeof ProductsNewRoute
   '/audit-logs': typeof AuditLogsIndexRoute
   '/customers': typeof CustomersIndexRoute
@@ -169,6 +191,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/users': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId': typeof CustomersUserIdIndexRoute
   '/orders/$orderId': typeof OrdersOrderIdIndexRoute
@@ -183,6 +206,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/users': typeof UsersRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
   '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
   '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
@@ -193,6 +218,7 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/users/': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId/': typeof CustomersUserIdIndexRoute
   '/orders/$orderId/': typeof OrdersOrderIdIndexRoute
@@ -208,6 +234,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/users'
+    | '/forbidden'
     | '/customers/$userId'
     | '/orders/$orderId'
     | '/products/$productId'
@@ -218,6 +246,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/orders/'
     | '/products/'
+    | '/users/'
     | '/products/$productId/edit'
     | '/customers/$userId/'
     | '/orders/$orderId/'
@@ -225,6 +254,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forbidden'
     | '/products/new'
     | '/audit-logs'
     | '/customers'
@@ -232,6 +262,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/users'
     | '/products/$productId/edit'
     | '/customers/$userId'
     | '/orders/$orderId'
@@ -245,6 +276,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/users'
+    | '/forbidden'
     | '/customers/$userId'
     | '/orders/$orderId'
     | '/products/$productId'
@@ -255,6 +288,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/orders/'
     | '/products/'
+    | '/users/'
     | '/products/$productId/edit'
     | '/customers/$userId/'
     | '/orders/$orderId/'
@@ -269,10 +303,26 @@ export interface RootRouteChildren {
   LoginRouteRoute: typeof LoginRouteRouteWithChildren
   OrdersRouteRoute: typeof OrdersRouteRouteWithChildren
   ProductsRouteRoute: typeof ProductsRouteRouteWithChildren
+  UsersRouteRoute: typeof UsersRouteRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products': {
       id: '/products'
       path: '/products'
@@ -321,6 +371,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof UsersRouteRoute
     }
     '/products/': {
       id: '/products/'
@@ -541,6 +598,18 @@ const ProductsRouteRouteWithChildren = ProductsRouteRoute._addFileChildren(
   ProductsRouteRouteChildren,
 )
 
+interface UsersRouteRouteChildren {
+  UsersIndexRoute: typeof UsersIndexRoute
+}
+
+const UsersRouteRouteChildren: UsersRouteRouteChildren = {
+  UsersIndexRoute: UsersIndexRoute,
+}
+
+const UsersRouteRouteWithChildren = UsersRouteRoute._addFileChildren(
+  UsersRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditLogsRouteRoute: AuditLogsRouteRouteWithChildren,
@@ -549,6 +618,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRouteRoute: LoginRouteRouteWithChildren,
   OrdersRouteRoute: OrdersRouteRouteWithChildren,
   ProductsRouteRoute: ProductsRouteRouteWithChildren,
+  UsersRouteRoute: UsersRouteRouteWithChildren,
+  ForbiddenRoute: ForbiddenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

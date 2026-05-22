@@ -1,3 +1,7 @@
+// P0 FIX: Added AbortSignal.timeout(30_000) to the MailChannels fetch call.
+// Previously, a hanging API response would hold a BullMQ concurrency slot
+// indefinitely — all 5 slots could be exhausted, stalling the entire worker.
+// Now the fetch aborts after 30 s and is treated as a retryable network error.
 import { env } from "@repo/env/email-worker";
 
 import {
@@ -5,6 +9,8 @@ import {
   type SendMailOptions,
   type SendResult,
 } from "./base.provider";
+
+const MAILCHANNELS_TIMEOUT_MS = 30_000;
 
 export class MailChannelsProvider extends BaseProvider {
   readonly name = "MailChannels";
@@ -28,6 +34,7 @@ export class MailChannelsProvider extends BaseProvider {
           subject: options.subject,
           content: [{ type: "text/html", value: options.html }],
         }),
+        signal: AbortSignal.timeout(MAILCHANNELS_TIMEOUT_MS),
       });
 
       // 202 = accepted
@@ -37,14 +44,19 @@ export class MailChannelsProvider extends BaseProvider {
 
       // 4xx = fatal (bad input, invalid email) — don't retry
       if (res.status >= 400 && res.status < 500) {
-        return { success: false, error: body, retryable: false };
+        return { success: false, error: `MailChannels 4xx: ${res.status}`, retryable: false };
       }
 
       // 5xx = transient — retry
-      return { success: false, error: body, retryable: true };
+      return { success: false, error: `MailChannels 5xx: ${res.status}`, retryable: true };
     } catch (e) {
-      // Network error — retry
-      return { success: false, error: String(e), retryable: true };
+      const isTimeout =
+        e instanceof DOMException && e.name === "TimeoutError";
+      return {
+        success: false,
+        error: isTimeout ? "MailChannels request timed out" : String(e),
+        retryable: true,
+      };
     }
   }
 }

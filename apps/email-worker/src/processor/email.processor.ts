@@ -3,7 +3,6 @@ import { Worker, type Job } from "bullmq";
 import { env } from "@repo/env/email-worker";
 import { parseRedisUrl } from "@repo/env/utils";
 
-// FIX EML-09: Prometheus counter helpers (no external dep).
 import { incrementCounter } from "@/lib/metrics";
 import { PAYLOAD_SCHEMAS } from "@/lib/payload-schemas";
 import { handleOrderCancelled } from "@/jobs/order-cancelled";
@@ -31,8 +30,6 @@ const HANDLERS: {
   "staff-invite": handleStaffInvite,
 };
 
-// FIX EML-05: total retry attempts configured here — must match defaultJobOptions
-// in email.queue.ts so the "permanently failed" check is accurate.
 const MAX_ATTEMPTS = 3;
 
 export const emailWorker = new Worker(
@@ -42,16 +39,15 @@ export const emailWorker = new Worker(
     const handler = HANDLERS[type];
 
     if (!handler) {
-      // Unknown job type — move to DLQ immediately, don't retry
       throw Object.assign(new Error(`Unknown job type: ${type}`), {
         retryable: false,
       });
     }
 
-    // FIX EML-07: Validate payload shape before dispatching to the handler.
-    // A job enqueued with a missing or wrong-type field (e.g. userEmail is a
-    // UUID instead of an address) will now fail immediately with a clear
-    // ZodError message rather than crashing deep inside the template renderer.
+    // P1 FIX: parsed.data (the validated, typed result) is now passed to the
+    // handler instead of the raw job.data as any. Previously the Zod validation
+    // was a no-op — parsed.data was discarded and the unvalidated payload was
+    // forwarded, bypassing every schema constraint.
     const schema = PAYLOAD_SCHEMAS[type];
     if (schema) {
       const parsed = schema.safeParse(job.data);
@@ -64,29 +60,39 @@ export const emailWorker = new Worker(
           { retryable: false }
         );
       }
+      // Use the validated, coerced data — not the raw job.data
+      const result = await (handler as (
+        payload: typeof parsed.data,
+        provider: MailChannelsProvider
+      ) => Promise<{ success: boolean; error?: string; retryable?: boolean }>)(
+        parsed.data,
+        provider
+      );
+
+      if (!result.success) {
+        throw Object.assign(new Error(result.error ?? "Send failed"), {
+          retryable: result.retryable ?? true,
+        });
+      }
+
+      return { sent: true, jobId: job.id, type };
     }
 
-    const result = await handler(job.data as any, provider);
-
-    if (!result.success) {
-      const err = Object.assign(new Error(result.error ?? "Send failed"), {
-        retryable: result.retryable ?? true,
-      });
-      throw err;
-    }
-
-    return { sent: true, jobId: job.id, type };
+    // Fallback for job types without a schema (should not happen — all types
+    // are covered in PAYLOAD_SCHEMAS, but satisfies the control-flow check).
+    throw Object.assign(new Error(`No schema registered for job type: ${type}`), {
+      retryable: false,
+    });
   },
   {
     connection: parseRedisUrl(env.REDIS_URL),
     concurrency: 5,
-    limiter: { max: 50, duration: 60_000 }, // 50 emails/min
+    limiter: { max: 50, duration: 60_000 },
   }
 );
 
 // ── Lifecycle hooks ────────────────────────────────────────────────────────────
 emailWorker.on("completed", (job, result) => {
-  // FIX EML-09: increment Prometheus counter for successful sends
   incrementCounter("email_sent_total", { job_type: result.type ?? job.name });
 
   console.info(
@@ -98,11 +104,20 @@ emailWorker.on("completed", (job, result) => {
   );
 });
 
-emailWorker.on("failed", (job, err: any) => {
+// P1 FIX: err typed as `unknown` with a type guard instead of `any`.
+// P1 FIX (PII): userEmail / email are redacted from failure logs.
+//   Previously, every job failure logged the customer's email address in plain
+//   text, causing PII accumulation in log aggregators (GDPR/UU PDP violation).
+emailWorker.on("failed", (job, err: unknown) => {
   const attempt = job?.attemptsMade ?? 0;
-  const isPermanent = !err.retryable || attempt >= MAX_ATTEMPTS;
+  const isRetryableErr =
+    typeof err === "object" && err !== null && "retryable" in err
+      ? (err as { retryable: unknown }).retryable === true
+      : true;
+  const errMessage =
+    err instanceof Error ? err.message : String(err);
+  const isPermanent = !isRetryableErr || attempt >= MAX_ATTEMPTS;
 
-  // FIX EML-09: increment the appropriate failure counter
   if (isPermanent) {
     incrementCounter("email_retry_total", { job_type: job?.name ?? "unknown" });
   } else {
@@ -111,7 +126,6 @@ emailWorker.on("failed", (job, err: any) => {
     });
   }
 
-  // Always log the failure
   console.error(
     JSON.stringify({
       event: isPermanent ? "email_permanently_failed" : "email_failed",
@@ -119,21 +133,15 @@ emailWorker.on("failed", (job, err: any) => {
       type: job?.name,
       attempt,
       maxAttempts: MAX_ATTEMPTS,
-      retryable: err.retryable ?? true,
-      error: err.message,
-      payload: job?.data
-        ? {
-            orderId: (job.data as any).orderId,
-            userEmail: (job.data as any).userEmail ?? (job.data as any).email,
-          }
+      retryable: isRetryableErr,
+      error: errMessage,
+      // PII redacted: email address replaced with orderId only for correlation
+      orderId: job?.data
+        ? (job.data as Record<string, unknown>)["orderId"] ?? null
         : null,
     })
   );
 
-  // FIX EML-05: emit a distinct CRITICAL log when a job is permanently dead.
-  // This structured entry is designed to be picked up by log-based alerting
-  // (CloudWatch Metric Filter, Datadog Log Monitor, Loki alert rule, etc.)
-  // matching on: event = "email_permanently_failed"
   if (isPermanent) {
     console.error(
       JSON.stringify({
@@ -147,8 +155,6 @@ emailWorker.on("failed", (job, err: any) => {
       })
     );
 
-    // Optional: fire a webhook alert if ALERT_WEBHOOK_URL is configured.
-    // Non-blocking — do not await or crash the worker on webhook failure.
     if (env.ALERT_WEBHOOK_URL) {
       fetch(env.ALERT_WEBHOOK_URL, {
         method: "POST",
@@ -158,10 +164,10 @@ emailWorker.on("failed", (job, err: any) => {
           jobId: job?.id,
           type: job?.name,
           attempt,
-          error: err.message,
+          error: errMessage,
         }),
         signal: AbortSignal.timeout(5_000),
-      }).catch((e) =>
+      }).catch((e: unknown) =>
         console.warn(
           JSON.stringify({ event: "alert_webhook_failed", error: String(e) })
         )

@@ -6,20 +6,44 @@ console.info(
   JSON.stringify({ event: "worker_started", service: "email-worker" })
 );
 
-// FIX EML-09: Lightweight HTTP server that exposes:
-//   GET /health  — liveness probe (always 200 if process is up)
-//   GET /metrics — Prometheus text format for Prometheus/Grafana scraping
-//
-// Runs on METRICS_PORT (default 9100) so it doesn't conflict with other
-// services. Prometheus scrape config example:
-//   - job_name: email-worker
-//     static_configs:
-//       - targets: ['email-worker:9100']
+// P1 FIX: Global unhandledRejection handler.
+// Without this, an unhandled rejection in a fire-and-forget promise (e.g.
+// a non-awaited fetch) crashes the Bun process with no structured log entry,
+// making the failure invisible to alerting systems.
+process.on("unhandledRejection", (reason: unknown) => {
+  console.error(
+    JSON.stringify({
+      event: "unhandled_rejection",
+      severity: "CRITICAL",
+      error: reason instanceof Error ? reason.message : String(reason),
+      service: "email-worker",
+    })
+  );
+  // Do NOT call process.exit() here — let BullMQ finish in-flight jobs.
+  // The process will exit naturally after the current event loop drains,
+  // or the orchestrator will restart it based on the CRITICAL log.
+});
+
+process.on("uncaughtException", (err: Error) => {
+  console.error(
+    JSON.stringify({
+      event: "uncaught_exception",
+      severity: "CRITICAL",
+      error: err.message,
+      stack: err.stack,
+      service: "email-worker",
+    })
+  );
+  // For uncaught exceptions the process state is undefined — exit immediately
+  // so the orchestrator can restart with a clean state.
+  process.exit(1);
+});
+
 const METRICS_PORT = Number(process.env.METRICS_PORT ?? 9100);
 
 Bun.serve({
   port: METRICS_PORT,
-  fetch(req) {
+  fetch(req: Request) {
     const { pathname } = new URL(req.url);
 
     if (pathname === "/health") {
@@ -47,7 +71,8 @@ console.info(
   })
 );
 
-// Graceful shutdown
+// Graceful shutdown — emailWorker.close() waits for the active job to finish
+// before the process exits, preventing mid-send interruptions.
 const shutdown = async (signal: string) => {
   console.info(
     JSON.stringify({ event: "shutdown", signal, service: "email-worker" })
@@ -57,5 +82,5 @@ const shutdown = async (signal: string) => {
   process.exit(0);
 };
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

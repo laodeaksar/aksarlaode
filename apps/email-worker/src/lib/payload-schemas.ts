@@ -1,9 +1,18 @@
 import { z } from "zod";
 
-// FIX EML-07: Zod schemas for every email job payload type.
-// The processor validates inbound jobs against these schemas before dispatching
-// to handlers. A job with a malformed payload is rejected immediately with a
-// clear error rather than crashing inside the handler with a confusing TypeError.
+// P1 FIX: safeUrl() blocks javascript: / data: / vbscript: protocol URLs.
+// Zod's built-in z.string().url() accepts "javascript:alert(1)" as valid
+// (confirmed: safeParse returns success:true). Any field rendered inside an
+// href attribute must use safeUrl() to prevent XSS in email clients.
+const SAFE_URL_PROTOCOLS = /^https?:\/\//i;
+const safeUrl = () =>
+  z
+    .string()
+    .url()
+    .refine(
+      (url) => SAFE_URL_PROTOCOLS.test(url),
+      { message: "URL must use http or https protocol" }
+    );
 
 export const OrderCreatedSchema = z.object({
   orderId: z.string().min(1),
@@ -29,7 +38,9 @@ export const OrderCancelledSchema = z.object({
 export const PasswordResetSchema = z.object({
   userId: z.string().min(1),
   email: z.string().email(),
-  resetLink: z.string().url(),
+  // safeUrl() blocks javascript:, data:, vbscript: — these pass z.string().url()
+  // but would execute as JS in email clients that render active content.
+  resetLink: safeUrl(),
 });
 
 export const ShippingUpdateSchema = z.object({
@@ -46,7 +57,8 @@ export const StaffInviteSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   role: z.string().min(1),
-  inviteLink: z.string().url(),
+  // Same safeUrl() protection as resetLink — rendered inside href.
+  inviteLink: safeUrl(),
 });
 
 export const PAYLOAD_SCHEMAS = {

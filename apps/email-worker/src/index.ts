@@ -1,5 +1,6 @@
 import { env } from "@repo/env/email-worker";
 
+import { EnqueueSchema } from "./lib/enqueue-schema";
 import { renderMetrics } from "./lib/metrics";
 import {
   closeInspector,
@@ -10,6 +11,7 @@ import {
 } from "./lib/queue-inspector";
 import { emailWorker } from "./processor/email.processor";
 import { emailQueue } from "./queues/email.queue";
+import type { EmailJobPayload, EmailJobType } from "./queues/email.queue";
 
 console.info(
   JSON.stringify({ event: "worker_started", service: "email-worker" })
@@ -40,9 +42,6 @@ process.on("uncaughtException", (err: Error) => {
 });
 
 // ── Auth helper ─────────────────────────────────────────────────────────────
-// Queue inspection endpoints are internal-only. They require
-// Authorization: Bearer <INTERNAL_SERVICE_TOKEN> to prevent unauthorized
-// access to job metadata from the open network.
 
 function isAuthorized(req: Request): boolean {
   const header = req.headers.get("authorization") ?? "";
@@ -86,8 +85,7 @@ Bun.serve({
       });
     }
 
-    // ── Protected queue inspection endpoints ──────────────────────────────
-    // All /queue/* routes require a valid INTERNAL_SERVICE_TOKEN.
+    // ── Protected endpoints — require INTERNAL_SERVICE_TOKEN ──────────────
 
     if (!isAuthorized(req)) return unauthorized();
 
@@ -101,7 +99,7 @@ Bun.serve({
       return json({ jobs });
     }
 
-    // POST /queue/retry/:jobId — retry a single failed job by ID
+    // POST /queue/retry/:jobId — retry a single failed job
     const retryMatch = pathname.match(/^\/queue\/retry\/([^/]+)$/);
     if (method === "POST" && retryMatch) {
       const jobId = decodeURIComponent(retryMatch[1] ?? "");
@@ -114,6 +112,52 @@ Bun.serve({
     if (method === "POST" && pathname === "/queue/retry-all") {
       const count = await retryAllFailed();
       return json({ success: true, retriedCount: count });
+    }
+
+    // POST /queue/enqueue — manually trigger an email job from the admin panel.
+    // Only order-created, order-confirmation, and order-cancelled are supported.
+    // Uses a unique resend jobId (prefixed with "resend:") so the job always
+    // gets enqueued even if the original idempotency key was already consumed.
+    if (method === "POST" && pathname === "/queue/enqueue") {
+      let body: unknown;
+      try {
+        body = (await req.json()) as unknown;
+      } catch {
+        return json({ error: "Invalid JSON body" }, 400);
+      }
+
+      const parsed = EnqueueSchema.safeParse(body);
+      if (!parsed.success) {
+        return json(
+          { error: "Invalid payload", issues: parsed.error.issues },
+          400
+        );
+      }
+
+      const { type, payload } = parsed.data;
+
+      // Unique jobId with "resend:" prefix ensures manual re-sends bypass the
+      // normal idempotency key and always reach the queue.
+      const raw = payload as Record<string, unknown>;
+      const orderId = typeof raw["orderId"] === "string" ? raw["orderId"] : "";
+      const jobId = `resend:${type}:${orderId}:${Date.now()}`;
+
+      const job = await emailQueue.add(
+        type as EmailJobType,
+        payload as EmailJobPayload[EmailJobType],
+        { jobId }
+      );
+
+      console.info(
+        JSON.stringify({
+          event: "manual_resend_enqueued",
+          jobType: type,
+          orderId,
+          jobId: job.id,
+        })
+      );
+
+      return json({ queued: true, jobId: job.id });
     }
 
     return new Response("Not Found", { status: 404 });

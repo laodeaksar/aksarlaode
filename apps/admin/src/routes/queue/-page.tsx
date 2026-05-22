@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getFailedJobsFn, getQueueStatsFn } from "@/server/queue";
 import {
   QueueStatsCards,
+  ResendEmailDialog,
   RetryAllButton,
   buildFailedJobColumns,
 } from "@/components/queue";
@@ -73,10 +74,13 @@ export default function QueuePage() {
 
   return (
     <div className="flex flex-col gap-6 py-4 md:gap-8 md:py-6">
-      <PageHeader
-        title="Email Queue"
-        subtitle="BullMQ job queue health — failed jobs, retry actions, and real-time counters."
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title="Email Queue"
+          subtitle="BullMQ job queue health — failed jobs, retry actions, and real-time counters."
+        />
+        {canManage && <ResendEmailDialog />}
+      </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
       <QueueStatsCards

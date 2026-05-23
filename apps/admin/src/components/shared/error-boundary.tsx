@@ -1,7 +1,7 @@
 import { Component, Fragment, type ErrorInfo, type ReactNode } from "react";
 
 type Props = { children: ReactNode; fallback?: ReactNode };
-type State = { error: Error | null; attempt: number };
+type State = { error: Error | null; info: ErrorInfo | null; attempt: number };
 
 // ── Global Error Boundary ──────────────────────────────────────────────────
 // FIX ADM-07: Prevents a single crashed component from blanking the entire
@@ -16,22 +16,24 @@ type State = { error: Error | null; attempt: number };
 // than immediately re-throwing the same error from a stale closure.
 
 export class ErrorBoundary extends Component<Props, State> {
-  override state: State = { error: null, attempt: 0 };
+  override state: State = { error: null, info: null, attempt: 0 };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
+    this.setState({ info });
     if (import.meta.env.DEV) {
       console.error("[ErrorBoundary]", error, info.componentStack);
     }
   }
 
-  reset = () => this.setState((s) => ({ error: null, attempt: s.attempt + 1 }));
+  reset = () =>
+    this.setState((s) => ({ error: null, info: null, attempt: s.attempt + 1 }));
 
   override render() {
-    const { error, attempt } = this.state;
+    const { error, info, attempt } = this.state;
 
     if (error) {
       if (this.props.fallback) return this.props.fallback;
@@ -42,6 +44,24 @@ export class ErrorBoundary extends Component<Props, State> {
             Something went wrong
           </p>
           <p className="mb-4 max-w-sm text-sm text-red-600">{error.message}</p>
+
+          {import.meta.env.DEV && (
+            <details className="mb-4 w-full max-w-lg text-left">
+              <summary className="cursor-pointer text-xs font-medium text-red-500 hover:text-red-700">
+                Stack trace (dev only)
+              </summary>
+              <pre className="mt-2 overflow-auto rounded bg-red-100 p-3 text-xs text-red-800 whitespace-pre-wrap">
+                {error.stack}
+                {info?.componentStack && (
+                  <>
+                    {"\n\nComponent stack:"}
+                    {info.componentStack}
+                  </>
+                )}
+              </pre>
+            </details>
+          )}
+
           <button
             onClick={this.reset}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"

@@ -55,6 +55,9 @@ export default function OrdersPage() {
           columns={orderColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          virtualize
+          containerHeight="640px"
+          ariaLabel="Daftar pesanan"
         />
         <PaginationBar route={Route} to="/orders" total={data?.total ?? 0} />
       </div>

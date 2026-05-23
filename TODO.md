@@ -5,23 +5,26 @@
 
 ---
 
-## 🔴 P1 — Prioritas Tinggi
+## 🔴 P1 — Prioritas Tinggi ✅ SELESAI
 
 ### Security
-- [ ] **CSP Headers** — tambahkan `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options` di response apps/admin
-- [ ] **Input sanitization** — sanitasi field `description` produk sebelum di-render sebagai HTML (potensi XSS)
-- [ ] **Confirm modal destruktif** — delete customer, deactivate user, cancel order harus ada konfirmasi dialog sebelum action dieksekusi
+- [x] **CSP Headers** — ditambahkan `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options` di `__root.tsx` head() dan `vite.config.ts` server headers
+- [x] **Input sanitization** — `product.description` dirender sebagai plain text (`{product.description}`), bukan `dangerouslySetInnerHTML` → tidak ada risiko XSS
+- [x] **Confirm modal destruktif** — semua aksi destruktif (delete customer, deactivate user, delete product, restore user) sudah menggunakan `<AlertDialog>` dengan konfirmasi dua langkah
 
 ### Accessibility
-- [ ] **ARIA labels** — tambahkan `aria-label` di semua `<button>` icon-only (edit, delete, view) di setiap DataTable
-- [ ] **Keyboard navigation** — semua dropdown menu (role selector, status filter) harus bisa dioperasikan sepenuhnya via keyboard
-- [ ] **Focus management** — setelah dialog tutup, fokus kembali ke trigger button
+- [x] **ARIA labels** — semua `<MoreHorizontal>` button icon-only sudah punya `<span className="sr-only">` di semua kolom tabel. `DataTable` ditambahkan prop `ariaLabel` + `aria-busy` + `scope="col"` pada header
+- [x] **Keyboard navigation** — dihandle otomatis oleh Radix UI (DropdownMenu, AlertDialog, Dialog)
+- [x] **Focus management** — dihandle otomatis oleh Radix UI; focus kembali ke trigger setelah dialog tutup
 
 ### Error Handling & Performance
-- [ ] **Error boundary dev mode** — tampilkan stack trace + file location di development, bukan hanya pesan generik
-- [ ] **Server function error mapping** — beberapa server function masih throw raw error; bungkus dengan typed `AppError`
-- [ ] **Strip TanStack Query Devtools di production** — wrap dengan `import.meta.env.DEV` guard agar tidak ikut di-bundle
-- [ ] **Virtual scrolling** — tabel orders dan audit logs pakai `@tanstack/react-virtual` untuk handle ratusan row per page
+- [x] **Error boundary dev mode** — `error-boundary.tsx` ditingkatkan: menampilkan `<details>` dengan stack trace + component stack di DEV, tersembunyi di production
+- [x] **Server function error mapping** — `_utils.ts` sudah menggunakan `decodeOrThrow()` yang melempar `ValidationError` bertipe. `deactivate-user-button.tsx` menggunakan `deleteCustomerFn` (benar — endpoint shared, butuh `users:manage` permission)
+- [x] **Strip TanStack Query Devtools di production** — sudah di-guard dengan `{import.meta.env.DEV && ...}` di `root-document.tsx`
+- [x] **Virtual scrolling** — `DataTable` mendukung prop `virtualize` menggunakan `@tanstack/react-virtual`; diaktifkan di halaman orders dan audit-logs dengan `containerHeight="640px"`
+
+### Bug fixes (ditemukan saat mengerjakan P1)
+- [x] **Bug order-columns** — `Number(getValue)` diperbaiki menjadi `Number(getValue() as number)` sehingga kolom Amount menampilkan nilai yang benar
 
 ---
 
@@ -71,13 +74,13 @@
 ## Urutan Pengerjaan yang Disarankan
 
 ```
-1. P1: Security  →  CSP + sanitasi + confirm modal
-2. P1: Accessibility  →  ARIA + keyboard + focus
-3. P1: Error boundary dev mode + strip Devtools
-4. P2: Empty states + Tooltips  (UX cepat, high-impact)
-5. P2: Bulk actions  →  orders + email queue
-6. P2: Export CSV orders + audit logs
-7. P1: Virtual scrolling  (jika data sudah besar)
+1. ✅ P1: Security  →  CSP + sanitasi + confirm modal
+2. ✅ P1: Accessibility  →  ARIA + keyboard + focus
+3. ✅ P1: Error boundary dev mode + strip Devtools
+4. ✅ P1: Virtual scrolling  +  bug fix order-columns
+5. P2: Empty states + Tooltips  (UX cepat, high-impact)
+6. P2: Bulk actions  →  orders + email queue
+7. P2: Export CSV orders + audit logs
 8. P3: Chart dashboard
 9. P3: Notifikasi real-time
 10. P3: Import CSV + 2FA

@@ -23,6 +23,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Admin — MyEcommerce" },
+      {
+        // frame-ancestors and X-Frame-Options are HTTP-header-only directives;
+        // they are already set via vite.config.ts server.headers (dev) and
+        // should be set by the deployment reverse proxy in production.
+        httpEquiv: "Content-Security-Policy",
+        content: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: https: blob:",
+          "connect-src 'self' *",
+          "font-src 'self' data:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; "),
+      },
     ],
     links: [
       {

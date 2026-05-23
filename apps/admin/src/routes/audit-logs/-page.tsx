@@ -148,6 +148,9 @@ export default function AuditLogsPage() {
           columns={auditLogColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          virtualize
+          containerHeight="640px"
+          ariaLabel="Audit log aktivitas admin"
         />
         <PaginationBar
           route={Route}

@@ -55,11 +55,10 @@ export const orderColumns: ColumnDef<OrderSummary>[] = [
     accessorKey: "grandTotal",
     header: () => <div className="text-right">Amount</div>,
     cell: ({ getValue }) => {
-      const total = Number(getValue) ?? 0;
+      const total = Number(getValue() as number) ?? 0;
       return (
         <div className="text-right">
           {formatIDR(total)}
-          {/*`Rp ${((getValue() as number) ?? 0).toLocaleString("id-ID")}`*/}
         </div>
       );
     },

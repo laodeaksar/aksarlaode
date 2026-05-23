@@ -8,7 +8,7 @@ import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
 import { ModuleEmptyState, SearchInput } from "@/components/shared";
-import { DataTable, PaginationBar } from "@/components";
+import { DataTable, PaginationBar } from "@/components/data-table";
 import {
   can,
   useDebouncedInput,

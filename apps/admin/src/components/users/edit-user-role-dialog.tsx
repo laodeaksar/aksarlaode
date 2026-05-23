@@ -53,14 +53,14 @@ export function EditUserRoleDialog({
       updateCustomerRoleFn({ data: { id: userId, role: selectedRole } }),
 
     onSuccess: () => {
-      toast.success(`Role ${userName} changed to ${selectedRole}`);
+      toast.success(`Role ${userName} diubah ke ${selectedRole}`);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
       onSuccess?.();
     },
 
     onError: (err) => {
-      toast.error("Failed to change role", err);
+      toast.error("Gagal mengubah role", err);
     },
   });
 

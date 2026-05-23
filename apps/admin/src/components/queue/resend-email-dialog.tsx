@@ -78,6 +78,7 @@ export function ResendEmailDialog() {
       toast.success("Email job queued successfully");
       void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
       void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
+      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
       setOpen(false);
       resetForm();
     },

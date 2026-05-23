@@ -43,7 +43,7 @@ export function InviteUserDialog() {
       }),
 
     onSuccess: (result) => {
-      toast.success(`Invitation sent to ${result.email}`);
+      toast.success(`Undangan dikirim ke ${result.email}`);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setOpen(false);
       setEmail("");
@@ -55,7 +55,7 @@ export function InviteUserDialog() {
       const message =
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to send invitation";
+          : "Gagal mengirim undangan";
       toast.error(message);
     },
   });

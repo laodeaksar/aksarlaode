@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@repo/ui/components/button";
 
 import { retryAllFn, retryJobFn } from "@/server/queue";
-import { toast } from "@/lib/toast";
+import { toast } from "@/lib";
 
 // ── Retry single job ────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ export function RetryJobButton({ jobId }: RetryJobButtonProps) {
       toast.success("Job queued for retry");
       void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
       void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
+      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
     },
     onError: (err) => {
       toast.error("Failed to retry job", err);
@@ -55,6 +56,7 @@ export function RetryAllButton({ failedCount }: RetryAllButtonProps) {
       toast.success(`${result.retriedCount} job(s) queued for retry`);
       void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
       void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
+      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
     },
     onError: (err) => {
       toast.error("Failed to retry jobs", err);

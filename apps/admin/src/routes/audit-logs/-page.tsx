@@ -11,15 +11,10 @@ import {
 } from "@/components/audit-logs";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { ModuleEmptyState } from "@/components/shared";
+import { FilterInput, FilterSelect, ModuleEmptyState } from "@/components/shared";
 import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
-
-// ── Shared filter select style ─────────────────────────────────────────────
-const SELECT_CLS =
-  "rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs " +
-  "focus:outline-none focus:ring-2 focus:ring-ring";
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
@@ -97,9 +92,8 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             From
           </label>
-          <input
+          <FilterInput
             type="date"
-            className={SELECT_CLS}
             value={startDate ?? ""}
             max={endDate ?? undefined}
             onChange={(e) => setFilter("startDate", e.target.value)}
@@ -111,9 +105,8 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             To
           </label>
-          <input
+          <FilterInput
             type="date"
-            className={SELECT_CLS}
             value={endDate ?? ""}
             min={startDate ?? undefined}
             onChange={(e) => setFilter("endDate", e.target.value)}
@@ -125,8 +118,7 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             Action
           </label>
-          <select
-            className={SELECT_CLS}
+          <FilterSelect
             value={action ?? ""}
             onChange={(e) => setFilter("action", e.target.value)}
             aria-label="Filter by action"
@@ -137,15 +129,14 @@ export default function AuditLogsPage() {
                 {a.replace(/_/g, " ")}
               </option>
             ))}
-          </select>
+          </FilterSelect>
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Role
           </label>
-          <select
-            className={SELECT_CLS}
+          <FilterSelect
             value={actorRole ?? ""}
             onChange={(e) => setFilter("actorRole", e.target.value)}
             aria-label="Filter by actor role"
@@ -156,7 +147,7 @@ export default function AuditLogsPage() {
                 {r}
               </option>
             ))}
-          </select>
+          </FilterSelect>
         </div>
 
         {hasFilters && (

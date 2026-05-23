@@ -33,13 +33,13 @@ export function DeactivateUserButton({
     mutationFn: () => deleteCustomerFn({ data: { id: userId } }),
 
     onSuccess: () => {
-      toast.success(`${userName} has been deactivated`);
+      toast.success(`${userName} berhasil dinonaktifkan`);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       onSuccess?.();
     },
 
     onError: (err) => {
-      toast.error("Failed to deactivate user", err);
+      toast.error("Gagal menonaktifkan pengguna", err);
     },
   });
 

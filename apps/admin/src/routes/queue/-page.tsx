@@ -24,14 +24,10 @@ import {
   ResendEmailDialog,
   RetryAllButton,
 } from "@/components/queue";
+import { FilterSelect } from "@/components/shared";
 import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
-
-// ── Shared select style ─────────────────────────────────────────────────────
-const SELECT_CLS =
-  "rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs " +
-  "focus:outline-none focus:ring-2 focus:ring-ring";
 
 const JOB_TYPES = [
   "order-created",
@@ -175,8 +171,7 @@ export default function QueuePage() {
               <label className="text-muted-foreground text-xs font-medium">
                 Job type
               </label>
-              <select
-                className={SELECT_CLS}
+              <FilterSelect
                 value={jobType ?? ""}
                 onChange={(e) => setFilter("jobType", e.target.value)}
                 aria-label="Filter by job type"
@@ -187,7 +182,7 @@ export default function QueuePage() {
                     {t}
                   </option>
                 ))}
-              </select>
+              </FilterSelect>
             </div>
 
             {jobType && (

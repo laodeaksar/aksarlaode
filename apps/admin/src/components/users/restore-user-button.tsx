@@ -33,13 +33,13 @@ export function RestoreUserButton({
     mutationFn: () => restoreCustomerFn({ data: { id: userId } }),
 
     onSuccess: () => {
-      toast.success(`${userName}'s account has been restored`);
+      toast.success(`Akun ${userName} berhasil dipulihkan`);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       onSuccess?.();
     },
 
     onError: (err) => {
-      toast.error("Failed to restore account", err);
+      toast.error("Gagal memulihkan akun", err);
     },
   });
 

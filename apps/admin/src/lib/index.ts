@@ -62,3 +62,6 @@ export { useRouteSearch } from "./use-route-search";
 // use-recent-pages
 export { getRecentPages, useTrackRecentPage } from "./use-recent-pages";
 export type { RecentPage } from "./use-recent-pages";
+
+// query-keys
+export { queryKeys } from "./query-keys";

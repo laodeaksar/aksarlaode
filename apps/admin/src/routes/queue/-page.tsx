@@ -5,6 +5,7 @@ import { CheckCircle2Icon } from "lucide-react";
 
 import {
   getFailedJobsFn,
+  getJobTypeStatsFn,
   getLiveJobsFn,
   getQueueActivityFn,
   getQueueStatsFn,
@@ -16,6 +17,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ModuleEmptyState } from "@/components/shared";
 import {
   buildFailedJobColumns,
+  JobTypeFailureChart,
   LiveJobsTracker,
   QueueActivityLog,
   QueueStatsCards,
@@ -67,6 +69,14 @@ export default function QueuePage() {
     queryKey: ["queue-failed-jobs"],
     queryFn: () => getFailedJobsFn({}),
     refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Per-type failure rate — slow refresh, data changes infrequently
+  const { data: typeStatsData, isLoading: typeStatsLoading } = useQuery({
+    queryKey: ["queue-type-stats"],
+    queryFn: () => getJobTypeStatsFn({}),
+    refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   });
 
@@ -140,6 +150,12 @@ export default function QueuePage() {
         lastUpdated={dataUpdatedAt}
         onRefresh={() => void refetchStats()}
         isRefreshing={isFetching}
+      />
+
+      {/* ── Failure rate by type ─────────────────────────────────────────── */}
+      <JobTypeFailureChart
+        stats={typeStatsData?.stats ?? []}
+        isLoading={typeStatsLoading}
       />
 
       {/* ── Live delivery status ─────────────────────────────────────────── */}

@@ -145,6 +145,50 @@ export async function getRecentlyCompletedJobs(
   });
 }
 
+// ── Per-type failure stats ────────────────────────────────────────────────────
+// Aggregates ALL retained failed + completed jobs by job name.
+// BullMQ keeps up to removeOnComplete.count (100) and removeOnFail.count (500)
+// entries in Redis, so the numbers reflect the recent window, not lifetime.
+
+export type JobTypeStats = {
+  /** BullMQ job name / email type (e.g. "order-created"). */
+  name: string;
+  completed: number;
+  failed: number;
+  /** Integer 0-100 — percentage of (failed / total) rounded to nearest int. */
+  failureRate: number;
+};
+
+export async function getJobTypeStats(): Promise<JobTypeStats[]> {
+  const [failedJobs, completedJobs] = await Promise.all([
+    inspectorQueue.getFailed(0, -1),
+    inspectorQueue.getCompleted(0, -1),
+  ]);
+
+  const counts: Record<string, { completed: number; failed: number }> = {};
+
+  for (const job of completedJobs) {
+    if (!counts[job.name]) counts[job.name] = { completed: 0, failed: 0 };
+    counts[job.name]!.completed += 1;
+  }
+  for (const job of failedJobs) {
+    if (!counts[job.name]) counts[job.name] = { completed: 0, failed: 0 };
+    counts[job.name]!.failed += 1;
+  }
+
+  return Object.entries(counts)
+    .map(([name, { completed, failed }]) => ({
+      name,
+      completed,
+      failed,
+      failureRate:
+        completed + failed > 0
+          ? Math.round((failed / (completed + failed)) * 100)
+          : 0,
+    }))
+    .sort((a, b) => b.failureRate - a.failureRate);
+}
+
 // ── Retry helpers ─────────────────────────────────────────────────────────────
 
 export async function retryJob(jobId: string): Promise<boolean> {

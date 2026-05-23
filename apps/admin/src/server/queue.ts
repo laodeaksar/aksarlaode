@@ -11,6 +11,7 @@ import type {
   QueueActiveJob,
   QueueCompletedJob,
   QueueFailedJob,
+  QueueJobTypeStats,
   QueueStats,
 } from "@/types";
 
@@ -220,6 +221,17 @@ export const resendEmailFn = createServerFn({ method: "POST" })
         body: JSON.stringify(body),
       });
     }
+  );
+
+// ── GET /queue/stats-by-type — per email-type failure rate ─────────────────
+// Scans all retained jobs in Redis (failed ≤500, completed ≤100) and returns
+// failure counts grouped by job name. Suitable for a slow-refresh chart.
+
+export const getJobTypeStatsFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware, requirePermission("queue:read")])
+  .handler(
+    async (): Promise<{ stats: QueueJobTypeStats[] }> =>
+      workerFetch<{ stats: QueueJobTypeStats[] }>("/queue/stats-by-type")
   );
 
 // ── GET /queue/jobs/live — active + recently completed jobs ────────────────

@@ -4,3 +4,4 @@ export { RetryJobButton, RetryAllButton } from "./retry-job-button";
 export { ResendEmailDialog } from "./resend-email-dialog";
 export { QueueActivityLog } from "./queue-activity-log";
 export { LiveJobsTracker } from "./live-jobs-tracker";
+export { JobTypeFailureChart } from "./job-type-failure-chart";

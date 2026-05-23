@@ -8,6 +8,7 @@ import {
   closeInspector,
   getActiveJobs,
   getFailedJobs,
+  getJobTypeStats,
   getQueueStats,
   getRecentlyCompletedJobs,
   retryAllFailed,
@@ -101,6 +102,13 @@ Bun.serve({
     if (method === "GET" && pathname === "/queue/jobs") {
       const jobs = await getFailedJobs(50);
       return json({ jobs });
+    }
+
+    // GET /queue/stats-by-type — failure rate aggregated per job name.
+    // Scans all retained failed + completed jobs in Redis and groups by name.
+    if (method === "GET" && pathname === "/queue/stats-by-type") {
+      const stats = await getJobTypeStats();
+      return json({ stats });
     }
 
     // GET /queue/jobs/live — active + recently completed jobs in one call.

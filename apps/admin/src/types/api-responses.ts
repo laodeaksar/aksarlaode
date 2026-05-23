@@ -86,6 +86,15 @@ export type QueueActiveJob = {
   orderId: string | null;
 };
 
+export type QueueJobTypeStats = {
+  /** BullMQ job name / email type (e.g. "order-created"). */
+  name: string;
+  completed: number;
+  failed: number;
+  /** Integer 0-100 — percentage of (failed / total). */
+  failureRate: number;
+};
+
 export type QueueCompletedJob = {
   id: string;
   name: string;

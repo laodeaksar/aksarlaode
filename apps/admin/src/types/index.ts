@@ -11,5 +11,6 @@ export type {
   QueueActiveJob,
   QueueCompletedJob,
   QueueFailedJob,
+  QueueJobTypeStats,
   QueueStats,
 } from "./api-responses";

@@ -8,708 +8,705 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import type { createStart } from "@tanstack/react-start";
-
-import type { getRouter } from "./router.tsx";
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as AuditLogsIndexRouteImport } from "./routes/audit-logs/index";
-import { Route as AuditLogsRouteRouteImport } from "./routes/audit-logs/route";
-import { Route as CustomersUserIdIndexRouteImport } from "./routes/customers/$userId/index";
-import { Route as CustomersUserIdRouteRouteImport } from "./routes/customers/$userId/route";
-import { Route as CustomersIndexRouteImport } from "./routes/customers/index";
-import { Route as CustomersRouteRouteImport } from "./routes/customers/route";
-import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index";
-import { Route as DashboardRouteRouteImport } from "./routes/dashboard/route";
-import { Route as ForbiddenRouteImport } from "./routes/forbidden";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as LoginIndexRouteImport } from "./routes/login/index";
-import { Route as LoginRouteRouteImport } from "./routes/login/route";
-import { Route as OrdersOrderIdIndexRouteImport } from "./routes/orders/$orderId/index";
-import { Route as OrdersOrderIdRouteRouteImport } from "./routes/orders/$orderId/route";
-import { Route as OrdersIndexRouteImport } from "./routes/orders/index";
-import { Route as OrdersRouteRouteImport } from "./routes/orders/route";
-import { Route as ProductsProductIdEditRouteImport } from "./routes/products/$productId/edit";
-import { Route as ProductsProductIdIndexRouteImport } from "./routes/products/$productId/index";
-import { Route as ProductsProductIdRouteRouteImport } from "./routes/products/$productId/route";
-import { Route as ProductsIndexRouteImport } from "./routes/products/index";
-import { Route as ProductsNewRouteImport } from "./routes/products/new";
-import { Route as ProductsRouteRouteImport } from "./routes/products/route";
-import { Route as QueueIndexRouteImport } from "./routes/queue/index";
-import { Route as QueueRouteRouteImport } from "./routes/queue/route";
-import { Route as SettingsIndexRouteImport } from "./routes/settings/index";
-import { Route as SettingsRouteRouteImport } from "./routes/settings/route";
-import { Route as UsersIndexRouteImport } from "./routes/users/index";
-import { Route as UsersRouteRouteImport } from "./routes/users/route";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
+import { Route as UsersRouteRouteImport } from './routes/users/route'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as QueueRouteRouteImport } from './routes/queue/route'
+import { Route as ProductsRouteRouteImport } from './routes/products/route'
+import { Route as OrdersRouteRouteImport } from './routes/orders/route'
+import { Route as LoginRouteRouteImport } from './routes/login/route'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as CustomersRouteRouteImport } from './routes/customers/route'
+import { Route as AuditLogsRouteRouteImport } from './routes/audit-logs/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as QueueIndexRouteImport } from './routes/queue/index'
+import { Route as ProductsIndexRouteImport } from './routes/products/index'
+import { Route as OrdersIndexRouteImport } from './routes/orders/index'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as CustomersIndexRouteImport } from './routes/customers/index'
+import { Route as AuditLogsIndexRouteImport } from './routes/audit-logs/index'
+import { Route as ProductsNewRouteImport } from './routes/products/new'
+import { Route as ProductsProductIdRouteRouteImport } from './routes/products/$productId/route'
+import { Route as OrdersOrderIdRouteRouteImport } from './routes/orders/$orderId/route'
+import { Route as CustomersUserIdRouteRouteImport } from './routes/customers/$userId/route'
+import { Route as ProductsProductIdIndexRouteImport } from './routes/products/$productId/index'
+import { Route as OrdersOrderIdIndexRouteImport } from './routes/orders/$orderId/index'
+import { Route as CustomersUserIdIndexRouteImport } from './routes/customers/$userId/index'
+import { Route as ProductsProductIdEditRouteImport } from './routes/products/$productId/edit'
 
 const ForbiddenRoute = ForbiddenRouteImport.update({
-  id: "/forbidden",
-  path: "/forbidden",
+  id: '/forbidden',
+  path: '/forbidden',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const UsersRouteRoute = UsersRouteRouteImport.update({
-  id: "/users",
-  path: "/users",
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
-  id: "/settings",
-  path: "/settings",
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const QueueRouteRoute = QueueRouteRouteImport.update({
-  id: "/queue",
-  path: "/queue",
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ProductsRouteRoute = ProductsRouteRouteImport.update({
-  id: "/products",
-  path: "/products",
+  id: '/products',
+  path: '/products',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const OrdersRouteRoute = OrdersRouteRouteImport.update({
-  id: "/orders",
-  path: "/orders",
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LoginRouteRoute = LoginRouteRouteImport.update({
-  id: "/login",
-  path: "/login",
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: "/dashboard",
-  path: "/dashboard",
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CustomersRouteRoute = CustomersRouteRouteImport.update({
-  id: "/customers",
-  path: "/customers",
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuditLogsRouteRoute = AuditLogsRouteRouteImport.update({
-  id: "/audit-logs",
-  path: "/audit-logs",
+  id: '/audit-logs',
+  path: '/audit-logs',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const UsersIndexRoute = UsersIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => UsersRouteRoute,
-} as any);
+} as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => SettingsRouteRoute,
-} as any);
+} as any)
 const QueueIndexRoute = QueueIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => QueueRouteRoute,
-} as any);
+} as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => ProductsRouteRoute,
-} as any);
+} as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => OrdersRouteRoute,
-} as any);
+} as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => LoginRouteRoute,
-} as any);
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardRouteRoute,
-} as any);
+} as any)
 const CustomersIndexRoute = CustomersIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => CustomersRouteRoute,
-} as any);
+} as any)
 const AuditLogsIndexRoute = AuditLogsIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => AuditLogsRouteRoute,
-} as any);
+} as any)
 const ProductsNewRoute = ProductsNewRouteImport.update({
-  id: "/new",
-  path: "/new",
+  id: '/new',
+  path: '/new',
   getParentRoute: () => ProductsRouteRoute,
-} as any);
+} as any)
 const ProductsProductIdRouteRoute = ProductsProductIdRouteRouteImport.update({
-  id: "/$productId",
-  path: "/$productId",
+  id: '/$productId',
+  path: '/$productId',
   getParentRoute: () => ProductsRouteRoute,
-} as any);
+} as any)
 const OrdersOrderIdRouteRoute = OrdersOrderIdRouteRouteImport.update({
-  id: "/$orderId",
-  path: "/$orderId",
+  id: '/$orderId',
+  path: '/$orderId',
   getParentRoute: () => OrdersRouteRoute,
-} as any);
+} as any)
 const CustomersUserIdRouteRoute = CustomersUserIdRouteRouteImport.update({
-  id: "/$userId",
-  path: "/$userId",
+  id: '/$userId',
+  path: '/$userId',
   getParentRoute: () => CustomersRouteRoute,
-} as any);
+} as any)
 const ProductsProductIdIndexRoute = ProductsProductIdIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => ProductsProductIdRouteRoute,
-} as any);
+} as any)
 const OrdersOrderIdIndexRoute = OrdersOrderIdIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => OrdersOrderIdRouteRoute,
-} as any);
+} as any)
 const CustomersUserIdIndexRoute = CustomersUserIdIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => CustomersUserIdRouteRoute,
-} as any);
+} as any)
 const ProductsProductIdEditRoute = ProductsProductIdEditRouteImport.update({
-  id: "/edit",
-  path: "/edit",
+  id: '/edit',
+  path: '/edit',
   getParentRoute: () => ProductsProductIdRouteRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/audit-logs": typeof AuditLogsRouteRouteWithChildren;
-  "/customers": typeof CustomersRouteRouteWithChildren;
-  "/dashboard": typeof DashboardRouteRouteWithChildren;
-  "/login": typeof LoginRouteRouteWithChildren;
-  "/orders": typeof OrdersRouteRouteWithChildren;
-  "/products": typeof ProductsRouteRouteWithChildren;
-  "/queue": typeof QueueRouteRouteWithChildren;
-  "/settings": typeof SettingsRouteRouteWithChildren;
-  "/users": typeof UsersRouteRouteWithChildren;
-  "/forbidden": typeof ForbiddenRoute;
-  "/customers/$userId": typeof CustomersUserIdRouteRouteWithChildren;
-  "/orders/$orderId": typeof OrdersOrderIdRouteRouteWithChildren;
-  "/products/$productId": typeof ProductsProductIdRouteRouteWithChildren;
-  "/products/new": typeof ProductsNewRoute;
-  "/audit-logs/": typeof AuditLogsIndexRoute;
-  "/customers/": typeof CustomersIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/login/": typeof LoginIndexRoute;
-  "/orders/": typeof OrdersIndexRoute;
-  "/products/": typeof ProductsIndexRoute;
-  "/queue/": typeof QueueIndexRoute;
-  "/settings/": typeof SettingsIndexRoute;
-  "/users/": typeof UsersIndexRoute;
-  "/products/$productId/edit": typeof ProductsProductIdEditRoute;
-  "/customers/$userId/": typeof CustomersUserIdIndexRoute;
-  "/orders/$orderId/": typeof OrdersOrderIdIndexRoute;
-  "/products/$productId/": typeof ProductsProductIdIndexRoute;
+  '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRouteRouteWithChildren
+  '/customers': typeof CustomersRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/login': typeof LoginRouteRouteWithChildren
+  '/orders': typeof OrdersRouteRouteWithChildren
+  '/products': typeof ProductsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/users': typeof UsersRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
+  '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
+  '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
+  '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs/': typeof AuditLogsIndexRoute
+  '/customers/': typeof CustomersIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/orders/': typeof OrdersIndexRoute
+  '/products/': typeof ProductsIndexRoute
+  '/queue/': typeof QueueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/users/': typeof UsersIndexRoute
+  '/products/$productId/edit': typeof ProductsProductIdEditRoute
+  '/customers/$userId/': typeof CustomersUserIdIndexRoute
+  '/orders/$orderId/': typeof OrdersOrderIdIndexRoute
+  '/products/$productId/': typeof ProductsProductIdIndexRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/forbidden": typeof ForbiddenRoute;
-  "/products/new": typeof ProductsNewRoute;
-  "/audit-logs": typeof AuditLogsIndexRoute;
-  "/customers": typeof CustomersIndexRoute;
-  "/dashboard": typeof DashboardIndexRoute;
-  "/login": typeof LoginIndexRoute;
-  "/orders": typeof OrdersIndexRoute;
-  "/products": typeof ProductsIndexRoute;
-  "/queue": typeof QueueIndexRoute;
-  "/settings": typeof SettingsIndexRoute;
-  "/users": typeof UsersIndexRoute;
-  "/products/$productId/edit": typeof ProductsProductIdEditRoute;
-  "/customers/$userId": typeof CustomersUserIdIndexRoute;
-  "/orders/$orderId": typeof OrdersOrderIdIndexRoute;
-  "/products/$productId": typeof ProductsProductIdIndexRoute;
+  '/': typeof IndexRoute
+  '/forbidden': typeof ForbiddenRoute
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs': typeof AuditLogsIndexRoute
+  '/customers': typeof CustomersIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/orders': typeof OrdersIndexRoute
+  '/products': typeof ProductsIndexRoute
+  '/queue': typeof QueueIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/users': typeof UsersIndexRoute
+  '/products/$productId/edit': typeof ProductsProductIdEditRoute
+  '/customers/$userId': typeof CustomersUserIdIndexRoute
+  '/orders/$orderId': typeof OrdersOrderIdIndexRoute
+  '/products/$productId': typeof ProductsProductIdIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/audit-logs": typeof AuditLogsRouteRouteWithChildren;
-  "/customers": typeof CustomersRouteRouteWithChildren;
-  "/dashboard": typeof DashboardRouteRouteWithChildren;
-  "/login": typeof LoginRouteRouteWithChildren;
-  "/orders": typeof OrdersRouteRouteWithChildren;
-  "/products": typeof ProductsRouteRouteWithChildren;
-  "/queue": typeof QueueRouteRouteWithChildren;
-  "/settings": typeof SettingsRouteRouteWithChildren;
-  "/users": typeof UsersRouteRouteWithChildren;
-  "/forbidden": typeof ForbiddenRoute;
-  "/customers/$userId": typeof CustomersUserIdRouteRouteWithChildren;
-  "/orders/$orderId": typeof OrdersOrderIdRouteRouteWithChildren;
-  "/products/$productId": typeof ProductsProductIdRouteRouteWithChildren;
-  "/products/new": typeof ProductsNewRoute;
-  "/audit-logs/": typeof AuditLogsIndexRoute;
-  "/customers/": typeof CustomersIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/login/": typeof LoginIndexRoute;
-  "/orders/": typeof OrdersIndexRoute;
-  "/products/": typeof ProductsIndexRoute;
-  "/queue/": typeof QueueIndexRoute;
-  "/settings/": typeof SettingsIndexRoute;
-  "/users/": typeof UsersIndexRoute;
-  "/products/$productId/edit": typeof ProductsProductIdEditRoute;
-  "/customers/$userId/": typeof CustomersUserIdIndexRoute;
-  "/orders/$orderId/": typeof OrdersOrderIdIndexRoute;
-  "/products/$productId/": typeof ProductsProductIdIndexRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRouteRouteWithChildren
+  '/customers': typeof CustomersRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/login': typeof LoginRouteRouteWithChildren
+  '/orders': typeof OrdersRouteRouteWithChildren
+  '/products': typeof ProductsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
+  '/users': typeof UsersRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
+  '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
+  '/orders/$orderId': typeof OrdersOrderIdRouteRouteWithChildren
+  '/products/$productId': typeof ProductsProductIdRouteRouteWithChildren
+  '/products/new': typeof ProductsNewRoute
+  '/audit-logs/': typeof AuditLogsIndexRoute
+  '/customers/': typeof CustomersIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/orders/': typeof OrdersIndexRoute
+  '/products/': typeof ProductsIndexRoute
+  '/queue/': typeof QueueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/users/': typeof UsersIndexRoute
+  '/products/$productId/edit': typeof ProductsProductIdEditRoute
+  '/customers/$userId/': typeof CustomersUserIdIndexRoute
+  '/orders/$orderId/': typeof OrdersOrderIdIndexRoute
+  '/products/$productId/': typeof ProductsProductIdIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/audit-logs"
-    | "/customers"
-    | "/dashboard"
-    | "/login"
-    | "/orders"
-    | "/products"
-    | "/queue"
-    | "/settings"
-    | "/users"
-    | "/forbidden"
-    | "/customers/$userId"
-    | "/orders/$orderId"
-    | "/products/$productId"
-    | "/products/new"
-    | "/audit-logs/"
-    | "/customers/"
-    | "/dashboard/"
-    | "/login/"
-    | "/orders/"
-    | "/products/"
-    | "/queue/"
-    | "/settings/"
-    | "/users/"
-    | "/products/$productId/edit"
-    | "/customers/$userId/"
-    | "/orders/$orderId/"
-    | "/products/$productId/";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
+    | '/queue'
+    | '/settings'
+    | '/users'
+    | '/forbidden'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/products/new'
+    | '/audit-logs/'
+    | '/customers/'
+    | '/dashboard/'
+    | '/login/'
+    | '/orders/'
+    | '/products/'
+    | '/queue/'
+    | '/settings/'
+    | '/users/'
+    | '/products/$productId/edit'
+    | '/customers/$userId/'
+    | '/orders/$orderId/'
+    | '/products/$productId/'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/forbidden"
-    | "/products/new"
-    | "/audit-logs"
-    | "/customers"
-    | "/dashboard"
-    | "/login"
-    | "/orders"
-    | "/products"
-    | "/queue"
-    | "/settings"
-    | "/users"
-    | "/products/$productId/edit"
-    | "/customers/$userId"
-    | "/orders/$orderId"
-    | "/products/$productId";
+    | '/'
+    | '/forbidden'
+    | '/products/new'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
+    | '/queue'
+    | '/settings'
+    | '/users'
+    | '/products/$productId/edit'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
   id:
-    | "__root__"
-    | "/"
-    | "/audit-logs"
-    | "/customers"
-    | "/dashboard"
-    | "/login"
-    | "/orders"
-    | "/products"
-    | "/queue"
-    | "/settings"
-    | "/users"
-    | "/forbidden"
-    | "/customers/$userId"
-    | "/orders/$orderId"
-    | "/products/$productId"
-    | "/products/new"
-    | "/audit-logs/"
-    | "/customers/"
-    | "/dashboard/"
-    | "/login/"
-    | "/orders/"
-    | "/products/"
-    | "/queue/"
-    | "/settings/"
-    | "/users/"
-    | "/products/$productId/edit"
-    | "/customers/$userId/"
-    | "/orders/$orderId/"
-    | "/products/$productId/";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/audit-logs'
+    | '/customers'
+    | '/dashboard'
+    | '/login'
+    | '/orders'
+    | '/products'
+    | '/queue'
+    | '/settings'
+    | '/users'
+    | '/forbidden'
+    | '/customers/$userId'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/products/new'
+    | '/audit-logs/'
+    | '/customers/'
+    | '/dashboard/'
+    | '/login/'
+    | '/orders/'
+    | '/products/'
+    | '/queue/'
+    | '/settings/'
+    | '/users/'
+    | '/products/$productId/edit'
+    | '/customers/$userId/'
+    | '/orders/$orderId/'
+    | '/products/$productId/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuditLogsRouteRoute: typeof AuditLogsRouteRouteWithChildren;
-  CustomersRouteRoute: typeof CustomersRouteRouteWithChildren;
-  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren;
-  LoginRouteRoute: typeof LoginRouteRouteWithChildren;
-  OrdersRouteRoute: typeof OrdersRouteRouteWithChildren;
-  ProductsRouteRoute: typeof ProductsRouteRouteWithChildren;
-  QueueRouteRoute: typeof QueueRouteRouteWithChildren;
-  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren;
-  UsersRouteRoute: typeof UsersRouteRouteWithChildren;
-  ForbiddenRoute: typeof ForbiddenRoute;
+  IndexRoute: typeof IndexRoute
+  AuditLogsRouteRoute: typeof AuditLogsRouteRouteWithChildren
+  CustomersRouteRoute: typeof CustomersRouteRouteWithChildren
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  LoginRouteRoute: typeof LoginRouteRouteWithChildren
+  OrdersRouteRoute: typeof OrdersRouteRouteWithChildren
+  ProductsRouteRoute: typeof ProductsRouteRouteWithChildren
+  QueueRouteRoute: typeof QueueRouteRouteWithChildren
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
+  UsersRouteRoute: typeof UsersRouteRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/forbidden": {
-      id: "/forbidden";
-      path: "/forbidden";
-      fullPath: "/forbidden";
-      preLoaderRoute: typeof ForbiddenRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/users": {
-      id: "/users";
-      path: "/users";
-      fullPath: "/users";
-      preLoaderRoute: typeof UsersRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/settings": {
-      id: "/settings";
-      path: "/settings";
-      fullPath: "/settings";
-      preLoaderRoute: typeof SettingsRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/queue": {
-      id: "/queue";
-      path: "/queue";
-      fullPath: "/queue";
-      preLoaderRoute: typeof QueueRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/products": {
-      id: "/products";
-      path: "/products";
-      fullPath: "/products";
-      preLoaderRoute: typeof ProductsRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/orders": {
-      id: "/orders";
-      path: "/orders";
-      fullPath: "/orders";
-      preLoaderRoute: typeof OrdersRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/login": {
-      id: "/login";
-      path: "/login";
-      fullPath: "/login";
-      preLoaderRoute: typeof LoginRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard": {
-      id: "/dashboard";
-      path: "/dashboard";
-      fullPath: "/dashboard";
-      preLoaderRoute: typeof DashboardRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/customers": {
-      id: "/customers";
-      path: "/customers";
-      fullPath: "/customers";
-      preLoaderRoute: typeof CustomersRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/audit-logs": {
-      id: "/audit-logs";
-      path: "/audit-logs";
-      fullPath: "/audit-logs";
-      preLoaderRoute: typeof AuditLogsRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/users/": {
-      id: "/users/";
-      path: "/";
-      fullPath: "/users/";
-      preLoaderRoute: typeof UsersIndexRouteImport;
-      parentRoute: typeof UsersRouteRoute;
-    };
-    "/settings/": {
-      id: "/settings/";
-      path: "/";
-      fullPath: "/settings/";
-      preLoaderRoute: typeof SettingsIndexRouteImport;
-      parentRoute: typeof SettingsRouteRoute;
-    };
-    "/queue/": {
-      id: "/queue/";
-      path: "/";
-      fullPath: "/queue/";
-      preLoaderRoute: typeof QueueIndexRouteImport;
-      parentRoute: typeof QueueRouteRoute;
-    };
-    "/products/": {
-      id: "/products/";
-      path: "/";
-      fullPath: "/products/";
-      preLoaderRoute: typeof ProductsIndexRouteImport;
-      parentRoute: typeof ProductsRouteRoute;
-    };
-    "/orders/": {
-      id: "/orders/";
-      path: "/";
-      fullPath: "/orders/";
-      preLoaderRoute: typeof OrdersIndexRouteImport;
-      parentRoute: typeof OrdersRouteRoute;
-    };
-    "/login/": {
-      id: "/login/";
-      path: "/";
-      fullPath: "/login/";
-      preLoaderRoute: typeof LoginIndexRouteImport;
-      parentRoute: typeof LoginRouteRoute;
-    };
-    "/dashboard/": {
-      id: "/dashboard/";
-      path: "/";
-      fullPath: "/dashboard/";
-      preLoaderRoute: typeof DashboardIndexRouteImport;
-      parentRoute: typeof DashboardRouteRoute;
-    };
-    "/customers/": {
-      id: "/customers/";
-      path: "/";
-      fullPath: "/customers/";
-      preLoaderRoute: typeof CustomersIndexRouteImport;
-      parentRoute: typeof CustomersRouteRoute;
-    };
-    "/audit-logs/": {
-      id: "/audit-logs/";
-      path: "/";
-      fullPath: "/audit-logs/";
-      preLoaderRoute: typeof AuditLogsIndexRouteImport;
-      parentRoute: typeof AuditLogsRouteRoute;
-    };
-    "/products/new": {
-      id: "/products/new";
-      path: "/new";
-      fullPath: "/products/new";
-      preLoaderRoute: typeof ProductsNewRouteImport;
-      parentRoute: typeof ProductsRouteRoute;
-    };
-    "/products/$productId": {
-      id: "/products/$productId";
-      path: "/$productId";
-      fullPath: "/products/$productId";
-      preLoaderRoute: typeof ProductsProductIdRouteRouteImport;
-      parentRoute: typeof ProductsRouteRoute;
-    };
-    "/orders/$orderId": {
-      id: "/orders/$orderId";
-      path: "/$orderId";
-      fullPath: "/orders/$orderId";
-      preLoaderRoute: typeof OrdersOrderIdRouteRouteImport;
-      parentRoute: typeof OrdersRouteRoute;
-    };
-    "/customers/$userId": {
-      id: "/customers/$userId";
-      path: "/$userId";
-      fullPath: "/customers/$userId";
-      preLoaderRoute: typeof CustomersUserIdRouteRouteImport;
-      parentRoute: typeof CustomersRouteRoute;
-    };
-    "/products/$productId/": {
-      id: "/products/$productId/";
-      path: "/";
-      fullPath: "/products/$productId/";
-      preLoaderRoute: typeof ProductsProductIdIndexRouteImport;
-      parentRoute: typeof ProductsProductIdRouteRoute;
-    };
-    "/orders/$orderId/": {
-      id: "/orders/$orderId/";
-      path: "/";
-      fullPath: "/orders/$orderId/";
-      preLoaderRoute: typeof OrdersOrderIdIndexRouteImport;
-      parentRoute: typeof OrdersOrderIdRouteRoute;
-    };
-    "/customers/$userId/": {
-      id: "/customers/$userId/";
-      path: "/";
-      fullPath: "/customers/$userId/";
-      preLoaderRoute: typeof CustomersUserIdIndexRouteImport;
-      parentRoute: typeof CustomersUserIdRouteRoute;
-    };
-    "/products/$productId/edit": {
-      id: "/products/$productId/edit";
-      path: "/edit";
-      fullPath: "/products/$productId/edit";
-      preLoaderRoute: typeof ProductsProductIdEditRouteImport;
-      parentRoute: typeof ProductsProductIdRouteRoute;
-    };
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit-logs': {
+      id: '/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuditLogsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof UsersRouteRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/queue/': {
+      id: '/queue/'
+      path: '/'
+      fullPath: '/queue/'
+      preLoaderRoute: typeof QueueIndexRouteImport
+      parentRoute: typeof QueueRouteRoute
+    }
+    '/products/': {
+      id: '/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof ProductsIndexRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/orders/': {
+      id: '/orders/'
+      path: '/'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof OrdersIndexRouteImport
+      parentRoute: typeof OrdersRouteRoute
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof LoginRouteRoute
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/customers/': {
+      id: '/customers/'
+      path: '/'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof CustomersIndexRouteImport
+      parentRoute: typeof CustomersRouteRoute
+    }
+    '/audit-logs/': {
+      id: '/audit-logs/'
+      path: '/'
+      fullPath: '/audit-logs/'
+      preLoaderRoute: typeof AuditLogsIndexRouteImport
+      parentRoute: typeof AuditLogsRouteRoute
+    }
+    '/products/new': {
+      id: '/products/new'
+      path: '/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof ProductsNewRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/products/$productId': {
+      id: '/products/$productId'
+      path: '/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof ProductsProductIdRouteRouteImport
+      parentRoute: typeof ProductsRouteRoute
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteRouteImport
+      parentRoute: typeof OrdersRouteRoute
+    }
+    '/customers/$userId': {
+      id: '/customers/$userId'
+      path: '/$userId'
+      fullPath: '/customers/$userId'
+      preLoaderRoute: typeof CustomersUserIdRouteRouteImport
+      parentRoute: typeof CustomersRouteRoute
+    }
+    '/products/$productId/': {
+      id: '/products/$productId/'
+      path: '/'
+      fullPath: '/products/$productId/'
+      preLoaderRoute: typeof ProductsProductIdIndexRouteImport
+      parentRoute: typeof ProductsProductIdRouteRoute
+    }
+    '/orders/$orderId/': {
+      id: '/orders/$orderId/'
+      path: '/'
+      fullPath: '/orders/$orderId/'
+      preLoaderRoute: typeof OrdersOrderIdIndexRouteImport
+      parentRoute: typeof OrdersOrderIdRouteRoute
+    }
+    '/customers/$userId/': {
+      id: '/customers/$userId/'
+      path: '/'
+      fullPath: '/customers/$userId/'
+      preLoaderRoute: typeof CustomersUserIdIndexRouteImport
+      parentRoute: typeof CustomersUserIdRouteRoute
+    }
+    '/products/$productId/edit': {
+      id: '/products/$productId/edit'
+      path: '/edit'
+      fullPath: '/products/$productId/edit'
+      preLoaderRoute: typeof ProductsProductIdEditRouteImport
+      parentRoute: typeof ProductsProductIdRouteRoute
+    }
   }
 }
 
 interface AuditLogsRouteRouteChildren {
-  AuditLogsIndexRoute: typeof AuditLogsIndexRoute;
+  AuditLogsIndexRoute: typeof AuditLogsIndexRoute
 }
 
 const AuditLogsRouteRouteChildren: AuditLogsRouteRouteChildren = {
   AuditLogsIndexRoute: AuditLogsIndexRoute,
-};
+}
 
 const AuditLogsRouteRouteWithChildren = AuditLogsRouteRoute._addFileChildren(
-  AuditLogsRouteRouteChildren
-);
+  AuditLogsRouteRouteChildren,
+)
 
 interface CustomersUserIdRouteRouteChildren {
-  CustomersUserIdIndexRoute: typeof CustomersUserIdIndexRoute;
+  CustomersUserIdIndexRoute: typeof CustomersUserIdIndexRoute
 }
 
 const CustomersUserIdRouteRouteChildren: CustomersUserIdRouteRouteChildren = {
   CustomersUserIdIndexRoute: CustomersUserIdIndexRoute,
-};
+}
 
 const CustomersUserIdRouteRouteWithChildren =
-  CustomersUserIdRouteRoute._addFileChildren(CustomersUserIdRouteRouteChildren);
+  CustomersUserIdRouteRoute._addFileChildren(CustomersUserIdRouteRouteChildren)
 
 interface CustomersRouteRouteChildren {
-  CustomersUserIdRouteRoute: typeof CustomersUserIdRouteRouteWithChildren;
-  CustomersIndexRoute: typeof CustomersIndexRoute;
+  CustomersUserIdRouteRoute: typeof CustomersUserIdRouteRouteWithChildren
+  CustomersIndexRoute: typeof CustomersIndexRoute
 }
 
 const CustomersRouteRouteChildren: CustomersRouteRouteChildren = {
   CustomersUserIdRouteRoute: CustomersUserIdRouteRouteWithChildren,
   CustomersIndexRoute: CustomersIndexRoute,
-};
+}
 
 const CustomersRouteRouteWithChildren = CustomersRouteRoute._addFileChildren(
-  CustomersRouteRouteChildren
-);
+  CustomersRouteRouteChildren,
+)
 
 interface DashboardRouteRouteChildren {
-  DashboardIndexRoute: typeof DashboardIndexRoute;
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
-};
+}
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
-  DashboardRouteRouteChildren
-);
+  DashboardRouteRouteChildren,
+)
 
 interface LoginRouteRouteChildren {
-  LoginIndexRoute: typeof LoginIndexRoute;
+  LoginIndexRoute: typeof LoginIndexRoute
 }
 
 const LoginRouteRouteChildren: LoginRouteRouteChildren = {
   LoginIndexRoute: LoginIndexRoute,
-};
+}
 
 const LoginRouteRouteWithChildren = LoginRouteRoute._addFileChildren(
-  LoginRouteRouteChildren
-);
+  LoginRouteRouteChildren,
+)
 
 interface OrdersOrderIdRouteRouteChildren {
-  OrdersOrderIdIndexRoute: typeof OrdersOrderIdIndexRoute;
+  OrdersOrderIdIndexRoute: typeof OrdersOrderIdIndexRoute
 }
 
 const OrdersOrderIdRouteRouteChildren: OrdersOrderIdRouteRouteChildren = {
   OrdersOrderIdIndexRoute: OrdersOrderIdIndexRoute,
-};
+}
 
 const OrdersOrderIdRouteRouteWithChildren =
-  OrdersOrderIdRouteRoute._addFileChildren(OrdersOrderIdRouteRouteChildren);
+  OrdersOrderIdRouteRoute._addFileChildren(OrdersOrderIdRouteRouteChildren)
 
 interface OrdersRouteRouteChildren {
-  OrdersOrderIdRouteRoute: typeof OrdersOrderIdRouteRouteWithChildren;
-  OrdersIndexRoute: typeof OrdersIndexRoute;
+  OrdersOrderIdRouteRoute: typeof OrdersOrderIdRouteRouteWithChildren
+  OrdersIndexRoute: typeof OrdersIndexRoute
 }
 
 const OrdersRouteRouteChildren: OrdersRouteRouteChildren = {
   OrdersOrderIdRouteRoute: OrdersOrderIdRouteRouteWithChildren,
   OrdersIndexRoute: OrdersIndexRoute,
-};
+}
 
 const OrdersRouteRouteWithChildren = OrdersRouteRoute._addFileChildren(
-  OrdersRouteRouteChildren
-);
+  OrdersRouteRouteChildren,
+)
 
 interface ProductsProductIdRouteRouteChildren {
-  ProductsProductIdEditRoute: typeof ProductsProductIdEditRoute;
-  ProductsProductIdIndexRoute: typeof ProductsProductIdIndexRoute;
+  ProductsProductIdEditRoute: typeof ProductsProductIdEditRoute
+  ProductsProductIdIndexRoute: typeof ProductsProductIdIndexRoute
 }
 
 const ProductsProductIdRouteRouteChildren: ProductsProductIdRouteRouteChildren =
   {
     ProductsProductIdEditRoute: ProductsProductIdEditRoute,
     ProductsProductIdIndexRoute: ProductsProductIdIndexRoute,
-  };
+  }
 
 const ProductsProductIdRouteRouteWithChildren =
   ProductsProductIdRouteRoute._addFileChildren(
-    ProductsProductIdRouteRouteChildren
-  );
+    ProductsProductIdRouteRouteChildren,
+  )
 
 interface ProductsRouteRouteChildren {
-  ProductsProductIdRouteRoute: typeof ProductsProductIdRouteRouteWithChildren;
-  ProductsNewRoute: typeof ProductsNewRoute;
-  ProductsIndexRoute: typeof ProductsIndexRoute;
+  ProductsProductIdRouteRoute: typeof ProductsProductIdRouteRouteWithChildren
+  ProductsNewRoute: typeof ProductsNewRoute
+  ProductsIndexRoute: typeof ProductsIndexRoute
 }
 
 const ProductsRouteRouteChildren: ProductsRouteRouteChildren = {
   ProductsProductIdRouteRoute: ProductsProductIdRouteRouteWithChildren,
   ProductsNewRoute: ProductsNewRoute,
   ProductsIndexRoute: ProductsIndexRoute,
-};
+}
 
 const ProductsRouteRouteWithChildren = ProductsRouteRoute._addFileChildren(
-  ProductsRouteRouteChildren
-);
+  ProductsRouteRouteChildren,
+)
 
 interface QueueRouteRouteChildren {
-  QueueIndexRoute: typeof QueueIndexRoute;
+  QueueIndexRoute: typeof QueueIndexRoute
 }
 
 const QueueRouteRouteChildren: QueueRouteRouteChildren = {
   QueueIndexRoute: QueueIndexRoute,
-};
+}
 
 const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
-  QueueRouteRouteChildren
-);
+  QueueRouteRouteChildren,
+)
 
 interface SettingsRouteRouteChildren {
-  SettingsIndexRoute: typeof SettingsIndexRoute;
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
   SettingsIndexRoute: SettingsIndexRoute,
-};
+}
 
 const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
-  SettingsRouteRouteChildren
-);
+  SettingsRouteRouteChildren,
+)
 
 interface UsersRouteRouteChildren {
-  UsersIndexRoute: typeof UsersIndexRoute;
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 const UsersRouteRouteChildren: UsersRouteRouteChildren = {
   UsersIndexRoute: UsersIndexRoute,
-};
+}
 
 const UsersRouteRouteWithChildren = UsersRouteRoute._addFileChildren(
-  UsersRouteRouteChildren
-);
+  UsersRouteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -723,14 +720,16 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   UsersRouteRoute: UsersRouteRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

@@ -32,7 +32,7 @@ const list = (filters: ProductFilters) =>
       const { where, orderBy, limit, offset, cursor } =
         buildProductQuery(filters);
 
-      const [items, [{ count }]] = await Promise.all([
+      const [items, countResult] = await Promise.all([
         db
           .select()
           .from(schema.products)
@@ -41,10 +41,11 @@ const list = (filters: ProductFilters) =>
           .limit(limit + 1) // fetch one extra to determine if there's a next page
           .offset(offset),
         db
-          .select({ count: sql<number>`count(*)` })
+          .select({ count: sql<number>`count(*)::int` })
           .from(schema.products)
           .where(where),
       ]);
+      const count = countResult[0]?.count ?? 0;
 
       // FIX PRD-07: cursor-based pagination response
       let nextCursor: string | null = null;

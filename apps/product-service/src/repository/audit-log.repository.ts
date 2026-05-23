@@ -9,10 +9,10 @@ export class DbError extends Data.TaggedError("AuditLogDbError")<{
 
 // ── Filter type ────────────────────────────────────────────────────────────
 export type AuditLogFilters = {
-  page?: number;
-  action?: string;
-  since?: string; // ISO datetime string
-  actorRole?: string;
+  page?: number | undefined;
+  action?: string | undefined;
+  since?: string | undefined; // ISO datetime string
+  actorRole?: string | undefined;
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 50;

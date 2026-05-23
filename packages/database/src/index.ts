@@ -30,3 +30,5 @@ export {
   notInArray,
 } from "drizzle-orm";
 export type { SQL } from "drizzle-orm";
+
+export type { AdminAuditLog, NewAdminAuditLog } from "./postgres/schema/admin-audit-log";

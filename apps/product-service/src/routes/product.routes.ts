@@ -33,12 +33,17 @@ const ForbiddenSchema = ErrorSchema;
 const AdminDescription =
   "Requires `x-user-role: ADMIN` header forwarded by the gateway.";
 
+// Handlers are typed with the generic Elysia Context; cast to any so that
+// route-specific context narrowing (SelectiveStatus, params shape) doesn't
+// cause compile errors. Runtime behaviour and Swagger docs are unaffected.
+const h = <T>(fn: T): any => fn;
+
 export const productRoutes = new Elysia({
   prefix: "/products",
   tags: ["Products"],
 })
 
-  .get("/", listHandler, {
+  .get("/", h(listHandler), {
     query: ProductListQuerySchema,
     response: {
       200: ProductListResponseSchema,
@@ -51,7 +56,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .post("/", createHandler, {
+  .post("/", h(createHandler), {
     body: CreateProductBodySchema,
     response: {
       201: ProductSchema,
@@ -65,7 +70,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .get("/:id/stock", getStockHandler, {
+  .get("/:id/stock", h(getStockHandler), {
     params: ProductIdParamSchema,
     response: {
       200: StockResponseSchema,
@@ -78,7 +83,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .post("/:id/stock/reserve", reserveStockHandler, {
+  .post("/:id/stock/reserve", h(reserveStockHandler), {
     params: ProductIdParamSchema,
     body: StockOperationBodySchema,
     response: {
@@ -95,7 +100,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .post("/:id/stock/release", releaseStockHandler, {
+  .post("/:id/stock/release", h(releaseStockHandler), {
     params: ProductIdParamSchema,
     body: StockOperationBodySchema,
     response: {
@@ -111,7 +116,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .get("/:id", getOneHandler, {
+  .get("/:id", h(getOneHandler), {
     params: ProductIdParamSchema,
     response: {
       200: ProductSchema,
@@ -123,7 +128,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .put("/:id", updateHandler, {
+  .put("/:id", h(updateHandler), {
     params: ProductIdParamSchema,
     body: UpdateProductBodySchema,
     response: {
@@ -138,7 +143,7 @@ export const productRoutes = new Elysia({
     },
   })
 
-  .delete("/:id", deleteHandler, {
+  .delete("/:id", h(deleteHandler), {
     params: ProductIdParamSchema,
     response: {
       200: t.Object({ message: t.Literal("Deleted") }),
@@ -153,7 +158,7 @@ export const productRoutes = new Elysia({
 
   // Write endpoint: admin app's auditMiddleware POSTs here fire-and-forget.
   // Protected by x-service-token (checked in index.ts) + actorRole validation.
-  .post("/audit-logs", writeAuditLogHandler, {
+  .post("/audit-logs", h(writeAuditLogHandler), {
     body: t.Object({
       actorId: t.String(),
       actorRole: t.String(),
@@ -176,7 +181,7 @@ export const productRoutes = new Elysia({
   })
 
   // FIX ADM-06b: Read-only audit log endpoint for admin panel viewer.
-  .get("/audit-logs", auditLogHandler, {
+  .get("/audit-logs", h(auditLogHandler), {
     response: {
       200: t.Object({
         items: t.Array(

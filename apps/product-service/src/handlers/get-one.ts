@@ -24,7 +24,7 @@ function isValidInput(idOrSlug: string): boolean {
 }
 
 export const getOneHandler = async ({ params, set }: Context) => {
-  const idOrSlug = params.id;
+  const idOrSlug = params.id ?? "";
 
   if (!isValidInput(idOrSlug)) {
     set.status = 400;

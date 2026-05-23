@@ -14,19 +14,19 @@ import {
 } from "@repo/database";
 
 export type ProductFilters = {
-  search?: string;
-  categoryId?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  inStock?: boolean;
-  sortBy?: "price_asc" | "price_desc" | "newest" | "popular";
-  page?: number;
-  limit?: number;
+  search?: string | undefined;
+  categoryId?: string | undefined;
+  minPrice?: number | undefined;
+  maxPrice?: number | undefined;
+  inStock?: boolean | undefined;
+  sortBy?: "price_asc" | "price_desc" | "newest" | "popular" | undefined;
+  page?: number | undefined;
+  limit?: number | undefined;
   // FIX PRD-07: cursor-based pagination.
   // Provide this instead of `page` for efficient deep pagination.
   // Value is a base64url-encoded "<createdAt ISO>:<id>" string from the
   // previous page's `nextCursor` field.
-  cursor?: string;
+  cursor?: string | undefined;
 };
 
 export function buildProductQuery(filters: ProductFilters) {

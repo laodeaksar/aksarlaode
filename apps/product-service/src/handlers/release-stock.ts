@@ -8,7 +8,7 @@ import {
 } from "@/repository/product.repository";
 
 export const releaseStockHandler = async ({ params, body, set }: Context) => {
-  const { id } = params;
+  const id = params.id ?? "";
   const { quantity } = body as { quantity: number };
 
   // Verify product exists before releasing stock.

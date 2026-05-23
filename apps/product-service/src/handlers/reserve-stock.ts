@@ -9,7 +9,7 @@ import {
 } from "@/repository/product.repository";
 
 export const reserveStockHandler = async ({ params, body, set }: Context) => {
-  const { id } = params;
+  const id = params.id ?? "";
   const { quantity } = body as { quantity: number };
 
   const result = await Effect.runPromiseExit(

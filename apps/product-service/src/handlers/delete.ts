@@ -21,7 +21,7 @@ export const deleteHandler = async ({
     return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" };
   }
 
-  const id = params.id;
+  const id = params.id ?? "";
 
   const result = await Effect.runPromiseExit(productRepository.deleteById(id));
 

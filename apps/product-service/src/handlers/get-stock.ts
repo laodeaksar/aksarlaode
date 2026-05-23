@@ -8,7 +8,7 @@ import {
 } from "@/repository/product.repository";
 
 export const getStockHandler = async ({ params, set }: Context) => {
-  const { id } = params;
+  const id = params.id ?? "";
 
   const result = await Effect.runPromiseExit(productRepository.findById(id));
 

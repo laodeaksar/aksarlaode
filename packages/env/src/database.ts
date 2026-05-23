@@ -23,7 +23,7 @@ export const env = createEnv({
 
   onValidationError: (error) => {
     console.error("\n❌  [@repo/database] Invalid environment variables:\n");
-    for (const issue of error.issues) {
+    for (const issue of error) {
       console.error(`   ${issue.message}`);
     }
     console.error("\n   Check your .env file against .env.example\n");

@@ -29,4 +29,13 @@ export const toast = {
   /** Peringatan — kuning, 4 detik */
   warning: (message: string) =>
     sonnerToast.warning(message, { duration: 4_000 }),
+
+  /**
+   * Toast yang tidak hilang otomatis — harus di-dismiss manual oleh user.
+   * Gunakan untuk aksi kritis seperti invite, bulk action, atau resend email.
+   */
+  persistent: (message: string, type: "success" | "info" = "success") => {
+    const fn = type === "info" ? sonnerToast : sonnerToast.success;
+    return fn(message, { duration: Infinity });
+  },
 };

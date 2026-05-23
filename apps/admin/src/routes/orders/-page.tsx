@@ -10,7 +10,7 @@ import {
   ORDER_STATUSES,
   orderColumns,
 } from "@/components/orders";
-import { useFilteredNavigation, useRouteSearch } from "@/lib";
+import { queryKeys, useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
@@ -23,7 +23,7 @@ export default function OrdersPage() {
   const { setFilter } = useFilteredNavigation("/orders");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", { page: currentPage, status }],
+    queryKey: queryKeys.orders.list({ page: currentPage, status }),
     queryFn: () =>
       listOrdersFn({
         data: { page: currentPage, ...(status ? { status } : {}) },

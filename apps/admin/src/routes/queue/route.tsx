@@ -3,7 +3,7 @@ import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { getFailedJobsFn, getQueueStatsFn } from "@/server/queue";
 import { queueSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/queue")({
   beforeLoad: ({ context }) => {
@@ -22,11 +22,11 @@ export const Route = createFileRoute("/queue")({
     const { queryClient } = context;
     await Promise.all([
       queryClient.ensureQueryData({
-        queryKey: ["queue-stats"],
+        queryKey: queryKeys.queue.stats,
         queryFn: () => getQueueStatsFn({}),
       }),
       queryClient.ensureQueryData({
-        queryKey: ["queue-failed-jobs"],
+        queryKey: queryKeys.queue.failedJobs,
         queryFn: () => getFailedJobsFn({}),
       }),
     ]);

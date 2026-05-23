@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import { InviteUserDialog, userColumns } from "@/components/users";
 import {
+  queryKeys,
   useDebouncedInput,
   useFilteredNavigation,
   useRouteSearch,
@@ -24,7 +25,7 @@ export default function UsersPage() {
   const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", { page: currentPage, search }],
+    queryKey: queryKeys.adminUsers.list({ page: currentPage, search }),
     queryFn: () =>
       listAdminUsersFn({
         data: { page: currentPage, ...(search ? { search } : {}) },

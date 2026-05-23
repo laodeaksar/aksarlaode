@@ -12,6 +12,7 @@ import {
 } from "@/server/queue";
 import { can } from "@/lib/rbac";
 import { useSession } from "@/lib/session-context";
+import { queryKeys } from "@/lib";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { ModuleEmptyState } from "@/components/shared";
@@ -54,7 +55,7 @@ export default function QueuePage() {
     isFetching,
     refetch: refetchStats,
   } = useQuery({
-    queryKey: ["queue-stats"],
+    queryKey: queryKeys.queue.stats,
     queryFn: () => getQueueStatsFn({}),
     refetchInterval: 15_000,
     refetchIntervalInBackground: false,
@@ -62,7 +63,7 @@ export default function QueuePage() {
 
   // Failed jobs — auto-refresh every 15 s
   const { data: failedData, isLoading: failedLoading } = useQuery({
-    queryKey: ["queue-failed-jobs"],
+    queryKey: queryKeys.queue.failedJobs,
     queryFn: () => getFailedJobsFn({}),
     refetchInterval: 15_000,
     refetchIntervalInBackground: false,
@@ -70,7 +71,7 @@ export default function QueuePage() {
 
   // Per-type failure rate — slow refresh, data changes infrequently
   const { data: typeStatsData, isLoading: typeStatsLoading } = useQuery({
-    queryKey: ["queue-type-stats"],
+    queryKey: queryKeys.queue.typeStats,
     queryFn: () => getJobTypeStatsFn({}),
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
@@ -78,7 +79,7 @@ export default function QueuePage() {
 
   // Live delivery status — active + recently completed, tight 5 s poll
   const { data: liveData, isLoading: liveLoading } = useQuery({
-    queryKey: ["queue-live-jobs"],
+    queryKey: queryKeys.queue.liveJobs,
     queryFn: () => getLiveJobsFn({}),
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
@@ -86,7 +87,7 @@ export default function QueuePage() {
 
   // Queue activity log — recent manual retries & resends
   const { data: activityData, isLoading: activityLoading } = useQuery({
-    queryKey: ["queue-activity"],
+    queryKey: queryKeys.queue.activity,
     queryFn: () => getQueueActivityFn({}),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,

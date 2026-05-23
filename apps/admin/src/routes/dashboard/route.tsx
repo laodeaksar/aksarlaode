@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getDashboardStatsFn } from "@/server/dashboard";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: ({ context }) => {
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/dashboard")({
   loader: ({ context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["dashboard-stats"],
+      queryKey: queryKeys.dashboard.stats,
       queryFn: () => getDashboardStatsFn({}),
     });
   },

@@ -10,7 +10,7 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { getProductFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { ResourceNotFound } from "@/components/shared";
-import { can, formatIDR, useSession } from "@/lib";
+import { can, formatIDR, queryKeys, useSession } from "@/lib";
 
 import { DeleteProductButton } from "./delete-product-button";
 
@@ -54,7 +54,7 @@ export function ProductDetail({ productId }: ProductDetailProps) {
   const canWrite = session ? can(session.role, "products:write") : false;
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ["product", productId],
+    queryKey: queryKeys.products.detail(productId),
     queryFn: () => getProductFn({ data: { id: productId } }),
   });
 

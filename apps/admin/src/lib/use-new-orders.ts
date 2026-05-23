@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMatch } from "@tanstack/react-router";
 
 import { getPendingOrdersCountFn } from "@/server/notifications";
+import { queryKeys } from "@/lib/query-keys";
 
 const POLL_INTERVAL = 30_000;
 
@@ -14,7 +15,7 @@ export function useNewOrdersCount(): number {
   const onOrdersPage = useMatch({ from: "/orders", shouldThrow: false });
 
   const { data = 0 } = useQuery({
-    queryKey: ["notifications", "pending-orders"],
+    queryKey: queryKeys.notifications.newOrders,
     queryFn: () => getPendingOrdersCountFn(),
     refetchInterval: POLL_INTERVAL,
     staleTime: POLL_INTERVAL,

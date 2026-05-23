@@ -22,7 +22,7 @@ import {
 } from "@repo/ui/components/select";
 
 import { updateCustomerRoleFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 type AssignableRole = "CUSTOMER" | "ADMIN" | "FINANCE";
 
@@ -51,8 +51,8 @@ export function EditCustomerRoleDialog({
 
     onSuccess: () => {
       toast.success(`Role ${customerName} diubah ke ${selectedRole}`);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["customer", customerId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) });
       setOpen(false);
       onSuccess?.();
     },

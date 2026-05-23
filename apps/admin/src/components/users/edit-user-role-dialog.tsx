@@ -22,7 +22,7 @@ import {
 } from "@repo/ui/components/select";
 
 import { updateCustomerRoleFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 // OWNER role cannot be assigned here — it is set at the infrastructure level.
 type AssignableRole = "ADMIN" | "FINANCE";
@@ -54,7 +54,7 @@ export function EditUserRoleDialog({
 
     onSuccess: () => {
       toast.success(`Role ${userName} diubah ke ${selectedRole}`);
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
       setOpen(false);
       onSuccess?.();
     },

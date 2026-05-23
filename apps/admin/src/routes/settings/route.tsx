@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getSettingsFn } from "@/server/settings";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: ({ context }) => {
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/settings")({
   loader: ({ context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["store-settings"],
+      queryKey: queryKeys.storeSettings,
       queryFn: () => getSettingsFn({}),
     });
   },

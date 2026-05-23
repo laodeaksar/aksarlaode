@@ -7,6 +7,7 @@ import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import {
+  queryKeys,
   useDebouncedInput,
   useFilteredNavigation,
   useRouteSearch,
@@ -24,7 +25,7 @@ export default function CustomersPage() {
   const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["customers", { page: currentPage, search }],
+    queryKey: queryKeys.customers.list({ page: currentPage, search }),
     queryFn: () =>
       listCustomersFn({
         data: { page: currentPage, ...(search ? { search } : {}) },

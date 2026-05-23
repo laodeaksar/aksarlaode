@@ -63,6 +63,7 @@ export const queryKeys = {
 
   // ── Settings ──────────────────────────────────────────────────────────────
   settings: ["settings"] as const,
+  storeSettings: ["store-settings"] as const,
 
   // ── Queue ─────────────────────────────────────────────────────────────────
   queue: {

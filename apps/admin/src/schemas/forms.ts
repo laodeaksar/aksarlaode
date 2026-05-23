@@ -83,7 +83,7 @@ export const SettingsFormSchema = v.object({
     v.transform(coerceNumber),
     v.check(
       (n) => Number.isFinite(n) && n >= 1,
-      "Payment window must be at least 1 minute."
+      "Durasi pembayaran minimal 1 menit."
     )
   ),
   minimumOrderAmount: v.pipe(
@@ -91,7 +91,7 @@ export const SettingsFormSchema = v.object({
     v.transform(coerceNumber),
     v.check(
       (n) => Number.isFinite(n) && n >= 0,
-      "Minimum order amount cannot be negative."
+      "Minimum order tidak boleh negatif."
     )
   ),
   maxOrderItemsPerOrder: v.pipe(
@@ -99,10 +99,42 @@ export const SettingsFormSchema = v.object({
     v.transform(coerceNumber),
     v.check(
       (n) => Number.isFinite(n) && n >= 1,
-      "Max items per order must be at least 1."
+      "Maksimal item per order minimal 1."
     )
   ),
   maintenanceMode: v.boolean(),
 });
+
+// ── Invite user form ────────────────────────────────────────────────────────
+
+export const InviteUserSchema = v.object({
+  email: v.pipe(
+    v.string(),
+    v.minLength(1, "Email wajib diisi."),
+    v.email("Format email tidak valid.")
+  ),
+  name: v.optional(v.string()),
+  role: v.picklist(["ADMIN", "FINANCE"], "Pilih role yang valid."),
+});
+
+export type InviteUserFields = v.InferOutput<typeof InviteUserSchema>;
+
+// ── Resend email form ───────────────────────────────────────────────────────
+
+export const ResendEmailSchema = v.object({
+  emailType: v.picklist(
+    ["order-created", "order-confirmation", "order-cancelled"],
+    "Pilih tipe email."
+  ),
+  orderId: v.pipe(v.string(), v.minLength(1, "Order ID wajib diisi.")),
+  recipientEmail: v.pipe(
+    v.string(),
+    v.minLength(1, "Email penerima wajib diisi."),
+    v.email("Format email tidak valid.")
+  ),
+  reason: v.optional(v.string()),
+});
+
+export type ResendEmailFields = v.InferOutput<typeof ResendEmailSchema>;
 
 export type SettingsFormValues = v.InferOutput<typeof SettingsFormSchema>;

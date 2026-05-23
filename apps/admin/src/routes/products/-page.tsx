@@ -11,6 +11,7 @@ import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import {
   can,
+  queryKeys,
   useDebouncedInput,
   useFilteredNavigation,
   useRouteSearch,
@@ -32,7 +33,7 @@ export default function ProductsPage() {
   const searchInput = useDebouncedInput(search, (v) => setFilter("search", v));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", { page: currentPage, search }],
+    queryKey: queryKeys.products.list({ page: currentPage, search }),
     queryFn: () =>
       listProductsFn({
         data: { page: currentPage, limit: 20, ...(search ? { search } : {}) },

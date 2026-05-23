@@ -10,7 +10,7 @@ import { getCustomerFn } from "@/server/customers";
 import { useSession } from "@/lib/session-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { ResourceNotFound } from "@/components/shared";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 import { DeleteCustomerButton } from "./delete-customer-button";
 import { EditCustomerRoleDialog } from "./edit-customer-role-dialog";
@@ -56,7 +56,7 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
   const canWrite = session ? can(session.role, "users:manage") : false;
 
   const { data: customer, isLoading } = useQuery({
-    queryKey: ["customer", userId],
+    queryKey: queryKeys.customers.detail(userId),
     queryFn: () => getCustomerFn({ data: { id: userId } }),
   });
 

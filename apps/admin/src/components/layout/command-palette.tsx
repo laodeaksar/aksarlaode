@@ -24,7 +24,7 @@ import {
   CommandShortcut,
 } from "@repo/ui/components/command";
 
-import { can, formatIDR, getRecentPages, useSession } from "@/lib";
+import { can, formatIDR, getRecentPages, queryKeys, useSession } from "@/lib";
 import type { RecentPage } from "@/lib";
 import { listProductsFn } from "@/server/products";
 
@@ -91,7 +91,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   // Live product search — fires once debouncedSearch reaches 2+ chars.
   const { data: productData, isFetching: productsFetching } = useQuery({
-    queryKey: ["products-search", debouncedSearch],
+    queryKey: queryKeys.products.search(debouncedSearch),
     queryFn: () =>
       listProductsFn({
         data: { search: debouncedSearch, page: 1, limit: 5 },

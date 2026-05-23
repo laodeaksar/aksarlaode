@@ -12,6 +12,7 @@ import { RootDocument } from "@/components/layout/root-document";
 import { DefaultCatchBoundary, NotFound } from "@/components/shared";
 import {
   hasAnyAdminRole,
+  queryKeys,
   silentRefresh,
   type RouterContext,
   type Session,
@@ -59,7 +60,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     const { queryClient } = context;
 
     if (location.pathname.startsWith("/login")) {
-      const cached = queryClient.getQueryData<Session>(["session"]);
+      const cached = queryClient.getQueryData<Session>(queryKeys.session);
       if (cached && hasAnyAdminRole(cached.role)) {
         throw redirect({ to: "/dashboard" });
       }
@@ -67,7 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }
 
     let session = await queryClient.fetchQuery({
-      queryKey: ["session"],
+      queryKey: queryKeys.session,
       queryFn: getSessionFn,
       staleTime: 2 * 60 * 1_000,
     });
@@ -75,9 +76,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     if (!session) {
       const refreshed = await silentRefresh();
       if (refreshed) {
-        queryClient.removeQueries({ queryKey: ["session"] });
+        queryClient.removeQueries({ queryKey: queryKeys.session });
         session = await queryClient.fetchQuery({
-          queryKey: ["session"],
+          queryKey: queryKeys.session,
           queryFn: getSessionFn,
           staleTime: 0,
         });

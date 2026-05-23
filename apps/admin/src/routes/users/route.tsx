@@ -3,7 +3,7 @@ import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listAdminUsersFn } from "@/server/users";
 import { usersSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/users")({
   beforeLoad: ({ context }) => {
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/users")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["admin-users", { page: deps.page ?? 1, search: deps.search }],
+      queryKey: queryKeys.adminUsers.list({ page: deps.page ?? 1, search: deps.search }),
       queryFn: () =>
         listAdminUsersFn({
           data: {

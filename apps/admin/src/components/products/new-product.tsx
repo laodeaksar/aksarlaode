@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { createProductFn } from "@/server/products";
 import type { NewProductInput } from "@/effect/Services";
 import { PageHeader } from "@/components/layout/page-header";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 import { ProductForm } from "../forms/product-form";
 
@@ -19,9 +19,9 @@ export function NewProduct() {
     // Query key must match the shape used in products/-page.tsx:
     //   ["products", { page, search }]
     onMutate: async (newProduct) => {
-      await queryClient.cancelQueries({ queryKey: ["products"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.all });
 
-      const cacheKey = ["products", { page: 1, search: "" }];
+      const cacheKey = queryKeys.products.list({ page: 1, search: "" });
 
       const previousData = queryClient.getQueryData<{
         items: { id: string; name: string }[];
@@ -58,7 +58,7 @@ export function NewProduct() {
 
     onSuccess: () => {
       toast.success("Produk berhasil dibuat");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
       navigate({ to: "/products" });
     },
   });

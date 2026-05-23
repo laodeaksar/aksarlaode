@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Form, useField, useForm } from "@formisch/react";
 
 import { SendIcon } from "lucide-react";
 
@@ -14,8 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
-import { Label } from "@repo/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -25,7 +31,8 @@ import {
 } from "@repo/ui/components/select";
 
 import { resendEmailFn, type ResendEmailType } from "@/server/queue";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
+import { ResendEmailSchema, type ResendEmailFields } from "@/schemas/forms";
 
 const EMAIL_TYPE_OPTIONS: {
   value: ResendEmailType;
@@ -49,38 +56,50 @@ const EMAIL_TYPE_OPTIONS: {
   },
 ];
 
-function isValidEmail(value: string): boolean {
-  return value.includes("@") && value.includes(".");
-}
-
 export function ResendEmailDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [emailType, setEmailType] = useState<ResendEmailType | "">("");
-  const [orderId, setOrderId] = useState("");
-  const [recipientEmail, setRecipientEmail] = useState("");
-  const [reason, setReason] = useState("");
+
+  const form = useForm({
+    schema: ResendEmailSchema,
+    initialInput: {
+      emailType: "" as ResendEmailType,
+      orderId: "",
+      recipientEmail: "",
+      reason: "",
+    },
+  });
+
+  const emailTypeField = useField(form, { path: ["emailType"] as const });
+  const orderIdField = useField(form, { path: ["orderId"] as const });
+  const recipientEmailField = useField(form, {
+    path: ["recipientEmail"] as const,
+  });
+  const reasonField = useField(form, { path: ["reason"] as const });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
+    mutationFn: (data: ResendEmailFields) =>
       resendEmailFn({
         data: {
-          orderId: orderId.trim(),
-          emailType: emailType as ResendEmailType,
-          recipientEmail: recipientEmail.trim(),
-          ...(emailType === "order-cancelled"
-            ? { reason: reason.trim() || "Cancelled by admin" }
+          orderId: data.orderId,
+          emailType: data.emailType,
+          recipientEmail: data.recipientEmail,
+          ...(data.emailType === "order-cancelled"
+            ? { reason: data.reason?.trim() || "Cancelled by admin" }
             : {}),
         },
       }),
 
     onSuccess: () => {
-      toast.success("Email job queued successfully");
-      void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
+      toast.persistent("Email job queued successfully");
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.stats });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.queue.failedJobs,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.queue.activity,
+      });
       setOpen(false);
-      resetForm();
     },
 
     onError: (err: unknown) => {
@@ -92,26 +111,15 @@ export function ResendEmailDialog() {
     },
   });
 
-  function resetForm() {
-    setEmailType("");
-    setOrderId("");
-    setRecipientEmail("");
-    setReason("");
-  }
-
-  const isValid =
-    emailType !== "" &&
-    orderId.trim().length > 0 &&
-    isValidEmail(recipientEmail.trim()) &&
-    (emailType !== "order-cancelled" || reason.trim().length > 0);
-
-  const selectedOption = EMAIL_TYPE_OPTIONS.find((o) => o.value === emailType);
+  const selectedOption = EMAIL_TYPE_OPTIONS.find(
+    (o) => o.value === emailTypeField.input
+  );
+  const showReason = emailTypeField.input === "order-cancelled";
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) resetForm();
         setOpen(next);
       }}
     >
@@ -129,95 +137,118 @@ export function ResendEmailDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Email type */}
-          <div className="space-y-1.5">
-            <Label htmlFor="resend-type">Email type</Label>
-            <Select
-              value={emailType}
-              onValueChange={(v) => setEmailType(v as ResendEmailType)}
-            >
-              <SelectTrigger id="resend-type" className="w-full">
-                <SelectValue placeholder="Select email type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {EMAIL_TYPE_OPTIONS.map(({ value, label, description }) => (
-                  <SelectItem key={value} value={value}>
-                    <span className="font-medium">{label}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      — {description}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedOption && (
-              <p className="text-muted-foreground text-xs">
-                {selectedOption.description}
-              </p>
-            )}
-          </div>
+        <Form
+          of={form}
+          onSubmit={(data) => mutate(data)}
+          className="space-y-4 py-2"
+        >
+          <FieldGroup>
+            <Field data-invalid={!!emailTypeField.errors}>
+              <FieldLabel htmlFor="resend-type">Email type</FieldLabel>
+              <Select
+                value={emailTypeField.input ?? ""}
+                onValueChange={(v) =>
+                  emailTypeField.props.onChange({
+                    target: { value: v },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
+              >
+                <SelectTrigger id="resend-type" className="w-full">
+                  <SelectValue placeholder="Select email type…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMAIL_TYPE_OPTIONS.map(({ value, label, description }) => (
+                    <SelectItem key={value} value={value}>
+                      <span className="font-medium">{label}</span>
+                      <span className="text-muted-foreground ml-2 text-xs">
+                        — {description}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedOption && (
+                <p className="text-muted-foreground text-xs">
+                  {selectedOption.description}
+                </p>
+              )}
+              {emailTypeField.errors && (
+                <FieldError
+                  errors={emailTypeField.errors.map((m) => ({ message: m }))}
+                />
+              )}
+            </Field>
 
-          {/* Order ID */}
-          <div className="space-y-1.5">
-            <Label htmlFor="resend-order">Order ID</Label>
-            <Input
-              id="resend-order"
-              type="text"
-              placeholder="e.g. ord_abc123"
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Recipient email */}
-          <div className="space-y-1.5">
-            <Label htmlFor="resend-email">Recipient email</Label>
-            <Input
-              id="resend-email"
-              type="email"
-              placeholder="customer@example.com"
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Cancellation reason — only for order-cancelled */}
-          {emailType === "order-cancelled" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="resend-reason">
-                Cancellation reason{" "}
-                <span className="text-muted-foreground font-normal">
-                  (required)
-                </span>
-              </Label>
+            <Field data-invalid={!!orderIdField.errors}>
+              <FieldLabel htmlFor="resend-order">Order ID</FieldLabel>
               <Input
-                id="resend-reason"
+                {...orderIdField.props}
+                id="resend-order"
                 type="text"
-                placeholder="e.g. Out of stock"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g. ord_abc123"
+                autoComplete="off"
               />
-            </div>
-          )}
-        </div>
+              {orderIdField.errors && (
+                <FieldError
+                  errors={orderIdField.errors.map((m) => ({ message: m }))}
+                />
+              )}
+            </Field>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setOpen(false);
-              resetForm();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button onClick={() => mutate()} disabled={isPending || !isValid}>
-            {isPending ? "Queueing…" : "Queue Email"}
-          </Button>
-        </DialogFooter>
+            <Field data-invalid={!!recipientEmailField.errors}>
+              <FieldLabel htmlFor="resend-email">Recipient email</FieldLabel>
+              <Input
+                {...recipientEmailField.props}
+                id="resend-email"
+                type="email"
+                placeholder="customer@example.com"
+                autoComplete="off"
+              />
+              {recipientEmailField.errors && (
+                <FieldError
+                  errors={recipientEmailField.errors.map((m) => ({
+                    message: m,
+                  }))}
+                />
+              )}
+            </Field>
+
+            {showReason && (
+              <Field data-invalid={!!reasonField.errors}>
+                <FieldLabel htmlFor="resend-reason">
+                  Cancellation reason{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (required)
+                  </span>
+                </FieldLabel>
+                <Input
+                  {...reasonField.props}
+                  id="resend-reason"
+                  type="text"
+                  placeholder="e.g. Out of stock"
+                />
+                {reasonField.errors && (
+                  <FieldError
+                    errors={reasonField.errors.map((m) => ({ message: m }))}
+                  />
+                )}
+              </Field>
+            )}
+          </FieldGroup>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Queueing…" : "Queue Email"}
+            </Button>
+          </DialogFooter>
+        </Form>
       </DialogContent>
     </Dialog>
   );

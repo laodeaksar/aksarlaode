@@ -14,7 +14,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 
 import { deleteCustomerFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 interface DeleteCustomerButtonProps {
   customerId: string;
@@ -34,8 +34,8 @@ export function DeleteCustomerButton({
 
     onSuccess: () => {
       toast.success(`${customerName} berhasil dinonaktifkan`);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.removeQueries({ queryKey: ["customer", customerId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
+      queryClient.removeQueries({ queryKey: queryKeys.customers.detail(customerId) });
       onSuccess?.();
     },
 

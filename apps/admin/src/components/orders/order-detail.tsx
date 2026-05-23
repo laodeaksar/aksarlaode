@@ -37,7 +37,7 @@ import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
 import { PageHeader } from "@/components/layout/page-header";
 import { ResourceNotFound } from "@/components/shared";
-import { can, toast, useSession } from "@/lib";
+import { can, queryKeys, toast, useSession } from "@/lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
   const canWrite = can(role, "orders:write");
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["order", orderId],
+    queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => getOrderFn({ data: { id: orderId } }),
   });
 
@@ -130,11 +130,11 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
       }),
 
     onMutate: async ({ nextStatus, note }) => {
-      await queryClient.cancelQueries({ queryKey: ["order", orderId] });
-      const previous = queryClient.getQueryData(["order", orderId]);
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      const previous = queryClient.getQueryData(queryKeys.orders.detail(orderId));
 
       queryClient.setQueryData(
-        ["order", orderId],
+        queryKeys.orders.detail(orderId),
         (old: typeof order | undefined) => {
           if (!old) return old;
           return {
@@ -157,15 +157,15 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
 
     onError: (err, _vars, ctx) => {
       if (ctx?.previous !== undefined) {
-        queryClient.setQueryData(["order", orderId], ctx.previous);
+        queryClient.setQueryData(queryKeys.orders.detail(orderId), ctx.previous);
       }
       toast.error("Gagal mengubah status pesanan", err);
     },
 
     onSuccess: () => {
       toast.success("Status pesanan berhasil diperbarui");
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       reset(form);
       setConfirmOpen(false);
     },

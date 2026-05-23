@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@repo/ui/components/button";
 
 import { retryAllFn, retryJobFn } from "@/server/queue";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 // ── Retry single job ────────────────────────────────────────────────────────
 
@@ -19,10 +19,10 @@ export function RetryJobButton({ jobId }: RetryJobButtonProps) {
   const mutation = useMutation({
     mutationFn: () => retryJobFn({ data: { jobId } }),
     onSuccess: () => {
-      toast.success("Job queued for retry");
-      void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
+      toast.persistent("Job queued for retry");
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.stats });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.failedJobs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.activity });
     },
     onError: (err) => {
       toast.error("Failed to retry job", err);
@@ -53,10 +53,10 @@ export function RetryAllButton({ failedCount }: RetryAllButtonProps) {
   const mutation = useMutation({
     mutationFn: () => retryAllFn({}),
     onSuccess: (result) => {
-      toast.success(`${result.retriedCount} job(s) queued for retry`);
-      void queryClient.invalidateQueries({ queryKey: ["queue-stats"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-failed-jobs"] });
-      void queryClient.invalidateQueries({ queryKey: ["queue-activity"] });
+      toast.persistent(`${result.retriedCount} job(s) queued for retry`);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.stats });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.failedJobs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.queue.activity });
     },
     onError: (err) => {
       toast.error("Failed to retry jobs", err);

@@ -12,6 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
 
 import type { User } from "@/effect/Services";
 
@@ -37,13 +43,19 @@ function UserActions({ row }: { row: { original: User } }) {
   const canChangeRole = user.role !== "OWNER";
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-      >
-        <span className="sr-only">Open menu</span>
-        <MoreHorizontal className="h-4 w-4" />
-      </DropdownMenuTrigger>
+    <TooltipProvider>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger render={<span />}>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" className="h-8 w-8 p-0" />}
+            >
+              <span className="sr-only">Buka menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Aksi</TooltipContent>
+        </Tooltip>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -70,7 +82,8 @@ function UserActions({ row }: { row: { original: User } }) {
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
 

@@ -14,7 +14,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 
 import { deleteCustomerFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 interface DeactivateUserButtonProps {
   userId: string;
@@ -34,7 +34,7 @@ export function DeactivateUserButton({
 
     onSuccess: () => {
       toast.success(`${userName} berhasil dinonaktifkan`);
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
       onSuccess?.();
     },
 

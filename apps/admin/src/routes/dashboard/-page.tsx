@@ -9,6 +9,7 @@ import {
 
 import { getDashboardStatsFn } from "@/server/dashboard";
 import type { DashboardStats } from "@/effect/Services";
+import { queryKeys } from "@/lib";
 import {
   DashboardSkeleton,
   RecentOrdersTable,
@@ -19,7 +20,7 @@ import { PageHeader } from "@/components/layout/page-header";
 
 export default function DashboardPage() {
   const { data } = useQuery({
-    queryKey: ["dashboard-stats"],
+    queryKey: queryKeys.dashboard.stats,
     queryFn: () => getDashboardStatsFn({}),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,

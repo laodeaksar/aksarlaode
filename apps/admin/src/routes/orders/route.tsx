@@ -3,7 +3,7 @@ import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listOrdersFn } from "@/server/orders";
 import { ordersSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/orders")({
   beforeLoad: ({ context }) => {
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/orders")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["orders", { page: deps.page ?? 1, status: deps.status }],
+      queryKey: queryKeys.orders.list({ page: deps.page ?? 1, status: deps.status }),
       queryFn: () =>
         listOrdersFn({
           data: {

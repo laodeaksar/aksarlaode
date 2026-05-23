@@ -17,6 +17,7 @@ import { Switch } from "@repo/ui/components/switch";
 import { getSettingsFn, updateSettingsFn } from "@/server/settings";
 import type { StoreSettings } from "@/effect/Services.schemas";
 import { toast } from "@/lib/toast";
+import { queryKeys } from "@/lib";
 import { PageHeader } from "@/components/layout/page-header";
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -30,7 +31,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
 
   const { data: serverSettings } = useQuery({
-    queryKey: ["store-settings"],
+    queryKey: queryKeys.storeSettings,
     queryFn: () => getSettingsFn({}),
     // Settings are only mutated via this page; no need for background polling.
     staleTime: Infinity,
@@ -49,7 +50,7 @@ export default function SettingsPage() {
     mutationFn: (data: StoreSettings) => updateSettingsFn({ data }),
     onSuccess: (updated) => {
       setValues(updated);
-      queryClient.setQueryData(["store-settings"], updated);
+      queryClient.setQueryData(queryKeys.storeSettings, updated);
       toast.success(
         "Settings saved. Running services have been notified to reload."
       );

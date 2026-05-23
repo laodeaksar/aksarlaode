@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getOrderFn } from "@/server/orders";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/orders/$orderId")({
   beforeLoad: ({ context }) => {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/orders/$orderId")({
   loader: ({ params, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["order", params.orderId],
+      queryKey: queryKeys.orders.detail(params.orderId),
       queryFn: () => getOrderFn({ data: { id: params.orderId } }),
       staleTime: 5 * 60 * 1_000,
     });

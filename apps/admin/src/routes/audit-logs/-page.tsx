@@ -12,7 +12,7 @@ import {
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { FilterInput, FilterSelect, ModuleEmptyState } from "@/components/shared";
-import { useFilteredNavigation, useRouteSearch } from "@/lib";
+import { queryKeys, useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
@@ -41,10 +41,13 @@ export default function AuditLogsPage() {
   const { data, isLoading } = useQuery<
     Awaited<ReturnType<typeof listAuditLogsFn>>
   >({
-    queryKey: [
-      "audit-logs",
-      { page: currentPage, startDate, endDate, action, actorRole },
-    ],
+    queryKey: queryKeys.auditLogs.list({
+      page: currentPage,
+      startDate,
+      endDate,
+      action,
+      actorRole,
+    }),
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
 

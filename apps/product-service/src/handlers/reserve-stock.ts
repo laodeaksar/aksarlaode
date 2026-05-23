@@ -2,57 +2,42 @@ import { Cause, Effect } from "effect";
 
 import type { Context } from "elysia";
 
-import { productRepository } from "@/repository/product.repository";
-
-// Slug format: lowercase letters, digits, and hyphens only.
-// Matches the slug generation logic in the product creation handler.
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+import {
+  InsufficientStockError,
+  ProductNotFoundError,
+  productRepository,
+} from "@/repository/product.repository";
 
 export const reserveStockHandler = async ({ params, body, set }: Context) => {
   const { id } = params;
   const { quantity } = body as { quantity: number };
-
-  // FIX PRD-02: reject zero/negative quantities before touching the DB.
-  // Without this guard, UPDATE stock = stock - 0 silently succeeds (no-op),
-  // and UPDATE stock = stock - (-5) would silently ADD stock — both corrupt
-  // inventory without raising an error.
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    set.status = 422;
-    return {
-      error: "quantity must be a positive integer",
-      code: "INVALID_QUANTITY",
-    };
-  }
 
   const result = await Effect.runPromiseExit(
     productRepository.reserveStock(id, quantity)
   );
 
   if (result._tag === "Failure") {
-    const cause = result.cause;
+    const err = Cause.failureOption(result.cause);
 
-    if (Cause.isFailType(cause)) {
-      const err = cause.error as any;
-
-      if (err._tag === "ProductNotFoundError") {
+    if (err._tag === "Some") {
+      if (err.value instanceof ProductNotFoundError) {
         set.status = 404;
-        return { error: "Product not found" };
+        return { error: "Product not found", code: "PRODUCT_NOT_FOUND" };
       }
 
-      if (err._tag === "InsufficientStockError") {
+      if (err.value instanceof InsufficientStockError) {
         set.status = 409;
         return {
-          error: `Insufficient stock: requested ${err.requested}, available ${err.available}`,
+          error: `Insufficient stock: requested ${err.value.requested}, available ${err.value.available}`,
           code: "INSUFFICIENT_STOCK",
         };
       }
     }
 
     set.status = 500;
-    return { error: "Internal server error" };
+    return { error: "Internal server error", code: "INTERNAL_ERROR" };
   }
 
-  // Fetch updated stock after successful reservation
   const updated = await Effect.runPromiseExit(productRepository.findById(id));
   const remainingStock =
     updated._tag === "Success" ? updated.value.stock : null;

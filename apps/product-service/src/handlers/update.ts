@@ -45,7 +45,7 @@ export const updateHandler = async ({
       return { error: "Product not found", code: "PRODUCT_NOT_FOUND" };
     }
     set.status = 500;
-    return { error: "Failed to update product" };
+    return { error: "Failed to update product", code: "INTERNAL_ERROR" };
   }
 
   console.info(

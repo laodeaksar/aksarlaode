@@ -30,7 +30,7 @@ export const createHandler = async ({
 
   if (result._tag === "Failure") {
     set.status = 500;
-    return { error: "Failed to create product" };
+    return { error: "Failed to create product", code: "INTERNAL_ERROR" };
   }
 
   console.info(

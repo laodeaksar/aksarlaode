@@ -1,8 +1,11 @@
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 
 import type { Context } from "elysia";
 
-import { productRepository } from "@/repository/product.repository";
+import {
+  ProductNotFoundError,
+  productRepository,
+} from "@/repository/product.repository";
 
 export const getStockHandler = async ({ params, set }: Context) => {
   const { id } = params;
@@ -10,8 +13,13 @@ export const getStockHandler = async ({ params, set }: Context) => {
   const result = await Effect.runPromiseExit(productRepository.findById(id));
 
   if (result._tag === "Failure") {
-    set.status = 404;
-    return { error: "Product not found" };
+    const err = Cause.failureOption(result.cause);
+    if (err._tag === "Some" && err.value instanceof ProductNotFoundError) {
+      set.status = 404;
+      return { error: "Product not found", code: "PRODUCT_NOT_FOUND" };
+    }
+    set.status = 500;
+    return { error: "Internal server error", code: "INTERNAL_ERROR" };
   }
 
   const { stock } = result.value;

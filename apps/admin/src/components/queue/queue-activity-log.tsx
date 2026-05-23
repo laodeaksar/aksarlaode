@@ -1,8 +1,10 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { ClockIcon } from "lucide-react";
 
 import { Badge } from "@repo/ui/components/badge";
 
 import { DataTable } from "@/components/data-table";
+import { ModuleEmptyState } from "@/components/shared";
 import type { AuditLogEntry } from "@/types";
 
 // ── Column definitions ──────────────────────────────────────────────────────
@@ -96,6 +98,14 @@ type Props = {
   isLoading: boolean;
 };
 
+const activityEmptyState = (
+  <ModuleEmptyState
+    icon={<ClockIcon />}
+    title="Belum ada aktivitas"
+    description="Aksi seperti retry job dan manual resend email akan tercatat di sini."
+  />
+);
+
 export function QueueActivityLog({ items, isLoading }: Props) {
   return (
     <div className="space-y-3">
@@ -109,14 +119,12 @@ export function QueueActivityLog({ items, isLoading }: Props) {
         </p>
       </div>
 
-      <DataTable columns={activityColumns} data={items} isLoading={isLoading} />
-
-      {!isLoading && items.length === 0 && (
-        <p className="text-muted-foreground py-6 text-center text-sm">
-          No queue activity recorded yet. Actions will appear here after the
-          first retry or manual resend.
-        </p>
-      )}
+      <DataTable
+        columns={activityColumns}
+        data={items}
+        isLoading={isLoading}
+        emptyState={activityEmptyState}
+      />
     </div>
   );
 }

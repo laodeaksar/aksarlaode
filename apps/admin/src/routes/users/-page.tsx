@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { ShieldCheckIcon } from "lucide-react";
 
 import { listAdminUsersFn } from "@/server/users";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { SearchInput } from "@/components/shared";
+import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import { InviteUserDialog, userColumns } from "@/components/users";
 import {
   useDebouncedInput,
@@ -30,6 +31,19 @@ export default function UsersPage() {
       }),
   });
 
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<ShieldCheckIcon />}
+      title={search ? "Pengguna tidak ditemukan" : "Belum ada pengguna admin"}
+      description={
+        search
+          ? `Tidak ada pengguna yang cocok dengan "${search}".`
+          : "Undang anggota tim pertama untuk mulai mengelola toko bersama."
+      }
+      action={search ? undefined : <InviteUserDialog />}
+    />
+  );
+
   return (
     <div className="space-y-4">
       <PageHeader title="Users" subtitle="Manage staff and admin accounts" />
@@ -47,6 +61,7 @@ export default function UsersPage() {
           columns={userColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          emptyState={emptyState}
         />
         <PaginationBar route={Route} to="/users" total={data?.total ?? 0} />
       </div>

@@ -108,38 +108,36 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     navigate({ to });
   }
 
-  const navItems: NavEntry[] = [
-    {
-      label: "Dashboard",
-      to: "/dashboard",
-      icon: <LayoutDashboardIcon />,
-    },
-    can(role, "products:read") && {
-      label: "Products",
-      to: "/products",
-      icon: <PackageIcon />,
-    },
-    can(role, "products:write") && {
-      label: "New Product",
-      to: "/products/new",
-      icon: <PlusIcon />,
-    },
-    can(role, "orders:read") && {
-      label: "Orders",
-      to: "/orders",
-      icon: <ShoppingCartIcon />,
-    },
-    can(role, "customers:read") && {
-      label: "Customers",
-      to: "/customers",
-      icon: <UsersIcon />,
-    },
-    can(role, "audit:read") && {
-      label: "Audit Logs",
-      to: "/audit-logs",
-      icon: <ClipboardListIcon />,
-    },
-  ].filter((item): item is NavEntry => Boolean(item));
+  const navItems = (
+    [
+      { label: "Dashboard", to: "/dashboard", icon: <LayoutDashboardIcon /> },
+      can(role, "products:read") && {
+        label: "Products",
+        to: "/products",
+        icon: <PackageIcon />,
+      },
+      can(role, "products:write") && {
+        label: "New Product",
+        to: "/products/new",
+        icon: <PlusIcon />,
+      },
+      can(role, "orders:read") && {
+        label: "Orders",
+        to: "/orders",
+        icon: <ShoppingCartIcon />,
+      },
+      can(role, "customers:read") && {
+        label: "Customers",
+        to: "/customers",
+        icon: <UsersIcon />,
+      },
+      can(role, "audit:read") && {
+        label: "Audit Logs",
+        to: "/audit-logs",
+        icon: <ClipboardListIcon />,
+      },
+    ] as (NavEntry | false)[]
+  ).filter((item): item is NavEntry => Boolean(item));
 
   // Disable cmdk's built-in filter so we control all filtering ourselves.
   // This lets server-fetched product results bypass client-side re-filtering.

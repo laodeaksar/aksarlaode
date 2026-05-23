@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2Icon } from "lucide-react";
 
 import {
   getFailedJobsFn,
@@ -11,6 +12,7 @@ import { can } from "@/lib/rbac";
 import { useSession } from "@/lib/session-context";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { ModuleEmptyState } from "@/components/shared";
 import {
   buildFailedJobColumns,
   QueueActivityLog,
@@ -86,6 +88,32 @@ export default function QueuePage() {
     [canManage]
   );
 
+  const failedJobsEmptyState = (
+    <ModuleEmptyState
+      icon={<CheckCircle2Icon />}
+      title={
+        jobType
+          ? `Tidak ada job "${jobType}" yang gagal`
+          : "Tidak ada job yang gagal"
+      }
+      description={
+        jobType
+          ? "Coba pilih tipe job lain atau hapus filter."
+          : "Queue sehat — semua email terkirim tanpa masalah."
+      }
+      action={
+        jobType ? (
+          <button
+            onClick={() => clearFilters("jobType")}
+            className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4"
+          >
+            Hapus filter
+          </button>
+        ) : undefined
+      }
+    />
+  );
+
   return (
     <div className="flex flex-col gap-6 py-4 md:gap-8 md:py-6">
       <div className="flex items-start justify-between gap-4">
@@ -146,15 +174,8 @@ export default function QueuePage() {
           columns={columns}
           data={filteredJobs}
           isLoading={failedLoading}
+          emptyState={failedJobsEmptyState}
         />
-
-        {!failedLoading && filteredJobs.length === 0 && (
-          <p className="text-muted-foreground py-6 text-center text-sm">
-            {jobType
-              ? `No failed jobs of type "${jobType}"`
-              : "No failed jobs — queue is healthy"}
-          </p>
-        )}
       </div>
 
       {/* ── Activity log ─────────────────────────────────────────────────── */}

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ClipboardListIcon } from "lucide-react";
 
 import { Button } from "@repo/ui/components/button";
 
@@ -10,6 +11,7 @@ import {
 } from "@/components/audit-logs";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { ModuleEmptyState } from "@/components/shared";
 import { useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
@@ -50,6 +52,35 @@ export default function AuditLogsPage() {
     ],
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
+
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<ClipboardListIcon />}
+      title={
+        hasFilters
+          ? "Tidak ada log dengan filter ini"
+          : "Belum ada log aktivitas"
+      }
+      description={
+        hasFilters
+          ? "Coba ubah atau hapus filter untuk melihat log."
+          : "Aktivitas admin seperti perubahan produk, status pesanan, dan perubahan peran akan tercatat di sini."
+      }
+      action={
+        hasFilters ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              clearFilters("startDate", "endDate", "action", "actorRole")
+            }
+          >
+            Hapus semua filter
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -151,6 +182,7 @@ export default function AuditLogsPage() {
           virtualize
           containerHeight="640px"
           ariaLabel="Audit log aktivitas admin"
+          emptyState={emptyState}
         />
         <PaginationBar
           route={Route}

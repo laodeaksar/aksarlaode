@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { UsersIcon } from "lucide-react";
 
 import { listCustomersFn } from "@/server/customers";
 import { customerColumns } from "@/components/customers";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { SearchInput } from "@/components/shared";
+import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import {
   useDebouncedInput,
   useFilteredNavigation,
@@ -30,6 +31,18 @@ export default function CustomersPage() {
       }),
   });
 
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<UsersIcon />}
+      title={search ? "Pelanggan tidak ditemukan" : "Belum ada pelanggan"}
+      description={
+        search
+          ? `Tidak ada pelanggan yang cocok dengan "${search}". Coba kata kunci lain.`
+          : "Pelanggan yang mendaftar di toko akan muncul di sini."
+      }
+    />
+  );
+
   return (
     <div className="space-y-4">
       <PageHeader title="Customers" />
@@ -41,6 +54,7 @@ export default function CustomersPage() {
           columns={customerColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          emptyState={emptyState}
         />
         <PaginationBar route={Route} to="/customers" total={data?.total ?? 0} />
       </div>

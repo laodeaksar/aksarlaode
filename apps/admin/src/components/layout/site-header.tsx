@@ -12,7 +12,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@repo/ui/components/breadcrumb";
-import { Button } from "@repo/ui/components/button";
 import { Kbd, KbdGroup } from "@repo/ui/components/kbd";
 import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
@@ -142,21 +141,17 @@ export function SiteHeader({ onOpenCommand }: SiteHeaderProps) {
 
         {onOpenCommand && (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground ml-auto flex h-8 items-center gap-2 px-2 text-sm font-normal sm:px-3"
-                onClick={onOpenCommand}
-                aria-label="Open command palette"
-              >
-                <SearchIcon className="size-3.5 shrink-0" />
-                <span className="hidden sm:inline">Jump to…</span>
-                <KbdGroup className="ml-0.5 hidden sm:inline-flex">
-                  <Kbd>⌘</Kbd>
-                  <Kbd>K</Kbd>
-                </KbdGroup>
-              </Button>
+            <TooltipTrigger
+              className="text-muted-foreground ml-auto flex h-8 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-2 text-sm font-normal shadow-xs hover:bg-accent hover:text-accent-foreground sm:px-3"
+              onClick={onOpenCommand}
+              aria-label="Open command palette"
+            >
+              <SearchIcon className="size-3.5 shrink-0" />
+              <span className="hidden sm:inline">Jump to…</span>
+              <KbdGroup className="ml-0.5 hidden sm:inline-flex">
+                <Kbd>⌘</Kbd>
+                <Kbd>K</Kbd>
+              </KbdGroup>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               Command palette

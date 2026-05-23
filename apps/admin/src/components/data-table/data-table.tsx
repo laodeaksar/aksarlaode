@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 
 import {
   flexRender,
@@ -9,7 +9,7 @@ import {
   type Row,
   type Table,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 
 import {
   Table as UITable,
@@ -32,6 +32,11 @@ type Props<T> = {
   containerHeight?: string;
   /** aria-label for the table — improves screen-reader context. */
   ariaLabel?: string;
+  /**
+   * Rendered inside a full-colspan cell when data is empty and not loading.
+   * Pass a <ModuleEmptyState> for page-contextual messaging.
+   */
+  emptyState?: ReactNode;
 };
 
 // ── Skeleton rows (shared between normal and virtual mode) ─────────────────
@@ -61,12 +66,12 @@ function SkeletonRows<T>({
 // ── Component ──────────────────────────────────────────────────────────────
 
 /**
- * Pure table renderer — displays rows and handles loading skeletons.
+ * Pure table renderer — displays rows, loading skeletons, and empty states.
  *
  * Pagination is intentionally NOT part of this component. Render
  * `<PaginationBar>` below the table instead:
  *
- *   <DataTable columns={...} data={...} isLoading={...} />
+ *   <DataTable columns={...} data={...} isLoading={...} emptyState={...} />
  *   <PaginationBar route={Route} to="/products" total={data?.total ?? 0} />
  *
  * This separation means `DataTable` never re-renders due to a page change —
@@ -82,6 +87,7 @@ export function DataTable<T>({
   virtualize = false,
   containerHeight = "600px",
   ariaLabel,
+  emptyState,
 }: Props<T>) {
   const table = useReactTable({
     data,
@@ -101,6 +107,7 @@ export function DataTable<T>({
         columns={columns}
         isLoading={isLoading}
         containerHeight={containerHeight}
+        emptyState={emptyState}
         {...(ariaLabel !== undefined ? { ariaLabel } : {})}
       />
     );
@@ -127,6 +134,15 @@ export function DataTable<T>({
         <TableBody>
           {isLoading ? (
             <SkeletonRows columns={columns} />
+          ) : rows.length === 0 && emptyState ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className="p-0 hover:bg-transparent"
+              >
+                {emptyState}
+              </TableCell>
+            </TableRow>
           ) : (
             rows.map((row) => (
               <TableRow
@@ -161,6 +177,7 @@ type VirtualTableProps<T> = {
   isLoading: boolean;
   containerHeight: string;
   ariaLabel?: string;
+  emptyState?: ReactNode;
 };
 
 function VirtualTable<T>({
@@ -170,6 +187,7 @@ function VirtualTable<T>({
   isLoading,
   containerHeight,
   ariaLabel,
+  emptyState,
 }: VirtualTableProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -212,23 +230,33 @@ function VirtualTable<T>({
           ))}
         </TableHeader>
         <TableBody>
-          {paddingTop > 0 && (
-            <tr aria-hidden="true">
-              <td style={{ height: paddingTop }} />
-            </tr>
-          )}
-
-          {isLoading
-            ? Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i} aria-hidden="true">
-                  {columns.map((_, j) => (
-                    <TableCell key={j} className="px-4 py-3">
-                      <div className="bg-muted h-4 animate-pulse rounded" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            : virtualItems.map((virtualRow) => {
+          {isLoading ? (
+            Array.from({ length: 10 }).map((_, i) => (
+              <TableRow key={i} aria-hidden="true">
+                {columns.map((_, j) => (
+                  <TableCell key={j} className="px-4 py-3">
+                    <div className="bg-muted h-4 animate-pulse rounded" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : rows.length === 0 && emptyState ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className="p-0 hover:bg-transparent"
+              >
+                {emptyState}
+              </TableCell>
+            </TableRow>
+          ) : (
+            <>
+              {paddingTop > 0 && (
+                <tr aria-hidden="true">
+                  <td style={{ height: paddingTop }} />
+                </tr>
+              )}
+              {virtualItems.map((virtualRow: VirtualItem) => {
                 const row = rows[virtualRow.index];
                 if (!row) return null;
                 return (
@@ -249,11 +277,12 @@ function VirtualTable<T>({
                   </TableRow>
                 );
               })}
-
-          {paddingBottom > 0 && (
-            <tr aria-hidden="true">
-              <td style={{ height: paddingBottom }} />
-            </tr>
+              {paddingBottom > 0 && (
+                <tr aria-hidden="true">
+                  <td style={{ height: paddingBottom }} />
+                </tr>
+              )}
+            </>
           )}
         </TableBody>
       </UITable>

@@ -3,3 +3,4 @@ export { NotFound } from "./not-found";
 export { Forbidden } from "./forbidden";
 export { DefaultCatchBoundary } from "./default-catch-boundary";
 export { SearchInput } from "./search-input";
+export { ModuleEmptyState } from "./module-empty-state";

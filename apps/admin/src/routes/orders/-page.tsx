@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { ShoppingCartIcon } from "lucide-react";
 
 import { listOrdersFn } from "@/server/orders";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { ModuleEmptyState } from "@/components/shared";
 import {
   ExportOrdersButton,
   ORDER_STATUSES,
@@ -27,6 +29,20 @@ export default function OrdersPage() {
         data: { page: currentPage, ...(status ? { status } : {}) },
       }),
   });
+
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<ShoppingCartIcon />}
+      title={
+        status ? "Tidak ada pesanan dengan status ini" : "Belum ada pesanan"
+      }
+      description={
+        status
+          ? `Tidak ada pesanan dengan status "${status.replace(/_/g, " ")}". Coba filter lain.`
+          : "Pesanan dari pelanggan akan muncul di sini."
+      }
+    />
+  );
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -58,6 +74,7 @@ export default function OrdersPage() {
           virtualize
           containerHeight="640px"
           ariaLabel="Daftar pesanan"
+          emptyState={emptyState}
         />
         <PaginationBar route={Route} to="/orders" total={data?.total ?? 0} />
       </div>

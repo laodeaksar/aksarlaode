@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { PackageIcon } from "lucide-react";
 
 import { Button } from "@repo/ui/components/button";
 
 import { listProductsFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
 import { productColumns } from "@/components/products";
-import { SearchInput } from "@/components/shared";
+import { ModuleEmptyState, SearchInput } from "@/components/shared";
 import { DataTable, PaginationBar } from "@/components";
 import {
   can,
@@ -17,8 +18,6 @@ import {
 } from "@/lib";
 
 import { Route } from "./route";
-
-// ── Products Page ──────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
   const page = useRouteSearch(Route, (s) => s.page);
@@ -39,6 +38,25 @@ export default function ProductsPage() {
         data: { page: currentPage, limit: 20, ...(search ? { search } : {}) },
       }),
   });
+
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<PackageIcon />}
+      title={search ? "Tidak ada produk ditemukan" : "Belum ada produk"}
+      description={
+        search
+          ? `Tidak ada produk yang cocok dengan "${search}". Coba kata kunci lain.`
+          : "Tambah produk pertama untuk mulai berjualan."
+      }
+      action={
+        canWrite ? (
+          <Button size="sm" render={<Link to="/products/new" />}>
+            + Tambah Produk
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 
   return (
     <div className="space-y-4">
@@ -62,6 +80,7 @@ export default function ProductsPage() {
           columns={productColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          emptyState={emptyState}
         />
         <PaginationBar route={Route} to="/products" total={data?.total ?? 0} />
       </div>

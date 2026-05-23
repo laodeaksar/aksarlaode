@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 
+import { PackageIcon } from "lucide-react";
+
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getProductFn } from "@/server/products";
 import { PageHeader } from "@/components/layout/page-header";
+import { ResourceNotFound } from "@/components/shared";
 import { can, formatIDR, useSession } from "@/lib";
 
 import { DeleteProductButton } from "./delete-product-button";
@@ -57,7 +60,15 @@ export function ProductDetail({ productId }: ProductDetailProps) {
 
   if (isLoading && !product) return <ProductDetailSkeleton />;
   if (!product)
-    return <p className="p-6 text-red-500">Produk tidak ditemukan.</p>;
+    return (
+      <ResourceNotFound
+        icon={<PackageIcon />}
+        title="Produk tidak ditemukan"
+        description="Produk ini mungkin sudah dihapus atau ID tidak valid."
+        backTo="/products"
+        backLabel="Lihat semua produk"
+      />
+    );
 
   const formattedCreatedAt = product.createdAt
     ? new Date(product.createdAt).toLocaleDateString("id-ID", {

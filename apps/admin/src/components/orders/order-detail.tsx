@@ -31,9 +31,12 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Textarea } from "@repo/ui/components/textarea";
 
+import { ShoppingCartIcon } from "lucide-react";
+
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
 import { PageHeader } from "@/components/layout/page-header";
+import { ResourceNotFound } from "@/components/shared";
 import { can, toast, useSession } from "@/lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -169,7 +172,16 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
   });
 
   if (isLoading && !order) return <OrderDetailSkeleton />;
-  if (!order) return null;
+  if (!order)
+    return (
+      <ResourceNotFound
+        icon={<ShoppingCartIcon />}
+        title="Pesanan tidak ditemukan"
+        description="Pesanan ini mungkin sudah dihapus atau ID tidak valid."
+        backTo="/orders"
+        backLabel="Lihat semua pesanan"
+      />
+    );
 
   return (
     <div className="max-w-4xl space-y-6">

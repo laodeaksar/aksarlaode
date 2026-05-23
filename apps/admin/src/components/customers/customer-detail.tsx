@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
+import { UserIcon } from "lucide-react";
+
 import { Badge } from "@repo/ui/components/badge";
 import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getCustomerFn } from "@/server/customers";
 import { useSession } from "@/lib/session-context";
 import { PageHeader } from "@/components/layout/page-header";
+import { ResourceNotFound } from "@/components/shared";
 import { can } from "@/lib";
 
 import { DeleteCustomerButton } from "./delete-customer-button";
@@ -59,7 +62,15 @@ export function CustomerDetail({ userId }: CustomerDetailProps) {
 
   if (isLoading && !customer) return <CustomerDetailSkeleton />;
   if (!customer)
-    return <p className="p-6 text-red-500">Customer tidak ditemukan.</p>;
+    return (
+      <ResourceNotFound
+        icon={<UserIcon />}
+        title="Pelanggan tidak ditemukan"
+        description="Pelanggan ini mungkin sudah dihapus atau ID tidak valid."
+        backTo="/customers"
+        backLabel="Lihat semua pelanggan"
+      />
+    );
 
   const formattedCreatedAt = customer.createdAt
     ? new Date(customer.createdAt).toLocaleDateString("id-ID", {

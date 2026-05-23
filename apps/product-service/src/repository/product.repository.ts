@@ -1,8 +1,6 @@
 import { Data, Effect } from "effect";
 
-import { eq, sql } from "drizzle-orm";
-
-import { db, schema } from "@repo/database";
+import { db, eq, schema, sql } from "@repo/database";
 
 import { cacheKey, productCache } from "@/lib/product-cache";
 import { buildProductQuery, type ProductFilters } from "@/lib/query-builder";

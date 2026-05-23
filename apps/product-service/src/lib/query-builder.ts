@@ -9,10 +9,9 @@ import {
   lt,
   lte,
   or,
-  SQL,
-} from "drizzle-orm";
-
-import { schema } from "@repo/database";
+  schema,
+  type SQL,
+} from "@repo/database";
 
 export type ProductFilters = {
   search?: string;

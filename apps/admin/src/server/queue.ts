@@ -6,7 +6,13 @@ import { auditMiddleware } from "@/effect/AuditMiddleware";
 import { requirePermission } from "@/effect/AuthMiddleware";
 import { effectMiddleware } from "@/effect/Middleware";
 import { ApiClientService } from "@/effect/Services";
-import type { AuditLogEntry, QueueFailedJob, QueueStats } from "@/types";
+import type {
+  AuditLogEntry,
+  QueueActiveJob,
+  QueueCompletedJob,
+  QueueFailedJob,
+  QueueStats,
+} from "@/types";
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 // Admin server functions call the email-worker's inspection HTTP server
@@ -214,6 +220,19 @@ export const resendEmailFn = createServerFn({ method: "POST" })
         body: JSON.stringify(body),
       });
     }
+  );
+
+// ── GET /queue/jobs/live — active + recently completed jobs ────────────────
+// One round-trip to the email-worker returns both states. Polled every 5 s
+// by the queue dashboard to give admins a live view of in-flight emails.
+
+export const getLiveJobsFn = createServerFn({ method: "GET" })
+  .middleware([effectMiddleware, requirePermission("queue:read")])
+  .handler(
+    async (): Promise<{ active: QueueActiveJob[]; completed: QueueCompletedJob[] }> =>
+      workerFetch<{ active: QueueActiveJob[]; completed: QueueCompletedJob[] }>(
+        "/queue/jobs/live"
+      )
   );
 
 // ── GET /queue/activity — recent queue audit log entries ───────────────────

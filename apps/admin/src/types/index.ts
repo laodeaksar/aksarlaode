@@ -8,6 +8,8 @@ export type {
   DashboardStats,
   OrderDetail,
   OrderSummary,
+  QueueActiveJob,
+  QueueCompletedJob,
   QueueFailedJob,
   QueueStats,
 } from "./api-responses";

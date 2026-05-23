@@ -5,6 +5,7 @@ import { CheckCircle2Icon } from "lucide-react";
 
 import {
   getFailedJobsFn,
+  getLiveJobsFn,
   getQueueActivityFn,
   getQueueStatsFn,
 } from "@/server/queue";
@@ -15,6 +16,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ModuleEmptyState } from "@/components/shared";
 import {
   buildFailedJobColumns,
+  LiveJobsTracker,
   QueueActivityLog,
   QueueStatsCards,
   ResendEmailDialog,
@@ -65,6 +67,14 @@ export default function QueuePage() {
     queryKey: ["queue-failed-jobs"],
     queryFn: () => getFailedJobsFn({}),
     refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Live delivery status — active + recently completed, tight 5 s poll
+  const { data: liveData, isLoading: liveLoading } = useQuery({
+    queryKey: ["queue-live-jobs"],
+    queryFn: () => getLiveJobsFn({}),
+    refetchInterval: 5_000,
     refetchIntervalInBackground: false,
   });
 
@@ -131,6 +141,15 @@ export default function QueuePage() {
         onRefresh={() => void refetchStats()}
         isRefreshing={isFetching}
       />
+
+      {/* ── Live delivery status ─────────────────────────────────────────── */}
+      <div className="border-border border-t pt-6">
+        <LiveJobsTracker
+          active={liveData?.active ?? []}
+          completed={liveData?.completed ?? []}
+          isLoading={liveLoading}
+        />
+      </div>
 
       {/* ── Failed jobs ─────────────────────────────────────────────────── */}
       <div className="space-y-3">

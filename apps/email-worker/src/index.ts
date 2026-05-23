@@ -6,8 +6,10 @@ import { EnqueueSchema } from "./lib/enqueue-schema";
 import { renderMetrics } from "./lib/metrics";
 import {
   closeInspector,
+  getActiveJobs,
   getFailedJobs,
   getQueueStats,
+  getRecentlyCompletedJobs,
   retryAllFailed,
   retryJob,
 } from "./lib/queue-inspector";
@@ -99,6 +101,16 @@ Bun.serve({
     if (method === "GET" && pathname === "/queue/jobs") {
       const jobs = await getFailedJobs(50);
       return json({ jobs });
+    }
+
+    // GET /queue/jobs/live — active + recently completed jobs in one call.
+    // Returns up to 20 active and 20 completed jobs, all PII-stripped.
+    if (method === "GET" && pathname === "/queue/jobs/live") {
+      const [active, completed] = await Promise.all([
+        getActiveJobs(20),
+        getRecentlyCompletedJobs(20),
+      ]);
+      return json({ active, completed });
     }
 
     // POST /queue/retry/:jobId — retry a single failed job

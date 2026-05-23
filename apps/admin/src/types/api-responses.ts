@@ -74,3 +74,28 @@ export type QueueFailedJob = {
   finishedOn: number | null;
   orderId: string | null;
 };
+
+export type QueueActiveJob = {
+  id: string;
+  name: string;
+  attemptsMade: number;
+  /** Unix ms — when the job was enqueued. */
+  timestamp: number;
+  /** Unix ms — when the worker picked it up. */
+  processedOn: number | null;
+  orderId: string | null;
+};
+
+export type QueueCompletedJob = {
+  id: string;
+  name: string;
+  /** Unix ms — when the job was enqueued. */
+  timestamp: number;
+  /** Unix ms — when the worker started processing. */
+  processedOn: number | null;
+  /** Unix ms — when the job finished. */
+  finishedOn: number | null;
+  /** Processing duration in milliseconds. */
+  durationMs: number | null;
+  orderId: string | null;
+};

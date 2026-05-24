@@ -6,20 +6,21 @@ class OrderClientError extends Data.TaggedError("OrderClientError")<{
   status: number;
 }> {}
 
-const headers = () => ({
+const headers = (requestId?: string) => ({
   "Content-Type": "application/json",
   "x-service-token": env.INTERNAL_SERVICE_TOKEN,
+  ...(requestId ? { "x-request-id": requestId } : {}),
 });
 
 export const orderClient = {
-  updateStatus: (orderId: string, status: string) =>
+  updateStatus: (orderId: string, status: string, requestId?: string) =>
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
           `${env.ORDER_SERVICE_URL}/orders/${orderId}/status`,
           {
             method: "PATCH",
-            headers: headers(),
+            headers: headers(requestId),
             body: JSON.stringify({ status }),
           }
         );
@@ -28,12 +29,12 @@ export const orderClient = {
       catch: (e: any) => new OrderClientError({ status: e.status ?? 500 }),
     }),
 
-  releaseStock: (orderId: string) =>
+  releaseStock: (orderId: string, requestId?: string) =>
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
           `${env.ORDER_SERVICE_URL}/orders/${orderId}/release-stock`,
-          { method: "POST", headers: headers() }
+          { method: "POST", headers: headers(requestId) }
         );
         if (!res.ok) throw { status: res.status };
       },

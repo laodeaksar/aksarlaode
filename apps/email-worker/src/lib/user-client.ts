@@ -20,7 +20,10 @@ function isValidUserId(id: string): boolean {
   return UUID_RE.test(id) || /^[a-zA-Z0-9_-]+$/.test(id);
 }
 
-async function fetchProfile(userId: string): Promise<UserProfile | null> {
+async function fetchProfile(
+  userId: string,
+  requestId?: string
+): Promise<UserProfile | null> {
   if (!isValidUserId(userId)) {
     console.warn(JSON.stringify({ event: "user_client_invalid_id_rejected" }));
     return null;
@@ -33,6 +36,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
         headers: {
           "x-service-token": env.INTERNAL_SERVICE_TOKEN,
           Accept: "application/json",
+          ...(requestId ? { "x-request-id": requestId } : {}),
         },
         signal: AbortSignal.timeout(5_000),
       }
@@ -46,8 +50,11 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
   }
 }
 
-export async function fetchUserEmail(userId: string): Promise<string> {
-  const profile = await fetchProfile(userId);
+export async function fetchUserEmail(
+  userId: string,
+  requestId?: string
+): Promise<string> {
+  const profile = await fetchProfile(userId, requestId);
   if (!profile?.email) {
     // Do NOT log the userId here — it can be used to enumerate valid users.
     console.warn(JSON.stringify({ event: "user_email_not_found" }));
@@ -56,7 +63,10 @@ export async function fetchUserEmail(userId: string): Promise<string> {
   return profile.email;
 }
 
-export async function fetchUserName(userId: string): Promise<string> {
-  const profile = await fetchProfile(userId);
+export async function fetchUserName(
+  userId: string,
+  requestId?: string
+): Promise<string> {
+  const profile = await fetchProfile(userId, requestId);
   return profile?.name ?? "Customer";
 }

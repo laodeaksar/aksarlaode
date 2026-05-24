@@ -17,9 +17,12 @@ export async function handleOrderConfirmation(
   provider: BaseProvider
 ) {
   const userId = payload.userId ?? "";
+  // Generate a trace ID for this background job so auth-service calls can be
+  // correlated in logs even though the original HTTP request has already ended.
+  const jobTraceId = crypto.randomUUID();
 
-  const to = payload.userEmail || (await fetchUserEmail(userId));
-  const customerName = await fetchUserName(userId);
+  const to = payload.userEmail || (await fetchUserEmail(userId, jobTraceId));
+  const customerName = await fetchUserName(userId, jobTraceId);
 
   if (!to) {
     console.warn(

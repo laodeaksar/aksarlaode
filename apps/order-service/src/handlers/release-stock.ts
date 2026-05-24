@@ -13,6 +13,7 @@ export const releaseStockHandler = async ({
   set,
 }: Context) => {
   const { orderId } = params as { orderId: string };
+  const requestId = headers["x-request-id"] as string | undefined;
 
   // ── Authorization — internal service calls only ──────────────────────────
   const serviceToken = headers["x-service-token"];
@@ -37,7 +38,7 @@ export const releaseStockHandler = async ({
   const releaseResult = await Effect.runPromiseExit(
     Effect.all(
       order.items.map((item) =>
-        productClient.releaseStock(item.productId, item.quantity)
+        productClient.releaseStock(item.productId, item.quantity, requestId)
       ),
       { concurrency: "unbounded" }
     )

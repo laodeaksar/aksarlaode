@@ -33,7 +33,7 @@ export const env = createEnv({
         v.string(),
         v.transform((x) => x === "true" || x === "1")
       ),
-      false
+      "false"
     ),
   },
 
@@ -41,7 +41,7 @@ export const env = createEnv({
 
   onValidationError: (error) => {
     console.error("\n❌  [payment-service] Invalid environment variables:\n");
-    for (const issue of error.issues) {
+    for (const issue of error) {
       console.error(`   ${issue.message}`);
     }
     console.error("\n   Check your .env file against .env.example\n");

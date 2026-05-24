@@ -9,19 +9,23 @@ type UserProfile = {
   email: string;
 };
 
-async function getProfile(userId: string): Promise<UserProfile | null> {
+async function getProfile(
+  userId: string,
+  requestId?: string
+): Promise<UserProfile | null> {
   try {
     const res = await fetch(`${env.AUTH_SERVICE_URL}/admin/users/${userId}`, {
       headers: {
         "x-service-token": env.INTERNAL_SERVICE_TOKEN,
         Accept: "application/json",
+        ...(requestId ? { "x-request-id": requestId } : {}),
       },
       signal: AbortSignal.timeout(4_000),
     });
     if (!res.ok) return null;
-    const body = await res.json();
     // auth-service wraps in { data: { ... } } for admin endpoints
-    return (body?.data ?? body) as UserProfile;
+    const body = (await res.json()) as Record<string, unknown>;
+    return (body?.["data"] ?? body) as UserProfile;
   } catch {
     return null;
   }
@@ -32,8 +36,8 @@ export const authClient = {
    * Returns the user's email address, or an empty string when auth-service is
    * unavailable.  Callers must treat "" as "unknown — email-worker will retry".
    */
-  fetchUserEmail: async (userId: string): Promise<string> => {
-    const profile = await getProfile(userId);
+  fetchUserEmail: async (userId: string, requestId?: string): Promise<string> => {
+    const profile = await getProfile(userId, requestId);
     return profile?.email ?? "";
   },
 };

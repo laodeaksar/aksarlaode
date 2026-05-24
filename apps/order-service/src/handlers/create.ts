@@ -22,6 +22,7 @@ function stripHtml(input: string): string {
 export const createHandler = async ({ body, headers, set }: Context) => {
   const input = body as CreateOrderBody;
   const userId = headers["x-user-id"]!;
+  const requestId = headers["x-request-id"] as string | undefined;
 
   // ── Rate limit — sliding window per userId ────────────────────────────────
   // Checked before the idempotency lock so a rate-limited request does not
@@ -92,7 +93,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
 
     for (const item of input.items) {
       const productResult = yield* Effect.either(
-        productClient.getProduct(item.productId)
+        productClient.getProduct(item.productId, requestId)
       );
       if (productResult._tag === "Left") {
         return yield* Effect.fail(productResult.left);
@@ -113,13 +114,13 @@ export const createHandler = async ({ body, headers, set }: Context) => {
 
     for (const item of verifiedItems) {
       const reserveResult = yield* Effect.either(
-        productClient.reserveStock(item.productId, item.quantity)
+        productClient.reserveStock(item.productId, item.quantity, requestId)
       );
 
       if (reserveResult._tag === "Left") {
         yield* Effect.all(
           reserved.map((r) =>
-            productClient.releaseStock(r.productId, r.quantity)
+            productClient.releaseStock(r.productId, r.quantity, requestId)
           ),
           { concurrency: "unbounded" }
         );
@@ -164,7 +165,7 @@ export const createHandler = async ({ body, headers, set }: Context) => {
     // Resolve userEmail first (also non-blocking): if auth-service is down
     // userEmail falls back to "" and email-worker's user-client handles it.
     authClient
-      .fetchUserEmail(userId)
+      .fetchUserEmail(userId, requestId)
       .catch(() => "")
       .then((userEmail) =>
         emailQueue.add("order-created", {

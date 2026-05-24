@@ -50,7 +50,8 @@ function verifyMidtransSignature(notification: MidtransNotification): boolean {
 // ── Stock release helper ─────────────────────────────────────────────────────
 async function releaseOrderStock(
   orderId: string,
-  transactionId: string
+  transactionId: string,
+  requestId: string
 ): Promise<void> {
   const orderResult = await Effect.runPromiseExit(
     orderRepository.findByOrderId(orderId)
@@ -88,7 +89,7 @@ async function releaseOrderStock(
   const releaseResult = await Effect.runPromiseExit(
     Effect.all(
       order.items.map((item) =>
-        productClient.releaseStock(item.productId, item.quantity)
+        productClient.releaseStock(item.productId, item.quantity, requestId)
       ),
       { concurrency: "unbounded" }
     )
@@ -141,6 +142,8 @@ export const paymentWebhookHandler = async ({
   set,
 }: Context) => {
   const notification = body as MidtransNotification;
+  const requestId =
+    request.headers.get("x-request-id") ?? crypto.randomUUID();
 
   // ── 0. Rate limit — sliding window per source IP ──────────────────────────
   // Checked first — before signature verification — as a cheap gate against
@@ -200,7 +203,7 @@ export const paymentWebhookHandler = async ({
       JSON.stringify({ event: "webhook_fraud_denied", orderId, transactionId })
     );
     // Treat as a failed payment — cancel order and release stock
-    await releaseOrderStock(orderId, transactionId);
+    await releaseOrderStock(orderId, transactionId, requestId);
     return { ok: true };
   }
 
@@ -268,7 +271,7 @@ export const paymentWebhookHandler = async ({
   //    CANCELLED orders: reserved stock must be returned to inventory so
   //    other buyers can purchase the same items immediately.
   if (newStatus === "CANCELLED") {
-    await releaseOrderStock(orderId, transactionId);
+    await releaseOrderStock(orderId, transactionId, requestId);
   }
 
   console.info(

@@ -26,6 +26,11 @@ export const env = createEnv({
       v.url("PRODUCT_SERVICE_URL must be a valid URL")
     ),
 
+    AUTH_SERVICE_URL: v.pipe(
+      v.string(),
+      v.url("AUTH_SERVICE_URL must be a valid URL")
+    ),
+
     MIDTRANS_SERVER_KEY: v.pipe(
       v.string(),
       v.minLength(1, "MIDTRANS_SERVER_KEY is required")
@@ -33,7 +38,7 @@ export const env = createEnv({
 
     MINIMUM_ORDER_AMOUNT: v.optional(
       v.pipe(v.string(), v.transform(Number), v.number(), v.minValue(0)),
-      1000
+      "1000"
     ),
 
     PAYMENT_EXPIRY_MINUTES: v.optional(
@@ -44,7 +49,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      60
+      "60"
     ),
 
     RECONCILIATION_INTERVAL_MS: v.optional(
@@ -55,7 +60,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      300_000
+      "300000"
     ),
 
     RATE_LIMIT_ORDER_CREATE_MAX: v.optional(
@@ -66,7 +71,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      5
+      "5"
     ),
 
     RATE_LIMIT_ORDER_CREATE_WINDOW_MS: v.optional(
@@ -77,7 +82,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      60_000
+      "60000"
     ),
 
     RATE_LIMIT_WEBHOOK_MAX: v.optional(
@@ -88,7 +93,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      60
+      "60"
     ),
 
     RATE_LIMIT_WEBHOOK_WINDOW_MS: v.optional(
@@ -99,7 +104,7 @@ export const env = createEnv({
         v.integer(),
         v.minValue(1)
       ),
-      60_000
+      "60000"
     ),
 
     WEB_URL: v.pipe(v.string(), v.url("WEB_URL must be a valid URL")),
@@ -110,7 +115,7 @@ export const env = createEnv({
 
   onValidationError: (error) => {
     console.error("\n❌  [order-service] Invalid environment variables:\n");
-    for (const issue of error.issues) {
+    for (const issue of error) {
       console.error(`   ${issue.message}`);
     }
     console.error("\n   Check your .env file against .env.example\n");

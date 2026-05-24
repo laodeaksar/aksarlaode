@@ -20,9 +20,10 @@ export type ProductSnapshot = {
   imageUrl?: string;
 };
 
-const headers = () => ({
+const headers = (requestId?: string) => ({
   "Content-Type": "application/json",
   "x-service-token": env.INTERNAL_SERVICE_TOKEN,
+  ...(requestId ? { "x-request-id": requestId } : {}),
 });
 
 export const productClient = {
@@ -30,12 +31,12 @@ export const productClient = {
    * Fetch authoritative product data (name, sku, price) from product-service.
    * Used in order creation to prevent client-side price manipulation.
    */
-  getProduct: (productId: string) =>
+  getProduct: (productId: string, requestId?: string) =>
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
           `${env.PRODUCT_SERVICE_URL}/products/${productId}`,
-          { method: "GET", headers: headers() }
+          { method: "GET", headers: headers(requestId) }
         );
         if (res.status === 404)
           throw { _tag: "ProductNotFoundError", productId };
@@ -49,14 +50,14 @@ export const productClient = {
       },
     }),
 
-  reserveStock: (productId: string, quantity: number) =>
+  reserveStock: (productId: string, quantity: number, requestId?: string) =>
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
           `${env.PRODUCT_SERVICE_URL}/products/${productId}/stock/reserve`,
           {
             method: "POST",
-            headers: headers(),
+            headers: headers(requestId),
             body: JSON.stringify({ quantity }),
           }
         );
@@ -75,14 +76,14 @@ export const productClient = {
       },
     }),
 
-  releaseStock: (productId: string, quantity: number) =>
+  releaseStock: (productId: string, quantity: number, requestId?: string) =>
     Effect.tryPromise({
       try: async () => {
         const res = await fetch(
           `${env.PRODUCT_SERVICE_URL}/products/${productId}/stock/release`,
           {
             method: "POST",
-            headers: headers(),
+            headers: headers(requestId),
             body: JSON.stringify({ quantity }),
           }
         );

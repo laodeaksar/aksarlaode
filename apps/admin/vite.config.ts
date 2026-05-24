@@ -21,8 +21,10 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       port: 5000,
       allowedHosts: true,
+      // X-Frame-Options intentionally omitted in dev — Replit preview embeds the
+      // app in an iframe and DENY would break it. Production builds enforce it via
+      // the reverse-proxy / CDN layer instead.
       headers: {
-        "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "Permissions-Policy": "camera=(), microphone=(), geolocation=()",

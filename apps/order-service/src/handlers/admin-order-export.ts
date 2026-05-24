@@ -2,8 +2,8 @@ import type { Context } from "elysia";
 
 import { env } from "@repo/env/order";
 
-import type { OrderStatus } from "@/models/order.model";
 import { exportOrders } from "@/repository/order.repository";
+import type { OrderStatus } from "@/types";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 // FIX ORD-05: Reduced from 50 000 to 10 000 to limit memory pressure and
@@ -182,6 +182,12 @@ export const adminOrderExportHandler = async ({
           controller.enqueue(encoder.encode(row(doc as Record<string, any>)));
         }
       } catch (err) {
+        console.error(
+          JSON.stringify({
+            event: "order_export_stream_error",
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
         controller.error(err);
       } finally {
         controller.close();

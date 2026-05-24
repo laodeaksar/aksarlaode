@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/models/order.model";
+import type { OrderStatus } from "@repo/database/mongodb";
 
 export type { OrderStatus };
 
@@ -24,4 +24,8 @@ export type CreateOrderBody = {
 export type UpdateStatusBody = {
   status: OrderStatus;
   note?: string;
+};
+
+export type NoteBody = {
+  note: string;
 };

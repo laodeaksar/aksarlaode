@@ -309,3 +309,231 @@ back to a visited page does not re-fetch within 5 minutes.
   toast.error(err.message);
 }
 ```
+
+---
+
+---
+
+# Contributing to `apps/order-service`
+
+Pattern guide derived from a full codebase consistency analysis (May 2026).
+Follow these conventions for every new file or change in this service.
+
+---
+
+## Table of Contents
+
+1. [Project structure](#os-1-project-structure)
+2. [Naming conventions](#os-2-naming-conventions)
+3. [Error handling — Effect-TS](#os-3-error-handling)
+4. [DB access — repository pattern](#os-4-db-access)
+5. [Validation & types](#os-5-validation--types)
+6. [HTTP status mapping](#os-6-http-status-mapping)
+7. [State machine](#os-7-state-machine)
+
+---
+
+## OS-1. Project structure
+
+```
+src/
+  handlers/         # One file per route — thin, no DB access
+    __tests__/      # Bun unit tests alongside handlers
+  routes/           # Elysia route definitions + TypeBox schemas
+  repository/       # All MongoDB access (Effect-TS wrappers)
+  lib/              # Infrastructure: redis, rate-limiter, idempotency, ...
+  types/            # Shared request body types (re-exports from @repo/database)
+  workers/          # BullMQ workers for background jobs
+```
+
+The Mongoose model lives in `@repo/database/mongodb` — **not** in this service.
+Import it from there:
+
+```ts
+import { OrderModel, type OrderStatus } from "@repo/database/mongodb";
+```
+
+---
+
+## OS-2. Naming conventions
+
+| Item | Convention | Example |
+|------|-----------|---------|
+| Handler files | kebab-case | `admin-order-note.ts` |
+| Handler exports | camelCase + `Handler` suffix | `adminOrderNoteHandler` |
+| Route file exports | camelCase + `Routes` suffix | `adminRoutes`, `orderRoutes` |
+| Repository exports | namespace object | `orderRepository.findByOrderId(...)` |
+| TypeBox schemas | PascalCase + `Schema` | `CreateOrderBodySchema` |
+| Shared body types | PascalCase + `Body` | `CreateOrderBody`, `NoteBody` |
+| Error classes | PascalCase + `Error` | `OrderNotFoundError`, `DbError` |
+
+All shared request-body types go in `src/types/index.ts` — never define local
+`type XxxBody` inside a handler file.
+
+---
+
+## OS-3. Error handling — Effect-TS
+
+### Rule: no raw `try/catch` or `throw new Error(...)` in application code
+
+Every error must be a `Data.TaggedError`:
+
+```ts
+// ✅ correct
+class OrderNotFoundError extends Data.TaggedError("OrderNotFoundError")<{
+  id: string;
+}> {}
+
+const fn = (id: string) =>
+  Effect.tryPromise({
+    try: () => OrderModel.findOne({ orderId: id }).lean(),
+    catch: (e) => new DbError({ cause: e }),
+  });
+
+// ❌ wrong — raw throw
+throw new Error("DB query failed");
+
+// ❌ wrong — plain object fail
+yield* Effect.fail({ _tag: "SomeError" as const });
+```
+
+### Error inspection in handlers
+
+Use the `._tag` discriminant to match errors. Cast once with a typed interface:
+
+```ts
+const err = result.cause.error as { _tag: string };
+if (err._tag === "OrderNotFoundError") { ... }
+if (err._tag === "InvalidTransitionError") { ... }
+```
+
+### Exported errors
+
+`OrderConflictError`, `InvalidTransitionError`, and `VALID_TRANSITIONS` are
+exported from `order.repository.ts`. Import them instead of redefining:
+
+```ts
+import {
+  OrderConflictError,
+  InvalidTransitionError,
+  VALID_TRANSITIONS,
+} from "@/repository/order.repository";
+```
+
+### Logging levels
+
+| Situation | Level | Method |
+|-----------|-------|--------|
+| Normal business event | info | `console.info(JSON.stringify({...}))` |
+| Expected edge case (rate limit, fraud) | warn | `console.warn(JSON.stringify({...}))` |
+| Unexpected failure | error | `console.error(JSON.stringify({...}))` |
+
+All log lines must be **single JSON objects** — no raw string interpolation.
+
+---
+
+## OS-4. DB access — repository pattern
+
+All MongoDB access goes through `orderRepository`. No handler may import
+`OrderModel` directly.
+
+### `findAll` / `exportOrders` / `summarize` — use the shared query builder
+
+The `buildMatchQuery` helper inside the repository converts the standard filter
+shape (`userId`, `status[]`, `dateFrom`, `dateTo`) into a MongoDB query object.
+Do not duplicate this logic in new query methods — call or extend it instead.
+
+### N+1 awareness
+
+- `updateStatus` does two DB round-trips (read → write). When callers already
+  have the document (e.g. `cancel.ts` via `checkOwnership`), they may validate
+  the transition locally and skip the extra read.
+- The reconciliation sweep loops over expired orders sequentially; stock release
+  calls are parallelised within each order via `Effect.all`.
+
+### Generator / cursor for large result sets
+
+Any export or bulk operation that may return > 1 000 rows **must** use a
+MongoDB cursor / async generator pattern — never buffer the full result set:
+
+```ts
+export async function* exportOrders(filters, maxRows = 50_000) {
+  const cursor = OrderModel.find(query).limit(maxRows).lean().cursor();
+  for await (const doc of cursor) yield doc;
+}
+```
+
+---
+
+## OS-5. Validation & types
+
+### TypeBox schemas in routes, TypeScript types in `@/types`
+
+Routes define TypeBox schemas for Elysia's runtime validation.
+Handler code works with the corresponding TypeScript types from `@/types`.
+Never duplicate a schema as a type — import and cast in the handler:
+
+```ts
+// routes/order.routes.ts
+const CreateOrderBodySchema = t.Object({ ... });
+
+// handlers/create.ts
+import type { CreateOrderBody } from "@/types";
+const input = body as CreateOrderBody;
+```
+
+### Pagination query params
+
+`page` and `limit` are declared as `t.String()` in routes (Elysia receives them
+as strings from the query string) and parsed with `Number()` in handlers.
+Always clamp: `Math.max(1, Number(q.page ?? 1))` and `Math.min(100, ...)`.
+
+### No `any` in aggregate callbacks
+
+Mongoose `aggregate()` returns `unknown[]`. Use typed interfaces for pipeline
+result shapes:
+
+```ts
+type RawStatusBucket = { _id: string; orderCount: number; ... };
+(facetResult.byStatus as RawStatusBucket[]).map((b) => ({ ... }));
+```
+
+---
+
+## OS-6. HTTP status mapping
+
+| Situation | Status | `code` field |
+|-----------|--------|--------------|
+| Order not found | 404 | `ORDER_NOT_FOUND` |
+| Not owner / forbidden role | 403 | `FORBIDDEN` |
+| Invalid state transition | 422 | `INVALID_STATUS_TRANSITION` |
+| Already in terminal state | 409 | `INVALID_STATUS_TRANSITION` |
+| Duplicate order / in-flight | 409 | `DUPLICATE_ORDER_ID` / `REQUEST_IN_FLIGHT` |
+| Rate limited | 429 | `RATE_LIMIT_EXCEEDED` |
+| Upstream service error | 502 | `PRODUCT_SERVICE_UNAVAILABLE` |
+| Unexpected failure | 500 | omit or `INTERNAL_ERROR` |
+
+Every error response must include both `error` (human-readable) and `code`
+(machine-readable) fields. The `code` field must never be omitted.
+
+---
+
+## OS-7. State machine
+
+The canonical transition map lives in `order.repository.ts` as
+`export const VALID_TRANSITIONS`. It is the **single source of truth** — import
+it wherever transition logic is needed; never redeclare it.
+
+```
+PENDING_PAYMENT → PAID | CANCELLED
+PAID            → PROCESSING | CANCELLED | REFUNDED
+PROCESSING      → SHIPPED | CANCELLED
+SHIPPED         → DELIVERED | CANCELLED
+DELIVERED       → REFUNDED
+CANCELLED       → (terminal)
+REFUNDED        → (terminal)
+```
+
+The repository enforces the state machine on every write.
+Handlers may read `VALID_TRANSITIONS` to produce detailed user-facing error
+messages but must not enforce it independently.

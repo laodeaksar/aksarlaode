@@ -121,14 +121,15 @@ export const adminOrderTimelineHandler = async ({
       : now.getTime();
   const totalDurationMs = firstTs !== null ? lastTs - firstTs : 0;
 
+  // order.createdAt is typed on OrderDocument (Mongoose timestamps: true)
+  const createdAtRaw = order.createdAt;
+
   return {
     orderId: order.orderId,
     userId: order.userId,
     currentStatus: order.status,
     grandTotal: order.grandTotal,
-    createdAt: (order as any).createdAt
-      ? new Date((order as any).createdAt).toISOString()
-      : null,
+    createdAt: createdAtRaw ? new Date(createdAtRaw).toISOString() : null,
     isTerminal,
     summary: {
       eventCount: history.length,

@@ -3,7 +3,10 @@ import { Effect } from "effect";
 import type { Context } from "elysia";
 
 import { shapeOrder } from "@/lib/shape-order";
-import { orderRepository } from "@/repository/order.repository";
+import {
+  OrderConflictError,
+  orderRepository,
+} from "@/repository/order.repository";
 
 export const cancelHandler = async ({ params, headers, set }: Context) => {
   const { orderId } = params as { orderId: string };
@@ -13,8 +16,13 @@ export const cancelHandler = async ({ params, headers, set }: Context) => {
     Effect.gen(function* () {
       const order = yield* orderRepository.checkOwnership(orderId, userId);
 
+      // Only PENDING_PAYMENT and PAID orders are customer-cancellable.
+      // We perform this check here (not in updateStatus) because we already
+      // have the document from checkOwnership — avoids a redundant DB fetch.
       if (order.status !== "PENDING_PAYMENT" && order.status !== "PAID") {
-        return yield* Effect.fail({ _tag: "ConflictError" as const });
+        return yield* Effect.fail(
+          new OrderConflictError({ reason: "invalid_transition" })
+        );
       }
 
       return yield* orderRepository.updateStatus(orderId, "CANCELLED");
@@ -27,7 +35,7 @@ export const cancelHandler = async ({ params, headers, set }: Context) => {
       set.status = 404;
       return { error: "Order not found", code: "ORDER_NOT_FOUND" };
     }
-    if (err._tag === "OrderConflictError" || err._tag === "ConflictError") {
+    if (err._tag === "OrderConflictError") {
       set.status = 409;
       return {
         error: "Cannot cancel order in its current status",

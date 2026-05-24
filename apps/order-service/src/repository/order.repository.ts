@@ -4,19 +4,21 @@ import {
   OrderModel,
   type OrderDocument,
   type OrderStatus,
-} from "@/models/order.model";
+} from "@repo/database/mongodb";
+
+// ── Tagged errors ─────────────────────────────────────────────────────────────
 
 class OrderNotFoundError extends Data.TaggedError("OrderNotFoundError")<{
   id: string;
 }> {}
-class OrderConflictError extends Data.TaggedError("OrderConflictError")<{
+export class OrderConflictError extends Data.TaggedError("OrderConflictError")<{
   reason: string;
 }> {}
 class DbError extends Data.TaggedError("DbError")<{ cause: unknown }> {}
 class DuplicateOrderError extends Data.TaggedError("DuplicateOrderError")<{
   orderId: string;
 }> {}
-class InvalidTransitionError extends Data.TaggedError(
+export class InvalidTransitionError extends Data.TaggedError(
   "InvalidTransitionError"
 )<{
   orderId: string;
@@ -24,14 +26,40 @@ class InvalidTransitionError extends Data.TaggedError(
   to: string;
 }> {}
 
-// Valid status transitions — terminal states (CANCELLED, REFUNDED) have no outgoing edges
-const VALID_TRANSITIONS: Partial<Record<OrderStatus, Set<OrderStatus>>> = {
-  PENDING_PAYMENT: new Set(["PAID", "CANCELLED"]),
-  PAID: new Set(["PROCESSING", "CANCELLED", "REFUNDED"]),
-  PROCESSING: new Set(["SHIPPED", "CANCELLED"]),
-  SHIPPED: new Set(["DELIVERED", "CANCELLED"]),
-  DELIVERED: new Set(["REFUNDED"]),
-};
+// ── State machine ─────────────────────────────────────────────────────────────
+// Single canonical definition — import this in handlers that need it for
+// user-facing error messages; do not redeclare it locally.
+export const VALID_TRANSITIONS: Partial<Record<OrderStatus, Set<OrderStatus>>> =
+  {
+    PENDING_PAYMENT: new Set(["PAID", "CANCELLED"]),
+    PAID: new Set(["PROCESSING", "CANCELLED", "REFUNDED"]),
+    PROCESSING: new Set(["SHIPPED", "CANCELLED"]),
+    SHIPPED: new Set(["DELIVERED", "CANCELLED"]),
+    DELIVERED: new Set(["REFUNDED"]),
+  };
+
+// ── Shared query builder ──────────────────────────────────────────────────────
+// Avoids repeating the same date-range + status filter construction in
+// findAll, summarize, and exportOrders.
+function buildMatchQuery(filters: {
+  userId?: string;
+  status?: OrderStatus[];
+  dateFrom?: Date;
+  dateTo?: Date;
+}): Record<string, unknown> {
+  const query: Record<string, unknown> = {};
+  if (filters.userId) query.userId = filters.userId;
+  if (filters.status?.length) query.status = { $in: filters.status };
+  if (filters.dateFrom || filters.dateTo) {
+    const range: Record<string, Date> = {};
+    if (filters.dateFrom) range.$gte = filters.dateFrom;
+    if (filters.dateTo) range.$lte = filters.dateTo;
+    query.createdAt = range;
+  }
+  return query;
+}
+
+// ── Repository functions ──────────────────────────────────────────────────────
 
 const create = (data: Omit<OrderDocument, keyof Document>) =>
   Effect.tryPromise({
@@ -217,25 +245,9 @@ export type AdminOrderFilters = {
 const findAll = (filters: AdminOrderFilters = {}) =>
   Effect.tryPromise({
     try: async () => {
-      const {
-        userId,
-        status,
-        dateFrom,
-        dateTo,
-        page = 1,
-        limit = 20,
-      } = filters;
+      const { page = 1, limit = 20, ...matchFilters } = filters;
       const skip = (page - 1) * limit;
-
-      const query: Record<string, unknown> = {};
-      if (userId) query.userId = userId;
-      if (status?.length) query.status = { $in: status };
-      if (dateFrom || dateTo) {
-        const range: Record<string, Date> = {};
-        if (dateFrom) range.$gte = dateFrom;
-        if (dateTo) range.$lte = dateTo;
-        query.createdAt = range;
-      }
+      const query = buildMatchQuery(matchFilters);
 
       const [items, total] = await Promise.all([
         OrderModel.find(query)
@@ -301,13 +313,21 @@ export type OrderSummary = {
   dailyTrend: DailyBucket[];
 };
 
-// Revenue-generating statuses (payment was received)
-const PAID_STATUSES_SET = new Set([
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-]);
+// ── Aggregate result shapes (raw MongoDB output before mapping) ───────────────
+type RawStatusBucket = {
+  _id: string;
+  orderCount: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  minOrderValue: number;
+  maxOrderValue: number;
+};
+
+type RawDailyBucket = {
+  _id: string; // "YYYY-MM-DD"
+  orderCount: number;
+  revenue: number;
+};
 
 /**
  * Single aggregation pipeline that returns:
@@ -318,17 +338,7 @@ const PAID_STATUSES_SET = new Set([
 const summarize = (filters: SummaryFilters = {}) =>
   Effect.tryPromise({
     try: async (): Promise<OrderSummary> => {
-      const { userId, dateFrom, dateTo } = filters;
-
-      // Build $match stage
-      const match: Record<string, unknown> = {};
-      if (userId) match.userId = userId;
-      if (dateFrom || dateTo) {
-        const range: Record<string, Date> = {};
-        if (dateFrom) range.$gte = dateFrom;
-        if (dateTo) range.$lte = dateTo;
-        match.createdAt = range;
-      }
+      const match = buildMatchQuery(filters);
 
       const [facetResult] = await OrderModel.aggregate([
         ...(Object.keys(match).length ? [{ $match: match }] : []),
@@ -357,7 +367,6 @@ const summarize = (filters: SummaryFilters = {}) =>
                   totalRevenue: { $sum: "$grandTotal" },
                   sumGrandTotal: { $sum: "$grandTotal" },
                   count: { $sum: 1 },
-                  // Tag each doc so we can sum only paid/cancelled/refunded
                   paidRevenue: {
                     $sum: {
                       $cond: [
@@ -390,7 +399,7 @@ const summarize = (filters: SummaryFilters = {}) =>
                 },
               },
             ],
-            // ── Daily trend (always computed; we slice to 90 days in JS) ───
+            // ── Daily trend (always computed; sliced to 90 days in JS) ─────
             dailyTrend: [
               {
                 $group: {
@@ -422,26 +431,27 @@ const summarize = (filters: SummaryFilters = {}) =>
           : 0;
 
       // ── Shape byStatus ─────────────────────────────────────────────────────
-      const byStatus: StatusBucket[] = (facetResult?.byStatus ?? []).map(
-        (b: any) => ({
-          status: b._id,
-          orderCount: b.orderCount,
-          totalRevenue: Math.round(b.totalRevenue * 100) / 100,
-          avgOrderValue: Math.round(b.avgOrderValue * 100) / 100,
-          minOrderValue: Math.round(b.minOrderValue * 100) / 100,
-          maxOrderValue: Math.round(b.maxOrderValue * 100) / 100,
-        })
-      );
+      const byStatus: StatusBucket[] = (
+        (facetResult?.byStatus ?? []) as RawStatusBucket[]
+      ).map((b) => ({
+        status: b._id,
+        orderCount: b.orderCount,
+        totalRevenue: Math.round(b.totalRevenue * 100) / 100,
+        avgOrderValue: Math.round(b.avgOrderValue * 100) / 100,
+        minOrderValue: Math.round(b.minOrderValue * 100) / 100,
+        maxOrderValue: Math.round(b.maxOrderValue * 100) / 100,
+      }));
 
       // ── Daily trend — only include when date window ≤ 90 days ─────────────
       const windowDays =
-        dateFrom && dateTo
-          ? (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24)
+        filters.dateFrom && filters.dateTo
+          ? (filters.dateTo.getTime() - filters.dateFrom.getTime()) /
+            (1000 * 60 * 60 * 24)
           : null;
 
       const dailyTrend: DailyBucket[] =
         windowDays === null || windowDays <= 90
-          ? (facetResult?.dailyTrend ?? []).map((d: any) => ({
+          ? ((facetResult?.dailyTrend ?? []) as RawDailyBucket[]).map((d) => ({
               date: d._id,
               orderCount: d.orderCount,
               revenue: Math.round(d.revenue * 100) / 100,
@@ -450,9 +460,9 @@ const summarize = (filters: SummaryFilters = {}) =>
 
       return {
         period: {
-          dateFrom: dateFrom?.toISOString() ?? null,
-          dateTo: dateTo?.toISOString() ?? null,
-          userId: userId ?? null,
+          dateFrom: filters.dateFrom?.toISOString() ?? null,
+          dateTo: filters.dateTo?.toISOString() ?? null,
+          userId: filters.userId ?? null,
         },
         overall: {
           totalOrders,
@@ -481,16 +491,7 @@ export async function* exportOrders(
   filters: Omit<AdminOrderFilters, "page" | "limit">,
   maxRows = 50_000
 ) {
-  const { userId, status, dateFrom, dateTo } = filters;
-  const query: Record<string, unknown> = {};
-  if (userId) query.userId = userId;
-  if (status?.length) query.status = { $in: status };
-  if (dateFrom || dateTo) {
-    const range: Record<string, Date> = {};
-    if (dateFrom) range.$gte = dateFrom;
-    if (dateTo) range.$lte = dateTo;
-    query.createdAt = range;
-  }
+  const query = buildMatchQuery(filters);
 
   const cursor = OrderModel.find(query)
     .sort({ createdAt: -1 })
@@ -533,8 +534,6 @@ const addNote = (orderId: string, note: string, changedBy: string) =>
       return yield* Effect.fail(new OrderNotFoundError({ id: orderId }));
     return doc;
   });
-
-export { InvalidTransitionError };
 
 export const orderRepository = {
   create,

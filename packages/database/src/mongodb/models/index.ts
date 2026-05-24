@@ -1,4 +1,3 @@
-export { connectMongo, mongoose } from "./client";
 export {
   OrderModel,
   type OrderDocument,
@@ -6,4 +5,4 @@ export {
   type LineItem,
   type Address,
   type StatusEvent,
-} from "./models";
+} from "./order.model";

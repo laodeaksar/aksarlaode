@@ -29,7 +29,7 @@ export const releaseStockHandler = async ({
 
   if (orderResult._tag === "Failure") {
     set.status = 404;
-    return { error: "Order not found" };
+    return { error: "Order not found", code: "ORDER_NOT_FOUND" };
   }
 
   const order = orderResult.value;

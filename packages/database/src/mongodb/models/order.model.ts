@@ -8,7 +8,7 @@ const LineItemSchema = new Schema(
     sku: { type: String, required: true },
     imageUrl: { type: String },
     price: { type: Number, required: true }, // snapshot at order time
-    quantity: { type: Number, required: true },
+    quantity: { type: Number, required: true, min: 1 },
     subtotal: { type: Number, required: true }, // price * quantity
   },
   { _id: false }
@@ -61,10 +61,10 @@ const OrderSchema = new Schema(
     items: { type: [LineItemSchema], required: true },
     shippingAddress: { type: AddressSchema, required: true },
     statusHistory: { type: [StatusEventSchema], default: [] },
-    totalAmount: { type: Number, required: true },
-    shippingFee: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    grandTotal: { type: Number, required: true }, // totalAmount + shippingFee - discountAmount
+    totalAmount: { type: Number, required: true, min: 0 },
+    shippingFee: { type: Number, default: 0, min: 0 },
+    discountAmount: { type: Number, default: 0, min: 0 },
+    grandTotal: { type: Number, required: true, min: 0 }, // totalAmount + shippingFee - discountAmount
     notes: { type: String },
     cancelledAt: { type: Date },
     paidAt: { type: Date },
@@ -77,23 +77,19 @@ const OrderSchema = new Schema(
   }
 );
 
+// ── Indexes ───────────────────────────────────────────────
 // Compound indexes for common query patterns
 OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
+// Reconciliation sweep: quickly find stale pending orders
+OrderSchema.index(
+  { status: 1, createdAt: 1 },
+  { partialFilterExpression: { status: "PENDING_PAYMENT" } }
+);
+// Revenue reporting: filter paid orders by payment date
+OrderSchema.index({ paidAt: -1 }, { sparse: true });
 
-export type OrderDocument = Document & {
-  orderId: string;
-  userId: string;
-  status: OrderStatus;
-  items: LineItem[];
-  shippingAddress: Address;
-  statusHistory: StatusEvent[];
-  totalAmount: number;
-  shippingFee: number;
-  discountAmount: number;
-  grandTotal: number;
-  notes?: string;
-};
+// ── TypeScript types ──────────────────────────────────────
 
 export type OrderStatus =
   | "PENDING_PAYMENT"
@@ -129,6 +125,35 @@ export type StatusEvent = {
   note?: string;
   changedBy: string;
   timestamp: Date;
+};
+
+/**
+ * Typed representation of an Order MongoDB document.
+ *
+ * Includes Mongoose-managed timestamp fields (createdAt, updatedAt) and
+ * domain-specific timestamp fields (paidAt, shippedAt, deliveredAt,
+ * cancelledAt) so callers never need `as any` to access them.
+ */
+export type OrderDocument = Document & {
+  orderId: string;
+  userId: string;
+  status: OrderStatus;
+  items: LineItem[];
+  shippingAddress: Address;
+  statusHistory: StatusEvent[];
+  totalAmount: number;
+  shippingFee: number;
+  discountAmount: number;
+  grandTotal: number;
+  notes?: string;
+  // Mongoose timestamps: true
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Domain timestamps — set when the order reaches each status
+  paidAt?: Date;
+  shippedAt?: Date;
+  deliveredAt?: Date;
+  cancelledAt?: Date;
 };
 
 export const OrderModel = model<OrderDocument>("Order", OrderSchema);

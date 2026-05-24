@@ -3,10 +3,7 @@ import { Effect } from "effect";
 import type { Context } from "elysia";
 
 import { orderRepository } from "@/repository/order.repository";
-
-type NoteBody = {
-  note: string;
-};
+import type { NoteBody } from "@/types";
 
 export const adminOrderNoteHandler = async ({
   params,

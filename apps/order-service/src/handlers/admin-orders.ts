@@ -3,11 +3,11 @@ import { Effect } from "effect";
 import type { Context } from "elysia";
 
 import { shapeOrder } from "@/lib/shape-order";
-import type { OrderStatus } from "@/models/order.model";
 import {
   orderRepository,
   type AdminOrderFilters,
 } from "@/repository/order.repository";
+import type { OrderStatus } from "@/types";
 
 const VALID_STATUSES = new Set<OrderStatus>([
   "PENDING_PAYMENT",

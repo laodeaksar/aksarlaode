@@ -5,13 +5,18 @@ import type { Context } from "elysia";
 import { env } from "@repo/env/order";
 
 import { shapeOrder } from "@/lib/shape-order";
-import type { OrderStatus } from "@/models/order.model";
-import { orderRepository } from "@/repository/order.repository";
+import {
+  InvalidTransitionError,
+  orderRepository,
+  VALID_TRANSITIONS,
+} from "@/repository/order.repository";
 import type { UpdateStatusBody } from "@/types";
+import type { OrderStatus } from "@/types";
 
-// FIX ORD-01: explicit state machine — only valid forward transitions are
-// permitted. Prevents admin from accidentally or maliciously moving an order
-// backwards (e.g. DELIVERED → PENDING_PAYMENT) or skipping stages.
+// FIX ORD-01: VALID_TRANSITIONS is the single canonical state machine, imported
+// from order.repository — not redeclared here. Handlers use it only to produce
+// detailed user-facing error messages; the repository enforces the rule on every
+// DB write.
 //
 // Rationale per transition:
 //   PENDING_PAYMENT → PAID        payment confirmed (manual override)
@@ -26,13 +31,6 @@ import type { UpdateStatusBody } from "@/types";
 //   DELIVERED       → REFUNDED    post-delivery refund
 //   CANCELLED       → (none)      terminal state
 //   REFUNDED        → (none)      terminal state
-const VALID_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  PENDING_PAYMENT: ["PAID", "CANCELLED"],
-  PAID: ["PROCESSING", "CANCELLED", "REFUNDED"],
-  PROCESSING: ["SHIPPED", "CANCELLED"],
-  SHIPPED: ["DELIVERED", "CANCELLED"],
-  DELIVERED: ["REFUNDED"],
-};
 
 export const updateStatusHandler = async ({
   params,
@@ -81,10 +79,10 @@ export const updateStatusHandler = async ({
     };
   }
 
-  if (!allowed.includes(status as OrderStatus)) {
+  if (!allowed.has(status as OrderStatus)) {
     set.status = 422;
     return {
-      error: `Transition '${currentStatus}' → '${status}' is not allowed. Valid: [${allowed.join(", ")}]`,
+      error: `Transition '${currentStatus}' → '${status}' is not allowed. Valid: [${[...allowed].join(", ")}]`,
       code: "INVALID_STATUS_TRANSITION",
     };
   }
@@ -101,7 +99,10 @@ export const updateStatusHandler = async ({
 
   if (result._tag === "Failure") {
     const err = result.cause.error as { _tag: string };
-    if (err._tag === "OrderNotFoundError") {
+    if (
+      err._tag === "OrderNotFoundError" ||
+      err._tag === "InvalidTransitionError"
+    ) {
       set.status = 404;
       return { error: "Order not found", code: "ORDER_NOT_FOUND" };
     }

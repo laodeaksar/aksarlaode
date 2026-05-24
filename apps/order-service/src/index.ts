@@ -8,6 +8,7 @@ import { env } from "@repo/env/order";
 import { healthHandler } from "./handlers/health";
 import { paymentWebhookHandler } from "./handlers/payment-webhook";
 import { requestLogger } from "./lib/request-logger";
+import { startConfigWatcher } from "./lib/store-config";
 import { adminRoutes } from "./routes/admin.routes";
 import { orderRoutes } from "./routes/order.routes";
 import {
@@ -156,6 +157,10 @@ const app = new Elysia()
 
 async function main() {
   await connectMongo();
+
+  // Subscribe to Redis store:config:updated so live setting changes
+  // (written by the admin settings page) reload without a restart.
+  startConfigWatcher();
 
   // ── Start reconciliation worker + schedule repeatable sweep job ───────────
   const reconciliationWorker = createReconciliationWorker();

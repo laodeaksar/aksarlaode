@@ -68,14 +68,14 @@ const app = new Elysia()
   .use(withUserContext)
 
   // ── Request logger (requestId available here after derive) ─────────────
-  .onRequest(({ request, headers }) => {
+  .onRequest(({ request }) => {
     console.info(
       JSON.stringify({
         event: "request_in",
         method: request.method,
         path: new URL(request.url).pathname,
-        requestId: headers["x-request-id"] ?? null,
-        userId: headers["x-user-id"] ?? null,
+        requestId: request.headers.get("x-request-id"),
+        userId: request.headers.get("x-user-id"),
       })
     );
   })
@@ -127,7 +127,7 @@ const app = new Elysia()
 
     // Unhandled errors
     console.error(
-      JSON.stringify({ event: "unhandled_error", code, message: error.message })
+      JSON.stringify({ event: "unhandled_error", code, message: (error as Error).message })
     );
     set.status = 500;
     return { error: "Internal server error", code: "INTERNAL_ERROR" };

@@ -90,9 +90,12 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.0
         version: 8.21.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@tanstack/zod-adapter':
+      '@tanstack/react-virtual':
+        specifier: ^3.13.25
+        version: 3.13.25(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@tanstack/valibot-adapter':
         specifier: ^1.167.0
-        version: 1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(zod@4.4.3)
+        version: 1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(valibot@1.4.0(typescript@6.0.3))
       effect:
         specifier: ^3.15.0
         version: 3.21.2
@@ -145,6 +148,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.18)
+      '@repo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@repo/env':
         specifier: workspace:*
         version: link:../../packages/env
@@ -231,9 +237,9 @@ importers:
       bullmq:
         specifier: ^5.49.0
         version: 5.76.8
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
+      valibot:
+        specifier: ^1.4.0
+        version: 1.4.0(typescript@5.9.3)
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -314,6 +320,9 @@ importers:
       hono:
         specifier: ^4.7.0
         version: 4.12.18
+      ioredis:
+        specifier: ^5.10.1
+        version: 5.10.1
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -480,13 +489,10 @@ importers:
     dependencies:
       '@t3-oss/env-core':
         specifier: ^0.13.11
-        version: 0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@3.25.76)
+        version: 0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@4.4.3)
       valibot:
         specifier: ^1.4.0
         version: 1.4.0(typescript@5.9.3)
-      zod:
-        specifier: ^3.24.0
-        version: 3.25.76
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -2521,6 +2527,12 @@ packages:
       react: ^19.0.0
       react-dom: ^19.0.0
 
+  '@tanstack/react-virtual@3.13.25':
+    resolution: {integrity: sha512-bmNoqMu6gcAW9JGrKVB0Q1tN1i5RONZF8r1fW0bbE4Oyf3DwEGnzzQJ2OW+Ozg1P4s8PyugkHg2ULZoFQN+cqw==}
+    peerDependencies:
+      react: ^19.0.0
+      react-dom: ^19.0.0
+
   '@tanstack/router-core@1.171.2':
     resolution: {integrity: sha512-sUd+BhGYkBF64LVhmOHnYsc1AutPNch/huohEXiXL4IUgmk17Gy+RkUazvjQhptVdYW5QT+qtATrUr2cQZNHFA==}
     engines: {node: '>=20.19'}
@@ -2606,16 +2618,19 @@ packages:
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
 
-  '@tanstack/virtual-file-routes@1.162.0':
-    resolution: {integrity: sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA==}
-    engines: {node: '>=20.19'}
-
-  '@tanstack/zod-adapter@1.167.0':
-    resolution: {integrity: sha512-5Wlm5teSu+pz3KKhfa1ESsiOJXbvV6ITr1vKOQKi9yEdtozp6VefEzxzafLLida97mnL2tmauva/njokQrG5CA==}
+  '@tanstack/valibot-adapter@1.167.0':
+    resolution: {integrity: sha512-W/sN+BnRrMeW3QEtSBf6hUhNFaa/QMs4XnPgSnme5RFt+hDRTQYs/K9aW+TOy92u8VsnQ82uJ2HX/vmntTeqIQ==}
     engines: {node: '>=20.19'}
     peerDependencies:
       '@tanstack/react-router': '>=1.43.2'
-      zod: ^3.23.8
+      valibot: ^1.0.0 || ^1.0.0-beta.5 || ^1.0.0-rc
+
+  '@tanstack/virtual-core@3.15.0':
+    resolution: {integrity: sha512-0AwPGx0I8QxPYjAxShT/+z+ZOe9u8mW5rsXvivCTjRfRmz9a43+3mRyi4wwlyoUqOC56q/jatKa0Bh9M99BEHQ==}
+
+  '@tanstack/virtual-file-routes@1.162.0':
+    resolution: {integrity: sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA==}
+    engines: {node: '>=20.19'}
 
   '@tokenizer/inflate@0.4.1':
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
@@ -6704,11 +6719,11 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@3.25.76)':
+  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(valibot@1.4.0(typescript@5.9.3))(zod@4.4.3)':
     optionalDependencies:
       typescript: 5.9.3
       valibot: 1.4.0(typescript@5.9.3)
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@tailwindcss/node@4.3.0':
     dependencies:
@@ -6911,6 +6926,12 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
+  '@tanstack/react-virtual@3.13.25(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      '@tanstack/virtual-core': 3.15.0
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
+
   '@tanstack/router-core@1.171.2':
     dependencies:
       '@tanstack/history': 1.162.0
@@ -7042,12 +7063,14 @@ snapshots:
 
   '@tanstack/table-core@8.21.3': {}
 
-  '@tanstack/virtual-file-routes@1.162.0': {}
-
-  '@tanstack/zod-adapter@1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(zod@4.4.3)':
+  '@tanstack/valibot-adapter@1.167.0(@tanstack/react-router@1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(valibot@1.4.0(typescript@6.0.3))':
     dependencies:
       '@tanstack/react-router': 1.170.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      zod: 4.4.3
+      valibot: 1.4.0(typescript@6.0.3)
+
+  '@tanstack/virtual-core@3.15.0': {}
+
+  '@tanstack/virtual-file-routes@1.162.0': {}
 
   '@tokenizer/inflate@0.4.1':
     dependencies:

@@ -21,6 +21,12 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       port: 5000,
       allowedHosts: true,
+      headers: {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      },
     },
     define: {
       "process.env.PUBLIC_API_URL": JSON.stringify(PUBLIC_API_URL),

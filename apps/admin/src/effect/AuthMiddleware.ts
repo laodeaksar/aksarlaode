@@ -30,9 +30,22 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookies } from "@tanstack/react-start/server";
 
-import { can, type Permission } from "@/lib/rbac";
+import { Schema } from "effect";
+
 import type { Session } from "@/lib/auth";
+import { can, type Permission } from "@/lib/rbac";
+
 import { UnauthorizedError } from "./Errors";
+
+// Minimal Effect Schema for session validation inside this middleware.
+// Keeps AuthMiddleware self-contained and avoids importing from server/auth.ts
+// (which would create an effect/ → server/ dependency inversion).
+// Full schema validation (including name field) lives in server/auth.ts.
+const MinimalSessionSchema = Schema.Struct({
+  id: Schema.String.pipe(Schema.minLength(1)),
+  email: Schema.String.pipe(Schema.minLength(1)),
+  role: Schema.Literal("CUSTOMER", "ADMIN", "OWNER", "FINANCE"),
+});
 
 // ── Session resolution ──────────────────────────────────────────────────────
 // Exported so auditMiddleware can import and reuse this instead of
@@ -58,23 +71,17 @@ export async function resolveAdminSession(
     if (!res.ok) return null;
 
     const body = (await res.json()) as unknown;
-    const raw =
-      (body as { data?: unknown } | null)?.data ??
-      (body as unknown);
+    const raw = (body as { data?: unknown } | null)?.data ?? (body as unknown);
 
-    // Minimal structural validation — we only need id + role for authz.
-    // Full schema validation lives in server/auth.ts (getSessionFn).
-    if (
-      raw !== null &&
-      typeof raw === "object" &&
-      typeof (raw as Record<string, unknown>)["id"] === "string" &&
-      typeof (raw as Record<string, unknown>)["role"] === "string" &&
-      typeof (raw as Record<string, unknown>)["email"] === "string"
-    ) {
-      return raw as Session;
-    }
+    // Validate the session shape with Effect Schema before trusting it.
+    // This prevents silent type confusion if the auth service returns
+    // an unexpected payload or the Session interface gains required fields.
+    const parsed = Schema.decodeUnknownEither(MinimalSessionSchema)(raw);
+    if (parsed._tag === "Left") return null;
 
-    return null;
+    // Cast is safe: MinimalSessionSchema covers all fields required for authz.
+    // The full Session type (including `name`) is validated in getSessionFn.
+    return parsed.right as unknown as Session;
   } catch {
     return null;
   }
@@ -90,8 +97,7 @@ export type AuthMiddlewareContext = {
 
 // ── requirePermission ───────────────────────────────────────────────────────
 
-const apiUrl = () =>
-  process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
+const apiUrl = () => process.env["PUBLIC_API_URL"] ?? "http://localhost:3000";
 
 /**
  * Factory that returns a server-only TanStack Start middleware enforcing

@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
+import { startConfigWatcher } from "./lib/store-config";
 import paymentRoutes from "./routes/payment.routes";
 import webhookRoutes from "./routes/webhook.routes";
 import type { AppEnv } from "./types";
@@ -10,6 +11,10 @@ const app = new Hono<AppEnv>();
 app.route("/payments", paymentRoutes);
 app.route("/webhooks", webhookRoutes);
 app.get("/health", (c) => c.json({ status: "ok", service: "payment" }));
+
+// Subscribe to Redis store:config:updated so admin settings changes
+// (e.g. payment expiry window) take effect without a restart.
+startConfigWatcher();
 
 const PORT = Number(process.env.PORT) || 3004;
 serve({ fetch: app.fetch, port: PORT, hostname: "localhost" }, () => {

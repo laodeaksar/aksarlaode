@@ -12,6 +12,7 @@ import { RootDocument } from "@/components/layout/root-document";
 import { DefaultCatchBoundary, NotFound } from "@/components/shared";
 import {
   hasAnyAdminRole,
+  queryKeys,
   silentRefresh,
   type RouterContext,
   type Session,
@@ -23,6 +24,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Admin — MyEcommerce" },
+      {
+        // frame-ancestors and X-Frame-Options are HTTP-header-only directives;
+        // they are already set via vite.config.ts server.headers (dev) and
+        // should be set by the deployment reverse proxy in production.
+        httpEquiv: "Content-Security-Policy",
+        content: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: https: blob:",
+          "connect-src 'self' *",
+          "font-src 'self' data:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; "),
+      },
     ],
     links: [
       {
@@ -42,7 +60,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     const { queryClient } = context;
 
     if (location.pathname.startsWith("/login")) {
-      const cached = queryClient.getQueryData<Session>(["session"]);
+      const cached = queryClient.getQueryData<Session>(queryKeys.session);
       if (cached && hasAnyAdminRole(cached.role)) {
         throw redirect({ to: "/dashboard" });
       }
@@ -50,7 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }
 
     let session = await queryClient.fetchQuery({
-      queryKey: ["session"],
+      queryKey: queryKeys.session,
       queryFn: getSessionFn,
       staleTime: 2 * 60 * 1_000,
     });
@@ -58,9 +76,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     if (!session) {
       const refreshed = await silentRefresh();
       if (refreshed) {
-        queryClient.removeQueries({ queryKey: ["session"] });
+        queryClient.removeQueries({ queryKey: queryKeys.session });
         session = await queryClient.fetchQuery({
-          queryKey: ["session"],
+          queryKey: queryKeys.session,
           queryFn: getSessionFn,
           staleTime: 0,
         });

@@ -94,6 +94,9 @@ export const InviteUserBody = t.Object({
     description: "Role to assign. OWNER cannot be invited.",
   }),
   name: t.Optional(
-    t.String({ minLength: 1, description: "Display name (derived from email if omitted)" })
+    t.String({
+      minLength: 1,
+      description: "Display name (derived from email if omitted)",
+    })
   ),
 });

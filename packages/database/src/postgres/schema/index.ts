@@ -6,4 +6,5 @@ export * from "./products";
 export * from "./payments";
 export * from "./payment-audit-log";
 export * from "./admin-audit-log";
+export * from "./store-settings";
 export * from "./relations";

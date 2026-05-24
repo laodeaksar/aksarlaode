@@ -1,18 +1,19 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
+import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listAdminUsersFn } from "@/server/users";
 import { usersSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/users")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "users:manage")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "users:manage"))
+      throw redirect({ to: "/forbidden" });
   },
 
-  validateSearch: zodValidator(usersSearchSchema),
+  validateSearch: valibotValidator(usersSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/users")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["admin-users", { page: deps.page ?? 1, search: deps.search }],
+      queryKey: queryKeys.adminUsers.list({ page: deps.page ?? 1, search: deps.search }),
       queryFn: () =>
         listAdminUsersFn({
           data: {

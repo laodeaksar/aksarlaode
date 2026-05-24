@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Form, reset, useField, useForm } from "@formisch/react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { Form, reset, useField, useForm } from "@formisch/react";
 
 import {
   AlertDialog,
@@ -30,10 +31,13 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Textarea } from "@repo/ui/components/textarea";
 
+import { ShoppingCartIcon } from "lucide-react";
+
 import { getOrderFn, updateOrderStatusFn } from "@/server/orders";
 import { StatusUpdateSchema, type StatusFormFields } from "@/schemas/forms";
 import { PageHeader } from "@/components/layout/page-header";
-import { can, toast, useSession } from "@/lib";
+import { ResourceNotFound } from "@/components/shared";
+import { can, queryKeys, toast, useSession } from "@/lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -103,7 +107,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
   const canWrite = can(role, "orders:write");
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["order", orderId],
+    queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => getOrderFn({ data: { id: orderId } }),
   });
 
@@ -126,11 +130,11 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
       }),
 
     onMutate: async ({ nextStatus, note }) => {
-      await queryClient.cancelQueries({ queryKey: ["order", orderId] });
-      const previous = queryClient.getQueryData(["order", orderId]);
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      const previous = queryClient.getQueryData(queryKeys.orders.detail(orderId));
 
       queryClient.setQueryData(
-        ["order", orderId],
+        queryKeys.orders.detail(orderId),
         (old: typeof order | undefined) => {
           if (!old) return old;
           return {
@@ -153,22 +157,31 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
 
     onError: (err, _vars, ctx) => {
       if (ctx?.previous !== undefined) {
-        queryClient.setQueryData(["order", orderId], ctx.previous);
+        queryClient.setQueryData(queryKeys.orders.detail(orderId), ctx.previous);
       }
       toast.error("Gagal mengubah status pesanan", err);
     },
 
     onSuccess: () => {
       toast.success("Status pesanan berhasil diperbarui");
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
       reset(form);
       setConfirmOpen(false);
     },
   });
 
   if (isLoading && !order) return <OrderDetailSkeleton />;
-  if (!order) return null;
+  if (!order)
+    return (
+      <ResourceNotFound
+        icon={<ShoppingCartIcon />}
+        title="Pesanan tidak ditemukan"
+        description="Pesanan ini mungkin sudah dihapus atau ID tidak valid."
+        backTo="/orders"
+        backLabel="Lihat semua pesanan"
+      />
+    );
 
   return (
     <div className="max-w-4xl space-y-6">

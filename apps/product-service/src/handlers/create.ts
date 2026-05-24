@@ -26,11 +26,11 @@ export const createHandler = async ({
     return { error: "Price must be a positive number", code: "INVALID_PRICE" };
   }
 
-  const result = await Effect.runPromiseExit(productRepository.create(body));
+  const result = await Effect.runPromiseExit(productRepository.create(data as Parameters<(typeof productRepository)["create"]>[0]));
 
   if (result._tag === "Failure") {
     set.status = 500;
-    return { error: "Failed to create product" };
+    return { error: "Failed to create product", code: "INTERNAL_ERROR" };
   }
 
   console.info(

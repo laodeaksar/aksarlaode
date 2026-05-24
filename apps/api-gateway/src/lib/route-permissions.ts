@@ -67,6 +67,13 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<{
   minRole: keyof typeof ROLE_HIERARCHY;
 }> = [
   // ── Owner-exclusive routes ────────────────────────────────────────────────
+  // Global store settings write — only the OWNER can change runtime config.
+  // Must precede the general /admin catch-all so this more-specific rule wins.
+  {
+    pattern: /^(?:\/v1)?\/admin\/settings$/,
+    method: "PUT",
+    minRole: "OWNER",
+  },
   // Transfer ownership — only the current OWNER can initiate
   { pattern: /^(?:\/v1)?\/auth\/owner\//, method: "*", minRole: "OWNER" },
   // Role mutation — must precede the /admin catch-all

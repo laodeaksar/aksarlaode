@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "mFF1cQ9RbFa9UBDk2qL8y"
+uri = "file://TODO.md"
+type = "text"
+title = "TODO — Admin Panel Work Plan"

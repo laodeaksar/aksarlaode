@@ -14,7 +14,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 
 import { restoreCustomerFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 interface RestoreUserButtonProps {
   userId: string;
@@ -33,13 +33,13 @@ export function RestoreUserButton({
     mutationFn: () => restoreCustomerFn({ data: { id: userId } }),
 
     onSuccess: () => {
-      toast.success(`${userName}'s account has been restored`);
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(`Akun ${userName} berhasil dipulihkan`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
       onSuccess?.();
     },
 
     onError: (err) => {
-      toast.error("Failed to restore account", err);
+      toast.error("Gagal memulihkan akun", err);
     },
   });
 

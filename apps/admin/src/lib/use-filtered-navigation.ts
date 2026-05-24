@@ -19,7 +19,7 @@ import { useNavigate } from "@tanstack/react-router";
  *
  * The `search` updater is cast to `any` at the call site to avoid TypeScript
  * recomputing a large route-union type on every invocation — runtime
- * validation is guaranteed by each route's `validateSearch: zodValidator(…)`.
+ * validation is guaranteed by each route's `validateSearch: valibotValidator(…)`.
  */
 export function useFilteredNavigation(to: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

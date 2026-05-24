@@ -44,6 +44,9 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
   // Body is forwarded intact by api-gateway after the GW-04 fix (body cached
   // in context.webhookRawBody and re-used by the proxy before forwarding).
   const notification = await c.req.json<MidtransNotification>();
+  // Propagate the trace ID injected by the gateway, or generate a fresh one
+  // for direct Midtrans webhook calls that don't carry an x-request-id.
+  const requestId = c.req.header("x-request-id") ?? crypto.randomUUID();
 
   const program = Effect.gen(function* () {
     const txStatus = notification.transaction_status ?? "";
@@ -124,7 +127,7 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
 
     // 2. Sync order-service — only when there is a meaningful order status change
     if (orderStatus !== null) {
-      yield* orderClient.updateStatus(notification.order_id, orderStatus);
+      yield* orderClient.updateStatus(notification.order_id, orderStatus, requestId);
     }
 
     // 3. Side effects — enqueue email jobs (fire-and-forget via BullMQ)
@@ -146,7 +149,7 @@ export const webhookHandler = async (c: Context<AppEnv>) => {
       paymentStatus === "CANCELLED" ||
       paymentStatus === "FAILED"
     ) {
-      yield* orderClient.releaseStock(notification.order_id);
+      yield* orderClient.releaseStock(notification.order_id, requestId);
 
       yield* emailQueue.addCancelled({
         orderId: notification.order_id,

@@ -1,18 +1,19 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
+import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listProductsFn } from "@/server/products";
 import { productsSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/products")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "products:read")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "products:read"))
+      throw redirect({ to: "/forbidden" });
   },
 
-  validateSearch: zodValidator(productsSearchSchema),
+  validateSearch: valibotValidator(productsSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/products")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["products", { page: deps.page ?? 1, search: deps.search }],
+      queryKey: queryKeys.products.list({ page: deps.page ?? 1, search: deps.search }),
       queryFn: () =>
         listProductsFn({
           data: {

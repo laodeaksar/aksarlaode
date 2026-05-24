@@ -36,8 +36,15 @@
     {
       "description": "Raise priority on security-related packages",
       "matchPackageNames": [
-        "bullmq", "hono", "elysia", "zod", "drizzle-orm",
-        "jsonwebtoken", "bcrypt", "argon2", "@node-rs/argon2"
+        "bullmq",
+        "hono",
+        "elysia",
+        "zod",
+        "drizzle-orm",
+        "jsonwebtoken",
+        "bcrypt",
+        "argon2",
+        "@node-rs/argon2"
       ],
       "prPriority": 5
     }

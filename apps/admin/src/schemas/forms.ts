@@ -49,10 +49,7 @@ export const ProductFormSchema = v.object({
   price: v.pipe(
     v.unknown(),
     v.transform(coerceNumber),
-    v.check(
-      (n) => Number.isFinite(n) && n > 0,
-      "Price harus lebih dari 0."
-    )
+    v.check((n) => Number.isFinite(n) && n > 0, "Price harus lebih dari 0.")
   ),
   comparePrice: v.pipe(
     v.unknown(),
@@ -66,10 +63,7 @@ export const ProductFormSchema = v.object({
   stock: v.pipe(
     v.unknown(),
     v.transform(coerceNumber),
-    v.check(
-      (n) => Number.isFinite(n) && n >= 0,
-      "Stock tidak boleh negatif."
-    )
+    v.check((n) => Number.isFinite(n) && n >= 0, "Stock tidak boleh negatif.")
   ),
   sku: v.pipe(v.string(), v.minLength(1, "SKU wajib diisi.")),
   // Always a string in the form (empty string = no description).
@@ -78,3 +72,69 @@ export const ProductFormSchema = v.object({
 });
 
 export type ProductFormValues = v.InferOutput<typeof ProductFormSchema>;
+
+// ── Store settings form ────────────────────────────────────────────────────
+// All four settings fields are required; numeric fields coerce from HTML
+// input values (always strings) the same way ProductFormSchema does.
+
+export const SettingsFormSchema = v.object({
+  paymentExpiryMinutes: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 1,
+      "Durasi pembayaran minimal 1 menit."
+    )
+  ),
+  minimumOrderAmount: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 0,
+      "Minimum order tidak boleh negatif."
+    )
+  ),
+  maxOrderItemsPerOrder: v.pipe(
+    v.unknown(),
+    v.transform(coerceNumber),
+    v.check(
+      (n) => Number.isFinite(n) && n >= 1,
+      "Maksimal item per order minimal 1."
+    )
+  ),
+  maintenanceMode: v.boolean(),
+});
+
+// ── Invite user form ────────────────────────────────────────────────────────
+
+export const InviteUserSchema = v.object({
+  email: v.pipe(
+    v.string(),
+    v.minLength(1, "Email wajib diisi."),
+    v.email("Format email tidak valid.")
+  ),
+  name: v.optional(v.string()),
+  role: v.picklist(["ADMIN", "FINANCE"], "Pilih role yang valid."),
+});
+
+export type InviteUserFields = v.InferOutput<typeof InviteUserSchema>;
+
+// ── Resend email form ───────────────────────────────────────────────────────
+
+export const ResendEmailSchema = v.object({
+  emailType: v.picklist(
+    ["order-created", "order-confirmation", "order-cancelled"],
+    "Pilih tipe email."
+  ),
+  orderId: v.pipe(v.string(), v.minLength(1, "Order ID wajib diisi.")),
+  recipientEmail: v.pipe(
+    v.string(),
+    v.minLength(1, "Email penerima wajib diisi."),
+    v.email("Format email tidak valid.")
+  ),
+  reason: v.optional(v.string()),
+});
+
+export type ResendEmailFields = v.InferOutput<typeof ResendEmailSchema>;
+
+export type SettingsFormValues = v.InferOutput<typeof SettingsFormSchema>;

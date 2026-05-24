@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
+import { PackageIcon } from "lucide-react";
+
 import { Skeleton } from "@repo/ui/components/skeleton";
 
 import { getProductFn, updateProductFn } from "@/server/products";
 import type { UpdateProductInput } from "@/effect/Services";
 import { PageHeader } from "@/components/layout/page-header";
-import { toast } from "@/lib";
+import { ResourceNotFound } from "@/components/shared";
+import { queryKeys, toast } from "@/lib";
 
 import { ProductForm } from "../forms/product-form";
 
@@ -45,7 +48,7 @@ export function EditProduct({ productId }: { productId: string }) {
   // Data is already in cache from the loader's ensureQueryData call (staleTime: 5 min).
   // No initialData needed — useQuery reads straight from cache.
   const { data: product, isLoading } = useQuery({
-    queryKey: ["product", productId],
+    queryKey: queryKeys.products.detail(productId),
     queryFn: () => getProductFn({ data: { id: productId } }),
   });
 
@@ -54,10 +57,10 @@ export function EditProduct({ productId }: { productId: string }) {
       updateProductFn({ data: { id: productId, body } }),
 
     onMutate: async (updatedFields) => {
-      await queryClient.cancelQueries({ queryKey: ["product", productId] });
-      const previous = queryClient.getQueryData(["product", productId]);
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.detail(productId) });
+      const previous = queryClient.getQueryData(queryKeys.products.detail(productId));
 
-      queryClient.setQueryData(["product", productId], (old: typeof product) =>
+      queryClient.setQueryData(queryKeys.products.detail(productId), (old: typeof product) =>
         old ? { ...old, ...updatedFields } : old
       );
 
@@ -66,24 +69,31 @@ export function EditProduct({ productId }: { productId: string }) {
 
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(["product", productId], ctx.previous);
+        queryClient.setQueryData(queryKeys.products.detail(productId), ctx.previous);
       }
       toast.error("Gagal memperbarui produk", err);
     },
 
     onSuccess: () => {
       toast.success("Produk berhasil diperbarui");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(productId) });
       navigate({ to: "/products/$productId", params: { productId } });
     },
   });
 
   if (isLoading && !product) return <EditProductSkeleton />;
 
-  if (!product) {
-    return <p className="p-6 text-red-500">Produk tidak ditemukan.</p>;
-  }
+  if (!product)
+    return (
+      <ResourceNotFound
+        icon={<PackageIcon />}
+        title="Produk tidak ditemukan"
+        description="Produk ini mungkin sudah dihapus atau ID tidak valid."
+        backTo="/products"
+        backLabel="Lihat semua produk"
+      />
+    );
 
   const errorMessage = mutation.error
     ? mutation.error instanceof Error

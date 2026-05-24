@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import type { TooltipValueType } from "recharts";
+import type { ValueType as TooltipValueType } from "recharts/types/component/DefaultTooltipContent";
 import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@repo/ui/lib/utils";

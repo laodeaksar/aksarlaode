@@ -22,7 +22,7 @@ import {
 } from "@repo/ui/components/select";
 
 import { updateCustomerRoleFn } from "@/server/customers";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 // OWNER role cannot be assigned here — it is set at the infrastructure level.
 type AssignableRole = "ADMIN" | "FINANCE";
@@ -53,14 +53,14 @@ export function EditUserRoleDialog({
       updateCustomerRoleFn({ data: { id: userId, role: selectedRole } }),
 
     onSuccess: () => {
-      toast.success(`Role ${userName} changed to ${selectedRole}`);
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(`Role ${userName} diubah ke ${selectedRole}`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
       setOpen(false);
       onSuccess?.();
     },
 
     onError: (err) => {
-      toast.error("Failed to change role", err);
+      toast.error("Gagal mengubah role", err);
     },
   });
 
@@ -68,7 +68,11 @@ export function EditUserRoleDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button size="sm" variant="outline" className="w-full justify-start" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full justify-start"
+          />
         }
       >
         Change Role

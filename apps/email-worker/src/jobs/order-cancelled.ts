@@ -1,14 +1,20 @@
-import { fetchUserEmail } from "@/lib/user-client";
-import type { MailChannelsProvider } from "@/providers/mailchannels.provider";
+// P0 FIX: Replaced raw template-literal HTML interpolation with render() engine.
+// payload.reason is now HTML-escaped before insertion — previously it was
+// interpolated directly, allowing HTML injection from user-controlled data.
+// Also switched to BaseProvider (was incorrectly typed as MailChannelsProvider).
+import { fetchUserEmail, fetchUserName } from "@/lib/user-client";
+import type { BaseProvider } from "@/providers/base.provider";
 import type { EmailJobPayload } from "@/queues/email.queue";
+import { render } from "@/templates/engine";
+import { orderCancelledTemplate } from "@/templates/order-cancelled.html";
 
-// FIX EML-02: previous version sent to payload.userId (a UUID) — not an email
-// address.  Now uses payload.userEmail (set by EML-03 producer update).
-// Falls back to fetchUserEmail from auth-service for older enqueued jobs.
+const STORE_NAME = process.env["STORE_NAME"] ?? "My Ecommerce";
+const STORE_ADDRESS = process.env["STORE_ADDRESS"] ?? "Jakarta, Indonesia";
+const STORE_URL = process.env["STORE_URL"] ?? "https://example.com";
 
 export async function handleOrderCancelled(
   payload: EmailJobPayload["order-cancelled"],
-  provider: MailChannelsProvider
+  provider: BaseProvider
 ) {
   try {
     const userId = payload.userId ?? "";
@@ -28,14 +34,23 @@ export async function handleOrderCancelled(
       };
     }
 
-    await provider.send({
+    const customerName = await fetchUserName(userId);
+    const unsubscribeUrl = `${STORE_URL}/unsubscribe?email=${encodeURIComponent(to)}`;
+
+    const html = render(orderCancelledTemplate, {
+      orderId: payload.orderId,
+      customerName,
+      reason: payload.reason,
+      storeName: STORE_NAME,
+      storeAddress: STORE_ADDRESS,
+      unsubscribeUrl,
+    });
+
+    return provider.send({
       to,
       subject: `Order ${payload.orderId} Cancelled`,
-      html: `<p>Your order <strong>${payload.orderId}</strong> has been cancelled.</p>
-             <p>Reason: ${payload.reason ?? "N/A"}</p>
-             <p>If you did not request this cancellation, please contact our support team.</p>`,
+      html,
     });
-    return { success: true };
   } catch (e) {
     return { success: false, error: String(e), retryable: true };
   }

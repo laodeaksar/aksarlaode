@@ -16,7 +16,8 @@
     "@hono/node-server": "^1.14.0",
     "@repo/env": "workspace:*",
     "@repo/common": "workspace:*",
-    "@repo/database": "workspace:*"
+    "@repo/database": "workspace:*",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

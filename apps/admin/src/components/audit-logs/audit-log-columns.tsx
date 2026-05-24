@@ -10,6 +10,9 @@ export const AUDIT_ACTIONS = [
   "product_deleted",
   "order_status_changed",
   "user_role_changed",
+  "queue_job_retried",
+  "queue_jobs_retried",
+  "queue_email_resent",
 ] as const;
 
 export const ACTOR_ROLES = ["OWNER", "ADMIN", "FINANCE"] as const;
@@ -23,6 +26,9 @@ const ACTION_COLORS: Record<
   product_deleted: "destructive",
   order_status_changed: "secondary",
   user_role_changed: "default",
+  queue_job_retried: "secondary",
+  queue_jobs_retried: "secondary",
+  queue_email_resent: "default",
 };
 
 export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [

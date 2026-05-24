@@ -21,7 +21,7 @@ export const updateHandler = async ({
     return { error: "Forbidden: ADMIN role required", code: "FORBIDDEN" };
   }
 
-  const id = params.id;
+  const id = params.id ?? "";
   const data = body as Record<string, unknown>;
 
   // FIX PRD-06b: reject zero or negative price before touching the DB.
@@ -34,7 +34,7 @@ export const updateHandler = async ({
   }
 
   const result = await Effect.runPromiseExit(
-    productRepository.update(id, body)
+    productRepository.update(id, data as Parameters<(typeof productRepository)["update"]>[1])
   );
 
   if (result._tag === "Failure") {
@@ -45,7 +45,7 @@ export const updateHandler = async ({
       return { error: "Product not found", code: "PRODUCT_NOT_FOUND" };
     }
     set.status = 500;
-    return { error: "Failed to update product" };
+    return { error: "Failed to update product", code: "INTERNAL_ERROR" };
   }
 
   console.info(

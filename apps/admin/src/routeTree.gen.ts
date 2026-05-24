@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as UsersRouteRouteImport } from './routes/users/route'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as QueueRouteRouteImport } from './routes/queue/route'
 import { Route as ProductsRouteRouteImport } from './routes/products/route'
 import { Route as OrdersRouteRouteImport } from './routes/orders/route'
 import { Route as LoginRouteRouteImport } from './routes/login/route'
@@ -19,6 +21,8 @@ import { Route as CustomersRouteRouteImport } from './routes/customers/route'
 import { Route as AuditLogsRouteRouteImport } from './routes/audit-logs/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as QueueIndexRouteImport } from './routes/queue/index'
 import { Route as ProductsIndexRouteImport } from './routes/products/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
@@ -42,6 +46,16 @@ const ForbiddenRoute = ForbiddenRouteImport.update({
 const UsersRouteRoute = UsersRouteRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueRouteRoute = QueueRouteRouteImport.update({
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRouteRoute = ProductsRouteRouteImport.update({
@@ -83,6 +97,16 @@ const UsersIndexRoute = UsersIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => UsersRouteRoute,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const QueueIndexRoute = QueueIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => QueueRouteRoute,
 } as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
   id: '/',
@@ -163,6 +187,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/users': typeof UsersRouteRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
@@ -175,6 +201,8 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/queue/': typeof QueueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId/': typeof CustomersUserIdIndexRoute
@@ -191,6 +219,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/queue': typeof QueueIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/users': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId': typeof CustomersUserIdIndexRoute
@@ -206,6 +236,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRouteRouteWithChildren
   '/orders': typeof OrdersRouteRouteWithChildren
   '/products': typeof ProductsRouteRouteWithChildren
+  '/queue': typeof QueueRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/users': typeof UsersRouteRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
   '/customers/$userId': typeof CustomersUserIdRouteRouteWithChildren
@@ -218,6 +250,8 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/queue/': typeof QueueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/products/$productId/edit': typeof ProductsProductIdEditRoute
   '/customers/$userId/': typeof CustomersUserIdIndexRoute
@@ -234,6 +268,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/queue'
+    | '/settings'
     | '/users'
     | '/forbidden'
     | '/customers/$userId'
@@ -246,6 +282,8 @@ export interface FileRouteTypes {
     | '/login/'
     | '/orders/'
     | '/products/'
+    | '/queue/'
+    | '/settings/'
     | '/users/'
     | '/products/$productId/edit'
     | '/customers/$userId/'
@@ -262,6 +300,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/queue'
+    | '/settings'
     | '/users'
     | '/products/$productId/edit'
     | '/customers/$userId'
@@ -276,6 +316,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/orders'
     | '/products'
+    | '/queue'
+    | '/settings'
     | '/users'
     | '/forbidden'
     | '/customers/$userId'
@@ -288,6 +330,8 @@ export interface FileRouteTypes {
     | '/login/'
     | '/orders/'
     | '/products/'
+    | '/queue/'
+    | '/settings/'
     | '/users/'
     | '/products/$productId/edit'
     | '/customers/$userId/'
@@ -303,6 +347,8 @@ export interface RootRouteChildren {
   LoginRouteRoute: typeof LoginRouteRouteWithChildren
   OrdersRouteRoute: typeof OrdersRouteRouteWithChildren
   ProductsRouteRoute: typeof ProductsRouteRouteWithChildren
+  QueueRouteRoute: typeof QueueRouteRouteWithChildren
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   UsersRouteRoute: typeof UsersRouteRouteWithChildren
   ForbiddenRoute: typeof ForbiddenRoute
 }
@@ -321,6 +367,20 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -378,6 +438,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/'
       preLoaderRoute: typeof UsersIndexRouteImport
       parentRoute: typeof UsersRouteRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/queue/': {
+      id: '/queue/'
+      path: '/'
+      fullPath: '/queue/'
+      preLoaderRoute: typeof QueueIndexRouteImport
+      parentRoute: typeof QueueRouteRoute
     }
     '/products/': {
       id: '/products/'
@@ -598,6 +672,30 @@ const ProductsRouteRouteWithChildren = ProductsRouteRoute._addFileChildren(
   ProductsRouteRouteChildren,
 )
 
+interface QueueRouteRouteChildren {
+  QueueIndexRoute: typeof QueueIndexRoute
+}
+
+const QueueRouteRouteChildren: QueueRouteRouteChildren = {
+  QueueIndexRoute: QueueIndexRoute,
+}
+
+const QueueRouteRouteWithChildren = QueueRouteRoute._addFileChildren(
+  QueueRouteRouteChildren,
+)
+
+interface SettingsRouteRouteChildren {
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 interface UsersRouteRouteChildren {
   UsersIndexRoute: typeof UsersIndexRoute
 }
@@ -618,6 +716,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRouteRoute: LoginRouteRouteWithChildren,
   OrdersRouteRoute: OrdersRouteRouteWithChildren,
   ProductsRouteRoute: ProductsRouteRouteWithChildren,
+  QueueRouteRoute: QueueRouteRouteWithChildren,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   UsersRouteRoute: UsersRouteRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
 }

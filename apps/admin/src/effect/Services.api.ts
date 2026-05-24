@@ -9,7 +9,12 @@ import type {
 
 import { ApiError, NetworkError } from "./Errors";
 import { ConfigService } from "./Services.config";
-import type { NewProduct, Product, User } from "./Services.schemas";
+import type {
+  NewProduct,
+  Product,
+  StoreSettings,
+  User,
+} from "./Services.schemas";
 
 // ── ApiClientService ───────────────────────────────────────────────────────
 // A typed Effect-based HTTP client. Used ONLY in server functions.
@@ -199,11 +204,17 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
 
       // ── Admin users (staff management — excludes CUSTOMER role) ──────────
       const adminUsers = {
-        invite: (data: { email: string; role: string; name?: string | undefined }) =>
-          request<{ message: string; userId: string; email: string; role: string }>(
-            "/admin/invite",
-            { method: "POST", body: JSON.stringify(data) }
-          ),
+        invite: (data: {
+          email: string;
+          role: string;
+          name?: string | undefined;
+        }) =>
+          request<{
+            message: string;
+            userId: string;
+            email: string;
+            role: string;
+          }>("/admin/invite", { method: "POST", body: JSON.stringify(data) }),
 
         list: (params: { page?: number; search?: string }) => {
           const qs = new URLSearchParams({
@@ -250,7 +261,26 @@ export class ApiClientService extends Effect.Service<ApiClientService>()(
         },
       };
 
-      return { products, orders, customers, adminUsers, dashboard, auditLogs } as const;
+      // ── Settings ──────────────────────────────────────────────────────────
+      const settings = {
+        get: () => request<{ data: StoreSettings }>("/admin/settings"),
+
+        update: (body: StoreSettings) =>
+          request<{ data: StoreSettings }>("/admin/settings", {
+            method: "PUT",
+            body: JSON.stringify(body),
+          }),
+      };
+
+      return {
+        products,
+        orders,
+        customers,
+        adminUsers,
+        dashboard,
+        auditLogs,
+        settings,
+      } as const;
     }),
   }
 ) {}

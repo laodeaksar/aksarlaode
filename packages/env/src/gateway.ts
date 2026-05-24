@@ -13,7 +13,10 @@ export const env = createEnv({
     ),
 
     // ── Databases ────────────────────────────────────────────────────────────
-    DATABASE_URL: v.pipe(v.string(), v.minLength(1, "DATABASE_URL is required")),
+    DATABASE_URL: v.pipe(
+      v.string(),
+      v.minLength(1, "DATABASE_URL is required")
+    ),
     MONGODB_URL: v.pipe(v.string(), v.minLength(1, "MONGODB_URL is required")),
 
     // ── Cache ────────────────────────────────────────────────────────────────

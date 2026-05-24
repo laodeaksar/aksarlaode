@@ -2,6 +2,8 @@ import { Data, Effect } from "effect";
 
 import { env } from "@repo/env/payment";
 
+import { getStoreConfig } from "./store-config";
+
 class MidtransError extends Data.TaggedError("MidtransError")<{
   code: number;
   message: string;
@@ -91,7 +93,8 @@ export const createSnapTransaction = (params: {
           })),
           expiry: {
             unit: "minutes",
-            duration: 60,
+            // Read from live store config — reloads on admin settings change.
+            duration: getStoreConfig().paymentExpiryMinutes,
           },
         }),
       });

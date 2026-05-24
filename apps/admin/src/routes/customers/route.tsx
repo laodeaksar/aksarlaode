@@ -1,18 +1,19 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
+import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listCustomersFn } from "@/server/customers";
 import { customersSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/customers")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "customers:read")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "customers:read"))
+      throw redirect({ to: "/forbidden" });
   },
 
-  validateSearch: zodValidator(customersSearchSchema),
+  validateSearch: valibotValidator(customersSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/customers")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["customers", { page: deps.page ?? 1, search: deps.search }],
+      queryKey: queryKeys.customers.list({ page: deps.page ?? 1, search: deps.search }),
       queryFn: () =>
         listCustomersFn({
           data: {

@@ -2,39 +2,51 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "tasks": {
-
     "build": {
       "dependsOn": ["^build"],
-      "inputs":    ["src/**", "tsconfig.json", "package.json"],
-      "outputs":   [".next/**", "dist/**", ".astro/**", ".wrangler/**", ".output/**", ".vinxi/**"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": [
+        ".next/**",
+        "dist/**",
+        ".astro/**",
+        ".wrangler/**",
+        ".output/**"
+      ],
       "env": [
         "NODE_ENV",
-        "DATABASE_URL", "MONGODB_URL", "REDIS_URL",
-        "JWT_SECRET", "INTERNAL_SERVICE_TOKEN",
-        "AUTH_SERVICE_URL", "PRODUCT_SERVICE_URL", "ORDER_SERVICE_URL", "PAYMENT_SERVICE_URL",
-        "PUBLIC_API_URL", "WEB_URL", "ADMIN_URL",
-        "MIDTRANS_SERVER_KEY", "MIDTRANS_IS_PRODUCTION", "PUBLIC_MIDTRANS_CLIENT_KEY",
-        "MAIL_FROM_ADDRESS", "MAIL_FROM_NAME"
+        "DATABASE_URL",
+        "MONGODB_URL",
+        "REDIS_URL",
+        "JWT_SECRET",
+        "INTERNAL_SERVICE_TOKEN",
+        "AUTH_SERVICE_URL",
+        "PRODUCT_SERVICE_URL",
+        "ORDER_SERVICE_URL",
+        "PAYMENT_SERVICE_URL",
+        "PUBLIC_API_URL",
+        "WEB_URL",
+        "ADMIN_URL",
+        "MIDTRANS_SERVER_KEY",
+        "MIDTRANS_IS_PRODUCTION",
+        "PUBLIC_MIDTRANS_CLIENT_KEY",
+        "MAIL_FROM_ADDRESS",
+        "MAIL_FROM_NAME"
       ]
     },
-
     "dev": {
       "dependsOn": ["^build"],
       "persistent": true,
       "cache": false
     },
-
     "typecheck": {
       "dependsOn": ["^typecheck"],
-      "inputs":    ["src/**", "tsconfig.json"],
-      "outputs":   []
-    },
-
-    "lint": {
-      "inputs":  ["src/**", ".eslintrc*", "eslint.config.*"],
+      "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },
-
+    "lint": {
+      "inputs": ["src/**", ".eslintrc*", "eslint.config.*"],
+      "outputs": []
+    },
     // ── Test tasks ─────────────────────────────────────────────────────────
     //
     // Cache key = file inputs + NODE_ENV.
@@ -43,58 +55,39 @@
     //
     // Remote caching: set TURBO_TOKEN + TURBO_TEAM (Vercel Remote Cache)
     // or TURBO_API + TURBO_TOKEN (self-hosted) to share cache across machines.
-
     "test": {
       "dependsOn": ["^build"],
-      "inputs": [
-        "src/**",
-        "vitest.config.ts",
-        "tsconfig.json",
-        "package.json"
-      ],
+      "inputs": ["src/**", "vitest.config.ts", "tsconfig.json", "package.json"],
       "outputs": [],
       "env": ["NODE_ENV"]
     },
-
     "test:coverage": {
       "dependsOn": ["^build"],
-      "inputs": [
-        "src/**",
-        "vitest.config.ts",
-        "tsconfig.json",
-        "package.json"
-      ],
+      "inputs": ["src/**", "vitest.config.ts", "tsconfig.json", "package.json"],
       "outputs": ["coverage/**"],
       "env": ["NODE_ENV"]
     },
-
     "test:watch": {
-      "cache":      false,
+      "cache": false,
       "persistent": true
     },
-
     // ── Database tasks ──────────────────────────────────────────────────────
-
     "db:generate": {
-      "cache":  false,
+      "cache": false,
       "inputs": ["src/postgres/schema/**"]
     },
-
     "db:migrate": {
       "cache": false,
-      "env":   ["DATABASE_URL"]
+      "env": ["DATABASE_URL"]
     },
-
     "db:seed": {
       "cache": false,
-      "env":   ["DATABASE_URL"]
+      "env": ["DATABASE_URL"]
     },
-
     "db:studio": {
-      "cache":      false,
+      "cache": false,
       "persistent": true
     },
-
     "clean": {
       "cache": false
     }

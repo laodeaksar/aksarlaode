@@ -26,7 +26,11 @@ const InviteUserSchema = Schema.Struct({
 });
 
 export const inviteUserFn = createServerFn({ method: "POST" })
-  .middleware([effectMiddleware, requirePermission("users:manage"), auditMiddleware])
+  .middleware([
+    effectMiddleware,
+    requirePermission("users:manage"),
+    auditMiddleware,
+  ])
   .inputValidator((raw: unknown) =>
     decodeOrThrow(
       InviteUserSchema,
@@ -37,7 +41,12 @@ export const inviteUserFn = createServerFn({ method: "POST" })
     async ({
       data,
       context,
-    }): Promise<{ message: string; userId: string; email: string; role: string }> =>
+    }): Promise<{
+      message: string;
+      userId: string;
+      email: string;
+      role: string;
+    }> =>
       context.runtime.runPromise(
         Effect.gen(function* () {
           const api = yield* ApiClientService;

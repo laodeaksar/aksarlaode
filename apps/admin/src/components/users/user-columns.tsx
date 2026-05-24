@@ -12,6 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
 
 import type { User } from "@/effect/Services";
 
@@ -19,7 +25,10 @@ import { DeactivateUserButton } from "./deactivate-user-button";
 import { EditUserRoleDialog } from "./edit-user-role-dialog";
 import { RestoreUserButton } from "./restore-user-button";
 
-const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+const ROLE_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
   OWNER: "default",
   ADMIN: "default",
   FINANCE: "secondary",
@@ -34,13 +43,19 @@ function UserActions({ row }: { row: { original: User } }) {
   const canChangeRole = user.role !== "OWNER";
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-      >
-        <span className="sr-only">Open menu</span>
-        <MoreHorizontal className="h-4 w-4" />
-      </DropdownMenuTrigger>
+    <TooltipProvider>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger render={<span />}>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" className="h-8 w-8 p-0" />}
+            >
+              <span className="sr-only">Buka menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Aksi</TooltipContent>
+        </Tooltip>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -67,7 +82,8 @@ function UserActions({ row }: { row: { original: User } }) {
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
 
@@ -78,7 +94,9 @@ export const userColumns: ColumnDef<User>[] = [
     accessorKey: "name",
     header: "Name",
     cell: ({ getValue }) => (
-      <span className="text-foreground font-medium">{getValue() as string}</span>
+      <span className="text-foreground font-medium">
+        {getValue() as string}
+      </span>
     ),
   },
   {
@@ -93,9 +111,7 @@ export const userColumns: ColumnDef<User>[] = [
     header: "Role",
     cell: ({ getValue }) => {
       const role = getValue() as string;
-      return (
-        <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>
-      );
+      return <Badge variant={ROLE_VARIANTS[role] ?? "outline"}>{role}</Badge>;
     },
   },
   {

@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
+import { valibotValidator } from "@tanstack/valibot-adapter";
 
 import { listAuditLogsFn } from "@/server/audit-logs";
 import { auditLogsSearchSchema } from "@/lib/search-schemas";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/audit-logs")({
   beforeLoad: ({ context }) => {
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/audit-logs")({
 
   // All filter state lives in the URL so every combination is bookmarkable,
   // shareable, and survives browser back/forward navigation.
-  validateSearch: zodValidator(auditLogsSearchSchema),
+  validateSearch: valibotValidator(auditLogsSearchSchema),
 
   loaderDeps: ({ search }) => ({
     page: search.page,
@@ -27,16 +27,13 @@ export const Route = createFileRoute("/audit-logs")({
   loader: ({ deps, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: [
-        "audit-logs",
-        {
-          page: deps.page ?? 1,
-          startDate: deps.startDate,
-          endDate: deps.endDate,
-          action: deps.action,
-          actorRole: deps.actorRole,
-        },
-      ],
+      queryKey: queryKeys.auditLogs.list({
+        page: deps.page ?? 1,
+        startDate: deps.startDate,
+        endDate: deps.endDate,
+        action: deps.action,
+        actorRole: deps.actorRole,
+      }),
       queryFn: () =>
         listAuditLogsFn({
           data: {

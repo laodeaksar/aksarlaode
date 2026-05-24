@@ -12,10 +12,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@repo/ui/components/breadcrumb";
-import { Button } from "@repo/ui/components/button";
 import { Kbd, KbdGroup } from "@repo/ui/components/kbd";
 import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
 
 type BreadcrumbSegment = {
   label: string;
@@ -136,19 +140,27 @@ export function SiteHeader({ onOpenCommand }: SiteHeaderProps) {
         )}
 
         {onOpenCommand && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-muted-foreground ml-auto hidden h-8 items-center gap-2 px-3 text-sm font-normal sm:flex"
-            onClick={onOpenCommand}
-          >
-            <SearchIcon className="size-3.5" />
-            <span>Jump to…</span>
-            <KbdGroup className="ml-1">
-              <Kbd>⌘</Kbd>
-              <Kbd>K</Kbd>
-            </KbdGroup>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              className="text-muted-foreground ml-auto flex h-8 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-2 text-sm font-normal shadow-xs hover:bg-accent hover:text-accent-foreground sm:px-3"
+              onClick={onOpenCommand}
+              aria-label="Open command palette"
+            >
+              <SearchIcon className="size-3.5 shrink-0" />
+              <span className="hidden sm:inline">Jump to…</span>
+              <KbdGroup className="ml-0.5 hidden sm:inline-flex">
+                <Kbd>⌘</Kbd>
+                <Kbd>K</Kbd>
+              </KbdGroup>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Command palette
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>K</Kbd>
+              </KbdGroup>
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
     </header>

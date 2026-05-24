@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { getErrors, useField, useForm, validate, Form } from "@formisch/react";
 
 import { Effect, pipe } from "effect";
+
+import { Form, getErrors, useField, useForm, validate } from "@formisch/react";
 
 import { ordersApi } from "@/lib/api/orders";
 import { HttpError, NetworkError } from "@/lib/effect/errors";
@@ -290,8 +291,7 @@ export function CheckoutForm({ userId, userEmail }: Props) {
             </p>
             <p className="text-gray-600">{streetField.input}</p>
             <p className="text-gray-600">
-              {cityField.input}, {provinceField.input}{" "}
-              {postalCodeField.input}
+              {cityField.input}, {provinceField.input} {postalCodeField.input}
             </p>
             <button
               type="button"

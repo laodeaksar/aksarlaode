@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ClipboardListIcon } from "lucide-react";
 
 import { Button } from "@repo/ui/components/button";
 
@@ -10,46 +11,74 @@ import {
 } from "@/components/audit-logs";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { useFilteredNavigation, useRouteSearch } from "@/lib";
+import { FilterInput, FilterSelect, ModuleEmptyState } from "@/components/shared";
+import { queryKeys, useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
-
-// ── Shared filter select style ─────────────────────────────────────────────
-const SELECT_CLS =
-  "rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs " +
-  "focus:outline-none focus:ring-2 focus:ring-ring";
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
-  const page      = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const startDate = useRouteSearch(Route, (s) => s.startDate);
-  const endDate   = useRouteSearch(Route, (s) => s.endDate);
-  const action    = useRouteSearch(Route, (s) => s.action);
+  const endDate = useRouteSearch(Route, (s) => s.endDate);
+  const action = useRouteSearch(Route, (s) => s.action);
   const actorRole = useRouteSearch(Route, (s) => s.actorRole);
 
   const currentPage = page ?? 1;
-  const hasFilters  = !!(startDate || endDate || action || actorRole);
+  const hasFilters = !!(startDate || endDate || action || actorRole);
 
   const { setFilter, clearFilters } = useFilteredNavigation("/audit-logs");
 
   const queryParams = {
     page: currentPage,
     ...(startDate ? { startDate } : {}),
-    ...(endDate   ? { endDate }   : {}),
-    ...(action    ? { action }    : {}),
+    ...(endDate ? { endDate } : {}),
+    ...(action ? { action } : {}),
     ...(actorRole ? { actorRole } : {}),
   };
 
   const { data, isLoading } = useQuery<
     Awaited<ReturnType<typeof listAuditLogsFn>>
   >({
-    queryKey: [
-      "audit-logs",
-      { page: currentPage, startDate, endDate, action, actorRole },
-    ],
+    queryKey: queryKeys.auditLogs.list({
+      page: currentPage,
+      startDate,
+      endDate,
+      action,
+      actorRole,
+    }),
     queryFn: () => listAuditLogsFn({ data: queryParams }),
   });
+
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<ClipboardListIcon />}
+      title={
+        hasFilters
+          ? "Tidak ada log dengan filter ini"
+          : "Belum ada log aktivitas"
+      }
+      description={
+        hasFilters
+          ? "Coba ubah atau hapus filter untuk melihat log."
+          : "Aktivitas admin seperti perubahan produk, status pesanan, dan perubahan peran akan tercatat di sini."
+      }
+      action={
+        hasFilters ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              clearFilters("startDate", "endDate", "action", "actorRole")
+            }
+          >
+            Hapus semua filter
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -66,9 +95,8 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             From
           </label>
-          <input
+          <FilterInput
             type="date"
-            className={SELECT_CLS}
             value={startDate ?? ""}
             max={endDate ?? undefined}
             onChange={(e) => setFilter("startDate", e.target.value)}
@@ -80,9 +108,8 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             To
           </label>
-          <input
+          <FilterInput
             type="date"
-            className={SELECT_CLS}
             value={endDate ?? ""}
             min={startDate ?? undefined}
             onChange={(e) => setFilter("endDate", e.target.value)}
@@ -94,8 +121,7 @@ export default function AuditLogsPage() {
           <label className="text-muted-foreground text-xs font-medium">
             Action
           </label>
-          <select
-            className={SELECT_CLS}
+          <FilterSelect
             value={action ?? ""}
             onChange={(e) => setFilter("action", e.target.value)}
             aria-label="Filter by action"
@@ -106,15 +132,14 @@ export default function AuditLogsPage() {
                 {a.replace(/_/g, " ")}
               </option>
             ))}
-          </select>
+          </FilterSelect>
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-muted-foreground text-xs font-medium">
             Role
           </label>
-          <select
-            className={SELECT_CLS}
+          <FilterSelect
             value={actorRole ?? ""}
             onChange={(e) => setFilter("actorRole", e.target.value)}
             aria-label="Filter by actor role"
@@ -125,7 +150,7 @@ export default function AuditLogsPage() {
                 {r}
               </option>
             ))}
-          </select>
+          </FilterSelect>
         </div>
 
         {hasFilters && (
@@ -148,6 +173,10 @@ export default function AuditLogsPage() {
           columns={auditLogColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          virtualize
+          containerHeight="640px"
+          ariaLabel="Audit log aktivitas admin"
+          emptyState={emptyState}
         />
         <PaginationBar
           route={Route}

@@ -15,7 +15,7 @@ import { Button } from "@repo/ui/components/button";
 
 import { deleteProductFn } from "@/server/products";
 import type { Product } from "@/effect/Services";
-import { toast } from "@/lib";
+import { queryKeys, toast } from "@/lib";
 
 interface DeleteProductButtonProps {
   productId: string;
@@ -34,13 +34,13 @@ export function DeleteProductButton({
     mutationFn: () => deleteProductFn({ data: { id: productId } }),
 
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["products"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.products.all });
       const snapshots = queryClient.getQueriesData<{
         items: Product[];
         total: number;
-      }>({ queryKey: ["products"] });
+      }>({ queryKey: queryKeys.products.all });
       queryClient.setQueriesData<{ items: Product[]; total: number }>(
-        { queryKey: ["products"] },
+        { queryKey: queryKeys.products.all },
         (old) =>
           old
             ? {
@@ -65,8 +65,8 @@ export function DeleteProductButton({
     },
 
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.removeQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
+      queryClient.removeQueries({ queryKey: queryKeys.products.detail(productId) });
     },
   });
 

@@ -42,9 +42,9 @@ export const env = createEnv({
 
   runtimeEnv: process.env,
 
-  onValidationError: (error) => {
+  onValidationError: (issues) => {
     console.error("\n❌  [email-worker] Invalid environment variables:\n");
-    for (const issue of error.issues) {
+    for (const issue of issues) {
       console.error(`   ${issue.message}`);
     }
     console.error("\n   Check your .env file against .env.example\n");

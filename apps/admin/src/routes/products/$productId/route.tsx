@@ -1,19 +1,20 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { getProductFn } from "@/server/products";
-import { can } from "@/lib";
+import { can, queryKeys } from "@/lib";
 
 export const Route = createFileRoute("/products/$productId")({
   beforeLoad: ({ context }) => {
     const { session } = context;
     if (!session) throw redirect({ to: "/login" });
-    if (!can(session.role, "products:read")) throw redirect({ to: "/forbidden" });
+    if (!can(session.role, "products:read"))
+      throw redirect({ to: "/forbidden" });
   },
 
   loader: ({ params, context }) => {
     const { queryClient } = context;
     return queryClient.ensureQueryData({
-      queryKey: ["product", params.productId],
+      queryKey: queryKeys.products.detail(params.productId),
       queryFn: () => getProductFn({ data: { id: params.productId } }),
       staleTime: 5 * 60 * 1_000,
     });

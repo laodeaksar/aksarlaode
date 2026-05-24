@@ -1,19 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
+import { ShoppingCartIcon } from "lucide-react";
 
 import { listOrdersFn } from "@/server/orders";
 import { DataTable, PaginationBar } from "@/components/data-table";
 import { PageHeader } from "@/components/layout/page-header";
+import { ModuleEmptyState } from "@/components/shared";
 import {
   ExportOrdersButton,
   ORDER_STATUSES,
   orderColumns,
 } from "@/components/orders";
-import { useFilteredNavigation, useRouteSearch } from "@/lib";
+import { queryKeys, useFilteredNavigation, useRouteSearch } from "@/lib";
 
 import { Route } from "./route";
 
 export default function OrdersPage() {
-  const page   = useRouteSearch(Route, (s) => s.page);
+  const page = useRouteSearch(Route, (s) => s.page);
   const status = useRouteSearch(Route, (s) => s.status);
 
   const currentPage = page ?? 1;
@@ -21,12 +23,26 @@ export default function OrdersPage() {
   const { setFilter } = useFilteredNavigation("/orders");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", { page: currentPage, status }],
+    queryKey: queryKeys.orders.list({ page: currentPage, status }),
     queryFn: () =>
       listOrdersFn({
         data: { page: currentPage, ...(status ? { status } : {}) },
       }),
   });
+
+  const emptyState = (
+    <ModuleEmptyState
+      icon={<ShoppingCartIcon />}
+      title={
+        status ? "Tidak ada pesanan dengan status ini" : "Belum ada pesanan"
+      }
+      description={
+        status
+          ? `Tidak ada pesanan dengan status "${status.replace(/_/g, " ")}". Coba filter lain.`
+          : "Pesanan dari pelanggan akan muncul di sini."
+      }
+    />
+  );
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -55,6 +71,10 @@ export default function OrdersPage() {
           columns={orderColumns}
           data={data?.items ?? []}
           isLoading={isLoading}
+          virtualize
+          containerHeight="640px"
+          ariaLabel="Daftar pesanan"
+          emptyState={emptyState}
         />
         <PaginationBar route={Route} to="/orders" total={data?.total ?? 0} />
       </div>

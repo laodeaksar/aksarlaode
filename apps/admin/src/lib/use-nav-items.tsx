@@ -6,16 +6,20 @@
 //
 // Rule: import siblings by direct path (not "@/lib") to avoid circular deps.
 
+import type { ReactNode } from "react";
+
+import { useMatch } from "@tanstack/react-router";
+
 import {
   ClipboardListIcon,
   LayoutDashboardIcon,
+  MailIcon,
   PackageIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   ShoppingCartIcon,
   UsersIcon,
 } from "lucide-react";
-import { useMatch } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
 import { can } from "@/lib/rbac";
 import type { Permission } from "@/lib/rbac";
@@ -75,6 +79,13 @@ export function useNavItems(): NavItem[] {
         ),
     }) ?? false;
 
+  const hasQueueFilter =
+    useMatch({
+      from: "/queue",
+      shouldThrow: false,
+      select: (m) => !!m?.search.jobType,
+    }) ?? false;
+
   const allItems: NavItemDef[] = [
     {
       title: "Dashboard",
@@ -112,10 +123,23 @@ export function useNavItems(): NavItem[] {
       permission: "audit:read",
     },
     {
+      title: "Email Queue",
+      url: "/queue",
+      icon: <MailIcon />,
+      hasFilter: hasQueueFilter,
+      permission: "queue:read",
+    },
+    {
       title: "Users",
       url: "/users",
       icon: <ShieldCheckIcon />,
       permission: "users:manage",
+    },
+    {
+      title: "Settings",
+      url: "/settings",
+      icon: <SettingsIcon />,
+      permission: "settings:write",
     },
   ];
 

@@ -1,52 +1,65 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-// FIX EML-07: Zod schemas for every email job payload type.
-// The processor validates inbound jobs against these schemas before dispatching
-// to handlers. A job with a malformed payload is rejected immediately with a
-// clear error rather than crashing inside the handler with a confusing TypeError.
+// P1 FIX: safeUrl() blocks javascript: / data: / vbscript: protocol URLs.
+// Valibot's v.url() accepts "javascript:alert(1)" as valid — any field
+// rendered inside an href attribute must use safeUrl() to prevent XSS
+// in email clients.
+const SAFE_URL_PROTOCOLS = /^https?:\/\//i;
+const safeUrl = () =>
+  v.pipe(
+    v.string(),
+    v.url(),
+    v.check(
+      (url) => SAFE_URL_PROTOCOLS.test(url),
+      "URL must use http or https protocol"
+    )
+  );
 
-export const OrderCreatedSchema = z.object({
-  orderId: z.string().min(1),
-  userId: z.string().min(1),
-  userEmail: z.string().email(),
-  grandTotal: z.number().positive(),
+export const OrderCreatedSchema = v.object({
+  orderId: v.pipe(v.string(), v.minLength(1)),
+  userId: v.pipe(v.string(), v.minLength(1)),
+  userEmail: v.pipe(v.string(), v.email()),
+  grandTotal: v.pipe(v.number(), v.minValue(1)),
 });
 
-export const OrderConfirmationSchema = z.object({
-  orderId: z.string().min(1),
-  userId: z.string().optional(),
-  userEmail: z.string().email(),
-  amount: z.number().positive(),
+export const OrderConfirmationSchema = v.object({
+  orderId: v.pipe(v.string(), v.minLength(1)),
+  userId: v.optional(v.string()),
+  userEmail: v.pipe(v.string(), v.email()),
+  amount: v.pipe(v.number(), v.minValue(1)),
 });
 
-export const OrderCancelledSchema = z.object({
-  orderId: z.string().min(1),
-  userId: z.string().optional(),
-  userEmail: z.string().email(),
-  reason: z.string().min(1),
+export const OrderCancelledSchema = v.object({
+  orderId: v.pipe(v.string(), v.minLength(1)),
+  userId: v.optional(v.string()),
+  userEmail: v.pipe(v.string(), v.email()),
+  reason: v.pipe(v.string(), v.minLength(1)),
 });
 
-export const PasswordResetSchema = z.object({
-  userId: z.string().min(1),
-  email: z.string().email(),
-  resetLink: z.string().url(),
+export const PasswordResetSchema = v.object({
+  userId: v.pipe(v.string(), v.minLength(1)),
+  email: v.pipe(v.string(), v.email()),
+  // safeUrl() blocks javascript:, data:, vbscript: — these pass v.url()
+  // but would execute as JS in email clients that render active content.
+  resetLink: safeUrl(),
 });
 
-export const ShippingUpdateSchema = z.object({
-  orderId: z.string().min(1),
-  userId: z.string().optional(),
-  userEmail: z.string().email(),
-  trackingNumber: z.string().min(1),
-  courierName: z.string().min(1),
-  estimatedDate: z.string().min(1),
+export const ShippingUpdateSchema = v.object({
+  orderId: v.pipe(v.string(), v.minLength(1)),
+  userId: v.optional(v.string()),
+  userEmail: v.pipe(v.string(), v.email()),
+  trackingNumber: v.pipe(v.string(), v.minLength(1)),
+  courierName: v.pipe(v.string(), v.minLength(1)),
+  estimatedDate: v.pipe(v.string(), v.minLength(1)),
 });
 
-export const StaffInviteSchema = z.object({
-  userId: z.string().min(1),
-  email: z.string().email(),
-  name: z.string().min(1),
-  role: z.string().min(1),
-  inviteLink: z.string().url(),
+export const StaffInviteSchema = v.object({
+  userId: v.pipe(v.string(), v.minLength(1)),
+  email: v.pipe(v.string(), v.email()),
+  name: v.pipe(v.string(), v.minLength(1)),
+  role: v.pipe(v.string(), v.minLength(1)),
+  // Same safeUrl() protection as resetLink — rendered inside href.
+  inviteLink: safeUrl(),
 });
 
 export const PAYLOAD_SCHEMAS = {

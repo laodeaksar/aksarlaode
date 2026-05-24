@@ -34,94 +34,89 @@ import { env } from "@repo/env/admin";
 
 import type { Session } from "@/lib/auth";
 
-import { resolveAdminSession } from "./AuthMiddleware";
 import {
   extractResourceId,
   fireAuditWrite,
   sanitizeInput,
   SERVER_FN_ACTION_MAP,
 } from "./Audit";
+import { resolveAdminSession } from "./AuthMiddleware";
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 
-export const auditMiddleware = createMiddleware().server(
-  async (ctx) => {
-    const { next, serverFnMeta } = ctx;
-    // `data` exists at runtime but is typed as `undefined` in the generic
-    // since this middleware has no `.validator()` — access via cast.
-    const data = (
-      ctx as unknown as { data: Record<string, unknown> }
-    ).data ?? {};
+export const auditMiddleware = createMiddleware().server(async (ctx) => {
+  const { next, serverFnMeta } = ctx;
+  // `data` exists at runtime but is typed as `undefined` in the generic
+  // since this middleware has no `.validator()` — access via cast.
+  const data = (ctx as unknown as { data: Record<string, unknown> }).data ?? {};
 
-    const fnName = serverFnMeta?.name ?? "";
-    const mapping = SERVER_FN_ACTION_MAP[fnName];
+  const fnName = serverFnMeta?.name ?? "";
+  const mapping = SERVER_FN_ACTION_MAP[fnName];
 
-    // Not a mapped mutating function — pass through unchanged.
-    if (!mapping) return next();
+  // Not a mapped mutating function — pass through unchanged.
+  if (!mapping) return next();
 
-    const apiUrl = env.PUBLIC_API_URL;
-    const internalToken = env.INTERNAL_SERVICE_TOKEN;
+  const apiUrl = env.PUBLIC_API_URL;
+  const internalToken = env.INTERNAL_SERVICE_TOKEN;
 
-    // Prefer session already resolved by requirePermission (avoids a second
-    // HTTP call to /auth/me). Fall back to fresh resolution when running
-    // without the auth middleware (e.g. in test environments).
-    const ctxWithSession = ctx as unknown as {
-      context?: { adminSession?: Session };
-    };
-    const session =
-      ctxWithSession.context?.adminSession ??
-      (await resolveAdminSession(apiUrl));
+  // Prefer session already resolved by requirePermission (avoids a second
+  // HTTP call to /auth/me). Fall back to fresh resolution when running
+  // without the auth middleware (e.g. in test environments).
+  const ctxWithSession = ctx as unknown as {
+    context?: { adminSession?: Session };
+  };
+  const session =
+    ctxWithSession.context?.adminSession ?? (await resolveAdminSession(apiUrl));
 
-    const actorId = session?.id ?? "unknown";
-    // Use "unknown" — not "ADMIN" — when the session cannot be resolved
-    // so the audit trail does not falsely attribute actions to a privileged role.
-    const actorRole = session?.role ?? "unknown";
+  const actorId = session?.id ?? "unknown";
+  // Use "unknown" — not "ADMIN" — when the session cannot be resolved
+  // so the audit trail does not falsely attribute actions to a privileged role.
+  const actorRole = session?.role ?? "unknown";
 
-    const startMs = performance.now();
+  const startMs = performance.now();
 
-    // ── Happy path ──────────────────────────────────────────────────────
-    try {
-      const result = await next();
+  // ── Happy path ──────────────────────────────────────────────────────
+  try {
+    const result = await next();
 
-      fireAuditWrite(apiUrl, internalToken, {
-        actorId,
-        actorRole,
-        action: mapping.action,
-        resource: mapping.resource,
-        resourceId: extractResourceId(fnName, data, result),
-        metadata: {
-          fn: fnName,
-          file: serverFnMeta?.filename ?? "(unknown)",
-          durationMs: Math.round(performance.now() - startMs),
-          outcome: "ok",
-          input: sanitizeInput(data),
-        },
-      });
+    fireAuditWrite(apiUrl, internalToken, {
+      actorId,
+      actorRole,
+      action: mapping.action,
+      resource: mapping.resource,
+      resourceId: extractResourceId(fnName, data, result),
+      metadata: {
+        fn: fnName,
+        file: serverFnMeta?.filename ?? "(unknown)",
+        durationMs: Math.round(performance.now() - startMs),
+        outcome: "ok",
+        input: sanitizeInput(data),
+      },
+    });
 
-      return result;
+    return result;
 
-      // ── Error path ──────────────────────────────────────────────────────
-    } catch (err: unknown) {
-      fireAuditWrite(apiUrl, internalToken, {
-        actorId,
-        actorRole,
-        action: mapping.action,
-        resource: mapping.resource,
-        resourceId: extractResourceId(fnName, data),
-        metadata: {
-          fn: fnName,
-          file: serverFnMeta?.filename ?? "(unknown)",
-          durationMs: Math.round(performance.now() - startMs),
-          outcome: "error",
-          input: sanitizeInput(data),
-          error: serializeErr(err),
-        },
-      });
+    // ── Error path ──────────────────────────────────────────────────────
+  } catch (err: unknown) {
+    fireAuditWrite(apiUrl, internalToken, {
+      actorId,
+      actorRole,
+      action: mapping.action,
+      resource: mapping.resource,
+      resourceId: extractResourceId(fnName, data),
+      metadata: {
+        fn: fnName,
+        file: serverFnMeta?.filename ?? "(unknown)",
+        durationMs: Math.round(performance.now() - startMs),
+        outcome: "error",
+        input: sanitizeInput(data),
+        error: serializeErr(err),
+      },
+    });
 
-      throw err;
-    }
+    throw err;
   }
-);
+});
 
 // ── Error serialisation ─────────────────────────────────────────────────────
 // Produces a compact, JSON-safe representation of any thrown value.

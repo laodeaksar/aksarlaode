@@ -1,15 +1,18 @@
+// P0 FIX: Replaced raw template-literal HTML interpolation with render() engine.
+// All variables (orderId, grandTotal) are now HTML-escaped before insertion,
+// preventing HTML/script injection from attacker-controlled queue payloads.
 import { fetchUserEmail } from "@/lib/user-client";
-import type { MailChannelsProvider } from "@/providers/mailchannels.provider";
+import type { BaseProvider } from "@/providers/base.provider";
 import type { EmailJobPayload } from "@/queues/email.queue";
+import { render } from "@/templates/engine";
+import { orderCreatedTemplate } from "@/templates/order-created.html";
 
-// FIX EML-02: previous version sent to payload.userId (a UUID) — not an email
-// address.  Now uses payload.userEmail (set by EML-03 producer update).
-// Falls back to fetching from auth-service via user-client if payload.userEmail
-// is missing (old job produced before the producer update was deployed).
+const STORE_NAME = process.env["STORE_NAME"] ?? "My Ecommerce";
+const STORE_ADDRESS = process.env["STORE_ADDRESS"] ?? "Jakarta, Indonesia";
 
 export async function handleOrderCreated(
   payload: EmailJobPayload["order-created"],
-  provider: MailChannelsProvider
+  provider: BaseProvider
 ) {
   try {
     const to = payload.userEmail || (await fetchUserEmail(payload.userId));
@@ -28,14 +31,18 @@ export async function handleOrderCreated(
       };
     }
 
-    await provider.send({
-      to,
-      subject: `Order ${payload.orderId} Confirmed`,
-      html: `<p>Your order <strong>${payload.orderId}</strong> has been placed successfully.</p>
-             <p>Total: <strong>Rp ${payload.grandTotal.toLocaleString("id-ID")}</strong></p>
-             <p>We will notify you once your order is being processed.</p>`,
+    const html = render(orderCreatedTemplate, {
+      orderId: payload.orderId,
+      grandTotal: payload.grandTotal.toLocaleString("id-ID"),
+      storeName: STORE_NAME,
+      storeAddress: STORE_ADDRESS,
     });
-    return { success: true };
+
+    return provider.send({
+      to,
+      subject: `Order ${payload.orderId} Placed`,
+      html,
+    });
   } catch (e) {
     return { success: false, error: String(e), retryable: true };
   }
